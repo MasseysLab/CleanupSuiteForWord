@@ -263,13 +263,13 @@ Private Function IsSuiteComponent(compName As String) As Boolean
 
     Dim names As Variant
     names = Array( _
-        "frmPunctuationCleanup", "frmUnicodeCleanup", "frmSpacingCleanup" _
-        "frmCapitalizationCleanup", "frmListCleanup", "frmParagraphCleanup" _
-        "frmDuplicateDetector", "frmFontNormalizer", "frmTableCleaner" _
-        "frmBreakNormalizer", "frmDocumentTrim", "frmFormattingStripper" _
-        "frmHyperlinkRemover", "frmSoftReturnConverter", "frmMetadataScrubber" _
-        "frmStyleCleanup", "frmFootnoteRemover", "frmHeaderFooterStandardizer" _
-        "frmObjectRemover", "frmCleanupSuiteLauncher", "modCleanupLauncher" _
+        "frmPunctuationCleanup", "frmUnicodeCleanup", "frmSpacingCleanup", _
+        "frmCapitalizationCleanup", "frmListCleanup", "frmParagraphCleanup", _
+        "frmDuplicateDetector", "frmFontNormalizer", "frmTableCleaner", _
+        "frmBreakNormalizer", "frmDocumentTrim", "frmFormattingStripper", _
+        "frmHyperlinkRemover", "frmSoftReturnConverter", "frmMetadataScrubber", _
+        "frmStyleCleanup", "frmFootnoteRemover", "frmHeaderFooterStandardizer", _
+        "frmObjectRemover", "frmCleanupSuiteLauncher", "modCleanupLauncher", _
         "modCleanupHelpers")
 
     Dim i As Long
