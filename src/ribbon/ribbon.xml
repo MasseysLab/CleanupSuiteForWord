@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mso:customUI xmlns:mso="http://schemas.microsoft.com/office/2009/07/customui"
+              onLoad="RibbonOnLoad">
+  <mso:ribbon>
+    <mso:tabs>
+      <mso:tab idMso="TabAddIns">
+        <mso:group id="grpCleanupSuite"
+                   label="Cleanup Suite"
+                   insertAfterMso="GroupAddInsMenuCommands">
+          <mso:button id="btnCleanupLauncher"
+                      label="Cleanup Suite"
+                      screentip="Open the Professional Cleanup Suite"
+                      supertip="Launches the master cleanup launcher with all of the suite cleanup tools."
+                      imageMso="ReviewNewComment"
+                      onAction="ShowCleanupSuiteLauncher"
+                      size="large"/>
+        </mso:group>
+      </mso:tab>
+    </mso:tabs>
+  </mso:ribbon>
+</mso:customUI>
