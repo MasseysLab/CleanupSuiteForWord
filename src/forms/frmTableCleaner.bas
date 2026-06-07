@@ -25,6 +25,14 @@ Private Sub UserForm_Initialize()
     Else
         optScopeSelection.Enabled = False
     End If
+    chkRemoveEmptyRows.Caption = "Remove empty rows"
+    chkRemoveEmptyCols.Caption = "Remove empty columns"
+    chkNormalizePadding.Caption = "Normalize cell padding"
+    chkStripDirectFormat.Caption = "Strip direct formatting from cells"
+    chkNormalizeBorders.Caption = "Normalize border styles"
+    chkRemoveBorders.Caption = "Remove all borders"
+    chkConvertToText.Caption = "Convert single-column tables to plain text"
+    chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String

@@ -30,6 +30,12 @@ Private Sub UserForm_Initialize()
     Else
         optScopeSelection.Enabled = False
     End If
+    chkResetChar.Caption = "Strip direct character formatting"
+    chkResetPara.Caption = "Strip direct paragraph formatting"
+    optEmphQuick.Caption = "Quick  (preserve paragraph-level emphasis)"
+    optEmphThorough.Caption = "Thorough  (preserve word-level emphasis)"
+    optEmphStrip.Caption = "Strip  (remove all direct formatting)"
+    chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
 End Sub
 Private Sub optEmphQuick_Click()
     lblSpeedWarning.Caption = "Quick mode is fast and preserves emphasis that applies to whole paragraphs."

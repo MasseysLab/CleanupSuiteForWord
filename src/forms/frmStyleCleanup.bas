@@ -12,6 +12,9 @@ Private Sub UserForm_Initialize()
     optScopeDocument.Value = True
     optScopeDocument.Caption = "Entire document (always)"
     optScopeSelection.Enabled = False
+    chkRemoveUnused.Caption = "Remove unused styles"
+    chkRemapVariants.Caption = "Remap style variants to canonical equivalents"
+    chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String

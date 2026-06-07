@@ -20,6 +20,12 @@ Private Sub UserForm_Initialize()
     Else
         optScopeSelection.Enabled = False
     End If
+    chkFontFace.Caption = "Normalize font face to document default"
+    chkFontSize.Caption = "Normalize font size to style-defined size"
+    chkBold.Caption = "Normalize direct bold overrides"
+    chkItalic.Caption = "Normalize direct italic overrides"
+    chkFontColor.Caption = "Remove direct font color overrides"
+    chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String

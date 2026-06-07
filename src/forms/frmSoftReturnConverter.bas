@@ -20,6 +20,9 @@ Private Sub UserForm_Initialize()
     Else
         optScopeSelection.Enabled = False
     End If
+    optSoftToPara.Caption = "Convert soft returns (Shift+Enter) to paragraph marks"
+    optParaToSoft.Caption = "Convert paragraph marks to soft returns"
+    chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String

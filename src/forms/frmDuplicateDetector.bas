@@ -31,6 +31,15 @@ Private Sub UserForm_Initialize()
     Else
         optScopeSelection.Enabled = False
     End If
+    optHighlightOnly.Caption = "Highlight duplicates (preview only)"
+    optRemoveDupes.Caption = "Remove duplicate paragraphs"
+    optMatchExact.Caption = "Exact match"
+    optMatchNormalized.Caption = "Normalized match (ignore punctuation and spaces)"
+    optMatchFuzzy.Caption = "Fuzzy match (word overlap)"
+    optFuzzyLoose.Caption = "Loose  (50% word overlap)"
+    optFuzzyMedium.Caption = "Medium  (70% word overlap)"
+    optFuzzyStrict.Caption = "Strict  (90% word overlap)"
+    chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
 End Sub
 Private Sub optMatchExact_Click()
     lblFuzzyWarning.Caption = "Exact match: paragraphs must be identical apart from letter case."

@@ -12,6 +12,7 @@ Private Sub UserForm_Initialize()
     optScopeDocument.Value = True
     optScopeDocument.Caption = "Entire document (always)"
     optScopeSelection.Enabled = False
+    chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String

@@ -267,13 +267,13 @@ Private Function IsSuiteComponent(compName As String) As Boolean
 
     Dim names As Variant
     names = Array( _
-        "frmPunctuationCleanup", "frmUnicodeCleanup", "frmSpacingCleanup" _
-        "frmCapitalizationCleanup", "frmListCleanup", "frmParagraphCleanup" _
-        "frmDuplicateDetector", "frmFontNormalizer", "frmTableCleaner" _
-        "frmBreakNormalizer", "frmDocumentTrim", "frmFormattingStripper" _
-        "frmHyperlinkRemover", "frmSoftReturnConverter", "frmMetadataScrubber" _
-        "frmStyleCleanup", "frmFootnoteRemover", "frmHeaderFooterStandardizer" _
-        "frmObjectRemover", "frmCleanupSuiteLauncher", "modCleanupLauncher" _
+        "frmPunctuationCleanup", "frmUnicodeCleanup", "frmSpacingCleanup", _
+        "frmCapitalizationCleanup", "frmListCleanup", "frmParagraphCleanup", _
+        "frmDuplicateDetector", "frmFontNormalizer", "frmTableCleaner", _
+        "frmBreakNormalizer", "frmDocumentTrim", "frmFormattingStripper", _
+        "frmHyperlinkRemover", "frmSoftReturnConverter", "frmMetadataScrubber", _
+        "frmStyleCleanup", "frmFootnoteRemover", "frmHeaderFooterStandardizer", _
+        "frmObjectRemover", "frmCleanupSuiteLauncher", "modCleanupLauncher", _
         "modCleanupHelpers")
 
     Dim i As Long
@@ -803,6 +803,17 @@ Private Function frmPunctuationCleanup_Code() As String
     s = s & "    Else" & vbCrLf
     s = s & "        optScopeSelection.Enabled = False" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "    optAll.Caption = ""All punctuation types""" & vbCrLf
+    s = s & "    optQuotes.Caption = ""Quotes only""" & vbCrLf
+    s = s & "    optDashes.Caption = ""Dashes only""" & vbCrLf
+    s = s & "    optEllipses.Caption = ""Ellipses only""" & vbCrLf
+    s = s & "    optCustom.Caption = ""Custom (choose below)""" & vbCrLf
+    s = s & "    chkCurlyDouble.Caption = ""Curly double quotes  -> straight double quotes""" & vbCrLf
+    s = s & "    chkCurlySingle.Caption = ""Curly single quotes / apostrophes  -> straight single quotes""" & vbCrLf
+    s = s & "    chkEmDash.Caption = ""Em dash  ->  hyphen-minus  -""" & vbCrLf
+    s = s & "    chkEnDash.Caption = ""En dash  ->  hyphen-minus  -""" & vbCrLf
+    s = s & "    chkEllipses.Caption = ""Ellipsis character  ->  three dots  ...""" & vbCrLf
+    s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -969,6 +980,18 @@ Private Function frmUnicodeCleanup_Code() As String
     s = s & "    Else" & vbCrLf
     s = s & "        optScopeSelection.Enabled = False" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "    optAll.Caption = ""All invisible / problem characters""" & vbCrLf
+    s = s & "    optNBSP.Caption = ""Non-breaking spaces only""" & vbCrLf
+    s = s & "    optZeroWidth.Caption = ""Zero-width characters only""" & vbCrLf
+    s = s & "    optCustom.Caption = ""Custom (choose below)""" & vbCrLf
+    s = s & "    chkNBSP.Caption = ""Non-breaking spaces (U+00A0)""" & vbCrLf
+    s = s & "    chkZWSP.Caption = ""Zero-width spaces (U+200B)""" & vbCrLf
+    s = s & "    chkZWNJ.Caption = ""Zero-width non-joiners (U+200C)""" & vbCrLf
+    s = s & "    chkZWJ.Caption = ""Zero-width joiners (U+200D)""" & vbCrLf
+    s = s & "    chkBOM.Caption = ""Byte order marks (U+FEFF)""" & vbCrLf
+    s = s & "    chkSoftHyphen.Caption = ""Soft hyphens (U+00AD)""" & vbCrLf
+    s = s & "    chkNBHyphen.Caption = ""Non-breaking hyphens (U+2011)""" & vbCrLf
+    s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -1112,6 +1135,16 @@ Private Function frmSpacingCleanup_Code() As String
     s = s & "    Else" & vbCrLf
     s = s & "        optScopeSelection.Enabled = False" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "    optAll.Caption = ""All spacing fixes""" & vbCrLf
+    s = s & "    optDoubleSpaces.Caption = ""Double spaces only""" & vbCrLf
+    s = s & "    optTrim.Caption = ""Trim leading / trailing spaces""" & vbCrLf
+    s = s & "    optCustom.Caption = ""Custom (choose below)""" & vbCrLf
+    s = s & "    chkDoubleSpaces.Caption = ""Collapse double (and multiple) spaces""" & vbCrLf
+    s = s & "    chkTrimSpaces.Caption = ""Remove leading and trailing spaces""" & vbCrLf
+    s = s & "    chkSpaceBeforePunct.Caption = ""Remove space before punctuation  ( , . : ; ! ? )""" & vbCrLf
+    s = s & "    chkNormalizeAfterPunct.Caption = ""Normalize spacing after punctuation""" & vbCrLf
+    s = s & "    chkExtraBlankLines.Caption = ""Collapse extra blank lines between paragraphs""" & vbCrLf
+    s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -1335,6 +1368,18 @@ Private Function frmCapitalizationCleanup_Code() As String
     s = s & "    Else" & vbCrLf
     s = s & "        optScopeSelection.Enabled = False" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "    optAll.Caption = ""All capitalization fixes""" & vbCrLf
+    s = s & "    optSentence.Caption = ""Sentence case""" & vbCrLf
+    s = s & "    optTitle.Caption = ""Title case""" & vbCrLf
+    s = s & "    optUpper.Caption = ""ALL CAPS -> Title Case""" & vbCrLf
+    s = s & "    optLower.Caption = ""lowercase -> Sentence case""" & vbCrLf
+    s = s & "    optCustom.Caption = ""Custom (choose below)""" & vbCrLf
+    s = s & "    chkSentence.Caption = ""Capitalize sentence starts""" & vbCrLf
+    s = s & "    chkTitle.Caption = ""Apply title case to headings""" & vbCrLf
+    s = s & "    chkUpper.Caption = ""Convert ALL-CAPS words (5+ letters)""" & vbCrLf
+    s = s & "    chkLower.Caption = ""Fix all-lowercase paragraphs""" & vbCrLf
+    s = s & "    chkSmartSentences.Caption = ""Smart sentence detection (skip abbreviations)""" & vbCrLf
+    s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -1510,6 +1555,16 @@ Private Function frmListCleanup_Code() As String
     s = s & "    Else" & vbCrLf
     s = s & "        optScopeSelection.Enabled = False" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "    optAll.Caption = ""All list fixes""" & vbCrLf
+    s = s & "    optBullets.Caption = ""Convert manual bullet lists""" & vbCrLf
+    s = s & "    optNumbering.Caption = ""Convert manual numbered lists""" & vbCrLf
+    s = s & "    optIndent.Caption = ""Fix list indentation""" & vbCrLf
+    s = s & "    optCustom.Caption = ""Custom (choose below)""" & vbCrLf
+    s = s & "    chkNormalizeBullets.Caption = ""Convert manual hyphens / asterisks to List Bullet style""" & vbCrLf
+    s = s & "    chkNormalizeNumbering.Caption = ""Convert manual numbers to List Number style""" & vbCrLf
+    s = s & "    chkFixIndent.Caption = ""Fix list indentation""" & vbCrLf
+    s = s & "    chkHyphenToBullets.Caption = ""Convert hyphen-dash lines to bullets""" & vbCrLf
+    s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -1697,6 +1752,15 @@ Private Function frmParagraphCleanup_Code() As String
     s = s & "    Else" & vbCrLf
     s = s & "        optScopeSelection.Enabled = False" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "    optAll.Caption = ""All paragraph fixes""" & vbCrLf
+    s = s & "    optRemoveEmpty.Caption = ""Remove empty paragraphs""" & vbCrLf
+    s = s & "    optNormalizeSpacing.Caption = ""Normalize paragraph spacing""" & vbCrLf
+    s = s & "    optCustom.Caption = ""Custom (choose below)""" & vbCrLf
+    s = s & "    chkRemoveEmpty.Caption = ""Collapse multiple consecutive empty paragraphs""" & vbCrLf
+    s = s & "    chkCollapseBreaks.Caption = ""Convert soft returns (Shift+Enter) to paragraph marks""" & vbCrLf
+    s = s & "    chkNormalizeParaSpacing.Caption = ""Normalize Space Before / Space After settings""" & vbCrLf
+    s = s & "    chkFixIndent.Caption = ""Remove manual tab / space indentation at paragraph start""" & vbCrLf
+    s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -1869,6 +1933,15 @@ Private Function frmDuplicateDetector_Code() As String
     s = s & "    Else" & vbCrLf
     s = s & "        optScopeSelection.Enabled = False" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "    optHighlightOnly.Caption = ""Highlight duplicates (preview only)""" & vbCrLf
+    s = s & "    optRemoveDupes.Caption = ""Remove duplicate paragraphs""" & vbCrLf
+    s = s & "    optMatchExact.Caption = ""Exact match""" & vbCrLf
+    s = s & "    optMatchNormalized.Caption = ""Normalized match (ignore punctuation and spaces)""" & vbCrLf
+    s = s & "    optMatchFuzzy.Caption = ""Fuzzy match (word overlap)""" & vbCrLf
+    s = s & "    optFuzzyLoose.Caption = ""Loose  (50% word overlap)""" & vbCrLf
+    s = s & "    optFuzzyMedium.Caption = ""Medium  (70% word overlap)""" & vbCrLf
+    s = s & "    optFuzzyStrict.Caption = ""Strict  (90% word overlap)""" & vbCrLf
+    s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub optMatchExact_Click()" & vbCrLf
     s = s & "    lblFuzzyWarning.Caption = ""Exact match: paragraphs must be identical apart from letter case.""" & vbCrLf
@@ -2175,6 +2248,12 @@ Private Function frmFontNormalizer_Code() As String
     s = s & "    Else" & vbCrLf
     s = s & "        optScopeSelection.Enabled = False" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "    chkFontFace.Caption = ""Normalize font face to document default""" & vbCrLf
+    s = s & "    chkFontSize.Caption = ""Normalize font size to style-defined size""" & vbCrLf
+    s = s & "    chkBold.Caption = ""Normalize direct bold overrides""" & vbCrLf
+    s = s & "    chkItalic.Caption = ""Normalize direct italic overrides""" & vbCrLf
+    s = s & "    chkFontColor.Caption = ""Remove direct font color overrides""" & vbCrLf
+    s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -2309,6 +2388,14 @@ Private Function frmTableCleaner_Code() As String
     s = s & "    Else" & vbCrLf
     s = s & "        optScopeSelection.Enabled = False" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "    chkRemoveEmptyRows.Caption = ""Remove empty rows""" & vbCrLf
+    s = s & "    chkRemoveEmptyCols.Caption = ""Remove empty columns""" & vbCrLf
+    s = s & "    chkNormalizePadding.Caption = ""Normalize cell padding""" & vbCrLf
+    s = s & "    chkStripDirectFormat.Caption = ""Strip direct formatting from cells""" & vbCrLf
+    s = s & "    chkNormalizeBorders.Caption = ""Normalize border styles""" & vbCrLf
+    s = s & "    chkRemoveBorders.Caption = ""Remove all borders""" & vbCrLf
+    s = s & "    chkConvertToText.Caption = ""Convert single-column tables to plain text""" & vbCrLf
+    s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -2501,6 +2588,14 @@ Private Function frmBreakNormalizer_Code() As String
     s = s & "    Else" & vbCrLf
     s = s & "        optScopeSelection.Enabled = False" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "    chkCollapseSectionBreaks.Caption = ""Collapse consecutive section breaks""" & vbCrLf
+    s = s & "    chkCollapsePageBreaks.Caption = ""Collapse consecutive page breaks""" & vbCrLf
+    s = s & "    chkConvertSectionBreaks.Caption = ""Convert section breaks to page breaks""" & vbCrLf
+    s = s & "    optConvertNextPage.Caption = ""Next Page""" & vbCrLf
+    s = s & "    optConvertContinuous.Caption = ""Continuous""" & vbCrLf
+    s = s & "    optConvertEvenPage.Caption = ""Even Page""" & vbCrLf
+    s = s & "    optConvertOddPage.Caption = ""Odd Page""" & vbCrLf
+    s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -2633,6 +2728,7 @@ Private Function frmDocumentTrim_Code() As String
     s = s & "    optScopeDocument.Value = True" & vbCrLf
     s = s & "    optScopeDocument.Caption = ""Entire document (always)""" & vbCrLf
     s = s & "    optScopeSelection.Enabled = False" & vbCrLf
+    s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -2747,6 +2843,12 @@ Private Function frmFormattingStripper_Code() As String
     s = s & "    Else" & vbCrLf
     s = s & "        optScopeSelection.Enabled = False" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "    chkResetChar.Caption = ""Strip direct character formatting""" & vbCrLf
+    s = s & "    chkResetPara.Caption = ""Strip direct paragraph formatting""" & vbCrLf
+    s = s & "    optEmphQuick.Caption = ""Quick  (preserve paragraph-level emphasis)""" & vbCrLf
+    s = s & "    optEmphThorough.Caption = ""Thorough  (preserve word-level emphasis)""" & vbCrLf
+    s = s & "    optEmphStrip.Caption = ""Strip  (remove all direct formatting)""" & vbCrLf
+    s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub optEmphQuick_Click()" & vbCrLf
     s = s & "    lblSpeedWarning.Caption = ""Quick mode is fast and preserves emphasis that applies to whole paragraphs.""" & vbCrLf
@@ -3013,6 +3115,8 @@ Private Function frmHyperlinkRemover_Code() As String
     s = s & "    Else" & vbCrLf
     s = s & "        optScopeSelection.Enabled = False" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "    chkRemoveFormat.Caption = ""Remove hyperlink character style (blue underline)""" & vbCrLf
+    s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -3121,6 +3225,9 @@ Private Function frmSoftReturnConverter_Code() As String
     s = s & "    Else" & vbCrLf
     s = s & "        optScopeSelection.Enabled = False" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "    optSoftToPara.Caption = ""Convert soft returns (Shift+Enter) to paragraph marks""" & vbCrLf
+    s = s & "    optParaToSoft.Caption = ""Convert paragraph marks to soft returns""" & vbCrLf
+    s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -3232,6 +3339,11 @@ Private Function frmMetadataScrubber_Code() As String
     s = s & "    optScopeDocument.Value = True" & vbCrLf
     s = s & "    optScopeDocument.Caption = ""Entire document (always)""" & vbCrLf
     s = s & "    optScopeSelection.Enabled = False" & vbCrLf
+    s = s & "    chkProperties.Caption = ""Clear document properties (Title, Author, Company, etc.)""" & vbCrLf
+    s = s & "    chkPersonalInfo.Caption = ""Clear personal information (Last Saved By, revision authors)""" & vbCrLf
+    s = s & "    chkComments.Caption = ""Remove all comments""" & vbCrLf
+    s = s & "    chkRevisions.Caption = ""Accept tracked changes and clear revision marks""" & vbCrLf
+    s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -3344,6 +3456,9 @@ Private Function frmStyleCleanup_Code() As String
     s = s & "    optScopeDocument.Value = True" & vbCrLf
     s = s & "    optScopeDocument.Caption = ""Entire document (always)""" & vbCrLf
     s = s & "    optScopeSelection.Enabled = False" & vbCrLf
+    s = s & "    chkRemoveUnused.Caption = ""Remove unused styles""" & vbCrLf
+    s = s & "    chkRemapVariants.Caption = ""Remap style variants to canonical equivalents""" & vbCrLf
+    s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -3488,6 +3603,7 @@ Private Function frmFootnoteRemover_Code() As String
     s = s & "    Else" & vbCrLf
     s = s & "        optScopeSelection.Enabled = False" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -3632,6 +3748,7 @@ Private Function frmHeaderFooterStandardizer_Code() As String
     s = s & "    optScopeDocument.Value = True" & vbCrLf
     s = s & "    optScopeDocument.Caption = ""Entire document (always)""" & vbCrLf
     s = s & "    optScopeSelection.Enabled = False" & vbCrLf
+    s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -3794,6 +3911,7 @@ Private Function frmObjectRemover_Code() As String
     s = s & "    optScopeDocument.Caption = ""Entire document (always)""" & vbCrLf
     s = s & "    optScopeSelection.Enabled = False" & vbCrLf
     s = s & "    fraScopeSelection.Enabled = False" & vbCrLf
+    s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf

@@ -26,6 +26,14 @@ Private Sub UserForm_Initialize()
     Else
         optScopeSelection.Enabled = False
     End If
+    chkCollapseSectionBreaks.Caption = "Collapse consecutive section breaks"
+    chkCollapsePageBreaks.Caption = "Collapse consecutive page breaks"
+    chkConvertSectionBreaks.Caption = "Convert section breaks to page breaks"
+    optConvertNextPage.Caption = "Next Page"
+    optConvertContinuous.Caption = "Continuous"
+    optConvertEvenPage.Caption = "Even Page"
+    optConvertOddPage.Caption = "Odd Page"
+    chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String

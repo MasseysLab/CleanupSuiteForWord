@@ -23,6 +23,16 @@ Private Sub UserForm_Initialize()
     Else
         optScopeSelection.Enabled = False
     End If
+    optAll.Caption = "All list fixes"
+    optBullets.Caption = "Convert manual bullet lists"
+    optNumbering.Caption = "Convert manual numbered lists"
+    optIndent.Caption = "Fix list indentation"
+    optCustom.Caption = "Custom (choose below)"
+    chkNormalizeBullets.Caption = "Convert manual hyphens / asterisks to List Bullet style"
+    chkNormalizeNumbering.Caption = "Convert manual numbers to List Number style"
+    chkFixIndent.Caption = "Fix list indentation"
+    chkHyphenToBullets.Caption = "Convert hyphen-dash lines to bullets"
+    chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String

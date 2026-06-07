@@ -15,6 +15,11 @@ Private Sub UserForm_Initialize()
     optScopeDocument.Value = True
     optScopeDocument.Caption = "Entire document (always)"
     optScopeSelection.Enabled = False
+    chkProperties.Caption = "Clear document properties (Title, Author, Company, etc.)"
+    chkPersonalInfo.Caption = "Clear personal information (Last Saved By, revision authors)"
+    chkComments.Caption = "Remove all comments"
+    chkRevisions.Caption = "Accept tracked changes and clear revision marks"
+    chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String

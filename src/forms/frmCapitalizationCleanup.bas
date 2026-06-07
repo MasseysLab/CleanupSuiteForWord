@@ -24,6 +24,18 @@ Private Sub UserForm_Initialize()
     Else
         optScopeSelection.Enabled = False
     End If
+    optAll.Caption = "All capitalization fixes"
+    optSentence.Caption = "Sentence case"
+    optTitle.Caption = "Title case"
+    optUpper.Caption = "ALL CAPS -> Title Case"
+    optLower.Caption = "lowercase -> Sentence case"
+    optCustom.Caption = "Custom (choose below)"
+    chkSentence.Caption = "Capitalize sentence starts"
+    chkTitle.Caption = "Apply title case to headings"
+    chkUpper.Caption = "Convert ALL-CAPS words (5+ letters)"
+    chkLower.Caption = "Fix all-lowercase paragraphs"
+    chkSmartSentences.Caption = "Smart sentence detection (skip abbreviations)"
+    chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String

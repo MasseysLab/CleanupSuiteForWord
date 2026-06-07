@@ -25,6 +25,18 @@ Private Sub UserForm_Initialize()
     Else
         optScopeSelection.Enabled = False
     End If
+    optAll.Caption = "All invisible / problem characters"
+    optNBSP.Caption = "Non-breaking spaces only"
+    optZeroWidth.Caption = "Zero-width characters only"
+    optCustom.Caption = "Custom (choose below)"
+    chkNBSP.Caption = "Non-breaking spaces (U+00A0)"
+    chkZWSP.Caption = "Zero-width spaces (U+200B)"
+    chkZWNJ.Caption = "Zero-width non-joiners (U+200C)"
+    chkZWJ.Caption = "Zero-width joiners (U+200D)"
+    chkBOM.Caption = "Byte order marks (U+FEFF)"
+    chkSoftHyphen.Caption = "Soft hyphens (U+00AD)"
+    chkNBHyphen.Caption = "Non-breaking hyphens (U+2011)"
+    chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String

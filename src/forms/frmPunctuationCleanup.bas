@@ -25,6 +25,17 @@ Private Sub UserForm_Initialize()
     Else
         optScopeSelection.Enabled = False
     End If
+    optAll.Caption = "All punctuation types"
+    optQuotes.Caption = "Quotes only"
+    optDashes.Caption = "Dashes only"
+    optEllipses.Caption = "Ellipses only"
+    optCustom.Caption = "Custom (choose below)"
+    chkCurlyDouble.Caption = "Curly double quotes  -> straight double quotes"
+    chkCurlySingle.Caption = "Curly single quotes / apostrophes  -> straight single quotes"
+    chkEmDash.Caption = "Em dash  ->  hyphen-minus  -"
+    chkEnDash.Caption = "En dash  ->  hyphen-minus  -"
+    chkEllipses.Caption = "Ellipsis character  ->  three dots  ..."
+    chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String

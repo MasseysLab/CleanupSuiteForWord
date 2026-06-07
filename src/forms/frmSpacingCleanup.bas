@@ -22,6 +22,16 @@ Private Sub UserForm_Initialize()
     Else
         optScopeSelection.Enabled = False
     End If
+    optAll.Caption = "All spacing fixes"
+    optDoubleSpaces.Caption = "Double spaces only"
+    optTrim.Caption = "Trim leading / trailing spaces"
+    optCustom.Caption = "Custom (choose below)"
+    chkDoubleSpaces.Caption = "Collapse double (and multiple) spaces"
+    chkTrimSpaces.Caption = "Remove leading and trailing spaces"
+    chkSpaceBeforePunct.Caption = "Remove space before punctuation  ( , . : ; ! ? )"
+    chkNormalizeAfterPunct.Caption = "Normalize spacing after punctuation"
+    chkExtraBlankLines.Caption = "Collapse extra blank lines between paragraphs"
+    chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
