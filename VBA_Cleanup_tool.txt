@@ -114,8 +114,6 @@ Public Sub InstallCleanupSuite()
     AttemptCreateControls vbProj, "frmObjectRemover", uiFailures
 
     ' 4) Post-install report
-    Dim reportDoc As Document
-    Set reportDoc = Documents.Add
     Dim reportText As String
     reportText = "Cleanup Suite Installer Report" & vbCrLf & "Generated: " & Now & vbCrLf & vbCrLf
 
@@ -138,11 +136,17 @@ Public Sub InstallCleanupSuite()
     reportText = reportText & vbCrLf & "Manual checklist (if any UI items failed to create):" & vbCrLf
     reportText = reportText & ManualChecklistText()
 
-    reportDoc.Content.Text = reportText
-    reportDoc.Activate
+    ' Write report to temp file and open it
+    Dim reportPath As String
+    reportPath = Environ$("TEMP") & "\CleanupSuite_Install_Report.txt"
+    Dim ff As Integer: ff = FreeFile
+    Open reportPath For Output As #ff
+    Print #ff, reportText
+    Close #ff
+    Shell "notepad.exe " & Chr(34) & reportPath & Chr(34), vbNormalFocus
 
-    MsgBox "Installer finished. A detailed report has been created in a new document." & vbCrLf & _
-           "Open the report, follow the manual checklist if needed, then compile the project (VBA editor → Debug → Compile).", vbInformation, "Install Complete"
+    MsgBox "Installer finished. The report has been opened in Notepad." & vbCrLf & _
+           "Follow the manual checklist if needed, then compile the project (VBA editor -> Debug -> Compile).", vbInformation, "Install Complete"
 
     Exit Sub
 
@@ -263,13 +267,13 @@ Private Function IsSuiteComponent(compName As String) As Boolean
 
     Dim names As Variant
     names = Array( _
-        "frmPunctuationCleanup", "frmUnicodeCleanup", "frmSpacingCleanup", _
-        "frmCapitalizationCleanup", "frmListCleanup", "frmParagraphCleanup", _
-        "frmDuplicateDetector", "frmFontNormalizer", "frmTableCleaner", _
-        "frmBreakNormalizer", "frmDocumentTrim", "frmFormattingStripper", _
-        "frmHyperlinkRemover", "frmSoftReturnConverter", "frmMetadataScrubber", _
-        "frmStyleCleanup", "frmFootnoteRemover", "frmHeaderFooterStandardizer", _
-        "frmObjectRemover", "frmCleanupSuiteLauncher", "modCleanupLauncher", _
+        "frmPunctuationCleanup", "frmUnicodeCleanup", "frmSpacingCleanup" _
+        "frmCapitalizationCleanup", "frmListCleanup", "frmParagraphCleanup" _
+        "frmDuplicateDetector", "frmFontNormalizer", "frmTableCleaner" _
+        "frmBreakNormalizer", "frmDocumentTrim", "frmFormattingStripper" _
+        "frmHyperlinkRemover", "frmSoftReturnConverter", "frmMetadataScrubber" _
+        "frmStyleCleanup", "frmFootnoteRemover", "frmHeaderFooterStandardizer" _
+        "frmObjectRemover", "frmCleanupSuiteLauncher", "modCleanupLauncher" _
         "modCleanupHelpers")
 
     Dim i As Long
