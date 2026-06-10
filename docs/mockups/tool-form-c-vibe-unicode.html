@@ -1,0 +1,120 @@
+<h2>C-Vibe Tool Form Example</h2>
+<p class="subtitle">This is a higher-fidelity concept for one real CleanupSuite form: <strong>Invisible Unicode Cleaner</strong>. It keeps the actual VBA logic structure, but changes the visual hierarchy and the action flow.</p>
+
+<div class="mockup">
+  <div class="mockup-header">Cleanup Suite / Text Integrity</div>
+  <div class="mockup-body" style="background:linear-gradient(180deg,#f4f7fb 0%,#eef2f6 100%);padding:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px;">
+      <div>
+        <div style="font:700 26px Verdana, sans-serif;color:#1f2d3d;letter-spacing:0;">Invisible Unicode Cleaner</div>
+        <div style="font-size:13px;color:#607182;max-width:640px;margin-top:6px;">Remove invisible characters that break search, sorting, and exports without making the form feel like a wall of checkboxes.</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <div style="font-size:11px;color:#516274;background:#dce6f1;padding:6px 10px;border-radius:999px;">Preview available</div>
+        <div style="width:34px;height:34px;border-radius:9px;background:#d8e2ec;display:flex;align-items:center;justify-content:center;color:#415469;font-weight:700;">?</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1.1fr 0.9fr;gap:14px;">
+      <div style="display:grid;gap:14px;">
+        <section style="background:#ffffff;border:1px solid #d6dee7;border-radius:10px;padding:14px 16px;box-shadow:0 1px 0 rgba(15,23,42,0.04);">
+          <div style="font-size:11px;text-transform:uppercase;color:#64748b;margin-bottom:10px;">1. Cleanup Mode</div>
+          <div style="display:grid;gap:8px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;background:#eff6ff;border:2px solid #2b5f8d;border-radius:8px;padding:10px 12px;">
+              <div>
+                <div style="font:700 14px Verdana, sans-serif;color:#17324e;">All invisible / problem characters</div>
+                <div style="font-size:12px;color:#5a7084;">Recommended default for mixed-source documents</div>
+              </div>
+              <div style="width:18px;height:18px;border-radius:999px;background:#2b5f8d;"></div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;background:#f7f9fb;border:1px solid #d9e1e8;border-radius:8px;padding:10px 12px;">
+              <div>
+                <div style="font:700 14px Verdana, sans-serif;color:#2a3745;">Non-breaking spaces only</div>
+                <div style="font-size:12px;color:#687887;">For spacing cleanup without touching zero-width marks</div>
+              </div>
+              <div style="width:18px;height:18px;border-radius:999px;border:2px solid #b4c0ca;"></div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;background:#f7f9fb;border:1px solid #d9e1e8;border-radius:8px;padding:10px 12px;">
+              <div>
+                <div style="font:700 14px Verdana, sans-serif;color:#2a3745;">Zero-width characters only</div>
+                <div style="font-size:12px;color:#687887;">For web/PDF copy-paste artifacts</div>
+              </div>
+              <div style="width:18px;height:18px;border-radius:999px;border:2px solid #b4c0ca;"></div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;background:#f7f9fb;border:1px solid #d9e1e8;border-radius:8px;padding:10px 12px;">
+              <div>
+                <div style="font:700 14px Verdana, sans-serif;color:#2a3745;">Custom selection</div>
+                <div style="font-size:12px;color:#687887;">Pick exactly which Unicode artifacts to target</div>
+              </div>
+              <div style="width:18px;height:18px;border-radius:999px;border:2px solid #b4c0ca;"></div>
+            </div>
+          </div>
+        </section>
+
+        <section style="background:#ffffff;border:1px solid #d6dee7;border-radius:10px;padding:14px 16px;box-shadow:0 1px 0 rgba(15,23,42,0.04);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <div style="font-size:11px;text-transform:uppercase;color:#64748b;">2. Character Set</div>
+            <div style="font-size:12px;color:#6b7c8d;">Shown when Custom is selected</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="background:#f7f9fb;border:1px solid #dde5ec;border-radius:8px;padding:10px 12px;">Non-breaking spaces <span style="color:#7c8b99;">U+00A0</span></div>
+            <div style="background:#f7f9fb;border:1px solid #dde5ec;border-radius:8px;padding:10px 12px;">Zero-width spaces <span style="color:#7c8b99;">U+200B</span></div>
+            <div style="background:#f7f9fb;border:1px solid #dde5ec;border-radius:8px;padding:10px 12px;">Zero-width non-joiners <span style="color:#7c8b99;">U+200C</span></div>
+            <div style="background:#f7f9fb;border:1px solid #dde5ec;border-radius:8px;padding:10px 12px;">Zero-width joiners <span style="color:#7c8b99;">U+200D</span></div>
+            <div style="background:#f7f9fb;border:1px solid #dde5ec;border-radius:8px;padding:10px 12px;">Byte order marks <span style="color:#7c8b99;">U+FEFF</span></div>
+            <div style="background:#f7f9fb;border:1px solid #dde5ec;border-radius:8px;padding:10px 12px;">Soft hyphens / NB hyphens</div>
+          </div>
+        </section>
+      </div>
+
+      <div style="display:grid;gap:14px;">
+        <section style="background:#ffffff;border:1px solid #d6dee7;border-radius:10px;padding:14px 16px;box-shadow:0 1px 0 rgba(15,23,42,0.04);">
+          <div style="font-size:11px;text-transform:uppercase;color:#64748b;margin-bottom:10px;">3. Scope</div>
+          <div style="display:grid;gap:8px;">
+            <div style="background:#eff6ff;border:2px solid #2b5f8d;border-radius:8px;padding:10px 12px;">
+              <div style="font:700 14px Verdana, sans-serif;color:#17324e;">Entire document</div>
+              <div style="font-size:12px;color:#5a7084;">Best for final cleanup passes</div>
+            </div>
+            <div style="background:#f7f9fb;border:1px solid #d9e1e8;border-radius:8px;padding:10px 12px;">
+              <div style="font:700 14px Verdana, sans-serif;color:#2a3745;">Selected text only</div>
+              <div style="font-size:12px;color:#687887;">Enabled only when text is selected in Word</div>
+            </div>
+          </div>
+        </section>
+
+        <section style="background:#ffffff;border:1px solid #d6dee7;border-radius:10px;padding:14px 16px;box-shadow:0 1px 0 rgba(15,23,42,0.04);">
+          <div style="font-size:11px;text-transform:uppercase;color:#64748b;margin-bottom:10px;">4. Run Mode</div>
+          <div style="background:#f3f8f6;border:1px solid #cfe1d8;border-radius:8px;padding:12px;">
+            <div style="font:700 14px Verdana, sans-serif;color:#22473a;">Preview only</div>
+            <div style="font-size:12px;color:#5f776c;margin-top:4px;">Highlights matches in yellow and leaves the text unchanged.</div>
+          </div>
+          <div style="margin-top:10px;background:#fff7e8;border:1px solid #ecd9ab;border-radius:8px;padding:12px;">
+            <div style="font:700 13px Verdana, sans-serif;color:#6a4b00;">What this tool is good for</div>
+            <div style="font-size:12px;color:#7a6232;margin-top:4px;">Word docs assembled from PDFs, browser text, copied clauses, and mixed-platform files.</div>
+          </div>
+        </section>
+
+        <section style="background:#153b5d;border-radius:12px;padding:16px;color:#ffffff;box-shadow:0 10px 30px rgba(17,34,51,0.18);">
+          <div style="font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#a8c3db;margin-bottom:6px;">Action</div>
+          <div style="font:700 18px Verdana, sans-serif;margin-bottom:6px;">Run Cleanup</div>
+          <div style="font-size:13px;color:#d4e4f1;line-height:1.45;margin-bottom:14px;">The primary action is visually obvious, while Help and Preview feel nearby instead of interrupting the whole form.</div>
+          <div style="display:flex;gap:8px;">
+            <button class="mock-button" style="background:#dbe7f1;color:#17324e;">Help</button>
+            <button class="mock-button" style="background:#2e8b6b;">Preview</button>
+            <button class="mock-button" style="background:#ffffff;color:#153b5d;">Run</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>What changed from the current form</h3>
+  <p>This version turns the form into a sequence of decisions instead of one undifferentiated control stack. It elevates recommended defaults, makes the scope state easier to read, treats custom options like a secondary panel, and makes the run area feel intentional rather than tacked onto the bottom.</p>
+</div>
+
+<div class="section">
+  <h3>Still realistic for VBA</h3>
+  <p>This is more modern, but still plausible inside a Word UserForm if we simplify some visual effects. The biggest wins are layout, grouping, copy, button ordering, and reducing the “checkbox spreadsheet” feeling.</p>
+</div>

@@ -1,0 +1,111 @@
+<h2>CleanupSuite Form Directions</h2>
+<p class="subtitle">These are concept directions for making the VBA tool forms feel clearer, less Win95, and easier to move through without changing what Word UserForms can realistically do.</p>
+
+<div class="cards">
+  <div class="card" data-choice="direction-a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">A. Structured Utility</div>
+        <div class="mockup-body" style="background:#f7f3ea;padding:18px;">
+          <div style="font:700 22px Georgia, serif;color:#2d2418;margin-bottom:8px;">Invisible Unicode Cleaner</div>
+          <div style="color:#6a5a46;font-size:13px;margin-bottom:14px;">One focused task. Calm hierarchy. Cleaner labels.</div>
+          <div style="display:grid;grid-template-columns:1fr;gap:8px;">
+            <div style="background:#fff;border:1px solid #d9ccb8;padding:10px 12px;border-radius:8px;">Mode: All invisible characters</div>
+            <div style="background:#fff;border:1px solid #d9ccb8;padding:10px 12px;border-radius:8px;">Scope: Entire document / Selection</div>
+            <div style="background:#fff;border:1px solid #d9ccb8;padding:10px 12px;border-radius:8px;">Options: NBSP, ZWSP, ZWNJ, ZWJ, BOM...</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;">
+            <div style="font-size:12px;color:#7a6a57;">Preview only</div>
+            <div style="display:flex;gap:8px;">
+              <button class="mock-button" style="background:#eee5d8;color:#3f3425;">Help</button>
+              <button class="mock-button" style="background:#2e5b4f;">Run Cleanup</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Structured Utility</h3>
+      <p>Best if you want something clearly improved but still familiar to Word users. Stronger typography, grouped sections, better button order, less visual clutter.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="direction-b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">B. Guided Workflow</div>
+        <div class="mockup-body" style="background:#eef4f1;padding:18px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+            <div>
+              <div style="font:700 20px 'Trebuchet MS', sans-serif;color:#163b32;">Punctuation Normalizer</div>
+              <div style="font-size:12px;color:#527067;">Choose a mode, confirm scope, then run.</div>
+            </div>
+            <div style="font-size:11px;background:#d8e8e2;color:#255347;padding:5px 8px;border-radius:999px;">Step 1 of 3</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+            <div style="background:#ffffff;border:2px solid #2d6b59;padding:10px;border-radius:8px;">1. Mode</div>
+            <div style="background:#ffffff;border:1px solid #bcd1c9;padding:10px;border-radius:8px;">2. Scope</div>
+            <div style="background:#ffffff;border:1px solid #bcd1c9;padding:10px;border-radius:8px;">3. Review</div>
+          </div>
+          <div style="background:#ffffff;border:1px solid #bcd1c9;padding:12px;border-radius:8px;margin-bottom:10px;">Recommended: All punctuation types</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <button class="mock-button" style="background:#dfeae6;color:#24463d;">Why this?</button>
+            <button class="mock-button" style="background:#1f6a54;">Continue</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Guided Workflow</h3>
+      <p>Best if the current forms feel counter-intuitive. Each tool becomes a short sequence: choose mode, choose scope, review preview behavior, then run.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="direction-c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">C. Compact Modern Panel</div>
+        <div class="mockup-body" style="background:#f2f4f7;padding:18px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div style="font:700 20px Verdana, sans-serif;color:#1f2d3d;">Table Cleaner</div>
+            <div style="display:flex;gap:6px;">
+              <div style="width:28px;height:28px;border-radius:6px;background:#d9e1ea;"></div>
+              <div style="width:28px;height:28px;border-radius:6px;background:#d9e1ea;"></div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="background:#fff;border:1px solid #d4dce5;padding:10px;border-radius:8px;min-height:124px;">
+              <div style="font-size:11px;color:#5c7086;margin-bottom:8px;text-transform:uppercase;">Action Set</div>
+              <div style="height:10px;background:#e7edf3;border-radius:999px;margin-bottom:8px;"></div>
+              <div style="height:10px;background:#e7edf3;border-radius:999px;margin-bottom:8px;width:84%;"></div>
+              <div style="height:10px;background:#e7edf3;border-radius:999px;width:72%;"></div>
+            </div>
+            <div style="background:#fff;border:1px solid #d4dce5;padding:10px;border-radius:8px;min-height:124px;">
+              <div style="font-size:11px;color:#5c7086;margin-bottom:8px;text-transform:uppercase;">Context</div>
+              <div style="height:34px;background:#eff3f7;border-radius:8px;margin-bottom:8px;"></div>
+              <div style="height:34px;background:#eff3f7;border-radius:8px;"></div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
+            <div style="font-size:12px;color:#617487;">Preview highlights only</div>
+            <button class="mock-button" style="background:#275d8b;">Run</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Compact Modern Panel</h3>
+      <p>Best if you want the most visual lift. Feels more like a current utility app, with denser panels, stronger grouping, and less dependence on plain checkbox stacks.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>What I’m Reacting To In The Current Forms</h3>
+  <p>The current suite is functional, but it leans on long vertical checkbox lists, tiny `?` help buttons, fixed-width forms, and repeated scope/preview patterns that make many tools feel more alike than they should. The redesign work should improve orientation, action order, and confidence before it tries to be flashy.</p>
+</div>
+
+<div class="section">
+  <h3>Recommendation</h3>
+  <p><strong>Start from B, then borrow from A.</strong> The biggest usability win is making each tool feel like a short guided task instead of a pile of controls. We can keep the implementation realistic for VBA while still making it feel much more intentional.</p>
+</div>
