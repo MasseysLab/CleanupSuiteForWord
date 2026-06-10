@@ -295,7 +295,7 @@ To make the launcher feel more intuitive, use categories that reflect the user's
 Recommended launcher categories:
 
 - Text and Characters
-- Paragraphs and Lists
+- Paragraphs, Breaks, and Lists
 - Layout and Document Structure
 - Formatting, Links, and Styles
 - Review, Privacy, and Removals
@@ -308,7 +308,7 @@ Recommended tool placement:
   - `Spacing Fixer`
   - `Capitalization Fixer`
 
-- Paragraphs and Lists
+- Paragraphs, Breaks, and Lists
   - `List Normalizer`
   - `Paragraph Structure Fixer`
   - `Soft Return Converter`
@@ -335,6 +335,7 @@ Why this is better:
 
 - `Table Cleaner` is treated as a layout tool, which is how most users will think about it
 - `Break Normalizer` sits near other page-structure tools instead of text tools
+- `Soft Return Converter` has a better home because the category now explicitly includes breaks
 - `Document Trim` sits with visible document structure tools instead of being paired with metadata
 - `Metadata Scrubber` sits with privacy and removal tools, which better matches the user's intention before sharing
 - `Footnote / Endnote Remover` stops being hidden in a category that feels too technical or purely metadata-oriented
@@ -348,6 +349,63 @@ What can be done in the launcher:
 - allow search or quick filtering later if the suite keeps growing
 
 This should make the launcher feel less like a flat command inventory and more like an organized workshop.
+
+## Sub-tool Placement Review
+
+Most sub-tools are in the right general area, but several options should not be treated as ordinary checkboxes in the redesigned UI.
+
+The design should distinguish between:
+
+- safe cleanup options
+- conversion actions
+- destructive removal actions
+- final-review/privacy actions
+
+This matters because the current forms sometimes put very different levels of consequence side by side.
+
+### Keep inside the current tool, but redesign as clearer modes
+
+These options belong with their current parent tool, but should be presented as modes or grouped panels instead of flat checkbox rows.
+
+- `Table Cleaner`: keep `Remove empty rows`, `Remove empty columns`, `Normalize cell padding`, `Strip direct formatting`, `Normalize border styles`, and `Remove all borders` together. These all operate on table structure or presentation and make sense as table cleanup.
+- `Punctuation Normalizer`: keep quotes, dashes, ellipses, and custom punctuation choices together. They share the same mental model.
+- `Unicode Cleanup`: keep NBSP, zero-width characters, BOM, soft hyphen, and non-breaking hyphen together. The tool is coherent.
+- `Spacing Fixer`: keep double spaces, trim spaces, punctuation spacing, and blank-line cleanup together. These are all text spacing hygiene.
+- `Capitalization Fixer`: keep sentence/title/upper/lower/smart sentence options together, but present them as capitalization modes rather than a busy control cluster.
+- `Formatting Stripper`: keep emphasis-preservation modes and preserve-highlight/drop-cap options together because they are all part of the same formatting reset decision.
+
+### Keep inside the current tool, but make the risk visually obvious
+
+These options belong near the current parent tool, but the redesigned UI should elevate the consequence.
+
+- `Table Cleaner`: `Convert single-column tables to plain text` is a conversion action, not simple cleaning. Keep it in the table tool for now, but put it in a distinct `Convert` panel and require the preview/control-panel flow before applying.
+- `Header / Footer Standardizer`: `Clear all header/footer content` is destructive. Keep it in the same tool as an explicit mode, but visually separate it from `Standardize formatting`.
+- `Duplicate Paragraph Detector`: `Remove duplicate paragraphs` should become a post-preview action, not a first-step option. The tool should detect and show duplicates first; the compact preview panel can then offer `Remove duplicates`.
+- `Style Cleanup`: `Remove unused styles` and `Remap style variants` can stay together, but the UI should explain that one deletes unused custom styles and the other changes text style assignments before cleanup.
+
+### Consider splitting into separate tools later
+
+These sub-tools are conceptually strong enough that they may deserve their own tool, especially after the launcher redesign makes the suite easier to browse.
+
+- `Metadata Scrubber`: split the current tool into `Privacy Scrubber` and `Review Markup Finalizer`.
+- `Privacy Scrubber`: document properties and personal information.
+- `Review Markup Finalizer`: comments and tracked changes.
+- `Object Remover`: move `Hidden text` out of object removal and into the privacy/review family. Hidden text is document content/privacy, not an embedded object.
+- `Object Remover`: move `Tables -- DELETES tables and all their contents` out of the general object-removal list. If table deletion remains available, it should become a dedicated `Delete Tables` action near table/layout tools, with much stronger warnings.
+- `Footnote / Endnote Remover`: consider renaming it to `Footnote / Endnote Tools` if it keeps both delete and inline-convert behavior. `Keep note text inline` is a conversion path, not just a removal option.
+
+### Recommended near-term decision
+
+For the launcher redesign, do not create new tools yet.
+
+Instead:
+
+- keep the top-level tool list stable
+- improve categories and descriptions
+- mark risky sub-actions in the spec so the later form redesign handles them correctly
+- use the compact preview/control panel to make destructive follow-up actions feel deliberate
+
+This gives the launcher a cleaner structure now while avoiding a premature split of the VBA code.
 
 ## Action Model After Preview
 
