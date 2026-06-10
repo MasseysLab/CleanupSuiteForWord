@@ -7,6 +7,7 @@ This is the working priority list for turning CleanupSuite from a working Word V
 The current direction is clear:
 
 - keep the project useful and stable first
+- treat the current working baseline as `0.5.0`, not `1.0.0`
 - redesign the launcher before touching every individual form
 - build the preview/action model before deep tool-form polish
 - keep aiming toward a global `.dotm` template/add-in once behavior is solid
@@ -32,6 +33,8 @@ Do not treat `VBA_Cleanup_tool.txt` as the normal editing surface. Edit structur
 
 These are the safety tasks to keep the project recoverable before heavier UI changes.
 
+- Use the pre-1.0 version ladder in `VERSIONING.md`.
+- Keep `SUITE_VERSION` at `0.5.0` until the launcher redesign milestone is reached.
 - Push current committed design/spec work to GitHub when convenient.
 - Keep the existing backup zip and practice folder intact.
 - Before major VBA edits, make a fresh backup zip of the project folder.
@@ -46,6 +49,10 @@ The project has enough moving parts now that the risk is not one bad code line; 
 ## P1 - Launcher Redesign
 
 Do this first.
+
+Target milestone:
+
+`0.6.0`
 
 Goal:
 
@@ -79,6 +86,10 @@ Acceptance checks:
 ## P2 - Action Model After Preview
 
 Do this immediately after the launcher foundation.
+
+Target milestone:
+
+`0.7.0`
 
 Goal:
 
@@ -156,6 +167,10 @@ Acceptance checks:
 
 Do these before the simpler tools, because they will prove the design system.
 
+Target milestone:
+
+`0.8.0`
+
 First complex-tool candidates:
 
 - Invisible Unicode Cleaner
@@ -184,6 +199,10 @@ Acceptance checks:
 ## P5 - Simple Tool Form Redesign
 
 Do after the complex tools prove the system.
+
+Target milestone:
+
+`0.9.0`
 
 Tools:
 
@@ -230,6 +249,10 @@ Keep the current top-level tool list stable while improving categories, descript
 ## P7 - Global Word Add-in / Template
 
 Do after the suite is stable and the main workflows feel right.
+
+Target milestone:
+
+`1.0.0`
 
 Goal:
 
