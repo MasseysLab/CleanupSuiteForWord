@@ -457,48 +457,51 @@ End Sub
 
 Private Sub LayoutLauncherControls(comp As VBIDE.VBComponent, designer As Object)
     On Error Resume Next
-    Const FORM_W As Single = 520
-    Const MARGIN As Single = 12
+    Const FORM_W As Single = 690
+    Const MARGIN As Single = 14
     Const GAP As Single = 6
-    Const BTN_H As Single = 25
-    Const HELP_W As Single = 24
-    Dim colW As Single: colW = (FORM_W - (2 * MARGIN) - GAP) / 2
-    Dim toolW As Single: toolW = colW - HELP_W - 4
+    Dim contentW As Single: contentW = FORM_W - (2 * MARGIN)
     Dim y As Single: y = 12
-    Dim x As Single
 
-    Dim tools As Variant
-    tools = Array( _
-        Array("cmdUnicode", "cmdHelpUnicode"), _
-        Array("cmdPunctuation", "cmdHelpPunct"), _
-        Array("cmdSpacing", "cmdHelpSpacing"), _
-        Array("cmdCapitalization", "cmdHelpCap"), _
-        Array("cmdList", "cmdHelpList"), _
-        Array("cmdParagraph", "cmdHelpPara"), _
-        Array("cmdDuplicate", "cmdHelpDuplicate"), _
-        Array("cmdFontNorm", "cmdHelpFont"), _
-        Array("cmdTableClean", "cmdHelpTable"), _
-        Array("cmdBreakNorm", "cmdHelpBreak"), _
-        Array("cmdDocTrim", "cmdHelpTrim"), _
-        Array("cmdFormatStrip", "cmdHelpFormat"), _
-        Array("cmdHyperlink", "cmdHelpHyperlink"), _
-        Array("cmdSoftReturn", "cmdHelpSoftReturn"), _
-        Array("cmdMetadata", "cmdHelpMetadata"), _
-        Array("cmdStyleClean", "cmdHelpStyle"), _
-        Array("cmdFootnote", "cmdHelpFootnote"), _
-        Array("cmdHeaderFooter", "cmdHelpHeaderFooter"), _
-        Array("cmdObjectRemover", "cmdHelpObject"))
+    PositionControl designer, "lblLauncherTitle", MARGIN, y, contentW, 20
+    y = y + 22
+    PositionControl designer, "lblLauncherSubtitle", MARGIN, y, contentW, 28
+    y = y + 34
 
-    Dim i As Long, row As Long, col As Long
-    For i = LBound(tools) To UBound(tools)
-        row = i \ 2
-        col = i Mod 2
-        x = MARGIN + (col * (colW + GAP))
-        PositionControl designer, CStr(tools(i)(0)), x, y + (row * (BTN_H + GAP)), toolW, BTN_H
-        PositionControl designer, CStr(tools(i)(1)), x + toolW + 4, y + (row * (BTN_H + GAP)), HELP_W, BTN_H
-    Next i
+    y = LayoutLauncherCategory(designer, "lblCatText", MARGIN, y, contentW)
+    y = LayoutLauncherToolRow(designer, "cmdUnicode", "lblDescUnicode", "cmdHelpUnicode", MARGIN, y, contentW)
+    y = LayoutLauncherToolRow(designer, "cmdPunctuation", "lblDescPunctuation", "cmdHelpPunct", MARGIN, y, contentW)
+    y = LayoutLauncherToolRow(designer, "cmdSpacing", "lblDescSpacing", "cmdHelpSpacing", MARGIN, y, contentW)
+    y = LayoutLauncherToolRow(designer, "cmdCapitalization", "lblDescCapitalization", "cmdHelpCap", MARGIN, y, contentW)
+    y = y + GAP
 
-    y = y + (((UBound(tools) + 2) \ 2) * (BTN_H + GAP)) + 4
+    y = LayoutLauncherCategory(designer, "lblCatPara", MARGIN, y, contentW)
+    y = LayoutLauncherToolRow(designer, "cmdList", "lblDescList", "cmdHelpList", MARGIN, y, contentW)
+    y = LayoutLauncherToolRow(designer, "cmdParagraph", "lblDescParagraph", "cmdHelpPara", MARGIN, y, contentW)
+    y = LayoutLauncherToolRow(designer, "cmdSoftReturn", "lblDescSoftReturn", "cmdHelpSoftReturn", MARGIN, y, contentW)
+    y = LayoutLauncherToolRow(designer, "cmdDuplicate", "lblDescDuplicate", "cmdHelpDuplicate", MARGIN, y, contentW)
+    y = y + GAP
+
+    y = LayoutLauncherCategory(designer, "lblCatLayout", MARGIN, y, contentW)
+    y = LayoutLauncherToolRow(designer, "cmdTableClean", "lblDescTableClean", "cmdHelpTable", MARGIN, y, contentW)
+    y = LayoutLauncherToolRow(designer, "cmdBreakNorm", "lblDescBreakNorm", "cmdHelpBreak", MARGIN, y, contentW)
+    y = LayoutLauncherToolRow(designer, "cmdHeaderFooter", "lblDescHeaderFooter", "cmdHelpHeaderFooter", MARGIN, y, contentW)
+    y = LayoutLauncherToolRow(designer, "cmdDocTrim", "lblDescDocTrim", "cmdHelpTrim", MARGIN, y, contentW)
+    y = y + GAP
+
+    y = LayoutLauncherCategory(designer, "lblCatFormat", MARGIN, y, contentW)
+    y = LayoutLauncherToolRow(designer, "cmdFontNorm", "lblDescFontNorm", "cmdHelpFont", MARGIN, y, contentW)
+    y = LayoutLauncherToolRow(designer, "cmdFormatStrip", "lblDescFormatStrip", "cmdHelpFormat", MARGIN, y, contentW)
+    y = LayoutLauncherToolRow(designer, "cmdStyleClean", "lblDescStyleClean", "cmdHelpStyle", MARGIN, y, contentW)
+    y = LayoutLauncherToolRow(designer, "cmdHyperlink", "lblDescHyperlink", "cmdHelpHyperlink", MARGIN, y, contentW)
+    y = y + GAP
+
+    y = LayoutLauncherCategory(designer, "lblCatReview", MARGIN, y, contentW)
+    y = LayoutLauncherToolRow(designer, "cmdMetadata", "lblDescMetadata", "cmdHelpMetadata", MARGIN, y, contentW)
+    y = LayoutLauncherToolRow(designer, "cmdFootnote", "lblDescFootnote", "cmdHelpFootnote", MARGIN, y, contentW)
+    y = LayoutLauncherToolRow(designer, "cmdObjectRemover", "lblDescObjectRemover", "cmdHelpObject", MARGIN, y, contentW)
+    y = y + 8
+
     PositionControl designer, "chkAutoSave", MARGIN + 2, y, FORM_W - (2 * MARGIN), 18
 
     comp.Properties("Width") = FORM_W + 8
@@ -506,6 +509,27 @@ Private Sub LayoutLauncherControls(comp As VBIDE.VBComponent, designer As Object
     designer.Width = FORM_W + 8
     designer.Height = y + 58
 End Sub
+
+Private Function LayoutLauncherCategory(designer As Object, labelName As String, L As Single, T As Single, W As Single) As Single
+    On Error Resume Next
+    PositionControl designer, labelName, L, T, W, 18
+    LayoutLauncherCategory = T + 20
+End Function
+
+Private Function LayoutLauncherToolRow(designer As Object, buttonName As String, descName As String, helpName As String, L As Single, T As Single, W As Single) As Single
+    On Error Resume Next
+    Const ROW_H As Single = 32
+    Const BTN_W As Single = 150
+    Const HELP_W As Single = 24
+    Const INNER_GAP As Single = 8
+    Dim descW As Single
+    descW = W - BTN_W - HELP_W - (2 * INNER_GAP)
+
+    PositionControl designer, buttonName, L, T, BTN_W, ROW_H
+    PositionControl designer, descName, L + BTN_W + INNER_GAP, T + 1, descW, ROW_H
+    PositionControl designer, helpName, L + W - HELP_W, T + 4, HELP_W, 24
+    LayoutLauncherToolRow = T + ROW_H + 4
+End Function
 
 Private Sub PositionControl(designer As Object, nm As String, L As Single, T As Single, W As Single, H As Single)
     On Error Resume Next
@@ -560,6 +584,25 @@ Private Sub ApplyControlStyle(designer As Object, formName As String, nm As Stri
             ctl.BackColor = RGB(248, 249, 251)
             ctl.ForeColor = RGB(84, 91, 104)
             If Len(ControlCaptionText(formName, nm)) > 0 Then ctl.Caption = ControlCaptionText(formName, nm)
+            If formName = "frmCleanupSuiteLauncher" Then
+                ctl.WordWrap = True
+                ctl.AutoSize = False
+                If nm = "lblLauncherTitle" Then
+                    ctl.Font.Size = 14
+                    ctl.Font.Bold = True
+                    ctl.ForeColor = RGB(28, 43, 58)
+                ElseIf nm = "lblLauncherSubtitle" Then
+                    ctl.Font.Size = 8.5
+                    ctl.ForeColor = RGB(88, 101, 116)
+                ElseIf Left$(nm, 6) = "lblCat" Then
+                    ctl.Font.Size = 9
+                    ctl.Font.Bold = True
+                    ctl.ForeColor = RGB(38, 91, 137)
+                ElseIf Left$(nm, 7) = "lblDesc" Then
+                    ctl.Font.Size = 8
+                    ctl.ForeColor = RGB(93, 105, 119)
+                End If
+            End If
         Case "chk", "opt"
             ctl.BackColor = RGB(248, 249, 251)
             If Len(ControlCaptionText(formName, nm)) > 0 Then ctl.Caption = ControlCaptionText(formName, nm)
@@ -593,6 +636,32 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmCapitalizationCleanup.optTitle": ControlCaptionText = "Title case"
         Case "frmCapitalizationCleanup.optUpper": ControlCaptionText = "ALL CAPS -> Title Case"
         Case "frmCleanupSuiteLauncher.chkAutoSave": ControlCaptionText = "Auto-save before running each tool"
+        Case "frmCleanupSuiteLauncher.lblLauncherTitle": ControlCaptionText = "Cleanup Suite"
+        Case "frmCleanupSuiteLauncher.lblLauncherSubtitle": ControlCaptionText = "Choose the kind of cleanup you need. Tools are grouped by what you are trying to fix, not by how the VBA code is built."
+        Case "frmCleanupSuiteLauncher.lblCatText": ControlCaptionText = "Text and Characters"
+        Case "frmCleanupSuiteLauncher.lblCatPara": ControlCaptionText = "Paragraphs, Breaks, and Lists"
+        Case "frmCleanupSuiteLauncher.lblCatLayout": ControlCaptionText = "Layout and Document Structure"
+        Case "frmCleanupSuiteLauncher.lblCatFormat": ControlCaptionText = "Formatting, Links, and Styles"
+        Case "frmCleanupSuiteLauncher.lblCatReview": ControlCaptionText = "Review, Privacy, and Removals"
+        Case "frmCleanupSuiteLauncher.lblDescUnicode": ControlCaptionText = "Remove invisible Unicode characters that break search, sorting, and export."
+        Case "frmCleanupSuiteLauncher.lblDescPunctuation": ControlCaptionText = "Normalize smart quotes, dashes, ellipses, and plain-text punctuation."
+        Case "frmCleanupSuiteLauncher.lblDescSpacing": ControlCaptionText = "Fix extra spaces, punctuation spacing, and repeated blank lines."
+        Case "frmCleanupSuiteLauncher.lblDescCapitalization": ControlCaptionText = "Apply sentence, title, upper, lower, or smart capitalization cleanup."
+        Case "frmCleanupSuiteLauncher.lblDescList": ControlCaptionText = "Normalize manual bullets, numbering, and list indentation."
+        Case "frmCleanupSuiteLauncher.lblDescParagraph": ControlCaptionText = "Clean empty paragraphs, paragraph spacing, and manual indents."
+        Case "frmCleanupSuiteLauncher.lblDescSoftReturn": ControlCaptionText = "Convert Shift+Enter line breaks to paragraph marks, or reverse that conversion."
+        Case "frmCleanupSuiteLauncher.lblDescDuplicate": ControlCaptionText = "Find repeated or near-duplicate paragraphs before deciding what to remove."
+        Case "frmCleanupSuiteLauncher.lblDescTableClean": ControlCaptionText = "Clean table structure, padding, borders, direct formatting, or convert simple tables."
+        Case "frmCleanupSuiteLauncher.lblDescBreakNorm": ControlCaptionText = "Collapse or convert section and page breaks from assembled documents."
+        Case "frmCleanupSuiteLauncher.lblDescHeaderFooter": ControlCaptionText = "Standardize or clear headers and footers across document sections."
+        Case "frmCleanupSuiteLauncher.lblDescDocTrim": ControlCaptionText = "Remove trailing empty paragraphs at the end of the document."
+        Case "frmCleanupSuiteLauncher.lblDescFontNorm": ControlCaptionText = "Reset direct font face, size, color, bold, and italic overrides."
+        Case "frmCleanupSuiteLauncher.lblDescFormatStrip": ControlCaptionText = "Strip direct character and paragraph formatting while preserving styles."
+        Case "frmCleanupSuiteLauncher.lblDescStyleClean": ControlCaptionText = "Remove unused custom styles or remap common style variants."
+        Case "frmCleanupSuiteLauncher.lblDescHyperlink": ControlCaptionText = "Remove links while keeping visible text, with optional hyperlink styling cleanup."
+        Case "frmCleanupSuiteLauncher.lblDescMetadata": ControlCaptionText = "Scrub document properties, personal info, comments, and tracked changes."
+        Case "frmCleanupSuiteLauncher.lblDescFootnote": ControlCaptionText = "Remove footnotes or endnotes, optionally keeping note text inline."
+        Case "frmCleanupSuiteLauncher.lblDescObjectRemover": ControlCaptionText = "Remove embedded clutter such as images, text boxes, controls, hidden text, or tables."
         Case "frmDocumentTrim.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
         Case "frmDocumentTrim.optScopeDocument": ControlCaptionText = "Entire document (always)"
         Case "frmDuplicateDetector.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
@@ -855,10 +924,12 @@ End Function
 Private Function ControlsForForm(formName As String) As Variant
     Select Case formName
         Case "frmCleanupSuiteLauncher"
-            ControlsForForm = Array("cmdUnicode", "cmdPunctuation", "cmdSpacing", "cmdCapitalization", "cmdList", "cmdParagraph", _
-                                    "cmdDuplicate", "cmdFontNorm", "cmdTableClean", "cmdBreakNorm", "cmdDocTrim", "cmdFormatStrip", "cmdHyperlink", "cmdSoftReturn", "cmdMetadata", "cmdStyleClean", "cmdFootnote", "cmdHeaderFooter", "cmdObjectRemover", "chkAutoSave", _
-                                    "cmdHelpUnicode", "cmdHelpPunct", "cmdHelpSpacing", "cmdHelpCap", "cmdHelpList", "cmdHelpPara", _
-                                    "cmdHelpDuplicate", "cmdHelpFont", "cmdHelpTable", "cmdHelpBreak", "cmdHelpTrim", "cmdHelpFormat", "cmdHelpHyperlink", "cmdHelpSoftReturn", "cmdHelpMetadata", "cmdHelpStyle", "cmdHelpFootnote", "cmdHelpHeaderFooter", "cmdHelpObject")
+            ControlsForForm = Array("lblLauncherTitle", "lblLauncherSubtitle", _
+                                    "lblCatText", "cmdUnicode", "lblDescUnicode", "cmdHelpUnicode", "cmdPunctuation", "lblDescPunctuation", "cmdHelpPunct", "cmdSpacing", "lblDescSpacing", "cmdHelpSpacing", "cmdCapitalization", "lblDescCapitalization", "cmdHelpCap", _
+                                    "lblCatPara", "cmdList", "lblDescList", "cmdHelpList", "cmdParagraph", "lblDescParagraph", "cmdHelpPara", "cmdSoftReturn", "lblDescSoftReturn", "cmdHelpSoftReturn", "cmdDuplicate", "lblDescDuplicate", "cmdHelpDuplicate", _
+                                    "lblCatLayout", "cmdTableClean", "lblDescTableClean", "cmdHelpTable", "cmdBreakNorm", "lblDescBreakNorm", "cmdHelpBreak", "cmdHeaderFooter", "lblDescHeaderFooter", "cmdHelpHeaderFooter", "cmdDocTrim", "lblDescDocTrim", "cmdHelpTrim", _
+                                    "lblCatFormat", "cmdFontNorm", "lblDescFontNorm", "cmdHelpFont", "cmdFormatStrip", "lblDescFormatStrip", "cmdHelpFormat", "cmdStyleClean", "lblDescStyleClean", "cmdHelpStyle", "cmdHyperlink", "lblDescHyperlink", "cmdHelpHyperlink", _
+                                    "lblCatReview", "cmdMetadata", "lblDescMetadata", "cmdHelpMetadata", "cmdFootnote", "lblDescFootnote", "cmdHelpFootnote", "cmdObjectRemover", "lblDescObjectRemover", "cmdHelpObject", "chkAutoSave")
         Case "frmPunctuationCleanup"
             ControlsForForm = Array("optAll", "optQuotes", "optDashes", "optEllipses", "optCustom", "fraCustom", _
                                     "chkCurlyDouble", "chkCurlySingle", "chkEmDash", "chkEnDash", "chkEllipses", _
@@ -1118,7 +1189,7 @@ End Function
 Private Function modCleanupLauncher_Code() As String
     Dim s As String
     s = s & "Option Explicit" & vbCrLf
-    s = s & "Public Const SUITE_VERSION As String = ""0.5.0""" & vbCrLf
+    s = s & "Public Const SUITE_VERSION As String = ""0.6.0""" & vbCrLf
     s = s & "Public gRibbon As Object   ' IRibbonUI -- stored for optional Invalidate calls" & vbCrLf
     s = s & "Sub ShowCleanupSuiteLauncher()" & vbCrLf
     s = s & "    frmCleanupSuiteLauncher.Show" & vbCrLf

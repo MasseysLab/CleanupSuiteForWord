@@ -6,9 +6,9 @@ The project uses a simple SemVer-style ladder, but with `0.x.0` milestones until
 
 ## Current Version
 
-`0.5.0`
+`0.6.0`
 
-This means the suite is useful and working, but still in active product-shaping mode.
+This means the working suite baseline now includes the category-based launcher redesign.
 
 ## Roadmap
 
