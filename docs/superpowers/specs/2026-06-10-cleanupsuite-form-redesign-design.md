@@ -279,15 +279,158 @@ The launcher should feel like a curated toolbox, not a spreadsheet of commands.
 
 ## Tool Categories
 
-To make the suite more fluid conceptually, group tools visually into categories on the launcher:
+The original category idea was useful, but it is too coarse for a few specific tools.
 
-- Text cleanup
-- Structure cleanup
-- Formatting cleanup
-- Document cleanup
-- Metadata and objects
+The main friction points are:
 
-This makes the suite easier to learn and reduces the feeling that every tool is unrelated.
+- `Table Cleaner` is partly structure cleanup and partly formatting cleanup
+- `Break Normalizer` and `Soft Return Converter` both change structure, but they feel very different from paragraph/list cleanup
+- `Footnote / Endnote Remover` is not really metadata, but it is also not purely text cleanup
+- `Header / Footer Standardizer` is document structure plus formatting, not just formatting
+- `Style Cleanup` is document-wide hygiene and does not sit naturally beside local formatting tools
+
+To make the launcher feel more intuitive, use categories that reflect the user's mental model of the task rather than the implementation type.
+
+Recommended launcher categories:
+
+- Text and Characters
+- Paragraphs and Lists
+- Tables and Layout
+- Formatting and Styles
+- Document Cleanup
+- Review, Notes, and Embedded Content
+
+Recommended tool placement:
+
+- Text and Characters
+  - `Invisible Unicode Cleaner`
+  - `Punctuation Normalizer`
+  - `Spacing Fixer`
+  - `Capitalization Fixer`
+
+- Paragraphs and Lists
+  - `List Normalizer`
+  - `Paragraph Structure Fixer`
+  - `Soft Return Converter`
+  - `Duplicate Paragraph Detector`
+
+- Tables and Layout
+  - `Table Cleaner`
+  - `Break Normalizer`
+  - `Header / Footer Standardizer`
+
+- Formatting and Styles
+  - `Font Normalizer`
+  - `Formatting Stripper`
+  - `Style Cleanup`
+  - `Hyperlink Remover`
+
+- Document Cleanup
+  - `Document Trim`
+  - `Metadata Scrubber`
+
+- Review, Notes, and Embedded Content
+  - `Footnote / Endnote Remover`
+  - `Object Remover`
+
+Why this is better:
+
+- `Table Cleaner` is treated as a layout tool, which is how most users will think about it
+- `Break Normalizer` sits near other page-structure tools instead of text tools
+- `Footnote / Endnote Remover` stops being hidden in a category that feels too technical
+- `Metadata Scrubber` is separated from visible content-removal tools, which better matches the user's intention
+- the categories are more descriptive of what the user is trying to clean up
+
+What can be done in the launcher:
+
+- show category bands or collapsible sections
+- let the launcher open on the last-used category
+- surface 3 to 5 "most used" tools above the categories
+- allow search or quick filtering later if the suite keeps growing
+
+This should make the launcher feel less like a flat command inventory and more like an organized workshop.
+
+## Action Model After Preview
+
+The current preview and run model is awkward if the main form remains open and in the way while the user examines the document.
+
+That awkwardness becomes more visible as the forms become more polished, because the user expects the interaction model to be polished too.
+
+The redesign should introduce a second-stage action pattern:
+
+- the main form gathers decisions
+- preview runs and then gets out of the way
+- a smaller control surface remains available while the user inspects the document
+
+This is the right place to use a compact control panel.
+
+### Recommended interaction flow
+
+1. User configures the tool in the main form
+2. User clicks `Preview`
+3. The main form closes or minimizes out of the way
+4. A compact floating control panel appears
+5. The user reviews the document and then decides what to do next
+
+### Compact control panel actions
+
+The small panel should contain only the actions that matter after preview.
+
+Recommended controls:
+
+- `Undo`
+- `Apply` or `Do It`
+- `Close Preview`
+- `Stop` when a tool may run long or iterate heavily
+- optional `Back to Options` when returning to the full form is useful
+
+Naming guidance:
+
+- use `Apply` for the general case
+- use `Do It` only if the suite intentionally adopts a more conversational tone everywhere
+- use `Close Preview` instead of a vague `Cancel`
+- use `Stop` only for tools that genuinely need interruption support
+
+### Which tools benefit most from the compact panel
+
+This pattern is most valuable for:
+
+- `Duplicate Paragraph Detector`
+- `Formatting Stripper`
+- `Object Remover`
+- `Unicode Cleanup`
+- `Paragraph Structure Fixer`
+- `Table Cleaner`
+
+It is less necessary for very simple tools, but using the same pattern selectively is still fine if the compact panel remains minimal.
+
+### Why this improves usability
+
+- the document becomes the main thing on screen during review
+- the suite stops blocking the user's view
+- preview feels like a real review state rather than a checkbox mode
+- the user gets an immediate path to undo, stop, or apply without reopening the full form
+
+### VBA realism
+
+Inside Word/VBA, the compact panel should be simple and robust.
+
+It should probably be:
+
+- a smaller secondary UserForm
+- modeless where reliable
+- visually reduced to a narrow action strip or small floating panel
+- consistent across tools, even if not every button is enabled for every tool
+
+This should not try to become a full inspector pane.
+
+The implementation should favor:
+
+- consistency
+- low obstruction
+- very clear verbs
+
+over visual novelty.
 
 ## Modernization Without Breaking Trust
 
@@ -329,7 +472,27 @@ Define the shared form language:
 
 Update the suite launcher first so the whole product feels changed immediately.
 
-### Stage 3: complex tools
+This stage should include:
+
+- new category structure
+- compact tool-card or tool-row presentation
+- integrated help access
+- category ordering tuned to the actual tool set
+
+### Stage 3: post-preview control panel
+
+Build the compact review/action panel pattern before redesigning every individual tool.
+
+This creates the suite-wide interaction model for:
+
+- preview review
+- apply after preview
+- undo
+- stop for long-running tools
+
+Once this exists, the individual forms can be designed around it instead of continuing to treat preview as a buried checkbox.
+
+### Stage 4: complex tools
 
 Apply the full `C` treatment to:
 
@@ -340,11 +503,11 @@ Apply the full `C` treatment to:
 - `frmHeaderFooterStandardizer`
 - `frmTableCleaner`
 
-### Stage 4: simple tools
+### Stage 5: simple tools
 
 Apply the lighter version to the simpler forms.
 
-### Stage 5: polish pass
+### Stage 6: polish pass
 
 Normalize:
 
