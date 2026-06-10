@@ -457,50 +457,58 @@ End Sub
 
 Private Sub LayoutLauncherControls(comp As VBIDE.VBComponent, designer As Object)
     On Error Resume Next
-    Const FORM_W As Single = 690
+    Const FORM_W As Single = 840
     Const MARGIN As Single = 14
     Const GAP As Single = 6
+    Const COL_GAP As Single = 14
     Dim contentW As Single: contentW = FORM_W - (2 * MARGIN)
+    Const COL_W As Single = (FORM_W - (2 * MARGIN) - COL_GAP) / 2
+    Const LEFT_X As Single = MARGIN
+    Const RIGHT_X As Single = MARGIN + COL_W + COL_GAP
     Dim y As Single: y = 12
+    Dim yLeft As Single
+    Dim yRight As Single
 
     PositionControl designer, "lblLauncherTitle", MARGIN, y, contentW, 20
     y = y + 22
     PositionControl designer, "lblLauncherSubtitle", MARGIN, y, contentW, 28
     y = y + 34
 
-    y = LayoutLauncherCategory(designer, "lblCatText", MARGIN, y, contentW)
-    y = LayoutLauncherToolRow(designer, "cmdUnicode", "lblDescUnicode", "cmdHelpUnicode", MARGIN, y, contentW)
-    y = LayoutLauncherToolRow(designer, "cmdPunctuation", "lblDescPunctuation", "cmdHelpPunct", MARGIN, y, contentW)
-    y = LayoutLauncherToolRow(designer, "cmdSpacing", "lblDescSpacing", "cmdHelpSpacing", MARGIN, y, contentW)
-    y = LayoutLauncherToolRow(designer, "cmdCapitalization", "lblDescCapitalization", "cmdHelpCap", MARGIN, y, contentW)
-    y = y + GAP
+    yLeft = y
+    yLeft = LayoutLauncherCategory(designer, "lblCatText", LEFT_X, yLeft, COL_W)
+    yLeft = LayoutLauncherToolRow(designer, "cmdHelpUnicode", "cmdUnicode", "lblDescUnicode", LEFT_X, yLeft, COL_W)
+    yLeft = LayoutLauncherToolRow(designer, "cmdHelpPunct", "cmdPunctuation", "lblDescPunctuation", LEFT_X, yLeft, COL_W)
+    yLeft = LayoutLauncherToolRow(designer, "cmdHelpSpacing", "cmdSpacing", "lblDescSpacing", LEFT_X, yLeft, COL_W)
+    yLeft = LayoutLauncherToolRow(designer, "cmdHelpCap", "cmdCapitalization", "lblDescCapitalization", LEFT_X, yLeft, COL_W)
+    yLeft = yLeft + GAP
 
-    y = LayoutLauncherCategory(designer, "lblCatPara", MARGIN, y, contentW)
-    y = LayoutLauncherToolRow(designer, "cmdList", "lblDescList", "cmdHelpList", MARGIN, y, contentW)
-    y = LayoutLauncherToolRow(designer, "cmdParagraph", "lblDescParagraph", "cmdHelpPara", MARGIN, y, contentW)
-    y = LayoutLauncherToolRow(designer, "cmdSoftReturn", "lblDescSoftReturn", "cmdHelpSoftReturn", MARGIN, y, contentW)
-    y = LayoutLauncherToolRow(designer, "cmdDuplicate", "lblDescDuplicate", "cmdHelpDuplicate", MARGIN, y, contentW)
-    y = y + GAP
+    yLeft = LayoutLauncherCategory(designer, "lblCatPara", LEFT_X, yLeft, COL_W)
+    yLeft = LayoutLauncherToolRow(designer, "cmdHelpList", "cmdList", "lblDescList", LEFT_X, yLeft, COL_W)
+    yLeft = LayoutLauncherToolRow(designer, "cmdHelpPara", "cmdParagraph", "lblDescParagraph", LEFT_X, yLeft, COL_W)
+    yLeft = LayoutLauncherToolRow(designer, "cmdHelpSoftReturn", "cmdSoftReturn", "lblDescSoftReturn", LEFT_X, yLeft, COL_W)
+    yLeft = LayoutLauncherToolRow(designer, "cmdHelpDuplicate", "cmdDuplicate", "lblDescDuplicate", LEFT_X, yLeft, COL_W)
+    yLeft = yLeft + GAP
 
-    y = LayoutLauncherCategory(designer, "lblCatLayout", MARGIN, y, contentW)
-    y = LayoutLauncherToolRow(designer, "cmdTableClean", "lblDescTableClean", "cmdHelpTable", MARGIN, y, contentW)
-    y = LayoutLauncherToolRow(designer, "cmdBreakNorm", "lblDescBreakNorm", "cmdHelpBreak", MARGIN, y, contentW)
-    y = LayoutLauncherToolRow(designer, "cmdHeaderFooter", "lblDescHeaderFooter", "cmdHelpHeaderFooter", MARGIN, y, contentW)
-    y = LayoutLauncherToolRow(designer, "cmdDocTrim", "lblDescDocTrim", "cmdHelpTrim", MARGIN, y, contentW)
-    y = y + GAP
+    yRight = y
+    yRight = LayoutLauncherCategory(designer, "lblCatLayout", RIGHT_X, yRight, COL_W)
+    yRight = LayoutLauncherToolRow(designer, "cmdHelpTable", "cmdTableClean", "lblDescTableClean", RIGHT_X, yRight, COL_W)
+    yRight = LayoutLauncherToolRow(designer, "cmdHelpBreak", "cmdBreakNorm", "lblDescBreakNorm", RIGHT_X, yRight, COL_W)
+    yRight = LayoutLauncherToolRow(designer, "cmdHelpHeaderFooter", "cmdHeaderFooter", "lblDescHeaderFooter", RIGHT_X, yRight, COL_W)
+    yRight = LayoutLauncherToolRow(designer, "cmdHelpTrim", "cmdDocTrim", "lblDescDocTrim", RIGHT_X, yRight, COL_W)
+    yRight = yRight + GAP
 
-    y = LayoutLauncherCategory(designer, "lblCatFormat", MARGIN, y, contentW)
-    y = LayoutLauncherToolRow(designer, "cmdFontNorm", "lblDescFontNorm", "cmdHelpFont", MARGIN, y, contentW)
-    y = LayoutLauncherToolRow(designer, "cmdFormatStrip", "lblDescFormatStrip", "cmdHelpFormat", MARGIN, y, contentW)
-    y = LayoutLauncherToolRow(designer, "cmdStyleClean", "lblDescStyleClean", "cmdHelpStyle", MARGIN, y, contentW)
-    y = LayoutLauncherToolRow(designer, "cmdHyperlink", "lblDescHyperlink", "cmdHelpHyperlink", MARGIN, y, contentW)
-    y = y + GAP
+    yRight = LayoutLauncherCategory(designer, "lblCatFormat", RIGHT_X, yRight, COL_W)
+    yRight = LayoutLauncherToolRow(designer, "cmdHelpFont", "cmdFontNorm", "lblDescFontNorm", RIGHT_X, yRight, COL_W)
+    yRight = LayoutLauncherToolRow(designer, "cmdHelpFormat", "cmdFormatStrip", "lblDescFormatStrip", RIGHT_X, yRight, COL_W)
+    yRight = LayoutLauncherToolRow(designer, "cmdHelpStyle", "cmdStyleClean", "lblDescStyleClean", RIGHT_X, yRight, COL_W)
+    yRight = LayoutLauncherToolRow(designer, "cmdHelpHyperlink", "cmdHyperlink", "lblDescHyperlink", RIGHT_X, yRight, COL_W)
+    yRight = yRight + GAP
 
-    y = LayoutLauncherCategory(designer, "lblCatReview", MARGIN, y, contentW)
-    y = LayoutLauncherToolRow(designer, "cmdMetadata", "lblDescMetadata", "cmdHelpMetadata", MARGIN, y, contentW)
-    y = LayoutLauncherToolRow(designer, "cmdFootnote", "lblDescFootnote", "cmdHelpFootnote", MARGIN, y, contentW)
-    y = LayoutLauncherToolRow(designer, "cmdObjectRemover", "lblDescObjectRemover", "cmdHelpObject", MARGIN, y, contentW)
-    y = y + 8
+    yRight = LayoutLauncherCategory(designer, "lblCatReview", RIGHT_X, yRight, COL_W)
+    yRight = LayoutLauncherToolRow(designer, "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", RIGHT_X, yRight, COL_W)
+    yRight = LayoutLauncherToolRow(designer, "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", RIGHT_X, yRight, COL_W)
+    yRight = LayoutLauncherToolRow(designer, "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", RIGHT_X, yRight, COL_W)
+    y = MaxSingle(yLeft, yRight) + 8
 
     PositionControl designer, "chkAutoSave", MARGIN + 2, y, FORM_W - (2 * MARGIN), 18
 
@@ -516,19 +524,27 @@ Private Function LayoutLauncherCategory(designer As Object, labelName As String,
     LayoutLauncherCategory = T + 20
 End Function
 
-Private Function LayoutLauncherToolRow(designer As Object, buttonName As String, descName As String, helpName As String, L As Single, T As Single, W As Single) As Single
+Private Function LayoutLauncherToolRow(designer As Object, helpName As String, buttonName As String, descName As String, L As Single, T As Single, W As Single) As Single
     On Error Resume Next
     Const ROW_H As Single = 32
-    Const BTN_W As Single = 150
+    Const BTN_W As Single = 132
     Const HELP_W As Single = 24
     Const INNER_GAP As Single = 8
     Dim descW As Single
     descW = W - BTN_W - HELP_W - (2 * INNER_GAP)
 
-    PositionControl designer, buttonName, L, T, BTN_W, ROW_H
-    PositionControl designer, descName, L + BTN_W + INNER_GAP, T + 1, descW, ROW_H
-    PositionControl designer, helpName, L + W - HELP_W, T + 4, HELP_W, 24
+    PositionControl designer, helpName, L, T + 4, HELP_W, 24
+    PositionControl designer, buttonName, L + HELP_W + INNER_GAP, T, BTN_W, ROW_H
+    PositionControl designer, descName, L + HELP_W + BTN_W + (2 * INNER_GAP), T + 1, descW, ROW_H
     LayoutLauncherToolRow = T + ROW_H + 4
+End Function
+
+Private Function MaxSingle(a As Single, b As Single) As Single
+    If a >= b Then
+        MaxSingle = a
+    Else
+        MaxSingle = b
+    End If
 End Function
 
 Private Sub PositionControl(designer As Object, nm As String, L As Single, T As Single, W As Single, H As Single)
@@ -925,11 +941,11 @@ Private Function ControlsForForm(formName As String) As Variant
     Select Case formName
         Case "frmCleanupSuiteLauncher"
             ControlsForForm = Array("lblLauncherTitle", "lblLauncherSubtitle", _
-                                    "lblCatText", "cmdUnicode", "lblDescUnicode", "cmdHelpUnicode", "cmdPunctuation", "lblDescPunctuation", "cmdHelpPunct", "cmdSpacing", "lblDescSpacing", "cmdHelpSpacing", "cmdCapitalization", "lblDescCapitalization", "cmdHelpCap", _
-                                    "lblCatPara", "cmdList", "lblDescList", "cmdHelpList", "cmdParagraph", "lblDescParagraph", "cmdHelpPara", "cmdSoftReturn", "lblDescSoftReturn", "cmdHelpSoftReturn", "cmdDuplicate", "lblDescDuplicate", "cmdHelpDuplicate", _
-                                    "lblCatLayout", "cmdTableClean", "lblDescTableClean", "cmdHelpTable", "cmdBreakNorm", "lblDescBreakNorm", "cmdHelpBreak", "cmdHeaderFooter", "lblDescHeaderFooter", "cmdHelpHeaderFooter", "cmdDocTrim", "lblDescDocTrim", "cmdHelpTrim", _
-                                    "lblCatFormat", "cmdFontNorm", "lblDescFontNorm", "cmdHelpFont", "cmdFormatStrip", "lblDescFormatStrip", "cmdHelpFormat", "cmdStyleClean", "lblDescStyleClean", "cmdHelpStyle", "cmdHyperlink", "lblDescHyperlink", "cmdHelpHyperlink", _
-                                    "lblCatReview", "cmdMetadata", "lblDescMetadata", "cmdHelpMetadata", "cmdFootnote", "lblDescFootnote", "cmdHelpFootnote", "cmdObjectRemover", "lblDescObjectRemover", "cmdHelpObject", "chkAutoSave")
+                                    "lblCatText", "cmdHelpUnicode", "cmdUnicode", "lblDescUnicode", "cmdHelpPunct", "cmdPunctuation", "lblDescPunctuation", "cmdHelpSpacing", "cmdSpacing", "lblDescSpacing", "cmdHelpCap", "cmdCapitalization", "lblDescCapitalization", _
+                                    "lblCatPara", "cmdHelpList", "cmdList", "lblDescList", "cmdHelpPara", "cmdParagraph", "lblDescParagraph", "cmdHelpSoftReturn", "cmdSoftReturn", "lblDescSoftReturn", "cmdHelpDuplicate", "cmdDuplicate", "lblDescDuplicate", _
+                                    "lblCatLayout", "cmdHelpTable", "cmdTableClean", "lblDescTableClean", "cmdHelpBreak", "cmdBreakNorm", "lblDescBreakNorm", "cmdHelpHeaderFooter", "cmdHeaderFooter", "lblDescHeaderFooter", "cmdHelpTrim", "cmdDocTrim", "lblDescDocTrim", _
+                                    "lblCatFormat", "cmdHelpFont", "cmdFontNorm", "lblDescFontNorm", "cmdHelpFormat", "cmdFormatStrip", "lblDescFormatStrip", "cmdHelpStyle", "cmdStyleClean", "lblDescStyleClean", "cmdHelpHyperlink", "cmdHyperlink", "lblDescHyperlink", _
+                                    "lblCatReview", "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", "chkAutoSave")
         Case "frmPunctuationCleanup"
             ControlsForForm = Array("optAll", "optQuotes", "optDashes", "optEllipses", "optCustom", "fraCustom", _
                                     "chkCurlyDouble", "chkCurlySingle", "chkEmDash", "chkEnDash", "chkEllipses", _

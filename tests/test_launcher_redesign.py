@@ -36,7 +36,26 @@ class LauncherRedesignTests(unittest.TestCase):
 
         self.assertIn("LayoutLauncherCategory", installer)
         self.assertIn("LayoutLauncherToolRow", installer)
+        self.assertIn("LEFT_X As Single", installer)
+        self.assertIn("RIGHT_X As Single", installer)
         self.assertNotIn('Array("cmdUnicode", "cmdHelpUnicode")', installer)
+
+    def test_launcher_is_two_column_with_help_buttons_before_tools(self):
+        installer = read("src/installer/installer.bas")
+
+        self.assertIn(
+            'LayoutLauncherToolRow(designer, "cmdHelpUnicode", "cmdUnicode", "lblDescUnicode", LEFT_X, yLeft, COL_W)',
+            installer,
+        )
+        self.assertIn(
+            'LayoutLauncherToolRow(designer, "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", RIGHT_X, yRight, COL_W)',
+            installer,
+        )
+        self.assertIn(
+            '"lblCatText", "cmdHelpUnicode", "cmdUnicode", "lblDescUnicode"',
+            installer,
+        )
+        self.assertIn("MaxSingle(yLeft, yRight)", installer)
 
     def test_launcher_milestone_version_is_060(self):
         launcher = read("src/modules/modCleanupLauncher.bas")
