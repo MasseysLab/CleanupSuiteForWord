@@ -49,10 +49,10 @@ End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
     h = "Direct Formatting Stripper" & vbCrLf & vbCrLf
-    h = h & "Removes manual formatting overrides and returns text to what its" & vbCrLf
-    h = h & "paragraph style defines.  Unlike Word Clear Formatting (which resets" & vbCrLf
-    h = h & "text to the Normal style), this tool keeps your styles intact and strips" & vbCrLf
-    h = h & "only the direct formatting layered on top." & vbCrLf
+    h = h & "Removes manual formatting overrides and returns text to what its " & _
+            "paragraph style defines.  Unlike Word Clear Formatting (which resets" & vbCrLf
+    h = h & "text to the Normal style), this tool keeps your styles intact and strips " & _
+            "only the direct formatting layered on top." & vbCrLf
     h = h & vbCrLf
     h = h & "WHAT TO RESET" & vbCrLf
     h = h & "  Reset character formatting  --  font face, size, colour, spacing." & vbCrLf
@@ -66,11 +66,11 @@ Private Sub cmdHelp_Click()
     h = h & "  Strip everything --  Removes all emphasis too, for a full reset." & vbCrLf
     h = h & vbCrLf
     h = h & "  Preserve highlighting keeps text highlight colours through the reset." & vbCrLf
-    h = h & "  Preserve drop caps keeps decorative dropped capitals; untick to reset" & vbCrLf
-    h = h & "  them to normal body text as part of the strip." & vbCrLf
+    h = h & "  Preserve drop caps keeps decorative dropped capitals; untick to reset " & _
+            "  them to normal body text as part of the strip." & vbCrLf
     h = h & vbCrLf
-    h = h & "NOTE: Quick mode restores emphasis only when it is uniform across the" & vbCrLf
-    h = h & "whole paragraph.  For a paragraph with one bold word among normal text," & vbCrLf
+    h = h & "NOTE: Quick mode restores emphasis only when it is uniform across the " & _
+            "whole paragraph.  For a paragraph with one bold word among normal text," & vbCrLf
     h = h & "use Thorough mode to preserve that word precisely." & vbCrLf
     h = h & vbCrLf
     h = h & "SCOPE" & vbCrLf

@@ -38,8 +38,8 @@ End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
     h = "Break Normalizer" & vbCrLf & vbCrLf
-    h = h & "Fixes problems with section and page breaks.  Most common in documents" & vbCrLf
-    h = h & "assembled from multiple files, where each source file may have had its" & vbCrLf
+    h = h & "Fixes problems with section and page breaks.  Most common in documents " & _
+            "assembled from multiple files, where each source file may have had its" & vbCrLf
     h = h & "own trailing section break." & vbCrLf
     h = h & vbCrLf
     h = h & "OPTIONS" & vbCrLf
@@ -54,8 +54,8 @@ Private Sub cmdHelp_Click()
     h = h & "  Even Page   --  Section starts on the next even-numbered page." & vbCrLf
     h = h & "  Odd Page    --  Section starts on the next odd-numbered page." & vbCrLf
     h = h & vbCrLf
-    h = h & "NOTE: The first section of a document is never converted -- it has no" & vbCrLf
-    h = h & "preceding break to change." & vbCrLf
+    h = h & "NOTE: The first section of a document is never converted -- it has no " & _
+            "preceding break to change." & vbCrLf
     h = h & vbCrLf
     h = h & "SCOPE" & vbCrLf
     h = h & "  Select text before opening to limit changes to the selection." & vbCrLf

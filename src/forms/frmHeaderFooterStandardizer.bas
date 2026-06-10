@@ -41,12 +41,12 @@ End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
     h = "Header / Footer Standardizer" & vbCrLf & vbCrLf
-    h = h & "Makes header and footer formatting consistent across the whole document," & vbCrLf
-    h = h & "or clears all header/footer content entirely." & vbCrLf
+    h = h & "Makes header and footer formatting consistent across the whole document, " & _
+            "or clears all header/footer content entirely." & vbCrLf
     h = h & vbCrLf
     h = h & "MODE" & vbCrLf
-    h = h & "  Standardize formatting  --  applies the options below to every header" & vbCrLf
-    h = h & "                              and footer area in every section." & vbCrLf
+    h = h & "  Standardize formatting  --  applies the options below to every header " & _
+            "and footer area in every section." & vbCrLf
     h = h & "  Clear all content       --  removes all text from headers/footers." & vbCrLf
     h = h & vbCrLf
     h = h & "STANDARDIZE OPTIONS" & vbCrLf
@@ -63,8 +63,8 @@ Private Sub cmdHelp_Click()
     h = h & "  Sections linked to the previous one share its header/footer.  Tick" & vbCrLf
     h = h & "  'Unlink sections' to break those links so each is set on its own." & vbCrLf
     h = h & vbCrLf
-    h = h & "NOTE: Page numbers, dates, and other fields are not altered.  Always" & vbCrLf
-    h = h & "works on the whole document." & vbCrLf
+    h = h & "NOTE: Page numbers, dates, and other fields are not altered.  Always " & _
+            "works on the whole document." & vbCrLf
     MsgBox h, vbInformation, "Help  --  Header / Footer Standardizer"
 End Sub
 Private Sub ApplyToHF(hf As HeaderFooter, doClear As Boolean, doFont As Boolean, doSpacing As Boolean, doAlign As Boolean, alignVal As Long, baseName As String, baseSize As Single, breakLinks As Boolean, ByRef cntAreas As Long, ByRef cntCleared As Long)

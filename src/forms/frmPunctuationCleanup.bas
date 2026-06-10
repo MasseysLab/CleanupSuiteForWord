@@ -41,8 +41,8 @@ Private Sub cmdHelp_Click()
     Dim h As String
     h = "Punctuation Normalizer" & vbCrLf & vbCrLf
     h = h & "Replaces typographic ('smart') punctuation with plain-text equivalents." & vbCrLf
-    h = h & "Use this before exporting to systems that do not support Unicode punctuation," & vbCrLf
-    h = h & "or before running text-comparison or diff tools." & vbCrLf
+    h = h & "Use this before exporting to systems that do not support Unicode punctuation, " & _
+            "or before running text-comparison or diff tools." & vbCrLf
     h = h & vbCrLf
     h = h & "OPTIONS" & vbCrLf
     h = h & "  All          --  Converts all punctuation types listed below." & vbCrLf

@@ -49,12 +49,12 @@ Private Sub cmdHelp_Click()
     h = h & "  Title Case    --  First letter of every word capitalised." & vbCrLf
     h = h & "  UPPERCASE     --  Every letter uppercased." & vbCrLf
     h = h & "  lowercase     --  Every letter lowercased." & vbCrLf
-    h = h & "  Custom        --  Combine modes using the checkboxes.  If more than one" & vbCrLf
-    h = h & "                    is selected, each is applied in sequence -- the last" & vbCrLf
+    h = h & "  Custom        --  Combine modes using the checkboxes.  If more than one " & _
+            "is selected, each is applied in sequence -- the last" & vbCrLf
     h = h & "                    one applied wins." & vbCrLf
     h = h & vbCrLf
-    h = h & "NOTE: Capitalisation is applied to the full text content of each paragraph," & vbCrLf
-    h = h & "including any directly formatted runs within it." & vbCrLf
+    h = h & "NOTE: Capitalisation is applied to the full text content of each paragraph, " & _
+            "including any directly formatted runs within it." & vbCrLf
     h = h & vbCrLf
     h = h & "SCOPE" & vbCrLf
     h = h & "  Select text before opening to limit changes to the selection." & vbCrLf

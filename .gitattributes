@@ -1,0 +1,13 @@
+# Source and documentation use normal LF endings.
+*.md text eol=lf
+*.py text eol=lf
+src/**/*.bas text eol=lf
+src/**/*.xml text eol=lf
+
+# The distributable must remain CRLF for the Windows VBA editor.
+**/VBA_Cleanup_tool.txt text eol=crlf
+
+# Office documents and backups are binary artifacts.
+*.docx binary
+*.docm binary
+*.zip binary

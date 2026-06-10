@@ -52,8 +52,8 @@ Private Sub cmdHelp_Click()
     h = h & "  Convert table to text --  Replaces the table with tab-separated text" & vbCrLf
     h = h & "                            (done last; other table options run first)." & vbCrLf
     h = h & vbCrLf
-    h = h & "TIP: Run 'Remove empty rows/columns' before 'Strip direct format' for" & vbCrLf
-    h = h & "the cleanest results.  Use Preview first to see which rows are empty." & vbCrLf
+    h = h & "TIP: Run 'Remove empty rows/columns' before 'Strip direct format' for " & _
+            "the cleanest results.  Use Preview first to see which rows are empty." & vbCrLf
     h = h & vbCrLf
     h = h & "SCOPE" & vbCrLf
     h = h & "  Select text before opening to limit changes to tables in the selection." & vbCrLf

@@ -48,8 +48,8 @@ Private Sub cmdHelp_Click()
     h = h & "  Convert hyphens      --  Converts lines beginning with '- ' or '* ' to" & vbCrLf
     h = h & "                           proper Word bullet-list paragraphs." & vbCrLf
     h = h & vbCrLf
-    h = h & "TIP: Run 'Convert hyphens' first if you have many hyphen-lists, then" & vbCrLf
-    h = h & "'Normalise bullets' to make them all consistent." & vbCrLf
+    h = h & "TIP: Run 'Convert hyphens' first if you have many hyphen-lists, then " & _
+            "'Normalise bullets' to make them all consistent." & vbCrLf
     h = h & vbCrLf
     h = h & "SCOPE" & vbCrLf
     h = h & "  Select text before opening to limit changes to the selection." & vbCrLf

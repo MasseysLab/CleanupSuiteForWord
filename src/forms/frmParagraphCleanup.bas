@@ -47,8 +47,8 @@ Private Sub cmdHelp_Click()
     h = h & "  Fix indent               --  Resets left indent to zero for paragraphs with" & vbCrLf
     h = h & "                               direct indent overrides." & vbCrLf
     h = h & vbCrLf
-    h = h & "TIP: Run after assembling a document from multiple sources or templates," & vbCrLf
-    h = h & "where inconsistent spacing between paragraphs is most common." & vbCrLf
+    h = h & "TIP: Run after assembling a document from multiple sources or templates, " & _
+            "where inconsistent spacing between paragraphs is most common." & vbCrLf
     h = h & vbCrLf
     h = h & "SCOPE" & vbCrLf
     h = h & "  Select text before opening to limit changes to the selection." & vbCrLf

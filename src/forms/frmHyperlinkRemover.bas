@@ -23,8 +23,8 @@ End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
     h = "Hyperlink Remover" & vbCrLf & vbCrLf
-    h = h & "Removes hyperlinks while keeping the visible text.  Pasting from web" & vbCrLf
-    h = h & "pages embeds links throughout a document; this strips the links but" & vbCrLf
+    h = h & "Removes hyperlinks while keeping the visible text.  Pasting from web " & _
+            "pages embeds links throughout a document; this strips the links but" & vbCrLf
     h = h & "leaves the words exactly as they are." & vbCrLf
     h = h & vbCrLf
     h = h & "OPTIONS" & vbCrLf

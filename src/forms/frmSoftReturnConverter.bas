@@ -27,17 +27,17 @@ End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
     h = "Soft Return Converter" & vbCrLf & vbCrLf
-    h = h & "Converts soft returns (line breaks made with Shift+Enter) to real" & vbCrLf
-    h = h & "paragraph marks, or the reverse.  Documents imported from PDFs and web" & vbCrLf
-    h = h & "pages are often full of soft returns that look like paragraph breaks but" & vbCrLf
-    h = h & "are not -- which quietly breaks spell-check, styles, and spacing." & vbCrLf
+    h = h & "Converts soft returns (line breaks made with Shift+Enter) to real " & _
+            "paragraph marks, or the reverse.  Documents imported from PDFs and web" & vbCrLf
+    h = h & "pages are often full of soft returns that look like paragraph breaks but " & _
+            "are not -- which quietly breaks spell-check, styles, and spacing." & vbCrLf
     h = h & vbCrLf
     h = h & "DIRECTION" & vbCrLf
     h = h & "  Soft returns to paragraphs  --  the usual fix for imported text." & vbCrLf
     h = h & "  Paragraphs to soft returns  --  the reverse (less common)." & vbCrLf
     h = h & vbCrLf
-    h = h & "CAUTION: Converting paragraphs to soft returns merges the affected text" & vbCrLf
-    h = h & "into a single paragraph.  Use the reverse only on small selections." & vbCrLf
+    h = h & "CAUTION: Converting paragraphs to soft returns merges the affected text " & _
+            "into a single paragraph.  Use the reverse only on small selections." & vbCrLf
     h = h & vbCrLf
     h = h & "SCOPE" & vbCrLf
     h = h & "  Select text before opening to limit changes to the selection." & vbCrLf

@@ -30,8 +30,8 @@ End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
     h = "Font Normalizer" & vbCrLf & vbCrLf
-    h = h & "Resets direct font overrides to match the style defined for each paragraph," & vbCrLf
-    h = h & "eliminating the font chaos that accumulates from copying and pasting text" & vbCrLf
+    h = h & "Resets direct font overrides to match the style defined for each paragraph, " & _
+            "eliminating the font chaos that accumulates from copying and pasting text" & vbCrLf
     h = h & "between documents, emails, and web pages." & vbCrLf
     h = h & vbCrLf
     h = h & "OPTIONS  (choose which properties to reset)" & vbCrLf
@@ -42,8 +42,8 @@ Private Sub cmdHelp_Click()
     h = h & "  Italic      --  Resets italic to the style's setting." & vbCrLf
     h = h & "  Font colour --  Resets text colour to the style's defined colour." & vbCrLf
     h = h & vbCrLf
-    h = h & "TIP: Start with Face and Size only.  Bold, Italic, and Colour are opt-in" & vbCrLf
-    h = h & "because those properties are more likely to be intentional (e.g. a bolded" & vbCrLf
+    h = h & "TIP: Start with Face and Size only.  Bold, Italic, and Colour are opt-in " & _
+            "because those properties are more likely to be intentional (e.g. a bolded" & vbCrLf
     h = h & "phrase or a deliberately coloured heading within a paragraph)." & vbCrLf
     h = h & vbCrLf
     h = h & "SCOPE" & vbCrLf

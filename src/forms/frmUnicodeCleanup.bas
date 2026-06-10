@@ -41,10 +41,10 @@ End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
     h = "Invisible Unicode Cleaner" & vbCrLf & vbCrLf
-    h = h & "Removes Unicode characters that are invisible on screen but cause problems" & vbCrLf
-    h = h & "for search, sorting, comparison, and automated text processing." & vbCrLf
-    h = h & "These characters accumulate from web copy-paste, PDF export, and" & vbCrLf
-    h = h & "cross-platform file exchange." & vbCrLf
+    h = h & "Removes Unicode characters that are invisible on screen but cause problems " & _
+            "for search, sorting, comparison, and automated text processing." & vbCrLf
+    h = h & "These characters accumulate from web copy-paste, PDF export, and " & _
+            "cross-platform file exchange." & vbCrLf
     h = h & vbCrLf
     h = h & "CHARACTER TYPES" & vbCrLf
     h = h & "  NBSP  (U+00A0)  Non-Breaking Space: a space that prevents line breaks." & vbCrLf

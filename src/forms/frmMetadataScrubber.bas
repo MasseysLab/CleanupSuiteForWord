@@ -24,8 +24,8 @@ End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
     h = "Metadata Scrubber" & vbCrLf & vbCrLf
-    h = h & "Strips identifying information from the document before you share it" & vbCrLf
-    h = h & "externally -- a one-click version of Word built-in Document Inspector." & vbCrLf
+    h = h & "Strips identifying information from the document before you share it " & _
+            "externally -- a one-click version of Word built-in Document Inspector." & vbCrLf
     h = h & vbCrLf
     h = h & "OPTIONS" & vbCrLf
     h = h & "  Document properties  --  author, company, manager, title, and other" & vbCrLf
@@ -36,8 +36,8 @@ Private Sub cmdHelp_Click()
     h = h & "  Accept all tracked changes  --  finalises the document and removes the" & vbCrLf
     h = h & "                                  revision history." & vbCrLf
     h = h & vbCrLf
-    h = h & "NOTE: This tool always works on the whole document.  Metadata removal" & vbCrLf
-    h = h & "may not be reversible with Ctrl+Z, so a copy is saved first if auto-save" & vbCrLf
+    h = h & "NOTE: This tool always works on the whole document.  Metadata removal " & _
+            "may not be reversible with Ctrl+Z, so a copy is saved first if auto-save" & vbCrLf
     h = h & "is on.  Review the result before sharing." & vbCrLf
     h = h & vbCrLf
     h = h & "Preview mode shows the metadata currently in the document." & vbCrLf

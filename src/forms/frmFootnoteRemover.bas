@@ -26,8 +26,8 @@ End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
     h = "Footnote / Endnote Remover" & vbCrLf & vbCrLf
-    h = h & "Deletes footnotes and/or endnotes -- both the reference mark in the body" & vbCrLf
-    h = h & "and the note text -- to produce a clean text extract." & vbCrLf
+    h = h & "Deletes footnotes and/or endnotes -- both the reference mark in the body " & _
+            "and the note text -- to produce a clean text extract." & vbCrLf
     h = h & vbCrLf
     h = h & "OPTIONS" & vbCrLf
     h = h & "  Remove footnotes  --  deletes footnotes in the target scope." & vbCrLf

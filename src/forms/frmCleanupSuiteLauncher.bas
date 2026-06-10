@@ -39,10 +39,10 @@ Private Sub cmdObjectRemover_Click(): frmObjectRemover.Show: End Sub
 Private Sub cmdHelpUnicode_Click()
     Dim h As String
     h = "Invisible Unicode Cleaner" & vbCrLf & vbCrLf
-    h = h & "Removes Unicode characters that are invisible on screen but cause problems" & vbCrLf
-    h = h & "for search, sorting, comparison, and automated text processing." & vbCrLf
-    h = h & "These characters accumulate from web copy-paste, PDF export, and" & vbCrLf
-    h = h & "cross-platform file exchange." & vbCrLf
+    h = h & "Removes Unicode characters that are invisible on screen but cause problems " & _
+            "for search, sorting, comparison, and automated text processing." & vbCrLf
+    h = h & "These characters accumulate from web copy-paste, PDF export, and " & _
+            "cross-platform file exchange." & vbCrLf
     h = h & vbCrLf
     h = h & "CHARACTER TYPES" & vbCrLf
     h = h & "  NBSP  (U+00A0)  Non-Breaking Space: a space that prevents line breaks." & vbCrLf
@@ -63,8 +63,8 @@ Private Sub cmdHelpPunct_Click()
     Dim h As String
     h = "Punctuation Normalizer" & vbCrLf & vbCrLf
     h = h & "Replaces typographic ('smart') punctuation with plain-text equivalents." & vbCrLf
-    h = h & "Use this before exporting to systems that do not support Unicode punctuation," & vbCrLf
-    h = h & "or before running text-comparison or diff tools." & vbCrLf
+    h = h & "Use this before exporting to systems that do not support Unicode punctuation, " & _
+            "or before running text-comparison or diff tools." & vbCrLf
     h = h & vbCrLf
     h = h & "OPTIONS" & vbCrLf
     h = h & "  All          --  Converts all punctuation types listed below." & vbCrLf
@@ -114,12 +114,12 @@ Private Sub cmdHelpCap_Click()
     h = h & "  Title Case    --  First letter of every word capitalised." & vbCrLf
     h = h & "  UPPERCASE     --  Every letter uppercased." & vbCrLf
     h = h & "  lowercase     --  Every letter lowercased." & vbCrLf
-    h = h & "  Custom        --  Combine modes using the checkboxes.  If more than one" & vbCrLf
-    h = h & "                    is selected, each is applied in sequence -- the last" & vbCrLf
+    h = h & "  Custom        --  Combine modes using the checkboxes.  If more than one " & _
+            "is selected, each is applied in sequence -- the last" & vbCrLf
     h = h & "                    one applied wins." & vbCrLf
     h = h & vbCrLf
-    h = h & "NOTE: Capitalisation is applied to the full text content of each paragraph," & vbCrLf
-    h = h & "including any directly formatted runs within it." & vbCrLf
+    h = h & "NOTE: Capitalisation is applied to the full text content of each paragraph, " & _
+            "including any directly formatted runs within it." & vbCrLf
     h = h & vbCrLf
     h = h & "SCOPE" & vbCrLf
     h = h & "  Select text before opening to limit changes to the selection." & vbCrLf
@@ -141,8 +141,8 @@ Private Sub cmdHelpList_Click()
     h = h & "  Convert hyphens      --  Converts lines beginning with '- ' or '* ' to" & vbCrLf
     h = h & "                           proper Word bullet-list paragraphs." & vbCrLf
     h = h & vbCrLf
-    h = h & "TIP: Run 'Convert hyphens' first if you have many hyphen-lists, then" & vbCrLf
-    h = h & "'Normalise bullets' to make them all consistent." & vbCrLf
+    h = h & "TIP: Run 'Convert hyphens' first if you have many hyphen-lists, then " & _
+            "'Normalise bullets' to make them all consistent." & vbCrLf
     h = h & vbCrLf
     h = h & "SCOPE" & vbCrLf
     h = h & "  Select text before opening to limit changes to the selection." & vbCrLf
@@ -165,8 +165,8 @@ Private Sub cmdHelpPara_Click()
     h = h & "  Fix indent               --  Resets left indent to zero for paragraphs with" & vbCrLf
     h = h & "                               direct indent overrides." & vbCrLf
     h = h & vbCrLf
-    h = h & "TIP: Run after assembling a document from multiple sources or templates," & vbCrLf
-    h = h & "where inconsistent spacing between paragraphs is most common." & vbCrLf
+    h = h & "TIP: Run after assembling a document from multiple sources or templates, " & _
+            "where inconsistent spacing between paragraphs is most common." & vbCrLf
     h = h & vbCrLf
     h = h & "SCOPE" & vbCrLf
     h = h & "  Select text before opening to limit changes to the selection." & vbCrLf
@@ -177,16 +177,16 @@ End Sub
 Private Sub cmdHelpDuplicate_Click()
     Dim h As String
     h = "Duplicate Paragraph Detector" & vbCrLf & vbCrLf
-    h = h & "Finds paragraphs that repeat in the document and highlights them, or" & vbCrLf
-    h = h & "removes every occurrence except the first.  Blank paragraphs are ignored." & vbCrLf
+    h = h & "Finds paragraphs that repeat in the document and highlights them, or " & _
+            "removes every occurrence except the first.  Blank paragraphs are ignored." & vbCrLf
     h = h & vbCrLf
     h = h & "MATCHING METHOD" & vbCrLf
     h = h & "  Exact            --  identical apart from letter case." & vbCrLf
     h = h & "  Ignore punctuation & spacing  --  duplicates even if they differ only" & vbCrLf
     h = h & "                       in punctuation, extra spaces, or letter case." & vbCrLf
     h = h & "  Fuzzy (similar wording)  --  flags paragraphs that share a chosen" & vbCrLf
-    h = h & "                       percentage of their words; catches near-duplicates" & vbCrLf
-    h = h & "                       that were lightly edited.  Slower on large documents." & vbCrLf
+    h = h & "                       percentage of their words; catches near-duplicates " & _
+            "                       that were lightly edited.  Slower on large documents." & vbCrLf
     h = h & vbCrLf
     h = h & "FUZZY SENSITIVITY (used only by fuzzy matching)" & vbCrLf
     h = h & "  Loose (60%)   --  more matches, including loosely similar paragraphs." & vbCrLf
@@ -200,16 +200,16 @@ Private Sub cmdHelpDuplicate_Click()
     h = h & "SCOPE" & vbCrLf
     h = h & "  Select text before opening to search within the selection only." & vbCrLf
     h = h & vbCrLf
-    h = h & "Similar paragraphs are grouped together (a paragraph linked to a match," & vbCrLf
-    h = h & "which is linked to another, joins the same group), and the first in each" & vbCrLf
+    h = h & "Similar paragraphs are grouped together (a paragraph linked to a match, " & _
+            "which is linked to another, joins the same group), and the first in each" & vbCrLf
     h = h & "group is kept.  Run with Preview first to see what would be affected." & vbCrLf
     MsgBox h, vbInformation, "Help  --  Duplicate Paragraph Detector"
 End Sub
 Private Sub cmdHelpFont_Click()
     Dim h As String
     h = "Font Normalizer" & vbCrLf & vbCrLf
-    h = h & "Resets direct font overrides to match the style defined for each paragraph," & vbCrLf
-    h = h & "eliminating the font chaos that accumulates from copying and pasting text" & vbCrLf
+    h = h & "Resets direct font overrides to match the style defined for each paragraph, " & _
+            "eliminating the font chaos that accumulates from copying and pasting text" & vbCrLf
     h = h & "between documents, emails, and web pages." & vbCrLf
     h = h & vbCrLf
     h = h & "OPTIONS  (choose which properties to reset)" & vbCrLf
@@ -220,8 +220,8 @@ Private Sub cmdHelpFont_Click()
     h = h & "  Italic      --  Resets italic to the style's setting." & vbCrLf
     h = h & "  Font colour --  Resets text colour to the style's defined colour." & vbCrLf
     h = h & vbCrLf
-    h = h & "TIP: Start with Face and Size only.  Bold, Italic, and Colour are opt-in" & vbCrLf
-    h = h & "because those properties are more likely to be intentional (e.g. a bolded" & vbCrLf
+    h = h & "TIP: Start with Face and Size only.  Bold, Italic, and Colour are opt-in " & _
+            "because those properties are more likely to be intentional (e.g. a bolded" & vbCrLf
     h = h & "phrase or a deliberately coloured heading within a paragraph)." & vbCrLf
     h = h & vbCrLf
     h = h & "SCOPE" & vbCrLf
@@ -249,8 +249,8 @@ Private Sub cmdHelpTable_Click()
     h = h & "  Remove all borders    --  Turns off every border on the table." & vbCrLf
     h = h & "  Convert table to text --  Replaces the table with tab-separated text." & vbCrLf
     h = h & vbCrLf
-    h = h & "TIP: Run 'Remove empty rows/columns' before 'Strip direct format' for" & vbCrLf
-    h = h & "the cleanest results.  Use Preview first to see which rows are empty." & vbCrLf
+    h = h & "TIP: Run 'Remove empty rows/columns' before 'Strip direct format' for " & _
+            "the cleanest results.  Use Preview first to see which rows are empty." & vbCrLf
     h = h & vbCrLf
     h = h & "SCOPE" & vbCrLf
     h = h & "  Select text before opening to limit changes to tables in the selection." & vbCrLf
@@ -259,8 +259,8 @@ End Sub
 Private Sub cmdHelpBreak_Click()
     Dim h As String
     h = "Break Normalizer" & vbCrLf & vbCrLf
-    h = h & "Fixes problems with section and page breaks.  Most common in documents" & vbCrLf
-    h = h & "assembled from multiple files, where each source file may have had its" & vbCrLf
+    h = h & "Fixes problems with section and page breaks.  Most common in documents " & _
+            "assembled from multiple files, where each source file may have had its" & vbCrLf
     h = h & "own trailing section break." & vbCrLf
     h = h & vbCrLf
     h = h & "OPTIONS" & vbCrLf
@@ -275,8 +275,8 @@ Private Sub cmdHelpBreak_Click()
     h = h & "  Even Page   --  Section starts on the next even-numbered page." & vbCrLf
     h = h & "  Odd Page    --  Section starts on the next odd-numbered page." & vbCrLf
     h = h & vbCrLf
-    h = h & "NOTE: The first section of a document is never converted -- it has no" & vbCrLf
-    h = h & "preceding break to change." & vbCrLf
+    h = h & "NOTE: The first section of a document is never converted -- it has no " & _
+            "preceding break to change." & vbCrLf
     h = h & vbCrLf
     h = h & "SCOPE" & vbCrLf
     h = h & "  Select text before opening to limit changes to the selection." & vbCrLf
@@ -287,17 +287,17 @@ End Sub
 Private Sub cmdHelpTrim_Click()
     Dim h As String
     h = "Document Trim" & vbCrLf & vbCrLf
-    h = h & "Removes trailing empty paragraphs from the end of the document," & vbCrLf
-    h = h & "leaving exactly one final empty paragraph (which Word requires to exist)." & vbCrLf
+    h = h & "Removes trailing empty paragraphs from the end of the document, " & _
+            "leaving exactly one final empty paragraph (which Word requires to exist)." & vbCrLf
     h = h & vbCrLf
     h = h & "WHY THIS MATTERS" & vbCrLf
-    h = h & "  Documents assembled from multiple files, or saved from templates," & vbCrLf
-    h = h & "  often end with many blank paragraphs.  These appear as unwanted blank" & vbCrLf
-    h = h & "  space at the end of the printed document and can cause unexpected" & vbCrLf
-    h = h & "  behaviour with headers, footers, and page numbering in some layouts." & vbCrLf
+    h = h & "  Documents assembled from multiple files, or saved from templates, " & _
+            "  often end with many blank paragraphs.  These appear as unwanted blank" & vbCrLf
+    h = h & "  space at the end of the printed document and can cause unexpected " & _
+            "  behaviour with headers, footers, and page numbering in some layouts." & vbCrLf
     h = h & vbCrLf
-    h = h & "NOTE: This tool always operates on the full document.  Scope selection" & vbCrLf
-    h = h & "is disabled because 'end of document' is inherently document-level --" & vbCrLf
+    h = h & "NOTE: This tool always operates on the full document.  Scope selection " & _
+            "is disabled because 'end of document' is inherently document-level --" & vbCrLf
     h = h & "trimming to the end of a selection would not be meaningful." & vbCrLf
     h = h & vbCrLf
     h = h & "Preview mode highlights the trailing paragraphs that would be removed." & vbCrLf
@@ -307,10 +307,10 @@ End Sub
 Private Sub cmdHelpFormat_Click()
     Dim h As String
     h = "Direct Formatting Stripper" & vbCrLf & vbCrLf
-    h = h & "Removes manual formatting overrides and returns text to what its" & vbCrLf
-    h = h & "paragraph style defines.  Unlike Word Clear Formatting (which resets" & vbCrLf
-    h = h & "text to the Normal style), this tool keeps your styles intact and strips" & vbCrLf
-    h = h & "only the direct formatting layered on top." & vbCrLf
+    h = h & "Removes manual formatting overrides and returns text to what its " & _
+            "paragraph style defines.  Unlike Word Clear Formatting (which resets" & vbCrLf
+    h = h & "text to the Normal style), this tool keeps your styles intact and strips " & _
+            "only the direct formatting layered on top." & vbCrLf
     h = h & vbCrLf
     h = h & "WHAT TO RESET" & vbCrLf
     h = h & "  Reset character formatting  --  font face, size, colour, spacing." & vbCrLf
@@ -325,8 +325,8 @@ Private Sub cmdHelpFormat_Click()
     h = h & vbCrLf
     h = h & "  Preserve highlighting keeps text highlight colours through the reset." & vbCrLf
     h = h & vbCrLf
-    h = h & "NOTE: Quick mode restores emphasis only when it is uniform across the" & vbCrLf
-    h = h & "whole paragraph.  For a paragraph with one bold word among normal text," & vbCrLf
+    h = h & "NOTE: Quick mode restores emphasis only when it is uniform across the " & _
+            "whole paragraph.  For a paragraph with one bold word among normal text," & vbCrLf
     h = h & "use Thorough mode to preserve that word precisely." & vbCrLf
     h = h & vbCrLf
     h = h & "SCOPE" & vbCrLf
@@ -339,8 +339,8 @@ End Sub
 Private Sub cmdHelpHyperlink_Click()
     Dim h As String
     h = "Hyperlink Remover" & vbCrLf & vbCrLf
-    h = h & "Removes hyperlinks while keeping the visible text.  Pasting from web" & vbCrLf
-    h = h & "pages embeds links throughout a document; this strips the links but" & vbCrLf
+    h = h & "Removes hyperlinks while keeping the visible text.  Pasting from web " & _
+            "pages embeds links throughout a document; this strips the links but" & vbCrLf
     h = h & "leaves the words exactly as they are." & vbCrLf
     h = h & vbCrLf
     h = h & "OPTIONS" & vbCrLf
@@ -357,17 +357,17 @@ End Sub
 Private Sub cmdHelpSoftReturn_Click()
     Dim h As String
     h = "Soft Return Converter" & vbCrLf & vbCrLf
-    h = h & "Converts soft returns (line breaks made with Shift+Enter) to real" & vbCrLf
-    h = h & "paragraph marks, or the reverse.  Documents imported from PDFs and web" & vbCrLf
-    h = h & "pages are often full of soft returns that look like paragraph breaks but" & vbCrLf
-    h = h & "are not -- which quietly breaks spell-check, styles, and spacing." & vbCrLf
+    h = h & "Converts soft returns (line breaks made with Shift+Enter) to real " & _
+            "paragraph marks, or the reverse.  Documents imported from PDFs and web" & vbCrLf
+    h = h & "pages are often full of soft returns that look like paragraph breaks but " & _
+            "are not -- which quietly breaks spell-check, styles, and spacing." & vbCrLf
     h = h & vbCrLf
     h = h & "DIRECTION" & vbCrLf
     h = h & "  Soft returns to paragraphs  --  the usual fix for imported text." & vbCrLf
     h = h & "  Paragraphs to soft returns  --  the reverse (less common)." & vbCrLf
     h = h & vbCrLf
-    h = h & "CAUTION: Converting paragraphs to soft returns merges the affected text" & vbCrLf
-    h = h & "into a single paragraph.  Use the reverse only on small selections." & vbCrLf
+    h = h & "CAUTION: Converting paragraphs to soft returns merges the affected text " & _
+            "into a single paragraph.  Use the reverse only on small selections." & vbCrLf
     h = h & vbCrLf
     h = h & "SCOPE" & vbCrLf
     h = h & "  Select text before opening to limit changes to the selection." & vbCrLf
@@ -378,8 +378,8 @@ End Sub
 Private Sub cmdHelpMetadata_Click()
     Dim h As String
     h = "Metadata Scrubber" & vbCrLf & vbCrLf
-    h = h & "Strips identifying information from the document before you share it" & vbCrLf
-    h = h & "externally -- a one-click version of Word built-in Document Inspector." & vbCrLf
+    h = h & "Strips identifying information from the document before you share it " & _
+            "externally -- a one-click version of Word built-in Document Inspector." & vbCrLf
     h = h & vbCrLf
     h = h & "OPTIONS" & vbCrLf
     h = h & "  Document properties  --  author, company, manager, title, and other" & vbCrLf
@@ -390,8 +390,8 @@ Private Sub cmdHelpMetadata_Click()
     h = h & "  Accept all tracked changes  --  finalises the document and removes the" & vbCrLf
     h = h & "                                  revision history." & vbCrLf
     h = h & vbCrLf
-    h = h & "NOTE: This tool always works on the whole document.  Metadata removal" & vbCrLf
-    h = h & "may not be reversible with Ctrl+Z, so a copy is saved first if auto-save" & vbCrLf
+    h = h & "NOTE: This tool always works on the whole document.  Metadata removal " & _
+            "may not be reversible with Ctrl+Z, so a copy is saved first if auto-save" & vbCrLf
     h = h & "is on.  Review the result before sharing." & vbCrLf
     h = h & vbCrLf
     h = h & "Preview mode shows the metadata currently in the document." & vbCrLf
@@ -400,18 +400,18 @@ End Sub
 Private Sub cmdHelpStyle_Click()
     Dim h As String
     h = "Style Cleanup" & vbCrLf & vbCrLf
-    h = h & "Removes clutter from the document style list.  Documents assembled from" & vbCrLf
-    h = h & "many sources accumulate dozens of unused or duplicate styles." & vbCrLf
+    h = h & "Removes clutter from the document style list.  Documents assembled from " & _
+            "many sources accumulate dozens of unused or duplicate styles." & vbCrLf
     h = h & vbCrLf
     h = h & "OPTIONS" & vbCrLf
     h = h & "  Remove unused styles    --  deletes custom styles that no text uses." & vbCrLf
     h = h & "                              Built-in Word styles are never deleted." & vbCrLf
     h = h & "  Remap common variants   --  reassigns text in variant styles such as" & vbCrLf
-    h = h & "                              Normal (Web), Body Text 2, and Body Text 3" & vbCrLf
-    h = h & "                              to the Normal style, then removes them." & vbCrLf
+    h = h & "                              Normal (Web), Body Text 2, and Body Text 3 " & _
+            "                              to the Normal style, then removes them." & vbCrLf
     h = h & vbCrLf
-    h = h & "NOTE: This tool always works on the whole document.  Usage is detected" & vbCrLf
-    h = h & "in the main document body; a style used only inside a header, footer, or" & vbCrLf
+    h = h & "NOTE: This tool always works on the whole document.  Usage is detected " & _
+            "in the main document body; a style used only inside a header, footer, or" & vbCrLf
     h = h & "text box may be treated as unused." & vbCrLf
     h = h & vbCrLf
     h = h & "Preview mode reports how many unused custom styles were found." & vbCrLf
@@ -420,8 +420,8 @@ End Sub
 Private Sub cmdHelpFootnote_Click()
     Dim h As String
     h = "Footnote / Endnote Remover" & vbCrLf & vbCrLf
-    h = h & "Deletes footnotes and/or endnotes -- the reference mark and the note" & vbCrLf
-    h = h & "text -- to produce a clean text extract." & vbCrLf
+    h = h & "Deletes footnotes and/or endnotes -- the reference mark and the note " & _
+            "text -- to produce a clean text extract." & vbCrLf
     h = h & vbCrLf
     h = h & "OPTIONS" & vbCrLf
     h = h & "  Remove footnotes / Remove endnotes  --  choose which to delete." & vbCrLf
@@ -439,30 +439,30 @@ End Sub
 Private Sub cmdHelpHeaderFooter_Click()
     Dim h As String
     h = "Header / Footer Standardizer" & vbCrLf & vbCrLf
-    h = h & "Makes header/footer formatting consistent across the whole document," & vbCrLf
-    h = h & "or clears all header/footer content." & vbCrLf
+    h = h & "Makes header/footer formatting consistent across the whole document, " & _
+            "or clears all header/footer content." & vbCrLf
     h = h & vbCrLf
     h = h & "MODE" & vbCrLf
-    h = h & "  Standardize formatting  --  reset font to the document default, remove" & vbCrLf
-    h = h & "                              paragraph spacing, and/or set alignment." & vbCrLf
+    h = h & "  Standardize formatting  --  reset font to the document default, remove " & _
+            "paragraph spacing, and/or set alignment." & vbCrLf
     h = h & "  Clear all content       --  remove all header/footer text." & vbCrLf
     h = h & vbCrLf
-    h = h & "  Include headers/footers selects which areas to process; each section" & vbCrLf
-    h = h & "  has primary, first-page, and even-page slots." & vbCrLf
+    h = h & "  Include headers/footers selects which areas to process; each section " & _
+            "  has primary, first-page, and even-page slots." & vbCrLf
     h = h & "  Unlink sections breaks 'Link to Previous' so each is set on its own." & vbCrLf
     h = h & vbCrLf
-    h = h & "NOTE: page numbers and other fields are left untouched.  Works on the" & vbCrLf
-    h = h & "whole document." & vbCrLf
+    h = h & "NOTE: page numbers and other fields are left untouched.  Works on the " & _
+            "whole document." & vbCrLf
     MsgBox h, vbInformation, "Help  --  Header / Footer Standardizer"
 End Sub
 Private Sub cmdHelpObject_Click()
     Dim h As String
     h = "Remove Objects & Elements" & vbCrLf & vbCrLf
-    h = h & "Deletes clutter from web/PDF/email paste so you can reduce a document" & vbCrLf
-    h = h & "to clean text." & vbCrLf
+    h = h & "Deletes clutter from web/PDF/email paste so you can reduce a document " & _
+            "to clean text." & vbCrLf
     h = h & vbCrLf
-    h = h & "Removes (each OFF by default): pictures, text boxes (with contents)," & vbCrLf
-    h = h & "frames (text kept), horizontal lines, HTML/ActiveX controls, hidden" & vbCrLf
+    h = h & "Removes (each OFF by default): pictures, text boxes (with contents), " & _
+            "frames (text kept), horizontal lines, HTML/ActiveX controls, hidden" & vbCrLf
     h = h & "text, and -- with a confirmation -- whole tables and their contents." & vbCrLf
     h = h & vbCrLf
     h = h & "CAUTIONS" & vbCrLf

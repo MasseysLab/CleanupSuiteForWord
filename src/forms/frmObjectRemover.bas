@@ -33,8 +33,8 @@ End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
     h = "Remove Objects & Elements" & vbCrLf & vbCrLf
-    h = h & "Deletes embedded objects and elements that often arrive as clutter from" & vbCrLf
-    h = h & "web pages, PDFs, or email -- so you can reduce a document to clean text." & vbCrLf
+    h = h & "Deletes embedded objects and elements that often arrive as clutter from " & _
+            "web pages, PDFs, or email -- so you can reduce a document to clean text." & vbCrLf
     h = h & vbCrLf
     h = h & "WHAT EACH OPTION REMOVES" & vbCrLf
     h = h & "  Pictures         --  inline and floating images." & vbCrLf
@@ -55,8 +55,8 @@ Private Sub cmdHelp_Click()
     h = h & "  - Works on the main document body only; objects in headers and footers" & vbCrLf
     h = h & "    (such as logos) are left untouched." & vbCrLf
     h = h & vbCrLf
-    h = h & "Preview mode reports a count of what would be removed (it cannot" & vbCrLf
-    h = h & "highlight an object that is about to be deleted)." & vbCrLf
+    h = h & "Preview mode reports a count of what would be removed (it cannot " & _
+            "highlight an object that is about to be deleted)." & vbCrLf
     MsgBox h, vbInformation, "Help  --  Remove Objects & Elements"
 End Sub
 Private Function ProcessPictures(doDelete As Boolean) As Long
