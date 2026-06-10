@@ -288,6 +288,7 @@ The main friction points are:
 - `Footnote / Endnote Remover` is not really metadata, but it is also not purely text cleanup
 - `Header / Footer Standardizer` is document structure plus formatting, not just formatting
 - `Style Cleanup` is document-wide hygiene and does not sit naturally beside local formatting tools
+- `Document Trim` and `Metadata Scrubber` should not share a generic `Document Cleanup` category, because one is layout/structure cleanup and the other is privacy/final-review cleanup
 
 To make the launcher feel more intuitive, use categories that reflect the user's mental model of the task rather than the implementation type.
 
@@ -295,10 +296,9 @@ Recommended launcher categories:
 
 - Text and Characters
 - Paragraphs and Lists
-- Tables and Layout
-- Formatting and Styles
-- Document Cleanup
-- Review, Notes, and Embedded Content
+- Layout and Document Structure
+- Formatting, Links, and Styles
+- Review, Privacy, and Removals
 
 Recommended tool placement:
 
@@ -314,22 +314,20 @@ Recommended tool placement:
   - `Soft Return Converter`
   - `Duplicate Paragraph Detector`
 
-- Tables and Layout
+- Layout and Document Structure
   - `Table Cleaner`
   - `Break Normalizer`
   - `Header / Footer Standardizer`
+  - `Document Trim`
 
-- Formatting and Styles
+- Formatting, Links, and Styles
   - `Font Normalizer`
   - `Formatting Stripper`
   - `Style Cleanup`
   - `Hyperlink Remover`
 
-- Document Cleanup
-  - `Document Trim`
+- Review, Privacy, and Removals
   - `Metadata Scrubber`
-
-- Review, Notes, and Embedded Content
   - `Footnote / Endnote Remover`
   - `Object Remover`
 
@@ -337,8 +335,9 @@ Why this is better:
 
 - `Table Cleaner` is treated as a layout tool, which is how most users will think about it
 - `Break Normalizer` sits near other page-structure tools instead of text tools
-- `Footnote / Endnote Remover` stops being hidden in a category that feels too technical
-- `Metadata Scrubber` is separated from visible content-removal tools, which better matches the user's intention
+- `Document Trim` sits with visible document structure tools instead of being paired with metadata
+- `Metadata Scrubber` sits with privacy and removal tools, which better matches the user's intention before sharing
+- `Footnote / Endnote Remover` stops being hidden in a category that feels too technical or purely metadata-oriented
 - the categories are more descriptive of what the user is trying to clean up
 
 What can be done in the launcher:
