@@ -1,0 +1,141 @@
+CleanupSuite session handoff - UI polish
+Date: 2026-06-09
+
+Purpose
+-------
+This note lets a fresh Codex session quickly understand the current state of
+the CleanupSuite project after the UI polish work.
+
+Project path
+------------
+C:\Users\Chris\PROGRAMMING\VBA\CleanupSuite for MS Word
+
+Important files
+---------------
+- Canonical structured source:
+  C:\Users\Chris\PROGRAMMING\VBA\CleanupSuite for MS Word\src
+- Main installer/layout source edited this session:
+  C:\Users\Chris\PROGRAMMING\VBA\CleanupSuite for MS Word\src\installer\installer.bas
+- Canonical rebuilt distributable:
+  C:\Users\Chris\PROGRAMMING\VBA\CleanupSuite for MS Word\VBA_Cleanup_tool.txt
+- Installed working Word document:
+  C:\Users\Chris\PROGRAMMING\VBA\CleanupSuite for MS Word\CleanupSuite_Workspace.docm
+- Last known-good backup from before UI polish:
+  C:\Users\Chris\PROGRAMMING\VBA\CleanupSuite for MS Word\last working copy.zip
+
+Backup state
+------------
+The zip "last working copy.zip" was verified complete before this UI polish
+pass. It opened cleanly, had 61 entries, and matched the project folder
+file-for-file excluding .git, the zip itself, and Word temporary lock files.
+
+What changed in the UI polish pass
+----------------------------------
+The generated installer/layout code in src\installer\installer.bas was updated
+so future generated forms can be styled consistently:
+
+- Added central form styling helpers.
+- Added friendly form captions.
+- Added friendlier launcher button captions.
+- Added tooltips for launcher tool buttons.
+- Added a compact two-column launcher layout.
+- Changed launcher help controls to small "?" buttons.
+- Kept regular tool-form Help buttons as "Help".
+- Kept individual tool forms on the existing readable vertical layout.
+- Rebuilt VBA_Cleanup_tool.txt from src using assemble.py.
+
+Validation completed
+--------------------
+Ran this command from the project folder:
+
+python assemble.py
+
+It passed:
+
+OK 23 builders | balance, if-traps, wiring, strings, round-trip all clean
+
+Important installer/docm note
+-----------------------------
+The source/distributable path is now the canonical path:
+
+src\installer\installer.bas -> assemble.py -> VBA_Cleanup_tool.txt
+
+CleanupSuite_Workspace.docm was also updated and saved, but the full installer
+macro kept hitting a blocking Word/VBA dialog during verification. Because of
+that, the .docm UI polish was applied directly through the VBA designer object
+model after the source build passed, rather than by a clean full installer rerun.
+
+Current installed .docm UI state verified from Word
+---------------------------------------------------
+The installed launcher form was read back from Word after direct polish:
+
+- frmCleanupSuiteLauncher caption: Cleanup Suite
+- Form size: about 528 x 384
+- Launcher uses two columns.
+- Tool buttons use friendly captions, e.g. "Invisible Unicode", "Punctuation",
+  "Objects".
+- Launcher help buttons are compact "?" buttons.
+- Help button tooltips say "Show help for this tool".
+- Example normal tool form check: frmSpacingCleanup cmdHelp still says "Help".
+- Temporary UserForm1/UserForm2 leftovers from blocked installer attempts were
+  removed.
+
+Final expected VBA components in the .docm
+------------------------------------------
+ThisDocument
+modCleanupHelpers
+modCleanupLauncher
+modCleanupSuiteInstaller
+frmBreakNormalizer
+frmCapitalizationCleanup
+frmCleanupSuiteLauncher
+frmDocumentTrim
+frmDuplicateDetector
+frmFontNormalizer
+frmFootnoteRemover
+frmFormattingStripper
+frmHeaderFooterStandardizer
+frmHyperlinkRemover
+frmListCleanup
+frmMetadataScrubber
+frmObjectRemover
+frmParagraphCleanup
+frmSoftReturnConverter
+frmSpacingCleanup
+frmStyleCleanup
+frmTableCleaner
+frmUnicodeCleanup
+
+Known caution
+-------------
+Do not assume a full rerun of InstallCleanupSuite is currently smooth. It may
+show a blocking Word/VBA dialog. If continuing from a fresh session, inspect the
+dialog visually or use a careful, module-aware install flow before replacing
+working forms.
+
+Suggested next steps for a fresh session
+----------------------------------------
+1. Start by reading this file and git status.
+2. Treat src\installer\installer.bas and VBA_Cleanup_tool.txt as canonical.
+3. Treat CleanupSuite_Workspace.docm as the current installed working copy.
+4. Before risky changes, keep or refresh a zip backup.
+5. After source changes, run:
+   python assemble.py
+6. If editing the .docm, verify Word still contains only the expected components
+   listed above.
+
+Useful verification snippets
+----------------------------
+Project build:
+
+cd "C:\Users\Chris\PROGRAMMING\VBA\CleanupSuite for MS Word"
+python assemble.py
+
+Quick git state:
+
+git status --short
+
+Zip backup path:
+
+C:\Users\Chris\PROGRAMMING\VBA\CleanupSuite for MS Word\last working copy.zip
+

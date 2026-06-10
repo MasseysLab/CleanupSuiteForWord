@@ -23,7 +23,7 @@ End Sub
 Public Function GuardBeforeCleanup(toolName As String) As Boolean
     GuardBeforeCleanup = False
     If ActiveDocument.Path = "" Then
-        ' Document has never been saved — Word has nothing to recover
+        ' Document has never been saved -- Word has nothing to recover
         Dim msg As String
         msg = "This document has not been saved yet." & vbCrLf & vbCrLf & _
               "Saving first lets Word's built-in recovery protect you if anything goes wrong." & vbCrLf & vbCrLf & _
@@ -41,7 +41,7 @@ Public Function GuardBeforeCleanup(toolName As String) As Boolean
             On Error GoTo 0
         End If
     ElseIf GetAutoSaveSetting() Then
-        ' Document is saved and auto-save is ON — save silently before proceeding
+        ' Document is saved and auto-save is ON -- save silently before proceeding
         On Error Resume Next
         ActiveDocument.Save
         On Error GoTo 0

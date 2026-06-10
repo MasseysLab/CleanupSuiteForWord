@@ -1,0 +1,225 @@
+' ==============================================================================
+'  VBA Cleanup Suite -- Uninstaller - Auxiliary Version
+'  Version 1.1  |  Copyright (c) 2026 Christopher Travis Massey  |  MIT License
+' ==============================================================================
+'
+'  PURPOSE
+'  -------
+'  A fully self-contained uninstaller for the VBA Cleanup Suite.
+'  Use this file when the main installer's UninstallCleanupSuite macro
+'  cannot be run (syntax error, missing module, corrupt project, etc.).
+'
+'  This file has NO dependency on any Cleanup Suite component being present.
+'  It searches ALL open Word documents for suite components, asks you to
+'  confirm which document to clean, then removes everything it finds.
+'
+'  HOW TO USE
+'  ----------
+'  1. In Word, press Alt+F11 to open the VBA editor.
+'  2. In the Project Explorer, click ThisDocument under YOUR document project
+'     (NOT under Normal).
+'  3. Go to Insert > Module to create a new blank module.
+'  4. Open this file in Notepad, select all, copy.
+'  5. Paste into the blank module.
+'  6. Press F5 and run AuxUninstallCleanupSuite.
+'  7. Follow any on-screen prompts.
+'  8. After completion, delete this module manually:
+'     Right-click it in the Project Explorer > Remove > No.
+'
+'  PREREQUISITES (same as the main installer)
+'  -------------------------------------------
+'  a) File > Options > Trust Center > Trust Center Settings >
+'     Macro Settings > check "Trust access to the VBA project object model"
+'  b) VBA editor > Tools > References >
+'     check "Microsoft Visual Basic for Applications Extensibility 5.3"
+'
+'  If Word shows "User-defined type not defined" when you press F5,
+'  the prerequisites above are not yet enabled.  Enable them and try again.
+'
+' ==============================================================================
+
+Option Explicit
+
+' ------------------------------------------------------------------------------
+'  AuxUninstallCleanupSuite  --  main entry point
+' ------------------------------------------------------------------------------
+Public Sub AuxUninstallCleanupSuite()
+
+    ' ---- prerequisite check --------------------------------------------------
+    If Not AuxEnsurePrereqs() Then Exit Sub
+
+    ' ---- search ALL open documents for suite components ----------------------
+    Dim vbProj As VBIDE.VBProject
+    Dim foundProj As VBIDE.VBProject
+    Dim foundDoc As String
+    Dim doc As Document
+    Dim comp As VBIDE.VBComponent
+
+    For Each doc In Application.Documents
+        On Error Resume Next
+        Set vbProj = doc.VBProject
+        If Err.Number = 0 Then
+            If Not vbProj Is Nothing Then
+                For Each comp In vbProj.VBComponents
+                    If AuxIsSuiteComponent(comp.Name) Then
+                        Set foundProj = vbProj
+                        foundDoc = doc.Name
+                        Exit For
+                    End If
+                Next comp
+            End If
+        End If
+        On Error GoTo 0
+        If Not foundProj Is Nothing Then Exit For
+    Next doc
+
+    ' ---- nothing found anywhere ----------------------------------------------
+    If foundProj Is Nothing Then
+        MsgBox "No Cleanup Suite components were found in any open document." & vbCrLf & vbCrLf & _
+               "The suite may already be uninstalled, or the document that has it" & vbCrLf & _
+               "installed is not currently open in Word." & vbCrLf & vbCrLf & _
+               "Open the document with the suite installed and run this tool again." & vbCrLf & vbCrLf & _
+               "You can delete this module manually: right-click it in the" & vbCrLf & _
+               "Project Explorer > Remove > No.", _
+               vbInformation, "Aux Uninstaller -- Nothing Found"
+        Exit Sub
+    End If
+
+    ' ---- confirm document with user ------------------------------------------
+    If MsgBox("Found Cleanup Suite components in:" & vbCrLf & vbCrLf & _
+              "  " & foundDoc & vbCrLf & vbCrLf & _
+              "Proceed with removal from this document?", _
+              vbQuestion + vbYesNo, "Aux Uninstaller -- Confirm Document") = vbNo Then
+        MsgBox "Uninstall cancelled. No changes made.", vbInformation, "Aux Uninstaller"
+        Exit Sub
+    End If
+
+    Set vbProj = foundProj
+
+    ' ---- gather components to remove -----------------------------------------
+    Dim toRemove() As String
+    Dim removeCount As Long
+    removeCount = 0
+    ReDim toRemove(0 To vbProj.VBComponents.Count)
+
+    Dim i As Long
+    For i = 1 To vbProj.VBComponents.Count
+        Set comp = vbProj.VBComponents(i)
+        If AuxIsSuiteComponent(comp.Name) Then
+            toRemove(removeCount) = comp.Name
+            removeCount = removeCount + 1
+        End If
+    Next i
+
+    ' ---- confirm component list ----------------------------------------------
+    Dim confirmMsg As String
+    confirmMsg = "Found " & removeCount & " component(s) to remove:" & vbCrLf & vbCrLf
+    For i = 0 To removeCount - 1
+        confirmMsg = confirmMsg & "  " & toRemove(i) & vbCrLf
+    Next i
+    confirmMsg = confirmMsg & vbCrLf & "Remove all?"
+
+    If MsgBox(confirmMsg, vbQuestion + vbYesNo, "Aux Uninstaller -- Confirm Removal") = vbNo Then
+        MsgBox "Uninstall cancelled. No changes made.", vbInformation, "Aux Uninstaller"
+        Exit Sub
+    End If
+
+    ' ---- remove components ---------------------------------------------------
+    Dim removed As String
+    Dim failed As String
+    Dim removedCount As Long
+    Dim failedCount As Long
+    removedCount = 0
+    failedCount = 0
+
+    For i = vbProj.VBComponents.Count To 1 Step -1
+        Set comp = vbProj.VBComponents(i)
+        If AuxIsSuiteComponent(comp.Name) Then
+            Dim nm As String
+            nm = comp.Name
+            On Error Resume Next
+            Err.Clear
+            vbProj.VBComponents.Remove comp
+            If Err.Number = 0 Then
+                removed = removed & "  " & nm & vbCrLf
+                removedCount = removedCount + 1
+            Else
+                failed = failed & "  " & nm & "  (" & Err.Description & ")" & vbCrLf
+                failedCount = failedCount + 1
+            End If
+            On Error GoTo 0
+        End If
+    Next i
+
+    ' ---- report --------------------------------------------------------------
+    Dim report As String
+    report = "Aux Uninstaller -- Complete" & vbCrLf & vbCrLf
+
+    If removedCount > 0 Then
+        report = report & "Removed " & removedCount & " component(s):" & vbCrLf & removed & vbCrLf
+    End If
+
+    If failedCount > 0 Then
+        report = report & "Could NOT remove " & failedCount & " component(s):" & vbCrLf & failed & vbCrLf
+        report = report & "Close their code/form windows in the VBA editor and run again."
+    Else
+        report = report & "All components removed." & vbCrLf & vbCrLf
+        report = report & "FINAL STEP: Delete this module." & vbCrLf
+        report = report & "Right-click it in the Project Explorer > Remove > No."
+    End If
+
+    MsgBox report, vbInformation, "Aux Uninstaller -- Report"
+
+End Sub
+
+' ------------------------------------------------------------------------------
+'  AuxIsSuiteComponent  --  returns True if the component belongs to the suite
+' ------------------------------------------------------------------------------
+Private Function AuxIsSuiteComponent(compName As String) As Boolean
+
+    Dim baseName As String
+    baseName = compName
+    Do While Len(baseName) > 0 And IsNumeric(Right(baseName, 1))
+        baseName = Left(baseName, Len(baseName) - 1)
+    Loop
+
+    ' NOTE: Array() elements must start on the same line as Array( -- VBA runtime requirement
+    Dim names As Variant
+    names = Array("frmPunctuationCleanup", "frmUnicodeCleanup", "frmSpacingCleanup", "frmCapitalizationCleanup", "frmListCleanup", "frmParagraphCleanup", _
+                  "frmDuplicateDetector", "frmFontNormalizer", "frmTableCleaner", "frmBreakNormalizer", "frmDocumentTrim", "frmFormattingStripper", _
+                  "frmHyperlinkRemover", "frmSoftReturnConverter", "frmMetadataScrubber", "frmStyleCleanup", "frmFootnoteRemover", _
+                  "frmHeaderFooterStandardizer", "frmObjectRemover", "frmCleanupSuiteLauncher", "modCleanupLauncher", "modCleanupHelpers")
+
+    Dim i As Long
+    For i = LBound(names) To UBound(names)
+        If baseName = names(i) Then
+            AuxIsSuiteComponent = True
+            Exit Function
+        End If
+    Next i
+
+    AuxIsSuiteComponent = False
+
+End Function
+
+' ------------------------------------------------------------------------------
+'  AuxEnsurePrereqs  --  checks that VBIDE access is available
+' ------------------------------------------------------------------------------
+Private Function AuxEnsurePrereqs() As Boolean
+    AuxEnsurePrereqs = False
+    On Error Resume Next
+    Dim testProj As VBIDE.VBProject
+    Set testProj = Application.Documents(1).VBProject
+    If Err.Number <> 0 Then
+        MsgBox "Prerequisites not met." & vbCrLf & vbCrLf & _
+               "Please enable both of the following, then run again:" & vbCrLf & vbCrLf & _
+               "1. File > Options > Trust Center > Trust Center Settings >" & vbCrLf & _
+               "   Macro Settings > check 'Trust access to the VBA project object model'" & vbCrLf & vbCrLf & _
+               "2. VBA editor (Alt+F11) > Tools > References >" & vbCrLf & _
+               "   check 'Microsoft Visual Basic for Applications Extensibility 5.3'", _
+               vbExclamation, "Aux Uninstaller -- Prerequisites Required"
+        Exit Function
+    End If
+    On Error GoTo 0
+    AuxEnsurePrereqs = True
+End Function

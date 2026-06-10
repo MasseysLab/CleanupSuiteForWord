@@ -3,11 +3,11 @@ Option Explicit
 '  Document Trim
 '  Removes trailing empty paragraphs from the end of the document,
 '  leaving exactly one final paragraph (which Word requires).  Always
-'  operates on the full document — "end of document" is inherently
+'  operates on the full document -- "end of document" is inherently
 '  document-level, so scope selection is disabled for this tool.
 ' --------------------------------------------------------------
 Private Sub UserForm_Initialize()
-    ' Scope controls disabled — this tool always operates on the full document
+    ' Scope controls disabled -- this tool always operates on the full document
     fraScopeSelection.Enabled = False
     optScopeDocument.Value = True
     optScopeDocument.Caption = "Entire document (always)"

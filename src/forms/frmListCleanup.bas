@@ -98,7 +98,7 @@ Private Sub cmdRun_Click()
         If Right$(txt, 1) = vbCr Then txt = Left$(txt, Len(txt) - 1)
         If doHyphen And (Left$(txt, 2) = "- " Or Left$(txt, 2) = "* ") Then p.Range.HighlightColorIndex = wdYellow: changed = changed + 1
         If doNumbering And txt Like "[0-9]*.*" Then p.Range.HighlightColorIndex = wdYellow: changed = changed + 1
-        If doBullets And (Left$(txt, 2) = Chr(149) & " " Or Left$(txt, 2) = "• ") Then p.Range.HighlightColorIndex = wdYellow: changed = changed + 1
+        If doBullets And (Left$(txt, 2) = Chr(149) & " " Or Left$(txt, 2) = "* ") Then p.Range.HighlightColorIndex = wdYellow: changed = changed + 1
     Next p
     MsgBox "Preview complete. " & changed & " paragraphs highlighted.", vbInformation
     If previewOnly Then Unload Me: Exit Sub

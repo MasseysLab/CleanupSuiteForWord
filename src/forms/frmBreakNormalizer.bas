@@ -1,8 +1,8 @@
 Option Explicit
 ' --------------------------------------------------------------
 '  Break Normalizer
-'  Collapses consecutive section and page breaks — a common problem in
-'  documents assembled from multiple files — and optionally converts all
+'  Collapses consecutive section and page breaks -- a common problem in
+'  documents assembled from multiple files -- and optionally converts all
 '  section breaks to a chosen type: Next Page, Continuous, Even Page,
 '  or Odd Page.
 ' --------------------------------------------------------------

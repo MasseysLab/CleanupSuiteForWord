@@ -1,0 +1,6 @@
+cd C:\Users\Chris\PROGRAMMING\VBA\"CleanupSuite for MS Word"
+python explode.py 
+python assemble.py
+git add .
+git commit -m "Add 118 caption assignments, fix error 75, fix chkPreviewOnly apostrophe"
+git push

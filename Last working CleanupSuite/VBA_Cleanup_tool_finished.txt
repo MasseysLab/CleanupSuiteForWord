@@ -354,9 +354,8 @@ Private Sub AttemptCreateControls(vbProj As VBIDE.VBProject, formName As String,
         Exit Sub
     End If
 
-    ' Best-effort: add controls only if they do not exist, then apply a
-    ' consistent generated layout so the installed forms are usable without
-    ' hand-adjusting them in the designer.
+    ' Best-effort: add a few controls only if they don't exist.
+    ' We add minimal visible controls so the form is usable; layout adjustments are recommended in the designer.
     Dim ctrlNames As Variant
     ctrlNames = ControlsForForm(formName)
 
@@ -368,10 +367,13 @@ Private Sub AttemptCreateControls(vbProj As VBIDE.VBProject, formName As String,
             Dim ctrlProgId As String
             ctrlProgId = ControlTypeByName(CStr(ctrlName))
             designer.Controls.Add ctrlProgId, CStr(ctrlName), True
+            ' Make visible and set a default caption for command buttons
             On Error Resume Next
             designer.Controls(ctrlName).Visible = True
+            If Left$(CStr(ctrlName), 3) = "cmd" Then
+                designer.Controls(ctrlName).Caption = Replace(CStr(ctrlName), "cmd", "")
+            End If
         End If
-        ApplyControlStyle designer, CStr(ctrlName)
         On Error GoTo 0
     Next ctrlName
 
@@ -386,27 +388,22 @@ End Sub
 
 Private Sub LayoutFormControls(comp As VBIDE.VBComponent)
     ' Best-effort automatic layout so installed forms open usable rather than
-    ' with every control stacked at the top-left.  The launcher gets a compact
-    ' two-column tool grid; individual tool forms use a readable vertical flow.
-    ' Any per-control failure is ignored so one odd control cannot abort the pass.
+    ' with every control stacked at the top-left.  Controls are placed in a
+    ' single vertical column in their declared order: option buttons and
+    ' check boxes indented, command buttons paired two per row, labels
+    ' word-wrapped, and the form is sized to fit.  Any per-control failure is
+    ' ignored so one odd control cannot abort the whole pass.
     On Error Resume Next
     Dim designer As Object
     Set designer = comp.Designer
     If designer Is Nothing Then Exit Sub
-
-    ApplyFormStyle comp, designer
-    If comp.Name = "frmCleanupSuiteLauncher" Then
-        LayoutLauncherControls comp, designer
-        Exit Sub
-    End If
-
     Const FORM_W As Single = 372
     Const MARGIN As Single = 12
-    Const GAP As Single = 5
-    Const BTN_H As Single = 24
+    Const GAP As Single = 4
+    Const BTN_H As Single = 22
     Dim contentW As Single: contentW = FORM_W - 2 * MARGIN
     Dim halfW As Single: halfW = (contentW - 8) / 2
-    Dim y As Single: y = 10
+    Dim y As Single: y = 6
     Dim pend As String: pend = ""
     Dim ctrlNames As Variant: ctrlNames = ControlsForForm(comp.Name)
     Dim cn As Variant, pfx As String
@@ -431,15 +428,15 @@ Private Sub LayoutFormControls(comp As VBIDE.VBComponent)
             End If
             Select Case pfx
                 Case "lbl"
-                    h = 34: lft = MARGIN: w = contentW
+                    h = 28: lft = MARGIN: w = contentW
                     designer.Controls(CStr(cn)).WordWrap = True
                     designer.Controls(CStr(cn)).AutoSize = False
                 Case "opt", "chk"
-                    h = 18: lft = MARGIN + 8: w = contentW - 8
+                    h = 15: lft = MARGIN + 10: w = contentW - 10
                 Case "fra"
-                    h = 22: lft = MARGIN: w = contentW
-                Case Else
                     h = 20: lft = MARGIN: w = contentW
+                Case Else
+                    h = 18: lft = MARGIN: w = contentW
             End Select
             PositionControl designer, CStr(cn), lft, y, w, h
             y = y + h + GAP
@@ -455,58 +452,6 @@ Private Sub LayoutFormControls(comp As VBIDE.VBComponent)
     designer.Height = y + 40
 End Sub
 
-Private Sub LayoutLauncherControls(comp As VBIDE.VBComponent, designer As Object)
-    On Error Resume Next
-    Const FORM_W As Single = 520
-    Const MARGIN As Single = 12
-    Const GAP As Single = 6
-    Const BTN_H As Single = 25
-    Const HELP_W As Single = 24
-    Dim colW As Single: colW = (FORM_W - (2 * MARGIN) - GAP) / 2
-    Dim toolW As Single: toolW = colW - HELP_W - 4
-    Dim y As Single: y = 12
-    Dim x As Single
-
-    Dim tools As Variant
-    tools = Array( _
-        Array("cmdUnicode", "cmdHelpUnicode"), _
-        Array("cmdPunctuation", "cmdHelpPunct"), _
-        Array("cmdSpacing", "cmdHelpSpacing"), _
-        Array("cmdCapitalization", "cmdHelpCap"), _
-        Array("cmdList", "cmdHelpList"), _
-        Array("cmdParagraph", "cmdHelpPara"), _
-        Array("cmdDuplicate", "cmdHelpDuplicate"), _
-        Array("cmdFontNorm", "cmdHelpFont"), _
-        Array("cmdTableClean", "cmdHelpTable"), _
-        Array("cmdBreakNorm", "cmdHelpBreak"), _
-        Array("cmdDocTrim", "cmdHelpTrim"), _
-        Array("cmdFormatStrip", "cmdHelpFormat"), _
-        Array("cmdHyperlink", "cmdHelpHyperlink"), _
-        Array("cmdSoftReturn", "cmdHelpSoftReturn"), _
-        Array("cmdMetadata", "cmdHelpMetadata"), _
-        Array("cmdStyleClean", "cmdHelpStyle"), _
-        Array("cmdFootnote", "cmdHelpFootnote"), _
-        Array("cmdHeaderFooter", "cmdHelpHeaderFooter"), _
-        Array("cmdObjectRemover", "cmdHelpObject"))
-
-    Dim i As Long, row As Long, col As Long
-    For i = LBound(tools) To UBound(tools)
-        row = i \ 2
-        col = i Mod 2
-        x = MARGIN + (col * (colW + GAP))
-        PositionControl designer, CStr(tools(i)(0)), x, y + (row * (BTN_H + GAP)), toolW, BTN_H
-        PositionControl designer, CStr(tools(i)(1)), x + toolW + 4, y + (row * (BTN_H + GAP)), HELP_W, BTN_H
-    Next i
-
-    y = y + (((UBound(tools) + 2) \ 2) * (BTN_H + GAP)) + 4
-    PositionControl designer, "chkAutoSave", MARGIN + 2, y, FORM_W - (2 * MARGIN), 18
-
-    comp.Properties("Width") = FORM_W + 8
-    comp.Properties("Height") = y + 58
-    designer.Width = FORM_W + 8
-    designer.Height = y + 58
-End Sub
-
 Private Sub PositionControl(designer As Object, nm As String, L As Single, T As Single, W As Single, H As Single)
     On Error Resume Next
     With designer.Controls(nm)
@@ -518,52 +463,6 @@ Private Sub PositionControl(designer As Object, nm As String, L As Single, T As 
     End With
 End Sub
 
-Private Sub ApplyFormStyle(comp As VBIDE.VBComponent, designer As Object)
-    On Error Resume Next
-    comp.Properties("Caption") = FriendlyFormCaption(comp.Name)
-    designer.Caption = FriendlyFormCaption(comp.Name)
-    designer.BackColor = RGB(248, 249, 251)
-    designer.SpecialEffect = 0
-End Sub
-
-Private Sub ApplyControlStyle(designer As Object, nm As String)
-    On Error Resume Next
-    Dim ctl As Object
-    Set ctl = designer.Controls(nm)
-    If ctl Is Nothing Then Exit Sub
-
-    ctl.Font.Name = "Segoe UI"
-    ctl.Font.Size = 9
-    ctl.ForeColor = RGB(32, 37, 45)
-
-    Select Case Left$(nm, 3)
-        Case "cmd"
-            SetButtonCaption designer, nm
-            ctl.Font.Bold = False
-            ctl.BackColor = RGB(255, 255, 255)
-            ctl.ControlTipText = ButtonTipText(nm)
-            If Left$(nm, 7) = "cmdHelp" And nm <> "cmdHelp" Then
-                ctl.Caption = "?"
-                ctl.ControlTipText = "Show help for this tool"
-                ctl.Font.Bold = True
-            End If
-            If nm = "cmdRun" Then
-                ctl.Font.Bold = True
-                ctl.ControlTipText = "Run the selected cleanup options"
-            End If
-        Case "fra"
-            ctl.Caption = FrameCaption(nm)
-            ctl.Font.Bold = True
-            ctl.BackColor = RGB(248, 249, 251)
-            ctl.ForeColor = RGB(64, 70, 80)
-        Case "lbl"
-            ctl.BackColor = RGB(248, 249, 251)
-            ctl.ForeColor = RGB(84, 91, 104)
-        Case "chk", "opt"
-            ctl.BackColor = RGB(248, 249, 251)
-    End Select
-End Sub
-
 Private Sub SetButtonCaption(designer As Object, nm As String)
     On Error Resume Next
     Dim cap As String
@@ -572,97 +471,10 @@ Private Sub SetButtonCaption(designer As Object, nm As String)
         Case "cmdSelectAll": cap = "Select All"
         Case "cmdDeselectAll": cap = "Deselect All"
         Case "cmdHelp": cap = "Help"
-        Case "cmdUnicode": cap = "Invisible Unicode"
-        Case "cmdPunctuation": cap = "Punctuation"
-        Case "cmdSpacing": cap = "Spacing"
-        Case "cmdCapitalization": cap = "Capitalization"
-        Case "cmdList": cap = "Lists"
-        Case "cmdParagraph": cap = "Paragraphs"
-        Case "cmdDuplicate": cap = "Duplicates"
-        Case "cmdFontNorm": cap = "Fonts"
-        Case "cmdTableClean": cap = "Tables"
-        Case "cmdBreakNorm": cap = "Breaks"
-        Case "cmdDocTrim": cap = "Document Trim"
-        Case "cmdFormatStrip": cap = "Strip Formatting"
-        Case "cmdHyperlink": cap = "Hyperlinks"
-        Case "cmdSoftReturn": cap = "Soft Returns"
-        Case "cmdMetadata": cap = "Metadata"
-        Case "cmdStyleClean": cap = "Styles"
-        Case "cmdFootnote": cap = "Footnotes"
-        Case "cmdHeaderFooter": cap = "Headers / Footers"
-        Case "cmdObjectRemover": cap = "Objects"
         Case Else: cap = Replace(nm, "cmd", "")
     End Select
     designer.Controls(nm).Caption = cap
 End Sub
-
-Private Function FriendlyFormCaption(formName As String) As String
-    Select Case formName
-        Case "frmCleanupSuiteLauncher": FriendlyFormCaption = "Cleanup Suite"
-        Case "frmPunctuationCleanup": FriendlyFormCaption = "Punctuation Normalizer"
-        Case "frmUnicodeCleanup": FriendlyFormCaption = "Invisible Unicode Cleaner"
-        Case "frmSpacingCleanup": FriendlyFormCaption = "Spacing Fixer"
-        Case "frmCapitalizationCleanup": FriendlyFormCaption = "Capitalization Fixer"
-        Case "frmListCleanup": FriendlyFormCaption = "List Normalizer"
-        Case "frmParagraphCleanup": FriendlyFormCaption = "Paragraph Structure Fixer"
-        Case "frmDuplicateDetector": FriendlyFormCaption = "Duplicate Paragraph Detector"
-        Case "frmFontNormalizer": FriendlyFormCaption = "Font Normalizer"
-        Case "frmTableCleaner": FriendlyFormCaption = "Table Cleaner"
-        Case "frmBreakNormalizer": FriendlyFormCaption = "Break Normalizer"
-        Case "frmDocumentTrim": FriendlyFormCaption = "Document Trim"
-        Case "frmFormattingStripper": FriendlyFormCaption = "Formatting Stripper"
-        Case "frmHyperlinkRemover": FriendlyFormCaption = "Hyperlink Remover"
-        Case "frmSoftReturnConverter": FriendlyFormCaption = "Soft Return Converter"
-        Case "frmMetadataScrubber": FriendlyFormCaption = "Metadata Scrubber"
-        Case "frmStyleCleanup": FriendlyFormCaption = "Style Cleanup"
-        Case "frmFootnoteRemover": FriendlyFormCaption = "Footnote / Endnote Remover"
-        Case "frmHeaderFooterStandardizer": FriendlyFormCaption = "Header / Footer Standardizer"
-        Case "frmObjectRemover": FriendlyFormCaption = "Object Remover"
-        Case Else: FriendlyFormCaption = formName
-    End Select
-End Function
-
-Private Function FrameCaption(nm As String) As String
-    Select Case nm
-        Case "fraCustom": FrameCaption = "Custom options"
-        Case "fraScopeSelection": FrameCaption = "Scope"
-        Case "fraMatching": FrameCaption = "Matching"
-        Case "fraThreshold": FrameCaption = "Fuzzy sensitivity"
-        Case "fraConvertTo": FrameCaption = "Convert section breaks to"
-        Case "fraEmphasis": FrameCaption = "Emphasis handling"
-        Case "fraOptions": FrameCaption = "Options"
-        Case "fraAlign": FrameCaption = "Alignment"
-        Case Else: FrameCaption = ""
-    End Select
-End Function
-
-Private Function ButtonTipText(nm As String) As String
-    Select Case nm
-        Case "cmdRun": ButtonTipText = "Run this cleanup tool"
-        Case "cmdSelectAll": ButtonTipText = "Select all custom options"
-        Case "cmdDeselectAll": ButtonTipText = "Clear all custom options"
-        Case "cmdUnicode": ButtonTipText = "Remove invisible Unicode characters"
-        Case "cmdPunctuation": ButtonTipText = "Normalize smart punctuation"
-        Case "cmdSpacing": ButtonTipText = "Fix common spacing issues"
-        Case "cmdCapitalization": ButtonTipText = "Apply consistent capitalization"
-        Case "cmdList": ButtonTipText = "Normalize bullets, numbering, and list indents"
-        Case "cmdParagraph": ButtonTipText = "Clean paragraph spacing and structure"
-        Case "cmdDuplicate": ButtonTipText = "Find repeated or similar paragraphs"
-        Case "cmdFontNorm": ButtonTipText = "Reset direct font overrides"
-        Case "cmdTableClean": ButtonTipText = "Clean table structure and formatting"
-        Case "cmdBreakNorm": ButtonTipText = "Normalize section and page breaks"
-        Case "cmdDocTrim": ButtonTipText = "Trim document start and end whitespace"
-        Case "cmdFormatStrip": ButtonTipText = "Strip direct formatting while preserving content"
-        Case "cmdHyperlink": ButtonTipText = "Remove hyperlinks"
-        Case "cmdSoftReturn": ButtonTipText = "Convert soft returns and paragraph breaks"
-        Case "cmdMetadata": ButtonTipText = "Scrub document metadata and review artifacts"
-        Case "cmdStyleClean": ButtonTipText = "Clean unused and duplicate styles"
-        Case "cmdFootnote": ButtonTipText = "Remove or inline footnotes and endnotes"
-        Case "cmdHeaderFooter": ButtonTipText = "Standardize headers and footers"
-        Case "cmdObjectRemover": ButtonTipText = "Remove pictures, text boxes, and other objects"
-        Case Else: ButtonTipText = ""
-    End Select
-End Function
 
 
 ' ---------------------------
@@ -774,7 +586,6 @@ Private Function ControlTypeByName(ctrlName As String) As String
         ControlTypeByName = "Forms.TextBox.1"
     End If
 End Function
-
 
 ' ---------------------------
 ' Manual checklist text (detailed instructions for finishing UI)
