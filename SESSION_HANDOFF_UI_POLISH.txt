@@ -1,5 +1,6 @@
 CleanupSuite session handoff - UI polish
 Date: 2026-06-09
+Updated: 2026-06-10
 
 Purpose
 -------
@@ -44,6 +45,30 @@ so future generated forms can be styled consistently:
 - Kept individual tool forms on the existing readable vertical layout.
 - Rebuilt VBA_Cleanup_tool.txt from src using assemble.py.
 
+What changed in the 2026-06-10 forms reliability pass
+-----------------------------------------------------
+The user reported that VBA was showing an error in frmUnicodeCleanup. VBA was
+stopped in the Unicode cleaner error handler on an Application.Undo line. The
+suite now avoids calling Word Undo from inside cleanup error handlers.
+
+Changes made:
+
+- frmUnicodeCleanup now uses UnicodeChar(codePoint) so high Unicode values such
+  as U+FEFF are built safely in VBA.
+- All cleanup forms with RunErr handlers were changed to capture the original
+  error number/description first, close the custom undo record safely, and show
+  a single Cleanup Error message.
+- Direct Application.Undo calls were removed from cleanup error handlers. The
+  message now tells the user to use Word's normal Undo command (Ctrl+Z) after
+  closing the message if rollback is desired.
+- The installed .docm was missing frmPunctuationCleanup even though the source
+  and launcher expected it. That form was recreated in the .docm from
+  src\forms\frmPunctuationCleanup.bas, its expected controls were created, and
+  the document was saved.
+- modCleanupSuiteInstaller in the .docm was refreshed from the rebuilt
+  VBA_Cleanup_tool.txt so rerunning the installer does not reintroduce the older
+  form code.
+
 Validation completed
 --------------------
 Ran this command from the project folder:
@@ -53,6 +78,12 @@ python assemble.py
 It passed:
 
 OK 23 builders | balance, if-traps, wiring, strings, round-trip all clean
+
+The 2026-06-10 forms reliability pass also ran:
+
+python vbaeval.py validate
+
+It passed with the same 23-builder validation result.
 
 Important installer/docm note
 -----------------------------
@@ -100,11 +131,58 @@ frmListCleanup
 frmMetadataScrubber
 frmObjectRemover
 frmParagraphCleanup
+frmPunctuationCleanup
 frmSoftReturnConverter
 frmSpacingCleanup
 frmStyleCleanup
 frmTableCleaner
 frmUnicodeCleanup
+
+Latest verification completed
+-----------------------------
+After the 2026-06-10 pass:
+
+- CleanupSuite_Problems_Reference.docx was read and used as a 19-tool problem
+  checklist. No conversion to .docm was needed; it is a reference document, not
+  a macro host.
+- Source audit confirmed all expected form source files exist.
+- Source audit confirmed no cleanup error handler still contains a direct
+  Application.Undo prompt/call.
+- Installed .docm designer audit confirmed all 20 expected forms and their
+  expected controls are present.
+- VBA Compile Project ran without dropping into break mode.
+- A temporary smoke-test module loaded and unloaded all 20 forms successfully:
+  all 19 cleanup tool forms plus frmCleanupSuiteLauncher.
+
+Crash/reset mitigation added 2026-06-10
+---------------------------------------
+The user reported that Word closed or reset after running a tool. Windows Event
+Viewer showed real WINWORD.EXE crashes in wwlib.dll with
+OFFICE_MODULE_VERSION_MISMATCH entries attached to CleanupSuite_Workspace.docm.
+
+Likely cause: tools were saving/stamping custom document properties on the same
+.docm that hosts the running VBA project. When the active document is also
+ThisDocument, saving or changing document properties while code is running can
+leave Word/VBA in a stale module-version state.
+
+Change made:
+
+- modCleanupHelpers.bas now has IsRunningInMacroHostDocument().
+- GuardBeforeCleanup skips silent auto-save when ActiveDocument is the macro
+  host document.
+- MarkCleanupStart and MarkCleanupEnd exit immediately when ActiveDocument is
+  the macro host document, so they do not add/delete custom properties or save
+  the host while suite code is running.
+- VBA_Cleanup_tool.txt was rebuilt and the installed .docm's modCleanupHelpers
+  and modCleanupSuiteInstaller were synced from source.
+- A clean close/reopen/compile/save cycle was run after the change.
+
+Important behavior note:
+
+The suite should be run against a normal target document whenever possible, not
+against CleanupSuite_Workspace.docm itself. If testing against the macro host is
+unavoidable, the new helper guard prevents the suite from stamping/saving the
+host during cleanup.
 
 Known caution
 -------------
@@ -138,4 +216,3 @@ git status --short
 Zip backup path:
 
 C:\Users\Chris\PROGRAMMING\VBA\CleanupSuite for MS Word\last working copy.zip
-

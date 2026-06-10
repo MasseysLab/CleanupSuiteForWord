@@ -371,7 +371,7 @@ Private Sub AttemptCreateControls(vbProj As VBIDE.VBProject, formName As String,
             On Error Resume Next
             designer.Controls(ctrlName).Visible = True
         End If
-        ApplyControlStyle designer, CStr(ctrlName)
+        ApplyControlStyle designer, formName, CStr(ctrlName)
         On Error GoTo 0
     Next ctrlName
 
@@ -526,7 +526,7 @@ Private Sub ApplyFormStyle(comp As VBIDE.VBComponent, designer As Object)
     designer.SpecialEffect = 0
 End Sub
 
-Private Sub ApplyControlStyle(designer As Object, nm As String)
+Private Sub ApplyControlStyle(designer As Object, formName As String, nm As String)
     On Error Resume Next
     Dim ctl As Object
     Set ctl = designer.Controls(nm)
@@ -559,11 +559,195 @@ Private Sub ApplyControlStyle(designer As Object, nm As String)
         Case "lbl"
             ctl.BackColor = RGB(248, 249, 251)
             ctl.ForeColor = RGB(84, 91, 104)
+            If Len(ControlCaptionText(formName, nm)) > 0 Then ctl.Caption = ControlCaptionText(formName, nm)
         Case "chk", "opt"
             ctl.BackColor = RGB(248, 249, 251)
+            If Len(ControlCaptionText(formName, nm)) > 0 Then ctl.Caption = ControlCaptionText(formName, nm)
     End Select
 End Sub
 
+Private Function ControlCaptionText(formName As String, nm As String) As String
+    Select Case formName & "." & nm
+        Case "frmBreakNormalizer.chkCollapsePageBreaks": ControlCaptionText = "Collapse consecutive page breaks"
+        Case "frmBreakNormalizer.chkCollapseSectionBreaks": ControlCaptionText = "Collapse consecutive section breaks"
+        Case "frmBreakNormalizer.chkConvertSectionBreaks": ControlCaptionText = "Convert section breaks to page breaks"
+        Case "frmBreakNormalizer.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
+        Case "frmBreakNormalizer.optConvertContinuous": ControlCaptionText = "Continuous"
+        Case "frmBreakNormalizer.optConvertEvenPage": ControlCaptionText = "Even Page"
+        Case "frmBreakNormalizer.optConvertNextPage": ControlCaptionText = "Next Page"
+        Case "frmBreakNormalizer.optConvertOddPage": ControlCaptionText = "Odd Page"
+        Case "frmBreakNormalizer.optScopeDocument": ControlCaptionText = "Entire document"
+        Case "frmBreakNormalizer.optScopeSelection": ControlCaptionText = "Selected text only"
+        Case "frmCapitalizationCleanup.chkLower": ControlCaptionText = "Fix all-lowercase paragraphs"
+        Case "frmCapitalizationCleanup.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
+        Case "frmCapitalizationCleanup.chkSentence": ControlCaptionText = "Capitalize sentence starts"
+        Case "frmCapitalizationCleanup.chkSmartSentences": ControlCaptionText = "Smart sentence detection (skip abbreviations)"
+        Case "frmCapitalizationCleanup.chkTitle": ControlCaptionText = "Apply title case to headings"
+        Case "frmCapitalizationCleanup.chkUpper": ControlCaptionText = "Convert ALL-CAPS words (5+ letters)"
+        Case "frmCapitalizationCleanup.optAll": ControlCaptionText = "All capitalization fixes"
+        Case "frmCapitalizationCleanup.optCustom": ControlCaptionText = "Custom (choose below)"
+        Case "frmCapitalizationCleanup.optLower": ControlCaptionText = "lowercase -> Sentence case"
+        Case "frmCapitalizationCleanup.optScopeDocument": ControlCaptionText = "Entire document"
+        Case "frmCapitalizationCleanup.optScopeSelection": ControlCaptionText = "Selected text only"
+        Case "frmCapitalizationCleanup.optSentence": ControlCaptionText = "Sentence case"
+        Case "frmCapitalizationCleanup.optTitle": ControlCaptionText = "Title case"
+        Case "frmCapitalizationCleanup.optUpper": ControlCaptionText = "ALL CAPS -> Title Case"
+        Case "frmCleanupSuiteLauncher.chkAutoSave": ControlCaptionText = "Auto-save before running each tool"
+        Case "frmDocumentTrim.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
+        Case "frmDocumentTrim.optScopeDocument": ControlCaptionText = "Entire document (always)"
+        Case "frmDuplicateDetector.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
+        Case "frmDuplicateDetector.lblFuzzyWarning": ControlCaptionText = "Fuzzy match: groups paragraphs sharing the chosen percentage of words.  Slower on large documents."
+        Case "frmDuplicateDetector.optFuzzyLoose": ControlCaptionText = "Loose  (50% word overlap)"
+        Case "frmDuplicateDetector.optFuzzyMedium": ControlCaptionText = "Medium  (70% word overlap)"
+        Case "frmDuplicateDetector.optFuzzyStrict": ControlCaptionText = "Strict  (90% word overlap)"
+        Case "frmDuplicateDetector.optHighlightOnly": ControlCaptionText = "Highlight duplicates (preview only)"
+        Case "frmDuplicateDetector.optMatchExact": ControlCaptionText = "Exact match"
+        Case "frmDuplicateDetector.optMatchFuzzy": ControlCaptionText = "Fuzzy match (word overlap)"
+        Case "frmDuplicateDetector.optMatchNormalized": ControlCaptionText = "Normalized match (ignore punctuation and spaces)"
+        Case "frmDuplicateDetector.optRemoveDupes": ControlCaptionText = "Remove duplicate paragraphs"
+        Case "frmDuplicateDetector.optScopeDocument": ControlCaptionText = "Entire document"
+        Case "frmDuplicateDetector.optScopeSelection": ControlCaptionText = "Selected text only"
+        Case "frmFontNormalizer.chkBold": ControlCaptionText = "Normalize direct bold overrides"
+        Case "frmFontNormalizer.chkFontColor": ControlCaptionText = "Remove direct font color overrides"
+        Case "frmFontNormalizer.chkFontFace": ControlCaptionText = "Normalize font face to document default"
+        Case "frmFontNormalizer.chkFontSize": ControlCaptionText = "Normalize font size to style-defined size"
+        Case "frmFontNormalizer.chkItalic": ControlCaptionText = "Normalize direct italic overrides"
+        Case "frmFontNormalizer.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
+        Case "frmFontNormalizer.optScopeDocument": ControlCaptionText = "Entire document"
+        Case "frmFontNormalizer.optScopeSelection": ControlCaptionText = "Selected text only"
+        Case "frmFootnoteRemover.chkEndnotes": ControlCaptionText = "Remove endnotes"
+        Case "frmFootnoteRemover.chkFootnotes": ControlCaptionText = "Remove footnotes"
+        Case "frmFootnoteRemover.chkKeepTextInline": ControlCaptionText = "Keep note text inline [in brackets] instead of deleting it"
+        Case "frmFootnoteRemover.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
+        Case "frmFootnoteRemover.optScopeDocument": ControlCaptionText = "Entire document"
+        Case "frmFootnoteRemover.optScopeSelection": ControlCaptionText = "Selected text only"
+        Case "frmFormattingStripper.chkPreserveDropCaps": ControlCaptionText = "Preserve drop caps"
+        Case "frmFormattingStripper.chkPreserveHighlight": ControlCaptionText = "Preserve highlighting"
+        Case "frmFormattingStripper.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
+        Case "frmFormattingStripper.chkResetChar": ControlCaptionText = "Strip direct character formatting"
+        Case "frmFormattingStripper.chkResetPara": ControlCaptionText = "Strip direct paragraph formatting"
+        Case "frmFormattingStripper.lblSpeedWarning": ControlCaptionText = "Strip mode removes all direct formatting, including bold and italic emphasis."
+        Case "frmFormattingStripper.optEmphQuick": ControlCaptionText = "Quick  (preserve paragraph-level emphasis)"
+        Case "frmFormattingStripper.optEmphStrip": ControlCaptionText = "Strip  (remove all direct formatting)"
+        Case "frmFormattingStripper.optEmphThorough": ControlCaptionText = "Thorough  (preserve word-level emphasis)"
+        Case "frmFormattingStripper.optScopeDocument": ControlCaptionText = "Entire document"
+        Case "frmFormattingStripper.optScopeSelection": ControlCaptionText = "Selected text only"
+        Case "frmHeaderFooterStandardizer.chkAlignment": ControlCaptionText = "Set alignment"
+        Case "frmHeaderFooterStandardizer.chkBreakLinks": ControlCaptionText = "Unlink sections (set each independently)"
+        Case "frmHeaderFooterStandardizer.chkFont": ControlCaptionText = "Reset font to the document default"
+        Case "frmHeaderFooterStandardizer.chkFooters": ControlCaptionText = "Include footers"
+        Case "frmHeaderFooterStandardizer.chkHeaders": ControlCaptionText = "Include headers"
+        Case "frmHeaderFooterStandardizer.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
+        Case "frmHeaderFooterStandardizer.chkSpacing": ControlCaptionText = "Remove paragraph spacing"
+        Case "frmHeaderFooterStandardizer.optAlignCenter": ControlCaptionText = "Center"
+        Case "frmHeaderFooterStandardizer.optAlignLeft": ControlCaptionText = "Left"
+        Case "frmHeaderFooterStandardizer.optAlignRight": ControlCaptionText = "Right"
+        Case "frmHeaderFooterStandardizer.optClearAll": ControlCaptionText = "Clear all header/footer content"
+        Case "frmHeaderFooterStandardizer.optScopeDocument": ControlCaptionText = "Entire document (always)"
+        Case "frmHeaderFooterStandardizer.optStandardize": ControlCaptionText = "Standardize formatting"
+        Case "frmHyperlinkRemover.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
+        Case "frmHyperlinkRemover.chkRemoveFormat": ControlCaptionText = "Remove hyperlink character style (blue underline)"
+        Case "frmHyperlinkRemover.optScopeDocument": ControlCaptionText = "Entire document"
+        Case "frmHyperlinkRemover.optScopeSelection": ControlCaptionText = "Selected text only"
+        Case "frmListCleanup.chkFixIndent": ControlCaptionText = "Fix list indentation"
+        Case "frmListCleanup.chkHyphenToBullets": ControlCaptionText = "Convert hyphen-dash lines to bullets"
+        Case "frmListCleanup.chkNormalizeBullets": ControlCaptionText = "Convert manual hyphens / asterisks to List Bullet style"
+        Case "frmListCleanup.chkNormalizeNumbering": ControlCaptionText = "Convert manual numbers to List Number style"
+        Case "frmListCleanup.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
+        Case "frmListCleanup.optAll": ControlCaptionText = "All list fixes"
+        Case "frmListCleanup.optBullets": ControlCaptionText = "Convert manual bullet lists"
+        Case "frmListCleanup.optCustom": ControlCaptionText = "Custom (choose below)"
+        Case "frmListCleanup.optIndent": ControlCaptionText = "Fix list indentation"
+        Case "frmListCleanup.optNumbering": ControlCaptionText = "Convert manual numbered lists"
+        Case "frmListCleanup.optScopeDocument": ControlCaptionText = "Entire document"
+        Case "frmListCleanup.optScopeSelection": ControlCaptionText = "Selected text only"
+        Case "frmMetadataScrubber.chkComments": ControlCaptionText = "Remove all comments"
+        Case "frmMetadataScrubber.chkPersonalInfo": ControlCaptionText = "Clear personal information (Last Saved By, revision authors)"
+        Case "frmMetadataScrubber.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
+        Case "frmMetadataScrubber.chkProperties": ControlCaptionText = "Clear document properties (Title, Author, Company, etc.)"
+        Case "frmMetadataScrubber.chkRevisions": ControlCaptionText = "Accept tracked changes and clear revision marks"
+        Case "frmMetadataScrubber.optScopeDocument": ControlCaptionText = "Entire document (always)"
+        Case "frmObjectRemover.chkFrames": ControlCaptionText = "Frames (remove frame, keep the text)"
+        Case "frmObjectRemover.chkHiddenText": ControlCaptionText = "Hidden text"
+        Case "frmObjectRemover.chkHorizontalLines": ControlCaptionText = "Horizontal lines"
+        Case "frmObjectRemover.chkHtmlControls": ControlCaptionText = "HTML / ActiveX form controls"
+        Case "frmObjectRemover.chkPictures": ControlCaptionText = "Pictures (inline and floating images)"
+        Case "frmObjectRemover.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
+        Case "frmObjectRemover.chkTables": ControlCaptionText = "Tables -- DELETES tables and all their contents"
+        Case "frmObjectRemover.chkTextBoxes": ControlCaptionText = "Text boxes (and their contents)"
+        Case "frmObjectRemover.optScopeDocument": ControlCaptionText = "Entire document (always)"
+        Case "frmParagraphCleanup.chkCollapseBreaks": ControlCaptionText = "Convert soft returns (Shift+Enter) to paragraph marks"
+        Case "frmParagraphCleanup.chkFixIndent": ControlCaptionText = "Remove manual tab / space indentation at paragraph start"
+        Case "frmParagraphCleanup.chkNormalizeParaSpacing": ControlCaptionText = "Normalize Space Before / Space After settings"
+        Case "frmParagraphCleanup.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
+        Case "frmParagraphCleanup.chkRemoveEmpty": ControlCaptionText = "Collapse multiple consecutive empty paragraphs"
+        Case "frmParagraphCleanup.optAll": ControlCaptionText = "All paragraph fixes"
+        Case "frmParagraphCleanup.optCustom": ControlCaptionText = "Custom (choose below)"
+        Case "frmParagraphCleanup.optNormalizeSpacing": ControlCaptionText = "Normalize paragraph spacing"
+        Case "frmParagraphCleanup.optRemoveEmpty": ControlCaptionText = "Remove empty paragraphs"
+        Case "frmParagraphCleanup.optScopeDocument": ControlCaptionText = "Entire document"
+        Case "frmParagraphCleanup.optScopeSelection": ControlCaptionText = "Selected text only"
+        Case "frmPunctuationCleanup.chkCurlyDouble": ControlCaptionText = "Curly double quotes  -> straight double quotes"
+        Case "frmPunctuationCleanup.chkCurlySingle": ControlCaptionText = "Curly single quotes / apostrophes  -> straight single quotes"
+        Case "frmPunctuationCleanup.chkEllipses": ControlCaptionText = "Ellipsis character  ->  three dots  ..."
+        Case "frmPunctuationCleanup.chkEmDash": ControlCaptionText = "Em dash  ->  hyphen-minus  -"
+        Case "frmPunctuationCleanup.chkEnDash": ControlCaptionText = "En dash  ->  hyphen-minus  -"
+        Case "frmPunctuationCleanup.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
+        Case "frmPunctuationCleanup.optAll": ControlCaptionText = "All punctuation types"
+        Case "frmPunctuationCleanup.optCustom": ControlCaptionText = "Custom (choose below)"
+        Case "frmPunctuationCleanup.optDashes": ControlCaptionText = "Dashes only"
+        Case "frmPunctuationCleanup.optEllipses": ControlCaptionText = "Ellipses only"
+        Case "frmPunctuationCleanup.optQuotes": ControlCaptionText = "Quotes only"
+        Case "frmPunctuationCleanup.optScopeDocument": ControlCaptionText = "Entire document"
+        Case "frmPunctuationCleanup.optScopeSelection": ControlCaptionText = "Selected text only"
+        Case "frmSoftReturnConverter.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
+        Case "frmSoftReturnConverter.optParaToSoft": ControlCaptionText = "Convert paragraph marks to soft returns"
+        Case "frmSoftReturnConverter.optScopeDocument": ControlCaptionText = "Entire document"
+        Case "frmSoftReturnConverter.optScopeSelection": ControlCaptionText = "Selected text only"
+        Case "frmSoftReturnConverter.optSoftToPara": ControlCaptionText = "Convert soft returns (Shift+Enter) to paragraph marks"
+        Case "frmSpacingCleanup.chkDoubleSpaces": ControlCaptionText = "Collapse double (and multiple) spaces"
+        Case "frmSpacingCleanup.chkExtraBlankLines": ControlCaptionText = "Collapse extra blank lines between paragraphs"
+        Case "frmSpacingCleanup.chkNormalizeAfterPunct": ControlCaptionText = "Normalize spacing after punctuation"
+        Case "frmSpacingCleanup.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
+        Case "frmSpacingCleanup.chkSpaceBeforePunct": ControlCaptionText = "Remove space before punctuation  ( , . : ; ! ? )"
+        Case "frmSpacingCleanup.chkTrimSpaces": ControlCaptionText = "Remove leading and trailing spaces"
+        Case "frmSpacingCleanup.optAll": ControlCaptionText = "All spacing fixes"
+        Case "frmSpacingCleanup.optCustom": ControlCaptionText = "Custom (choose below)"
+        Case "frmSpacingCleanup.optDoubleSpaces": ControlCaptionText = "Double spaces only"
+        Case "frmSpacingCleanup.optScopeDocument": ControlCaptionText = "Entire document"
+        Case "frmSpacingCleanup.optScopeSelection": ControlCaptionText = "Selected text only"
+        Case "frmSpacingCleanup.optTrim": ControlCaptionText = "Trim leading / trailing spaces"
+        Case "frmStyleCleanup.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
+        Case "frmStyleCleanup.chkRemapVariants": ControlCaptionText = "Remap style variants to canonical equivalents"
+        Case "frmStyleCleanup.chkRemoveUnused": ControlCaptionText = "Remove unused styles"
+        Case "frmStyleCleanup.optScopeDocument": ControlCaptionText = "Entire document (always)"
+        Case "frmTableCleaner.chkConvertToText": ControlCaptionText = "Convert single-column tables to plain text"
+        Case "frmTableCleaner.chkNormalizeBorders": ControlCaptionText = "Normalize border styles"
+        Case "frmTableCleaner.chkNormalizePadding": ControlCaptionText = "Normalize cell padding"
+        Case "frmTableCleaner.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
+        Case "frmTableCleaner.chkRemoveBorders": ControlCaptionText = "Remove all borders"
+        Case "frmTableCleaner.chkRemoveEmptyCols": ControlCaptionText = "Remove empty columns"
+        Case "frmTableCleaner.chkRemoveEmptyRows": ControlCaptionText = "Remove empty rows"
+        Case "frmTableCleaner.chkStripDirectFormat": ControlCaptionText = "Strip direct formatting from cells"
+        Case "frmTableCleaner.optScopeDocument": ControlCaptionText = "Entire document"
+        Case "frmTableCleaner.optScopeSelection": ControlCaptionText = "Selected text only"
+        Case "frmUnicodeCleanup.chkBOM": ControlCaptionText = "Byte order marks (U+FEFF)"
+        Case "frmUnicodeCleanup.chkNBHyphen": ControlCaptionText = "Non-breaking hyphens (U+2011)"
+        Case "frmUnicodeCleanup.chkNBSP": ControlCaptionText = "Non-breaking spaces (U+00A0)"
+        Case "frmUnicodeCleanup.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
+        Case "frmUnicodeCleanup.chkSoftHyphen": ControlCaptionText = "Soft hyphens (U+00AD)"
+        Case "frmUnicodeCleanup.chkZWJ": ControlCaptionText = "Zero-width joiners (U+200D)"
+        Case "frmUnicodeCleanup.chkZWNJ": ControlCaptionText = "Zero-width non-joiners (U+200C)"
+        Case "frmUnicodeCleanup.chkZWSP": ControlCaptionText = "Zero-width spaces (U+200B)"
+        Case "frmUnicodeCleanup.optAll": ControlCaptionText = "All invisible / problem characters"
+        Case "frmUnicodeCleanup.optCustom": ControlCaptionText = "Custom (choose below)"
+        Case "frmUnicodeCleanup.optNBSP": ControlCaptionText = "Non-breaking spaces only"
+        Case "frmUnicodeCleanup.optScopeDocument": ControlCaptionText = "Entire document"
+        Case "frmUnicodeCleanup.optScopeSelection": ControlCaptionText = "Selected text only"
+        Case "frmUnicodeCleanup.optZeroWidth": ControlCaptionText = "Zero-width characters only"
+        Case Else: ControlCaptionText = ""
+    End Select
+End Function
 Private Sub SetButtonCaption(designer As Object, nm As String)
     On Error Resume Next
     Dim cap As String
@@ -848,7 +1032,7 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "            End If" & vbCrLf
     s = s & "            On Error GoTo 0" & vbCrLf
     s = s & "        End If" & vbCrLf
-    s = s & "    ElseIf GetAutoSaveSetting() Then" & vbCrLf
+    s = s & "    ElseIf GetAutoSaveSetting() And Not IsRunningInMacroHostDocument() Then" & vbCrLf
     s = s & "        ' Document is saved and auto-save is ON -- save silently before proceeding" & vbCrLf
     s = s & "        On Error Resume Next" & vbCrLf
     s = s & "        ActiveDocument.Save" & vbCrLf
@@ -856,8 +1040,14 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "    End If" & vbCrLf
     s = s & "    GuardBeforeCleanup = True" & vbCrLf
     s = s & "End Function" & vbCrLf
+    s = s & "Public Function IsRunningInMacroHostDocument() As Boolean" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    IsRunningInMacroHostDocument = (ActiveDocument.FullName = ThisDocument.FullName)" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "End Function" & vbCrLf
     s = s & "Public Sub MarkCleanupStart(toolName As String)" & vbCrLf
     s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    If IsRunningInMacroHostDocument() Then Exit Sub" & vbCrLf
     s = s & "    ActiveDocument.CustomDocumentProperties(""CleanupSuiteInProgress"").Delete" & vbCrLf
     s = s & "    Err.Clear" & vbCrLf
     s = s & "    ActiveDocument.CustomDocumentProperties.Add Name:=""CleanupSuiteInProgress"", LinkToContent:=False, Type:=msoPropertyTypeString, Value:=toolName" & vbCrLf
@@ -866,6 +1056,7 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "End Sub" & vbCrLf
     s = s & "Public Sub MarkCleanupEnd()" & vbCrLf
     s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    If IsRunningInMacroHostDocument() Then Exit Sub" & vbCrLf
     s = s & "    ActiveDocument.CustomDocumentProperties(""CleanupSuiteInProgress"").Delete" & vbCrLf
     s = s & "    On Error GoTo 0" & vbCrLf
     s = s & "End Sub" & vbCrLf
@@ -1127,15 +1318,20 @@ Private Function frmPunctuationCleanup_Code() As String
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "RunErr:" & vbCrLf
+    s = s & "    Dim originalErrNumber As Long" & vbCrLf
+    s = s & "    Dim originalErrDescription As String" & vbCrLf
+    s = s & "    originalErrNumber = Err.Number" & vbCrLf
+    s = s & "    originalErrDescription = Err.Description" & vbCrLf
     s = s & "    On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Dim errMsg As String" & vbCrLf
-    s = s & "    errMsg = ""An unexpected error occurred: "" & Err.Number & "" - "" & Err.Description" & vbCrLf
-    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & ""Some changes may have been made to the document."" & vbCrLf & ""Would you like to undo all changes made before the error?""" & vbCrLf
-    s = s & "    If MsgBox(errMsg, vbCritical + vbYesNo, ""Cleanup Error"") = vbYes Then" & vbCrLf
-    s = s & "        On Error Resume Next: Application.Undo: On Error GoTo 0" & vbCrLf
-    s = s & "    End If" & vbCrLf
-    s = s & "End Sub"
+    s = s & "    errMsg = ""An unexpected error occurred: "" & originalErrNumber & "" - "" & originalErrDescription" & vbCrLf
+    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "             ""Some changes may have been made to the document."" & vbCrLf & _" & vbCrLf
+    s = s & "             ""Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back.""" & vbCrLf
+    s = s & "    MsgBox errMsg, vbCritical, ""Cleanup Error""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & ""
     frmPunctuationCleanup_Code = s
 End Function
 
@@ -1221,6 +1417,13 @@ Private Function frmUnicodeCleanup_Code() As String
     s = s & "Private Sub cmdDeselectAll_Click()" & vbCrLf
     s = s & "    If fraCustom.Visible Then ClearCustomChecks" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "Private Function UnicodeChar(ByVal codePoint As Long) As String" & vbCrLf
+    s = s & "    If codePoint > &H7FFF Then" & vbCrLf
+    s = s & "        UnicodeChar = ChrW$(codePoint - &H10000)" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        UnicodeChar = ChrW$(codePoint)" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "End Function" & vbCrLf
     s = s & "Private Sub cmdRun_Click()" & vbCrLf
     s = s & "    If ActiveDocument.ProtectionType <> wdNoProtection Then" & vbCrLf
     s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected"": Exit Sub" & vbCrLf
@@ -1237,23 +1440,23 @@ Private Function frmUnicodeCleanup_Code() As String
     s = s & "        Set targetRange = ActiveDocument.Content" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    Set findList = New Collection: Set replaceList = New Collection: Set itemLabels = New Collection" & vbCrLf
-    s = s & "    If optAll.Value Or optNBSP.Value Then findList.Add ChrW(&HA0): replaceList.Add "" "" : itemLabels.Add ""Non-breaking spaces (U+00A0)""" & vbCrLf
+    s = s & "    If optAll.Value Or optNBSP.Value Then findList.Add UnicodeChar(&HA0): replaceList.Add "" "" : itemLabels.Add ""Non-breaking spaces (U+00A0)""" & vbCrLf
     s = s & "    If optAll.Value Or optZeroWidth.Value Then" & vbCrLf
-    s = s & "        findList.Add ChrW(&H200B): replaceList.Add """" : itemLabels.Add ""Zero-width spaces (U+200B)""" & vbCrLf
-    s = s & "        findList.Add ChrW(&H200C): replaceList.Add """" : itemLabels.Add ""Zero-width non-joiners (U+200C)""" & vbCrLf
-    s = s & "        findList.Add ChrW(&H200D): replaceList.Add """" : itemLabels.Add ""Zero-width joiners (U+200D)""" & vbCrLf
-    s = s & "        findList.Add ChrW(&HFEFF): replaceList.Add """" : itemLabels.Add ""BOM / zero-width no-break spaces (U+FEFF)""" & vbCrLf
+    s = s & "        findList.Add UnicodeChar(&H200B): replaceList.Add """" : itemLabels.Add ""Zero-width spaces (U+200B)""" & vbCrLf
+    s = s & "        findList.Add UnicodeChar(&H200C): replaceList.Add """" : itemLabels.Add ""Zero-width non-joiners (U+200C)""" & vbCrLf
+    s = s & "        findList.Add UnicodeChar(&H200D): replaceList.Add """" : itemLabels.Add ""Zero-width joiners (U+200D)""" & vbCrLf
+    s = s & "        findList.Add UnicodeChar(&HFEFF): replaceList.Add """" : itemLabels.Add ""BOM / zero-width no-break spaces (U+FEFF)""" & vbCrLf
     s = s & "    End If" & vbCrLf
-    s = s & "    If optAll.Value Then findList.Add ChrW(&HAD): replaceList.Add ""-"" : itemLabels.Add ""Soft hyphens (U+00AD)"" : findList.Add ChrW(&H2011): replaceList.Add ""-"" : itemLabels.Add ""Non-breaking hyphens (U+2011)""" & vbCrLf
+    s = s & "    If optAll.Value Then findList.Add UnicodeChar(&HAD): replaceList.Add ""-"" : itemLabels.Add ""Soft hyphens (U+00AD)"" : findList.Add UnicodeChar(&H2011): replaceList.Add ""-"" : itemLabels.Add ""Non-breaking hyphens (U+2011)""" & vbCrLf
     s = s & "    If optCustom.Value Then" & vbCrLf
     s = s & "        Set findList = New Collection: Set replaceList = New Collection: Set itemLabels = New Collection" & vbCrLf
-    s = s & "        If chkNBSP.Value Then findList.Add ChrW(&HA0): replaceList.Add "" "" : itemLabels.Add ""Non-breaking spaces (U+00A0)""" & vbCrLf
-    s = s & "        If chkZWSP.Value Then findList.Add ChrW(&H200B): replaceList.Add """" : itemLabels.Add ""Zero-width spaces (U+200B)""" & vbCrLf
-    s = s & "        If chkZWNJ.Value Then findList.Add ChrW(&H200C): replaceList.Add """" : itemLabels.Add ""Zero-width non-joiners (U+200C)""" & vbCrLf
-    s = s & "        If chkZWJ.Value Then findList.Add ChrW(&H200D): replaceList.Add """" : itemLabels.Add ""Zero-width joiners (U+200D)""" & vbCrLf
-    s = s & "        If chkBOM.Value Then findList.Add ChrW(&HFEFF): replaceList.Add """" : itemLabels.Add ""BOM / zero-width no-break spaces (U+FEFF)""" & vbCrLf
-    s = s & "        If chkSoftHyphen.Value Then findList.Add ChrW(&HAD): replaceList.Add ""-"" : itemLabels.Add ""Soft hyphens (U+00AD)""" & vbCrLf
-    s = s & "        If chkNBHyphen.Value Then findList.Add ChrW(&H2011): replaceList.Add ""-"" : itemLabels.Add ""Non-breaking hyphens (U+2011)""" & vbCrLf
+    s = s & "        If chkNBSP.Value Then findList.Add UnicodeChar(&HA0): replaceList.Add "" "" : itemLabels.Add ""Non-breaking spaces (U+00A0)""" & vbCrLf
+    s = s & "        If chkZWSP.Value Then findList.Add UnicodeChar(&H200B): replaceList.Add """" : itemLabels.Add ""Zero-width spaces (U+200B)""" & vbCrLf
+    s = s & "        If chkZWNJ.Value Then findList.Add UnicodeChar(&H200C): replaceList.Add """" : itemLabels.Add ""Zero-width non-joiners (U+200C)""" & vbCrLf
+    s = s & "        If chkZWJ.Value Then findList.Add UnicodeChar(&H200D): replaceList.Add """" : itemLabels.Add ""Zero-width joiners (U+200D)""" & vbCrLf
+    s = s & "        If chkBOM.Value Then findList.Add UnicodeChar(&HFEFF): replaceList.Add """" : itemLabels.Add ""BOM / zero-width no-break spaces (U+FEFF)""" & vbCrLf
+    s = s & "        If chkSoftHyphen.Value Then findList.Add UnicodeChar(&HAD): replaceList.Add ""-"" : itemLabels.Add ""Soft hyphens (U+00AD)""" & vbCrLf
+    s = s & "        If chkNBHyphen.Value Then findList.Add UnicodeChar(&H2011): replaceList.Add ""-"" : itemLabels.Add ""Non-breaking hyphens (U+2011)""" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    If findList.Count = 0 Then MsgBox ""No Unicode options selected."", vbInformation: Exit Sub" & vbCrLf
     s = s & "    ReDim counts(1 To findList.Count): For i = 1 To findList.Count: counts(i) = 0: Next i" & vbCrLf
@@ -1285,15 +1488,20 @@ Private Function frmUnicodeCleanup_Code() As String
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "RunErr:" & vbCrLf
+    s = s & "    Dim originalErrNumber As Long" & vbCrLf
+    s = s & "    Dim originalErrDescription As String" & vbCrLf
+    s = s & "    originalErrNumber = Err.Number" & vbCrLf
+    s = s & "    originalErrDescription = Err.Description" & vbCrLf
     s = s & "    On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Dim errMsg As String" & vbCrLf
-    s = s & "    errMsg = ""An unexpected error occurred: "" & Err.Number & "" - "" & Err.Description" & vbCrLf
-    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & ""Some changes may have been made to the document."" & vbCrLf & ""Would you like to undo all changes made before the error?""" & vbCrLf
-    s = s & "    If MsgBox(errMsg, vbCritical + vbYesNo, ""Cleanup Error"") = vbYes Then" & vbCrLf
-    s = s & "        On Error Resume Next: Application.Undo: On Error GoTo 0" & vbCrLf
-    s = s & "    End If" & vbCrLf
-    s = s & "End Sub"
+    s = s & "    errMsg = ""An unexpected error occurred: "" & originalErrNumber & "" - "" & originalErrDescription" & vbCrLf
+    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "             ""Some changes may have been made to the document."" & vbCrLf & _" & vbCrLf
+    s = s & "             ""Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back.""" & vbCrLf
+    s = s & "    MsgBox errMsg, vbCritical, ""Cleanup Error""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & ""
     frmUnicodeCleanup_Code = s
 End Function
 
@@ -1516,15 +1724,20 @@ Private Function frmSpacingCleanup_Code() As String
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "RunErr:" & vbCrLf
+    s = s & "    Dim originalErrNumber As Long" & vbCrLf
+    s = s & "    Dim originalErrDescription As String" & vbCrLf
+    s = s & "    originalErrNumber = Err.Number" & vbCrLf
+    s = s & "    originalErrDescription = Err.Description" & vbCrLf
     s = s & "    On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Dim errMsg As String" & vbCrLf
-    s = s & "    errMsg = ""An unexpected error occurred: "" & Err.Number & "" - "" & Err.Description" & vbCrLf
-    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & ""Some changes may have been made to the document."" & vbCrLf & ""Would you like to undo all changes made before the error?""" & vbCrLf
-    s = s & "    If MsgBox(errMsg, vbCritical + vbYesNo, ""Cleanup Error"") = vbYes Then" & vbCrLf
-    s = s & "        On Error Resume Next: Application.Undo: On Error GoTo 0" & vbCrLf
-    s = s & "    End If" & vbCrLf
-    s = s & "End Sub"
+    s = s & "    errMsg = ""An unexpected error occurred: "" & originalErrNumber & "" - "" & originalErrDescription" & vbCrLf
+    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "             ""Some changes may have been made to the document."" & vbCrLf & _" & vbCrLf
+    s = s & "             ""Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back.""" & vbCrLf
+    s = s & "    MsgBox errMsg, vbCritical, ""Cleanup Error""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & ""
     frmSpacingCleanup_Code = s
 End Function
 
@@ -1678,14 +1891,18 @@ Private Function frmCapitalizationCleanup_Code() As String
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "RunErr:" & vbCrLf
+    s = s & "    Dim originalErrNumber As Long" & vbCrLf
+    s = s & "    Dim originalErrDescription As String" & vbCrLf
+    s = s & "    originalErrNumber = Err.Number" & vbCrLf
+    s = s & "    originalErrDescription = Err.Description" & vbCrLf
     s = s & "    On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Dim errMsg As String" & vbCrLf
-    s = s & "    errMsg = ""An unexpected error occurred: "" & Err.Number & "" - "" & Err.Description" & vbCrLf
-    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & ""Some changes may have been made to the document."" & vbCrLf & ""Would you like to undo all changes made before the error?""" & vbCrLf
-    s = s & "    If MsgBox(errMsg, vbCritical + vbYesNo, ""Cleanup Error"") = vbYes Then" & vbCrLf
-    s = s & "        On Error Resume Next: Application.Undo: On Error GoTo 0" & vbCrLf
-    s = s & "    End If" & vbCrLf
+    s = s & "    errMsg = ""An unexpected error occurred: "" & originalErrNumber & "" - "" & originalErrDescription" & vbCrLf
+    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "             ""Some changes may have been made to the document."" & vbCrLf & _" & vbCrLf
+    s = s & "             ""Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back.""" & vbCrLf
+    s = s & "    MsgBox errMsg, vbCritical, ""Cleanup Error""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "' Helper functions for capitalization" & vbCrLf
     s = s & "Private Function SentenceCase(s As String) As String" & vbCrLf
@@ -1712,7 +1929,8 @@ Private Function frmCapitalizationCleanup_Code() As String
     s = s & "        If currentChar = ""."" Or currentChar = ""?"" Or currentChar = ""!"" Then capNext = True" & vbCrLf
     s = s & "    Next i" & vbCrLf
     s = s & "    SmartSentenceCase = result" & vbCrLf
-    s = s & "End Function"
+    s = s & "End Function" & vbCrLf
+    s = s & ""
     frmCapitalizationCleanup_Code = s
 End Function
 
@@ -1845,14 +2063,18 @@ Private Function frmListCleanup_Code() As String
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "RunErr:" & vbCrLf
+    s = s & "    Dim originalErrNumber As Long" & vbCrLf
+    s = s & "    Dim originalErrDescription As String" & vbCrLf
+    s = s & "    originalErrNumber = Err.Number" & vbCrLf
+    s = s & "    originalErrDescription = Err.Description" & vbCrLf
     s = s & "    On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Dim errMsg As String" & vbCrLf
-    s = s & "    errMsg = ""An unexpected error occurred: "" & Err.Number & "" - "" & Err.Description" & vbCrLf
-    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & ""Some changes may have been made to the document."" & vbCrLf & ""Would you like to undo all changes made before the error?""" & vbCrLf
-    s = s & "    If MsgBox(errMsg, vbCritical + vbYesNo, ""Cleanup Error"") = vbYes Then" & vbCrLf
-    s = s & "        On Error Resume Next: Application.Undo: On Error GoTo 0" & vbCrLf
-    s = s & "    End If" & vbCrLf
+    s = s & "    errMsg = ""An unexpected error occurred: "" & originalErrNumber & "" - "" & originalErrDescription" & vbCrLf
+    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "             ""Some changes may have been made to the document."" & vbCrLf & _" & vbCrLf
+    s = s & "             ""Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back.""" & vbCrLf
+    s = s & "    MsgBox errMsg, vbCritical, ""Cleanup Error""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Function ConvertHyphenListsToBullets(scopeRange As Range) As Long" & vbCrLf
     s = s & "    Dim p As Paragraph, txt As String, cnt As Long" & vbCrLf
@@ -1910,7 +2132,8 @@ Private Function frmListCleanup_Code() As String
     s = s & "        End If" & vbCrLf
     s = s & "    Next p" & vbCrLf
     s = s & "    FixListIndentation = cnt" & vbCrLf
-    s = s & "End Function"
+    s = s & "End Function" & vbCrLf
+    s = s & ""
     frmListCleanup_Code = s
 End Function
 
@@ -2074,15 +2297,20 @@ Private Function frmParagraphCleanup_Code() As String
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "RunErr:" & vbCrLf
+    s = s & "    Dim originalErrNumber As Long" & vbCrLf
+    s = s & "    Dim originalErrDescription As String" & vbCrLf
+    s = s & "    originalErrNumber = Err.Number" & vbCrLf
+    s = s & "    originalErrDescription = Err.Description" & vbCrLf
     s = s & "    On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Dim errMsg As String" & vbCrLf
-    s = s & "    errMsg = ""An unexpected error occurred: "" & Err.Number & "" - "" & Err.Description" & vbCrLf
-    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & ""Some changes may have been made to the document."" & vbCrLf & ""Would you like to undo all changes made before the error?""" & vbCrLf
-    s = s & "    If MsgBox(errMsg, vbCritical + vbYesNo, ""Cleanup Error"") = vbYes Then" & vbCrLf
-    s = s & "        On Error Resume Next: Application.Undo: On Error GoTo 0" & vbCrLf
-    s = s & "    End If" & vbCrLf
-    s = s & "End Sub"
+    s = s & "    errMsg = ""An unexpected error occurred: "" & originalErrNumber & "" - "" & originalErrDescription" & vbCrLf
+    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "             ""Some changes may have been made to the document."" & vbCrLf & _" & vbCrLf
+    s = s & "             ""Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back.""" & vbCrLf
+    s = s & "    MsgBox errMsg, vbCritical, ""Cleanup Error""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & ""
     frmParagraphCleanup_Code = s
 End Function
 
@@ -2397,16 +2625,20 @@ Private Function frmDuplicateDetector_Code() As String
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "RunErr:" & vbCrLf
+    s = s & "    Dim originalErrNumber As Long" & vbCrLf
+    s = s & "    Dim originalErrDescription As String" & vbCrLf
+    s = s & "    originalErrNumber = Err.Number" & vbCrLf
+    s = s & "    originalErrDescription = Err.Description" & vbCrLf
     s = s & "    Application.ScreenUpdating = True" & vbCrLf
     s = s & "    Application.StatusBar = False" & vbCrLf
     s = s & "    On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Dim errMsg As String" & vbCrLf
-    s = s & "    errMsg = ""An unexpected error occurred: "" & Err.Number & "" - "" & Err.Description" & vbCrLf
-    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & ""Some changes may have been made to the document."" & vbCrLf & ""Would you like to undo all changes made before the error?""" & vbCrLf
-    s = s & "    If MsgBox(errMsg, vbCritical + vbYesNo, ""Cleanup Error"") = vbYes Then" & vbCrLf
-    s = s & "        On Error Resume Next: Application.Undo: On Error GoTo 0" & vbCrLf
-    s = s & "    End If" & vbCrLf
+    s = s & "    errMsg = ""An unexpected error occurred: "" & originalErrNumber & "" - "" & originalErrDescription" & vbCrLf
+    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "             ""Some changes may have been made to the document."" & vbCrLf & _" & vbCrLf
+    s = s & "             ""Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back.""" & vbCrLf
+    s = s & "    MsgBox errMsg, vbCritical, ""Cleanup Error""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & ""
     frmDuplicateDetector_Code = s
@@ -2535,15 +2767,20 @@ Private Function frmFontNormalizer_Code() As String
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "RunErr:" & vbCrLf
+    s = s & "    Dim originalErrNumber As Long" & vbCrLf
+    s = s & "    Dim originalErrDescription As String" & vbCrLf
+    s = s & "    originalErrNumber = Err.Number" & vbCrLf
+    s = s & "    originalErrDescription = Err.Description" & vbCrLf
     s = s & "    On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Dim errMsg As String" & vbCrLf
-    s = s & "    errMsg = ""An unexpected error occurred: "" & Err.Number & "" - "" & Err.Description" & vbCrLf
-    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & ""Some changes may have been made to the document."" & vbCrLf & ""Would you like to undo all changes made before the error?""" & vbCrLf
-    s = s & "    If MsgBox(errMsg, vbCritical + vbYesNo, ""Cleanup Error"") = vbYes Then" & vbCrLf
-    s = s & "        On Error Resume Next: Application.Undo: On Error GoTo 0" & vbCrLf
-    s = s & "    End If" & vbCrLf
-    s = s & "End Sub"
+    s = s & "    errMsg = ""An unexpected error occurred: "" & originalErrNumber & "" - "" & originalErrDescription" & vbCrLf
+    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "             ""Some changes may have been made to the document."" & vbCrLf & _" & vbCrLf
+    s = s & "             ""Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back.""" & vbCrLf
+    s = s & "    MsgBox errMsg, vbCritical, ""Cleanup Error""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & ""
     frmFontNormalizer_Code = s
 End Function
 
@@ -2565,8 +2802,6 @@ Private Function frmTableCleaner_Code() As String
     s = s & "    chkNormalizePadding.Value = True" & vbCrLf
     s = s & "    chkStripDirectFormat.Value = False" & vbCrLf
     s = s & "    chkNormalizeBorders.Value = False" & vbCrLf
-    s = s & "    chkRemoveBorders.Value = False" & vbCrLf
-    s = s & "    chkConvertToText.Value = False" & vbCrLf
     s = s & "    chkRemoveBorders.Value = False" & vbCrLf
     s = s & "    chkConvertToText.Value = False" & vbCrLf
     s = s & "    optScopeDocument.Caption = ""Entire document""" & vbCrLf
@@ -2602,9 +2837,6 @@ Private Function frmTableCleaner_Code() As String
     s = s & "    h = h & ""                            table, restoring the table's applied style."" & vbCrLf" & vbCrLf
     s = s & "    h = h & ""  Normalise borders     --  Enables borders on the table using the"" & vbCrLf" & vbCrLf
     s = s & "    h = h & ""                            current table style."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Remove all borders    --  Turns off every border on the table."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Convert table to text --  Replaces the table with tab-separated text"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                            (done last; other table options run first)."" & vbCrLf" & vbCrLf
     s = s & "    h = h & ""  Remove all borders    --  Turns off every border on the table."" & vbCrLf" & vbCrLf
     s = s & "    h = h & ""  Convert table to text --  Replaces the table with tab-separated text"" & vbCrLf" & vbCrLf
     s = s & "    h = h & ""                            (done last; other table options run first)."" & vbCrLf" & vbCrLf
@@ -2652,8 +2884,6 @@ Private Function frmTableCleaner_Code() As String
     s = s & "    Dim doPadding As Boolean: doPadding = chkNormalizePadding.Value" & vbCrLf
     s = s & "    Dim doDirectFmt As Boolean: doDirectFmt = chkStripDirectFormat.Value" & vbCrLf
     s = s & "    Dim doBorders As Boolean: doBorders = chkNormalizeBorders.Value" & vbCrLf
-    s = s & "    Dim doRemoveBorders As Boolean: doRemoveBorders = chkRemoveBorders.Value" & vbCrLf
-    s = s & "    Dim doConvertText As Boolean: doConvertText = chkConvertToText.Value" & vbCrLf
     s = s & "    Dim doRemoveBorders As Boolean: doRemoveBorders = chkRemoveBorders.Value" & vbCrLf
     s = s & "    Dim doConvertText As Boolean: doConvertText = chkConvertToText.Value" & vbCrLf
     s = s & "    If Not (doEmptyRows Or doEmptyCols Or doPadding Or doDirectFmt Or doBorders Or doRemoveBorders Or doConvertText) Then MsgBox ""No table options selected."", vbInformation: Exit Sub" & vbCrLf
@@ -2727,22 +2957,26 @@ Private Function frmTableCleaner_Code() As String
     s = s & "    If doEmptyRows Then results.Add ""Empty rows removed: "" & cntRows" & vbCrLf
     s = s & "    If doEmptyCols Then results.Add ""Empty columns removed: "" & cntCols" & vbCrLf
     s = s & "    If doConvertText Then results.Add ""Tables converted to text: "" & cntConverted" & vbCrLf
-    s = s & "    If doConvertText Then results.Add ""Tables converted to text: "" & cntConverted" & vbCrLf
     s = s & "    ShowCleanupReport ""Table Cleaner"", results" & vbCrLf
     s = s & "    undoRec.EndCustomRecord" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "RunErr:" & vbCrLf
+    s = s & "    Dim originalErrNumber As Long" & vbCrLf
+    s = s & "    Dim originalErrDescription As String" & vbCrLf
+    s = s & "    originalErrNumber = Err.Number" & vbCrLf
+    s = s & "    originalErrDescription = Err.Description" & vbCrLf
     s = s & "    On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Dim errMsg As String" & vbCrLf
-    s = s & "    errMsg = ""An unexpected error occurred: "" & Err.Number & "" - "" & Err.Description" & vbCrLf
-    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & ""Some changes may have been made to the document."" & vbCrLf & ""Would you like to undo all changes made before the error?""" & vbCrLf
-    s = s & "    If MsgBox(errMsg, vbCritical + vbYesNo, ""Cleanup Error"") = vbYes Then" & vbCrLf
-    s = s & "        On Error Resume Next: Application.Undo: On Error GoTo 0" & vbCrLf
-    s = s & "    End If" & vbCrLf
-    s = s & "End Sub"
+    s = s & "    errMsg = ""An unexpected error occurred: "" & originalErrNumber & "" - "" & originalErrDescription" & vbCrLf
+    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "             ""Some changes may have been made to the document."" & vbCrLf & _" & vbCrLf
+    s = s & "             ""Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back.""" & vbCrLf
+    s = s & "    MsgBox errMsg, vbCritical, ""Cleanup Error""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & ""
     frmTableCleaner_Code = s
 End Function
 
@@ -2888,15 +3122,20 @@ Private Function frmBreakNormalizer_Code() As String
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "RunErr:" & vbCrLf
+    s = s & "    Dim originalErrNumber As Long" & vbCrLf
+    s = s & "    Dim originalErrDescription As String" & vbCrLf
+    s = s & "    originalErrNumber = Err.Number" & vbCrLf
+    s = s & "    originalErrDescription = Err.Description" & vbCrLf
     s = s & "    On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Dim errMsg As String" & vbCrLf
-    s = s & "    errMsg = ""An unexpected error occurred: "" & Err.Number & "" - "" & Err.Description" & vbCrLf
-    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & ""Some changes may have been made to the document."" & vbCrLf & ""Would you like to undo all changes made before the error?""" & vbCrLf
-    s = s & "    If MsgBox(errMsg, vbCritical + vbYesNo, ""Cleanup Error"") = vbYes Then" & vbCrLf
-    s = s & "        On Error Resume Next: Application.Undo: On Error GoTo 0" & vbCrLf
-    s = s & "    End If" & vbCrLf
-    s = s & "End Sub"
+    s = s & "    errMsg = ""An unexpected error occurred: "" & originalErrNumber & "" - "" & originalErrDescription" & vbCrLf
+    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "             ""Some changes may have been made to the document."" & vbCrLf & _" & vbCrLf
+    s = s & "             ""Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back.""" & vbCrLf
+    s = s & "    MsgBox errMsg, vbCritical, ""Cleanup Error""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & ""
     frmBreakNormalizer_Code = s
 End Function
 
@@ -2985,15 +3224,20 @@ Private Function frmDocumentTrim_Code() As String
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "RunErr:" & vbCrLf
+    s = s & "    Dim originalErrNumber As Long" & vbCrLf
+    s = s & "    Dim originalErrDescription As String" & vbCrLf
+    s = s & "    originalErrNumber = Err.Number" & vbCrLf
+    s = s & "    originalErrDescription = Err.Description" & vbCrLf
     s = s & "    On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Dim errMsg As String" & vbCrLf
-    s = s & "    errMsg = ""An unexpected error occurred: "" & Err.Number & "" - "" & Err.Description" & vbCrLf
-    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & ""Some changes may have been made to the document."" & vbCrLf & ""Would you like to undo all changes made before the error?""" & vbCrLf
-    s = s & "    If MsgBox(errMsg, vbCritical + vbYesNo, ""Cleanup Error"") = vbYes Then" & vbCrLf
-    s = s & "        On Error Resume Next: Application.Undo: On Error GoTo 0" & vbCrLf
-    s = s & "    End If" & vbCrLf
-    s = s & "End Sub"
+    s = s & "    errMsg = ""An unexpected error occurred: "" & originalErrNumber & "" - "" & originalErrDescription" & vbCrLf
+    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "             ""Some changes may have been made to the document."" & vbCrLf & _" & vbCrLf
+    s = s & "             ""Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back.""" & vbCrLf
+    s = s & "    MsgBox errMsg, vbCritical, ""Cleanup Error""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & ""
     frmDocumentTrim_Code = s
 End Function
 
@@ -3154,16 +3398,20 @@ Private Function frmFormattingStripper_Code() As String
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "RunErr:" & vbCrLf
+    s = s & "    Dim originalErrNumber As Long" & vbCrLf
+    s = s & "    Dim originalErrDescription As String" & vbCrLf
+    s = s & "    originalErrNumber = Err.Number" & vbCrLf
+    s = s & "    originalErrDescription = Err.Description" & vbCrLf
     s = s & "    Application.ScreenUpdating = True" & vbCrLf
     s = s & "    Application.StatusBar = False" & vbCrLf
     s = s & "    On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Dim errMsg As String" & vbCrLf
-    s = s & "    errMsg = ""An unexpected error occurred: "" & Err.Number & "" - "" & Err.Description" & vbCrLf
-    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & ""Some changes may have been made to the document."" & vbCrLf & ""Would you like to undo all changes made before the error?""" & vbCrLf
-    s = s & "    If MsgBox(errMsg, vbCritical + vbYesNo, ""Cleanup Error"") = vbYes Then" & vbCrLf
-    s = s & "        On Error Resume Next: Application.Undo: On Error GoTo 0" & vbCrLf
-    s = s & "    End If" & vbCrLf
+    s = s & "    errMsg = ""An unexpected error occurred: "" & originalErrNumber & "" - "" & originalErrDescription" & vbCrLf
+    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "             ""Some changes may have been made to the document."" & vbCrLf & _" & vbCrLf
+    s = s & "             ""Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back.""" & vbCrLf
+    s = s & "    MsgBox errMsg, vbCritical, ""Cleanup Error""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Function HasDirectFormatting(p As Paragraph, doChar As Boolean, doPara As Boolean) As Boolean" & vbCrLf
     s = s & "    HasDirectFormatting = False" & vbCrLf
@@ -3277,7 +3525,8 @@ Private Function frmFormattingStripper_Code() As String
     s = s & "            End If" & vbCrLf
     s = s & "        Loop" & vbCrLf
     s = s & "    End If" & vbCrLf
-    s = s & "End Sub"
+    s = s & "End Sub" & vbCrLf
+    s = s & ""
     frmFormattingStripper_Code = s
 End Function
 
@@ -3376,14 +3625,18 @@ Private Function frmHyperlinkRemover_Code() As String
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "RunErr:" & vbCrLf
+    s = s & "    Dim originalErrNumber As Long" & vbCrLf
+    s = s & "    Dim originalErrDescription As String" & vbCrLf
+    s = s & "    originalErrNumber = Err.Number" & vbCrLf
+    s = s & "    originalErrDescription = Err.Description" & vbCrLf
     s = s & "    On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Dim errMsg As String" & vbCrLf
-    s = s & "    errMsg = ""An unexpected error occurred: "" & Err.Number & "" - "" & Err.Description" & vbCrLf
-    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & ""Some changes may have been made to the document."" & vbCrLf & ""Would you like to undo all changes made before the error?""" & vbCrLf
-    s = s & "    If MsgBox(errMsg, vbCritical + vbYesNo, ""Cleanup Error"") = vbYes Then" & vbCrLf
-    s = s & "        On Error Resume Next: Application.Undo: On Error GoTo 0" & vbCrLf
-    s = s & "    End If" & vbCrLf
+    s = s & "    errMsg = ""An unexpected error occurred: "" & originalErrNumber & "" - "" & originalErrDescription" & vbCrLf
+    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "             ""Some changes may have been made to the document."" & vbCrLf & _" & vbCrLf
+    s = s & "             ""Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back.""" & vbCrLf
+    s = s & "    MsgBox errMsg, vbCritical, ""Cleanup Error""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & ""
     frmHyperlinkRemover_Code = s
@@ -3495,14 +3748,18 @@ Private Function frmSoftReturnConverter_Code() As String
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "RunErr:" & vbCrLf
+    s = s & "    Dim originalErrNumber As Long" & vbCrLf
+    s = s & "    Dim originalErrDescription As String" & vbCrLf
+    s = s & "    originalErrNumber = Err.Number" & vbCrLf
+    s = s & "    originalErrDescription = Err.Description" & vbCrLf
     s = s & "    On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Dim errMsg As String" & vbCrLf
-    s = s & "    errMsg = ""An unexpected error occurred: "" & Err.Number & "" - "" & Err.Description" & vbCrLf
-    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & ""Some changes may have been made to the document."" & vbCrLf & ""Would you like to undo all changes made before the error?""" & vbCrLf
-    s = s & "    If MsgBox(errMsg, vbCritical + vbYesNo, ""Cleanup Error"") = vbYes Then" & vbCrLf
-    s = s & "        On Error Resume Next: Application.Undo: On Error GoTo 0" & vbCrLf
-    s = s & "    End If" & vbCrLf
+    s = s & "    errMsg = ""An unexpected error occurred: "" & originalErrNumber & "" - "" & originalErrDescription" & vbCrLf
+    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "             ""Some changes may have been made to the document."" & vbCrLf & _" & vbCrLf
+    s = s & "             ""Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back.""" & vbCrLf
+    s = s & "    MsgBox errMsg, vbCritical, ""Cleanup Error""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & ""
     frmSoftReturnConverter_Code = s
@@ -3615,14 +3872,18 @@ Private Function frmMetadataScrubber_Code() As String
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "RunErr:" & vbCrLf
+    s = s & "    Dim originalErrNumber As Long" & vbCrLf
+    s = s & "    Dim originalErrDescription As String" & vbCrLf
+    s = s & "    originalErrNumber = Err.Number" & vbCrLf
+    s = s & "    originalErrDescription = Err.Description" & vbCrLf
     s = s & "    On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Dim errMsg As String" & vbCrLf
-    s = s & "    errMsg = ""An unexpected error occurred: "" & Err.Number & "" - "" & Err.Description" & vbCrLf
-    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & ""Some changes may have been made to the document."" & vbCrLf & ""Would you like to undo all changes made before the error?""" & vbCrLf
-    s = s & "    If MsgBox(errMsg, vbCritical + vbYesNo, ""Cleanup Error"") = vbYes Then" & vbCrLf
-    s = s & "        On Error Resume Next: Application.Undo: On Error GoTo 0" & vbCrLf
-    s = s & "    End If" & vbCrLf
+    s = s & "    errMsg = ""An unexpected error occurred: "" & originalErrNumber & "" - "" & originalErrDescription" & vbCrLf
+    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "             ""Some changes may have been made to the document."" & vbCrLf & _" & vbCrLf
+    s = s & "             ""Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back.""" & vbCrLf
+    s = s & "    MsgBox errMsg, vbCritical, ""Cleanup Error""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & ""
     frmMetadataScrubber_Code = s
@@ -3754,14 +4015,18 @@ Private Function frmStyleCleanup_Code() As String
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "RunErr:" & vbCrLf
+    s = s & "    Dim originalErrNumber As Long" & vbCrLf
+    s = s & "    Dim originalErrDescription As String" & vbCrLf
+    s = s & "    originalErrNumber = Err.Number" & vbCrLf
+    s = s & "    originalErrDescription = Err.Description" & vbCrLf
     s = s & "    On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Dim errMsg As String" & vbCrLf
-    s = s & "    errMsg = ""An unexpected error occurred: "" & Err.Number & "" - "" & Err.Description" & vbCrLf
-    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & ""Some changes may have been made to the document."" & vbCrLf & ""Would you like to undo all changes made before the error?""" & vbCrLf
-    s = s & "    If MsgBox(errMsg, vbCritical + vbYesNo, ""Cleanup Error"") = vbYes Then" & vbCrLf
-    s = s & "        On Error Resume Next: Application.Undo: On Error GoTo 0" & vbCrLf
-    s = s & "    End If" & vbCrLf
+    s = s & "    errMsg = ""An unexpected error occurred: "" & originalErrNumber & "" - "" & originalErrDescription" & vbCrLf
+    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "             ""Some changes may have been made to the document."" & vbCrLf & _" & vbCrLf
+    s = s & "             ""Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back.""" & vbCrLf
+    s = s & "    MsgBox errMsg, vbCritical, ""Cleanup Error""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & ""
     frmStyleCleanup_Code = s
@@ -3885,15 +4150,20 @@ Private Function frmFootnoteRemover_Code() As String
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "RunErr:" & vbCrLf
+    s = s & "    Dim originalErrNumber As Long" & vbCrLf
+    s = s & "    Dim originalErrDescription As String" & vbCrLf
+    s = s & "    originalErrNumber = Err.Number" & vbCrLf
+    s = s & "    originalErrDescription = Err.Description" & vbCrLf
     s = s & "    On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Dim errMsg As String" & vbCrLf
-    s = s & "    errMsg = ""An unexpected error occurred: "" & Err.Number & "" - "" & Err.Description" & vbCrLf
-    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & ""Some changes may have been made to the document."" & vbCrLf & ""Would you like to undo all changes made before the error?""" & vbCrLf
-    s = s & "    If MsgBox(errMsg, vbCritical + vbYesNo, ""Cleanup Error"") = vbYes Then" & vbCrLf
-    s = s & "        On Error Resume Next: Application.Undo: On Error GoTo 0" & vbCrLf
-    s = s & "    End If" & vbCrLf
-    s = s & "End Sub"
+    s = s & "    errMsg = ""An unexpected error occurred: "" & originalErrNumber & "" - "" & originalErrDescription" & vbCrLf
+    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "             ""Some changes may have been made to the document."" & vbCrLf & _" & vbCrLf
+    s = s & "             ""Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back.""" & vbCrLf
+    s = s & "    MsgBox errMsg, vbCritical, ""Cleanup Error""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & ""
     frmFootnoteRemover_Code = s
 End Function
 
@@ -4056,15 +4326,20 @@ Private Function frmHeaderFooterStandardizer_Code() As String
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "RunErr:" & vbCrLf
+    s = s & "    Dim originalErrNumber As Long" & vbCrLf
+    s = s & "    Dim originalErrDescription As String" & vbCrLf
+    s = s & "    originalErrNumber = Err.Number" & vbCrLf
+    s = s & "    originalErrDescription = Err.Description" & vbCrLf
     s = s & "    On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Dim errMsg As String" & vbCrLf
-    s = s & "    errMsg = ""An unexpected error occurred: "" & Err.Number & "" - "" & Err.Description" & vbCrLf
-    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & ""Some changes may have been made to the document."" & vbCrLf & ""Would you like to undo all changes made before the error?""" & vbCrLf
-    s = s & "    If MsgBox(errMsg, vbCritical + vbYesNo, ""Cleanup Error"") = vbYes Then" & vbCrLf
-    s = s & "        On Error Resume Next: Application.Undo: On Error GoTo 0" & vbCrLf
-    s = s & "    End If" & vbCrLf
-    s = s & "End Sub"
+    s = s & "    errMsg = ""An unexpected error occurred: "" & originalErrNumber & "" - "" & originalErrDescription" & vbCrLf
+    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "             ""Some changes may have been made to the document."" & vbCrLf & _" & vbCrLf
+    s = s & "             ""Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back.""" & vbCrLf
+    s = s & "    MsgBox errMsg, vbCritical, ""Cleanup Error""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & ""
     frmHeaderFooterStandardizer_Code = s
 End Function
 
@@ -4285,16 +4560,21 @@ Private Function frmObjectRemover_Code() As String
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "RunErr:" & vbCrLf
+    s = s & "    Dim originalErrNumber As Long" & vbCrLf
+    s = s & "    Dim originalErrDescription As String" & vbCrLf
+    s = s & "    originalErrNumber = Err.Number" & vbCrLf
+    s = s & "    originalErrDescription = Err.Description" & vbCrLf
     s = s & "    Application.ScreenUpdating = True" & vbCrLf
     s = s & "    On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Dim errMsg As String" & vbCrLf
-    s = s & "    errMsg = ""An unexpected error occurred: "" & Err.Number & "" - "" & Err.Description" & vbCrLf
-    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & ""Some changes may have been made to the document."" & vbCrLf & ""Note: deletion of pictures or shapes may not always be fully reversible."" & vbCrLf & ""Would you like to undo all changes made before the error?""" & vbCrLf
-    s = s & "    If MsgBox(errMsg, vbCritical + vbYesNo, ""Cleanup Error"") = vbYes Then" & vbCrLf
-    s = s & "        On Error Resume Next: Application.Undo: On Error GoTo 0" & vbCrLf
-    s = s & "    End If" & vbCrLf
-    s = s & "End Sub"
+    s = s & "    errMsg = ""An unexpected error occurred: "" & originalErrNumber & "" - "" & originalErrDescription" & vbCrLf
+    s = s & "    errMsg = errMsg & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "             ""Some changes may have been made to the document."" & vbCrLf & _" & vbCrLf
+    s = s & "             ""Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back.""" & vbCrLf
+    s = s & "    MsgBox errMsg, vbCritical, ""Cleanup Error""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & ""
     frmObjectRemover_Code = s
 End Function
 
@@ -4886,7 +5166,7 @@ Public Sub InjectRibbonXml(filePath As String)
     Set fso = CreateObject("Scripting.FileSystemObject")
 
     Dim tempRoot As String
-    tempRoot = Environ$("TEMP") & "\CleanupSuiteRibbon_" & Format$(Now, "yyyymmdd_hhnnss")
+    tempRoot = UniqueTempFolder(fso, "CleanupSuiteRibbon")
 
     Dim bakPath As String
     bakPath = filePath & ".ribbon_backup"
@@ -4896,10 +5176,8 @@ Public Sub InjectRibbonXml(filePath As String)
 
     If fso.FileExists(bakPath) Then fso.DeleteFile bakPath, True
     If fso.FileExists(zipPath) Then fso.DeleteFile zipPath, True
-    If fso.FolderExists(tempRoot) Then fso.DeleteFolder tempRoot, True
-
-    fso.CreateFolder tempRoot
-    fso.CreateFolder tempRoot & "\customUI"
+    EnsureFolder fso, tempRoot
+    EnsureFolder fso, tempRoot & "\customUI"
 
     FileCopy filePath, bakPath
     FileCopy filePath, zipPath
@@ -4977,6 +5255,43 @@ Private Sub Wait(ms As Long)
     Do While Timer < t + ms / 1000
         DoEvents
     Loop
+End Sub
+
+Private Function UniqueTempFolder(fso As Object, prefix As String) As String
+    Dim basePath As String
+    basePath = Environ$("TEMP")
+    If Len(basePath) = 0 Then Err.Raise vbObjectError + 3106, "InjectRibbonXml", "TEMP environment variable is not set."
+
+    Dim i As Long
+    Dim candidate As String
+    For i = 1 To 100
+        candidate = basePath & "\" & prefix & "_" & Format$(Now, "yyyymmdd_hhnnss") & "_" & CStr(i)
+        If Not fso.FolderExists(candidate) And Not fso.FileExists(candidate) Then
+            UniqueTempFolder = candidate
+            Exit Function
+        End If
+    Next i
+
+    Err.Raise vbObjectError + 3107, "InjectRibbonXml", "Could not allocate a unique temporary folder."
+End Function
+
+Private Sub EnsureFolder(fso As Object, folderPath As String)
+    If fso.FolderExists(folderPath) Then Exit Sub
+
+    Dim parentPath As String
+    parentPath = fso.GetParentFolderName(folderPath)
+    If Len(parentPath) > 0 And Not fso.FolderExists(parentPath) Then
+        EnsureFolder fso, parentPath
+    End If
+
+    On Error GoTo FolderErr
+    fso.CreateFolder folderPath
+    Exit Sub
+
+FolderErr:
+    Err.Raise vbObjectError + 3108, "InjectRibbonXml", _
+        "Could not create temporary folder:" & vbCrLf & folderPath & vbCrLf & _
+        "Error " & Err.Number & ": " & Err.Description
 End Sub
 
 Private Sub WaitForShellCopy(requiredPath As String, timeoutMs As Long)

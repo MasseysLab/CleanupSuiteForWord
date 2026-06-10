@@ -15,8 +15,6 @@ Private Sub UserForm_Initialize()
     chkNormalizeBorders.Value = False
     chkRemoveBorders.Value = False
     chkConvertToText.Value = False
-    chkRemoveBorders.Value = False
-    chkConvertToText.Value = False
     optScopeDocument.Caption = "Entire document"
     optScopeDocument.Value = True
     optScopeSelection.Caption = "Selected text only"
@@ -50,9 +48,6 @@ Private Sub cmdHelp_Click()
     h = h & "                            table, restoring the table's applied style." & vbCrLf
     h = h & "  Normalise borders     --  Enables borders on the table using the" & vbCrLf
     h = h & "                            current table style." & vbCrLf
-    h = h & "  Remove all borders    --  Turns off every border on the table." & vbCrLf
-    h = h & "  Convert table to text --  Replaces the table with tab-separated text" & vbCrLf
-    h = h & "                            (done last; other table options run first)." & vbCrLf
     h = h & "  Remove all borders    --  Turns off every border on the table." & vbCrLf
     h = h & "  Convert table to text --  Replaces the table with tab-separated text" & vbCrLf
     h = h & "                            (done last; other table options run first)." & vbCrLf
@@ -100,8 +95,6 @@ Private Sub cmdRun_Click()
     Dim doPadding As Boolean: doPadding = chkNormalizePadding.Value
     Dim doDirectFmt As Boolean: doDirectFmt = chkStripDirectFormat.Value
     Dim doBorders As Boolean: doBorders = chkNormalizeBorders.Value
-    Dim doRemoveBorders As Boolean: doRemoveBorders = chkRemoveBorders.Value
-    Dim doConvertText As Boolean: doConvertText = chkConvertToText.Value
     Dim doRemoveBorders As Boolean: doRemoveBorders = chkRemoveBorders.Value
     Dim doConvertText As Boolean: doConvertText = chkConvertToText.Value
     If Not (doEmptyRows Or doEmptyCols Or doPadding Or doDirectFmt Or doBorders Or doRemoveBorders Or doConvertText) Then MsgBox "No table options selected.", vbInformation: Exit Sub
@@ -175,19 +168,22 @@ Private Sub cmdRun_Click()
     If doEmptyRows Then results.Add "Empty rows removed: " & cntRows
     If doEmptyCols Then results.Add "Empty columns removed: " & cntCols
     If doConvertText Then results.Add "Tables converted to text: " & cntConverted
-    If doConvertText Then results.Add "Tables converted to text: " & cntConverted
     ShowCleanupReport "Table Cleaner", results
     undoRec.EndCustomRecord
     MarkCleanupEnd
     Unload Me
     Exit Sub
 RunErr:
+    Dim originalErrNumber As Long
+    Dim originalErrDescription As String
+    originalErrNumber = Err.Number
+    originalErrDescription = Err.Description
     On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0
     MarkCleanupEnd
     Dim errMsg As String
-    errMsg = "An unexpected error occurred: " & Err.Number & " - " & Err.Description
-    errMsg = errMsg & vbCrLf & vbCrLf & "Some changes may have been made to the document." & vbCrLf & "Would you like to undo all changes made before the error?"
-    If MsgBox(errMsg, vbCritical + vbYesNo, "Cleanup Error") = vbYes Then
-        On Error Resume Next: Application.Undo: On Error GoTo 0
-    End If
+    errMsg = "An unexpected error occurred: " & originalErrNumber & " - " & originalErrDescription
+    errMsg = errMsg & vbCrLf & vbCrLf & _
+             "Some changes may have been made to the document." & vbCrLf & _
+             "Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back."
+    MsgBox errMsg, vbCritical, "Cleanup Error"
 End Sub

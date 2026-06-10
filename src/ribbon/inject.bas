@@ -44,7 +44,7 @@ Public Sub InjectRibbonXml(filePath As String)
     Set fso = CreateObject("Scripting.FileSystemObject")
 
     Dim tempRoot As String
-    tempRoot = Environ$("TEMP") & "\CleanupSuiteRibbon_" & Format$(Now, "yyyymmdd_hhnnss")
+    tempRoot = UniqueTempFolder(fso, "CleanupSuiteRibbon")
 
     Dim bakPath As String
     bakPath = filePath & ".ribbon_backup"
@@ -54,10 +54,8 @@ Public Sub InjectRibbonXml(filePath As String)
 
     If fso.FileExists(bakPath) Then fso.DeleteFile bakPath, True
     If fso.FileExists(zipPath) Then fso.DeleteFile zipPath, True
-    If fso.FolderExists(tempRoot) Then fso.DeleteFolder tempRoot, True
-
-    fso.CreateFolder tempRoot
-    fso.CreateFolder tempRoot & "\customUI"
+    EnsureFolder fso, tempRoot
+    EnsureFolder fso, tempRoot & "\customUI"
 
     FileCopy filePath, bakPath
     FileCopy filePath, zipPath
@@ -135,6 +133,43 @@ Private Sub Wait(ms As Long)
     Do While Timer < t + ms / 1000
         DoEvents
     Loop
+End Sub
+
+Private Function UniqueTempFolder(fso As Object, prefix As String) As String
+    Dim basePath As String
+    basePath = Environ$("TEMP")
+    If Len(basePath) = 0 Then Err.Raise vbObjectError + 3106, "InjectRibbonXml", "TEMP environment variable is not set."
+
+    Dim i As Long
+    Dim candidate As String
+    For i = 1 To 100
+        candidate = basePath & "\" & prefix & "_" & Format$(Now, "yyyymmdd_hhnnss") & "_" & CStr(i)
+        If Not fso.FolderExists(candidate) And Not fso.FileExists(candidate) Then
+            UniqueTempFolder = candidate
+            Exit Function
+        End If
+    Next i
+
+    Err.Raise vbObjectError + 3107, "InjectRibbonXml", "Could not allocate a unique temporary folder."
+End Function
+
+Private Sub EnsureFolder(fso As Object, folderPath As String)
+    If fso.FolderExists(folderPath) Then Exit Sub
+
+    Dim parentPath As String
+    parentPath = fso.GetParentFolderName(folderPath)
+    If Len(parentPath) > 0 And Not fso.FolderExists(parentPath) Then
+        EnsureFolder fso, parentPath
+    End If
+
+    On Error GoTo FolderErr
+    fso.CreateFolder folderPath
+    Exit Sub
+
+FolderErr:
+    Err.Raise vbObjectError + 3108, "InjectRibbonXml", _
+        "Could not create temporary folder:" & vbCrLf & folderPath & vbCrLf & _
+        "Error " & Err.Number & ": " & Err.Description
 End Sub
 
 Private Sub WaitForShellCopy(requiredPath As String, timeoutMs As Long)

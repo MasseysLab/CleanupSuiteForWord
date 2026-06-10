@@ -160,12 +160,16 @@ Private Sub cmdRun_Click()
     Unload Me
     Exit Sub
 RunErr:
+    Dim originalErrNumber As Long
+    Dim originalErrDescription As String
+    originalErrNumber = Err.Number
+    originalErrDescription = Err.Description
     On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0
     MarkCleanupEnd
     Dim errMsg As String
-    errMsg = "An unexpected error occurred: " & Err.Number & " - " & Err.Description
-    errMsg = errMsg & vbCrLf & vbCrLf & "Some changes may have been made to the document." & vbCrLf & "Would you like to undo all changes made before the error?"
-    If MsgBox(errMsg, vbCritical + vbYesNo, "Cleanup Error") = vbYes Then
-        On Error Resume Next: Application.Undo: On Error GoTo 0
-    End If
+    errMsg = "An unexpected error occurred: " & originalErrNumber & " - " & originalErrDescription
+    errMsg = errMsg & vbCrLf & vbCrLf & _
+             "Some changes may have been made to the document." & vbCrLf & _
+             "Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back."
+    MsgBox errMsg, vbCritical, "Cleanup Error"
 End Sub

@@ -77,6 +77,13 @@ End Sub
 Private Sub cmdDeselectAll_Click()
     If fraCustom.Visible Then ClearCustomChecks
 End Sub
+Private Function UnicodeChar(ByVal codePoint As Long) As String
+    If codePoint > &H7FFF Then
+        UnicodeChar = ChrW$(codePoint - &H10000)
+    Else
+        UnicodeChar = ChrW$(codePoint)
+    End If
+End Function
 Private Sub cmdRun_Click()
     If ActiveDocument.ProtectionType <> wdNoProtection Then
         MsgBox "This document is protected. Please remove protection before running cleanup.", vbExclamation, "Document Protected": Exit Sub
@@ -93,23 +100,23 @@ Private Sub cmdRun_Click()
         Set targetRange = ActiveDocument.Content
     End If
     Set findList = New Collection: Set replaceList = New Collection: Set itemLabels = New Collection
-    If optAll.Value Or optNBSP.Value Then findList.Add ChrW(&HA0): replaceList.Add " " : itemLabels.Add "Non-breaking spaces (U+00A0)"
+    If optAll.Value Or optNBSP.Value Then findList.Add UnicodeChar(&HA0): replaceList.Add " " : itemLabels.Add "Non-breaking spaces (U+00A0)"
     If optAll.Value Or optZeroWidth.Value Then
-        findList.Add ChrW(&H200B): replaceList.Add "" : itemLabels.Add "Zero-width spaces (U+200B)"
-        findList.Add ChrW(&H200C): replaceList.Add "" : itemLabels.Add "Zero-width non-joiners (U+200C)"
-        findList.Add ChrW(&H200D): replaceList.Add "" : itemLabels.Add "Zero-width joiners (U+200D)"
-        findList.Add ChrW(&HFEFF): replaceList.Add "" : itemLabels.Add "BOM / zero-width no-break spaces (U+FEFF)"
+        findList.Add UnicodeChar(&H200B): replaceList.Add "" : itemLabels.Add "Zero-width spaces (U+200B)"
+        findList.Add UnicodeChar(&H200C): replaceList.Add "" : itemLabels.Add "Zero-width non-joiners (U+200C)"
+        findList.Add UnicodeChar(&H200D): replaceList.Add "" : itemLabels.Add "Zero-width joiners (U+200D)"
+        findList.Add UnicodeChar(&HFEFF): replaceList.Add "" : itemLabels.Add "BOM / zero-width no-break spaces (U+FEFF)"
     End If
-    If optAll.Value Then findList.Add ChrW(&HAD): replaceList.Add "-" : itemLabels.Add "Soft hyphens (U+00AD)" : findList.Add ChrW(&H2011): replaceList.Add "-" : itemLabels.Add "Non-breaking hyphens (U+2011)"
+    If optAll.Value Then findList.Add UnicodeChar(&HAD): replaceList.Add "-" : itemLabels.Add "Soft hyphens (U+00AD)" : findList.Add UnicodeChar(&H2011): replaceList.Add "-" : itemLabels.Add "Non-breaking hyphens (U+2011)"
     If optCustom.Value Then
         Set findList = New Collection: Set replaceList = New Collection: Set itemLabels = New Collection
-        If chkNBSP.Value Then findList.Add ChrW(&HA0): replaceList.Add " " : itemLabels.Add "Non-breaking spaces (U+00A0)"
-        If chkZWSP.Value Then findList.Add ChrW(&H200B): replaceList.Add "" : itemLabels.Add "Zero-width spaces (U+200B)"
-        If chkZWNJ.Value Then findList.Add ChrW(&H200C): replaceList.Add "" : itemLabels.Add "Zero-width non-joiners (U+200C)"
-        If chkZWJ.Value Then findList.Add ChrW(&H200D): replaceList.Add "" : itemLabels.Add "Zero-width joiners (U+200D)"
-        If chkBOM.Value Then findList.Add ChrW(&HFEFF): replaceList.Add "" : itemLabels.Add "BOM / zero-width no-break spaces (U+FEFF)"
-        If chkSoftHyphen.Value Then findList.Add ChrW(&HAD): replaceList.Add "-" : itemLabels.Add "Soft hyphens (U+00AD)"
-        If chkNBHyphen.Value Then findList.Add ChrW(&H2011): replaceList.Add "-" : itemLabels.Add "Non-breaking hyphens (U+2011)"
+        If chkNBSP.Value Then findList.Add UnicodeChar(&HA0): replaceList.Add " " : itemLabels.Add "Non-breaking spaces (U+00A0)"
+        If chkZWSP.Value Then findList.Add UnicodeChar(&H200B): replaceList.Add "" : itemLabels.Add "Zero-width spaces (U+200B)"
+        If chkZWNJ.Value Then findList.Add UnicodeChar(&H200C): replaceList.Add "" : itemLabels.Add "Zero-width non-joiners (U+200C)"
+        If chkZWJ.Value Then findList.Add UnicodeChar(&H200D): replaceList.Add "" : itemLabels.Add "Zero-width joiners (U+200D)"
+        If chkBOM.Value Then findList.Add UnicodeChar(&HFEFF): replaceList.Add "" : itemLabels.Add "BOM / zero-width no-break spaces (U+FEFF)"
+        If chkSoftHyphen.Value Then findList.Add UnicodeChar(&HAD): replaceList.Add "-" : itemLabels.Add "Soft hyphens (U+00AD)"
+        If chkNBHyphen.Value Then findList.Add UnicodeChar(&H2011): replaceList.Add "-" : itemLabels.Add "Non-breaking hyphens (U+2011)"
     End If
     If findList.Count = 0 Then MsgBox "No Unicode options selected.", vbInformation: Exit Sub
     ReDim counts(1 To findList.Count): For i = 1 To findList.Count: counts(i) = 0: Next i
@@ -141,12 +148,16 @@ Private Sub cmdRun_Click()
     Unload Me
     Exit Sub
 RunErr:
+    Dim originalErrNumber As Long
+    Dim originalErrDescription As String
+    originalErrNumber = Err.Number
+    originalErrDescription = Err.Description
     On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0
     MarkCleanupEnd
     Dim errMsg As String
-    errMsg = "An unexpected error occurred: " & Err.Number & " - " & Err.Description
-    errMsg = errMsg & vbCrLf & vbCrLf & "Some changes may have been made to the document." & vbCrLf & "Would you like to undo all changes made before the error?"
-    If MsgBox(errMsg, vbCritical + vbYesNo, "Cleanup Error") = vbYes Then
-        On Error Resume Next: Application.Undo: On Error GoTo 0
-    End If
+    errMsg = "An unexpected error occurred: " & originalErrNumber & " - " & originalErrDescription
+    errMsg = errMsg & vbCrLf & vbCrLf & _
+             "Some changes may have been made to the document." & vbCrLf & _
+             "Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back."
+    MsgBox errMsg, vbCritical, "Cleanup Error"
 End Sub

@@ -40,7 +40,7 @@ Public Function GuardBeforeCleanup(toolName As String) As Boolean
             End If
             On Error GoTo 0
         End If
-    ElseIf GetAutoSaveSetting() Then
+    ElseIf GetAutoSaveSetting() And Not IsRunningInMacroHostDocument() Then
         ' Document is saved and auto-save is ON -- save silently before proceeding
         On Error Resume Next
         ActiveDocument.Save
@@ -48,8 +48,14 @@ Public Function GuardBeforeCleanup(toolName As String) As Boolean
     End If
     GuardBeforeCleanup = True
 End Function
+Public Function IsRunningInMacroHostDocument() As Boolean
+    On Error Resume Next
+    IsRunningInMacroHostDocument = (ActiveDocument.FullName = ThisDocument.FullName)
+    On Error GoTo 0
+End Function
 Public Sub MarkCleanupStart(toolName As String)
     On Error Resume Next
+    If IsRunningInMacroHostDocument() Then Exit Sub
     ActiveDocument.CustomDocumentProperties("CleanupSuiteInProgress").Delete
     Err.Clear
     ActiveDocument.CustomDocumentProperties.Add Name:="CleanupSuiteInProgress", LinkToContent:=False, Type:=msoPropertyTypeString, Value:=toolName
@@ -58,6 +64,7 @@ Public Sub MarkCleanupStart(toolName As String)
 End Sub
 Public Sub MarkCleanupEnd()
     On Error Resume Next
+    If IsRunningInMacroHostDocument() Then Exit Sub
     ActiveDocument.CustomDocumentProperties("CleanupSuiteInProgress").Delete
     On Error GoTo 0
 End Sub
