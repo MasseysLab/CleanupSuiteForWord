@@ -26,9 +26,13 @@ class PreviewActionPanelTests(unittest.TestCase):
 
         self.assertIn("Public gPreviewActionPanel As Object", helpers)
         self.assertIn("Public Sub ShowPreviewActions", helpers)
+        self.assertIn("gPreviewActionPanel.Show", helpers)
+        self.assertNotIn("vbModeless", helpers)
         self.assertIn("Public Sub Configure", panel)
         self.assertIn('CallByName mSourceForm, "RunAfterPreview", VbMethod', panel)
         self.assertIn("RemoveAllHighlighting ActiveDocument.Content", panel)
+        self.assertIn("Me.Hide", panel)
+        self.assertIn("mSourceForm.Show", panel)
 
     def test_preview_capable_forms_can_apply_from_panel(self):
         form_paths = [

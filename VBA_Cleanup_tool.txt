@@ -820,7 +820,7 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmPunctuationCleanup.optScopeSelection": ControlCaptionText = "Selected text only"
         Case "frmPreviewActions.lblTitle": ControlCaptionText = "Preview Actions"
         Case "frmPreviewActions.lblSummary": ControlCaptionText = "Preview complete."
-        Case "frmPreviewActions.lblHint": ControlCaptionText = "Review the highlighted results in the document, then choose what to do next."
+        Case "frmPreviewActions.lblHint": ControlCaptionText = "Apply reruns the same settings without Preview. Clear Preview removes the yellow marks."
         Case "frmSoftReturnConverter.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
         Case "frmSoftReturnConverter.optParaToSoft": ControlCaptionText = "Convert paragraph marks to soft returns"
         Case "frmSoftReturnConverter.optScopeDocument": ControlCaptionText = "Entire document"
@@ -875,7 +875,7 @@ Private Sub SetButtonCaption(designer As Object, nm As String)
     Select Case nm
         Case "cmdRun": cap = "Run"
         Case "cmdApply": cap = "Apply"
-        Case "cmdClear": cap = "Clear Preview"
+        Case "cmdClear": cap = "Reset Preview"
         Case "cmdBack": cap = "Back"
         Case "cmdClose": cap = "Close"
         Case "cmdSelectAll": cap = "Select All"
@@ -1133,7 +1133,7 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "    sourceForm.Hide" & vbCrLf
     s = s & "    Set gPreviewActionPanel = New frmPreviewActions" & vbCrLf
     s = s & "    gPreviewActionPanel.Configure sourceForm, toolName, summaryText" & vbCrLf
-    s = s & "    gPreviewActionPanel.Show vbModeless" & vbCrLf
+    s = s & "    gPreviewActionPanel.Show" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "Fallback:" & vbCrLf
     s = s & "    MsgBox summaryText & vbCrLf & vbCrLf & _" & vbCrLf
@@ -4834,9 +4834,9 @@ Private Function frmPreviewActions_Code() As String
     s = s & "    mToolName = toolName" & vbCrLf
     s = s & "    lblTitle.Caption = toolName & "" Preview""" & vbCrLf
     s = s & "    lblSummary.Caption = summaryText" & vbCrLf
-    s = s & "    lblHint.Caption = ""Review the highlighted results in the document, then choose what to do next.""" & vbCrLf
+    s = s & "    lblHint.Caption = ""Apply reruns the same settings without Preview. Clear Preview removes the yellow marks.""" & vbCrLf
     s = s & "    cmdApply.Caption = ""Apply""" & vbCrLf
-    s = s & "    cmdClear.Caption = ""Clear Preview""" & vbCrLf
+    s = s & "    cmdClear.Caption = ""Reset Preview""" & vbCrLf
     s = s & "    cmdBack.Caption = ""Back""" & vbCrLf
     s = s & "    cmdClose.Caption = ""Close""" & vbCrLf
     s = s & "End Sub" & vbCrLf
@@ -4862,6 +4862,7 @@ Private Function frmPreviewActions_Code() As String
     s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "Private Sub cmdBack_Click()" & vbCrLf
+    s = s & "    Me.Hide" & vbCrLf
     s = s & "    If Not mSourceForm Is Nothing Then mSourceForm.Show" & vbCrLf
     s = s & "    Set gPreviewActionPanel = Nothing" & vbCrLf
     s = s & "    Unload Me" & vbCrLf

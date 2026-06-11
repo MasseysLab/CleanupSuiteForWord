@@ -820,7 +820,7 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmPunctuationCleanup.optScopeSelection": ControlCaptionText = "Selected text only"
         Case "frmPreviewActions.lblTitle": ControlCaptionText = "Preview Actions"
         Case "frmPreviewActions.lblSummary": ControlCaptionText = "Preview complete."
-        Case "frmPreviewActions.lblHint": ControlCaptionText = "Review the highlighted results in the document, then choose what to do next."
+        Case "frmPreviewActions.lblHint": ControlCaptionText = "Apply reruns the same settings without Preview. Clear Preview removes the yellow marks."
         Case "frmSoftReturnConverter.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
         Case "frmSoftReturnConverter.optParaToSoft": ControlCaptionText = "Convert paragraph marks to soft returns"
         Case "frmSoftReturnConverter.optScopeDocument": ControlCaptionText = "Entire document"
@@ -875,7 +875,7 @@ Private Sub SetButtonCaption(designer As Object, nm As String)
     Select Case nm
         Case "cmdRun": cap = "Run"
         Case "cmdApply": cap = "Apply"
-        Case "cmdClear": cap = "Clear Preview"
+        Case "cmdClear": cap = "Reset Preview"
         Case "cmdBack": cap = "Back"
         Case "cmdClose": cap = "Close"
         Case "cmdSelectAll": cap = "Select All"

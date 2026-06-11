@@ -8,9 +8,9 @@ Public Sub Configure(sourceForm As Object, toolName As String, summaryText As St
     mToolName = toolName
     lblTitle.Caption = toolName & " Preview"
     lblSummary.Caption = summaryText
-    lblHint.Caption = "Review the highlighted results in the document, then choose what to do next."
+    lblHint.Caption = "Apply reruns the same settings without Preview. Clear Preview removes the yellow marks."
     cmdApply.Caption = "Apply"
-    cmdClear.Caption = "Clear Preview"
+    cmdClear.Caption = "Reset Preview"
     cmdBack.Caption = "Back"
     cmdClose.Caption = "Close"
 End Sub
@@ -36,6 +36,7 @@ Private Sub cmdClear_Click()
 End Sub
 
 Private Sub cmdBack_Click()
+    Me.Hide
     If Not mSourceForm Is Nothing Then mSourceForm.Show
     Set gPreviewActionPanel = Nothing
     Unload Me

@@ -7,7 +7,7 @@ Public Sub ShowPreviewActions(sourceForm As Object, toolName As String, summaryT
     sourceForm.Hide
     Set gPreviewActionPanel = New frmPreviewActions
     gPreviewActionPanel.Configure sourceForm, toolName, summaryText
-    gPreviewActionPanel.Show vbModeless
+    gPreviewActionPanel.Show
     Exit Sub
 Fallback:
     MsgBox summaryText & vbCrLf & vbCrLf & _
