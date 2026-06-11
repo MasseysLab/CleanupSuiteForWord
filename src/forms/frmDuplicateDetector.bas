@@ -143,6 +143,10 @@ Private Function FindRoot(ByRef par() As Long, ByVal x As Long) As Long
     Loop
     FindRoot = x
 End Function
+Public Sub RunAfterPreview()
+    chkPreviewOnly.Value = False
+    cmdRun_Click
+End Sub
 Private Sub cmdRun_Click()
     If ActiveDocument.ProtectionType <> wdNoProtection Then
         MsgBox "This document is protected. Please remove protection before running cleanup.", vbExclamation, "Document Protected": Exit Sub
@@ -264,8 +268,8 @@ Private Sub cmdRun_Click()
     If previewOnly Then
         undoRec.EndCustomRecord
         MarkCleanupEnd
-        MsgBox "Preview complete. " & dupCount & " duplicate paragraphs highlighted.", vbInformation
-        Unload Me: Exit Sub
+        ShowPreviewActions Me, "Duplicate Detector", "Preview complete. " & dupCount & " duplicate paragraphs highlighted."
+        Exit Sub
     End If
     Dim results As Collection: Set results = New Collection
     If doRemove Then

@@ -72,6 +72,10 @@ Private Sub cmdDeselectAll_Click()
         ClearCustomChecks
     End If
 End Sub
+Public Sub RunAfterPreview()
+    chkPreviewOnly.Value = False
+    cmdRun_Click
+End Sub
 Private Sub cmdRun_Click()
     If ActiveDocument.ProtectionType <> wdNoProtection Then
         MsgBox "This document is protected. Please remove protection before running cleanup.", vbExclamation, "Document Protected": Exit Sub
@@ -100,8 +104,10 @@ Private Sub cmdRun_Click()
         If doNumbering And txt Like "[0-9]*.*" Then p.Range.HighlightColorIndex = wdYellow: changed = changed + 1
         If doBullets And (Left$(txt, 2) = Chr(149) & " " Or Left$(txt, 2) = "* ") Then p.Range.HighlightColorIndex = wdYellow: changed = changed + 1
     Next p
-    MsgBox "Preview complete. " & changed & " paragraphs highlighted.", vbInformation
-    If previewOnly Then Unload Me: Exit Sub
+    If previewOnly Then
+        ShowPreviewActions Me, "List Normalizer", "Preview complete. " & changed & " paragraphs highlighted."
+        Exit Sub
+    End If
     MarkCleanupStart "List Normalizer"
     Dim undoRec As UndoRecord
     Set undoRec = Application.UndoRecord

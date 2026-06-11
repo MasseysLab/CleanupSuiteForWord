@@ -71,6 +71,10 @@ Private Sub cmdDeselectAll_Click()
         ClearCustomChecks
     End If
 End Sub
+Public Sub RunAfterPreview()
+    chkPreviewOnly.Value = False
+    cmdRun_Click
+End Sub
 Private Sub cmdRun_Click()
     If ActiveDocument.ProtectionType <> wdNoProtection Then
         MsgBox "This document is protected. Please remove protection before running cleanup.", vbExclamation, "Document Protected": Exit Sub
@@ -96,8 +100,10 @@ Private Sub cmdRun_Click()
             If (doRemove Or doCollapse) And Len(Trim$(p.Range.Text)) <= 1 Then p.Range.HighlightColorIndex = wdYellow: cnt = cnt + 1
         End If
     Next p
-    MsgBox "Preview complete. " & cnt & " items highlighted.", vbInformation
-    If previewOnly Then Unload Me: Exit Sub
+    If previewOnly Then
+        ShowPreviewActions Me, "Paragraph Fixer", "Preview complete. " & cnt & " items highlighted."
+        Exit Sub
+    End If
     MarkCleanupStart "Paragraph Fixer"
     Dim undoRec As UndoRecord
     Set undoRec = Application.UndoRecord

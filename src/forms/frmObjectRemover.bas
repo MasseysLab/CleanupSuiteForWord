@@ -153,6 +153,10 @@ Private Function ProcessHiddenText(doDelete As Boolean) As Long
     End If
     If found Then ProcessHiddenText = 1 Else ProcessHiddenText = 0
 End Function
+Public Sub RunAfterPreview()
+    chkPreviewOnly.Value = False
+    cmdRun_Click
+End Sub
 Private Sub cmdRun_Click()
     If ActiveDocument.ProtectionType <> wdNoProtection Then
         MsgBox "This document is protected. Please remove protection before running cleanup.", vbExclamation, "Document Protected": Exit Sub
@@ -177,8 +181,8 @@ Private Sub cmdRun_Click()
         If doHtml Then msg = msg & vbCrLf & "HTML/ActiveX controls: " & ProcessHtmlControls(False)
         If doTab Then msg = msg & vbCrLf & "Tables: " & ProcessTables(False)
         If doHid Then msg = msg & vbCrLf & "Hidden text present: " & IIf(ProcessHiddenText(False) > 0, "Yes", "No")
-        MsgBox msg, vbInformation, "Remove Objects -- Preview"
-        Unload Me: Exit Sub
+        ShowPreviewActions Me, "Object Remover", msg
+        Exit Sub
     End If
     If doTab Then
         Dim tcount As Long: tcount = ActiveDocument.Tables.Count

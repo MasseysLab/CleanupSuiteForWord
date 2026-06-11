@@ -43,6 +43,10 @@ Private Sub cmdHelp_Click()
     h = h & "Preview mode shows the metadata currently in the document." & vbCrLf
     MsgBox h, vbInformation, "Help  --  Metadata Scrubber"
 End Sub
+Public Sub RunAfterPreview()
+    chkPreviewOnly.Value = False
+    cmdRun_Click
+End Sub
 Private Sub cmdRun_Click()
     If ActiveDocument.ProtectionType <> wdNoProtection Then
         MsgBox "This document is protected. Please remove protection before running cleanup.", vbExclamation, "Document Protected": Exit Sub
@@ -65,8 +69,8 @@ Private Sub cmdRun_Click()
         info = info & "Comments: " & ActiveDocument.Comments.Count & vbCrLf
         info = info & "Tracked changes: " & ActiveDocument.Revisions.Count & vbCrLf & vbCrLf
         info = info & "Run without Preview to remove the selected items."
-        MsgBox info, vbInformation, "Metadata Preview"
-        Unload Me: Exit Sub
+        ShowPreviewActions Me, "Metadata Scrubber", info
+        Exit Sub
     End If
     MarkCleanupStart "Metadata Scrubber"
     Dim undoRec As UndoRecord

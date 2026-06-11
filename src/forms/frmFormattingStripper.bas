@@ -79,6 +79,10 @@ Private Sub cmdHelp_Click()
     h = h & "Preview mode highlights paragraphs carrying direct formatting." & vbCrLf
     MsgBox h, vbInformation, "Help  --  Direct Formatting Stripper"
 End Sub
+Public Sub RunAfterPreview()
+    chkPreviewOnly.Value = False
+    cmdRun_Click
+End Sub
 Private Sub cmdRun_Click()
     If ActiveDocument.ProtectionType <> wdNoProtection Then
         MsgBox "This document is protected. Please remove protection before running cleanup.", vbExclamation, "Document Protected": Exit Sub
@@ -104,8 +108,8 @@ Private Sub cmdRun_Click()
                 If HasDirectFormatting(p, doResetChar, doResetPara) Then p.Range.HighlightColorIndex = wdYellow: pcnt = pcnt + 1
             End If
         Next p
-        MsgBox "Preview complete. " & pcnt & " paragraphs with direct formatting highlighted.", vbInformation
-        Unload Me: Exit Sub
+        ShowPreviewActions Me, "Formatting Stripper", "Preview complete. " & pcnt & " paragraphs with direct formatting highlighted."
+        Exit Sub
     End If
     Dim emphMode As Integer: emphMode = 0
     If optEmphThorough.Value Then emphMode = 1

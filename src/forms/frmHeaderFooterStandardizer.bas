@@ -88,6 +88,10 @@ Private Sub ApplyToHF(hf As HeaderFooter, doClear As Boolean, doFont As Boolean,
     End If
     cntAreas = cntAreas + 1
 End Sub
+Public Sub RunAfterPreview()
+    chkPreviewOnly.Value = False
+    cmdRun_Click
+End Sub
 Private Sub cmdRun_Click()
     If ActiveDocument.ProtectionType <> wdNoProtection Then
         MsgBox "This document is protected. Please remove protection before running cleanup.", vbExclamation, "Document Protected": Exit Sub
@@ -125,8 +129,8 @@ Private Sub cmdRun_Click()
         Next sec
         Dim verb As String: verb = "standardized"
         If doClear Then verb = "cleared"
-        MsgBox "Preview complete." & vbCrLf & pc & " header/footer areas across " & ActiveDocument.Sections.Count & " sections would be " & verb & ".", vbInformation, "Header / Footer Preview"
-        Unload Me: Exit Sub
+        ShowPreviewActions Me, "Header / Footer Standardizer", "Preview complete." & vbCrLf & pc & " header/footer areas across " & ActiveDocument.Sections.Count & " sections would be " & verb & "."
+        Exit Sub
     End If
     MarkCleanupStart "Header / Footer Standardizer"
     Dim undoRec As UndoRecord

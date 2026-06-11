@@ -86,6 +86,7 @@ Public Sub InstallCleanupSuite()
     CreateOrReplaceForm vbProj, "frmFootnoteRemover", frmFootnoteRemover_Code, installLog
     CreateOrReplaceForm vbProj, "frmHeaderFooterStandardizer", frmHeaderFooterStandardizer_Code, installLog
     CreateOrReplaceForm vbProj, "frmObjectRemover", frmObjectRemover_Code, installLog
+    CreateOrReplaceForm vbProj, "frmPreviewActions", frmPreviewActions_Code, installLog
     CreateOrReplaceForm vbProj, "frmCleanupSuiteLauncher", frmCleanupSuiteLauncher_Code, installLog
 
     ' 3) Attempt to create controls programmatically (best-effort)
@@ -112,6 +113,7 @@ Public Sub InstallCleanupSuite()
     AttemptCreateControls vbProj, "frmFootnoteRemover", uiFailures
     AttemptCreateControls vbProj, "frmHeaderFooterStandardizer", uiFailures
     AttemptCreateControls vbProj, "frmObjectRemover", uiFailures
+    AttemptCreateControls vbProj, "frmPreviewActions", uiFailures
 
     ' 4) Post-install report
     Dim reportText As String
@@ -273,7 +275,7 @@ Private Function IsSuiteComponent(compName As String) As Boolean
         "frmBreakNormalizer", "frmDocumentTrim", "frmFormattingStripper", _
         "frmHyperlinkRemover", "frmSoftReturnConverter", "frmMetadataScrubber", _
         "frmStyleCleanup", "frmFootnoteRemover", "frmHeaderFooterStandardizer", _
-        "frmObjectRemover", "frmCleanupSuiteLauncher", "modCleanupLauncher", _
+        "frmObjectRemover", "frmPreviewActions", "frmCleanupSuiteLauncher", "modCleanupLauncher", _
         "modCleanupHelpers")
 
     Dim i As Long
@@ -399,6 +401,10 @@ Private Sub LayoutFormControls(comp As VBIDE.VBComponent)
         LayoutLauncherControls comp, designer
         Exit Sub
     End If
+    If comp.Name = "frmPreviewActions" Then
+        LayoutPreviewActionsControls comp, designer
+        Exit Sub
+    End If
 
     Const FORM_W As Single = 372
     Const MARGIN As Single = 12
@@ -453,6 +459,33 @@ Private Sub LayoutFormControls(comp As VBIDE.VBComponent)
     comp.Properties("Height") = y + 40
     designer.Width = FORM_W + 8
     designer.Height = y + 40
+End Sub
+
+Private Sub LayoutPreviewActionsControls(comp As VBIDE.VBComponent, designer As Object)
+    On Error Resume Next
+    Const FORM_W As Single = 390
+    Const MARGIN As Single = 14
+    Const BTN_W As Single = 78
+    Const BTN_H As Single = 24
+    Const GAP As Single = 8
+    Dim contentW As Single: contentW = FORM_W - (2 * MARGIN)
+    Dim y As Single: y = 12
+
+    PositionControl designer, "lblTitle", MARGIN, y, contentW, 20
+    y = y + 24
+    PositionControl designer, "lblSummary", MARGIN, y, contentW, 42
+    y = y + 46
+    PositionControl designer, "lblHint", MARGIN, y, contentW, 28
+    y = y + 36
+    PositionControl designer, "cmdApply", MARGIN, y, BTN_W, BTN_H
+    PositionControl designer, "cmdClear", MARGIN + BTN_W + GAP, y, BTN_W + 8, BTN_H
+    PositionControl designer, "cmdBack", MARGIN + (2 * BTN_W) + (2 * GAP) + 8, y, BTN_W, BTN_H
+    PositionControl designer, "cmdClose", FORM_W - MARGIN - BTN_W, y, BTN_W, BTN_H
+
+    comp.Properties("Width") = FORM_W + 8
+    comp.Properties("Height") = y + BTN_H + 42
+    designer.Width = FORM_W + 8
+    designer.Height = y + BTN_H + 42
 End Sub
 
 Private Sub LayoutLauncherControls(comp As VBIDE.VBComponent, designer As Object)
@@ -785,6 +818,9 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmPunctuationCleanup.optQuotes": ControlCaptionText = "Quotes only"
         Case "frmPunctuationCleanup.optScopeDocument": ControlCaptionText = "Entire document"
         Case "frmPunctuationCleanup.optScopeSelection": ControlCaptionText = "Selected text only"
+        Case "frmPreviewActions.lblTitle": ControlCaptionText = "Preview Actions"
+        Case "frmPreviewActions.lblSummary": ControlCaptionText = "Preview complete."
+        Case "frmPreviewActions.lblHint": ControlCaptionText = "Review the highlighted results in the document, then choose what to do next."
         Case "frmSoftReturnConverter.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
         Case "frmSoftReturnConverter.optParaToSoft": ControlCaptionText = "Convert paragraph marks to soft returns"
         Case "frmSoftReturnConverter.optScopeDocument": ControlCaptionText = "Entire document"
@@ -838,6 +874,10 @@ Private Sub SetButtonCaption(designer As Object, nm As String)
     Dim cap As String
     Select Case nm
         Case "cmdRun": cap = "Run"
+        Case "cmdApply": cap = "Apply"
+        Case "cmdClear": cap = "Clear Preview"
+        Case "cmdBack": cap = "Back"
+        Case "cmdClose": cap = "Close"
         Case "cmdSelectAll": cap = "Select All"
         Case "cmdDeselectAll": cap = "Deselect All"
         Case "cmdHelp": cap = "Help"
@@ -868,6 +908,7 @@ End Sub
 Private Function FriendlyFormCaption(formName As String) As String
     Select Case formName
         Case "frmCleanupSuiteLauncher": FriendlyFormCaption = "Cleanup Suite"
+        Case "frmPreviewActions": FriendlyFormCaption = "Preview Actions"
         Case "frmPunctuationCleanup": FriendlyFormCaption = "Punctuation Normalizer"
         Case "frmUnicodeCleanup": FriendlyFormCaption = "Invisible Unicode Cleaner"
         Case "frmSpacingCleanup": FriendlyFormCaption = "Spacing Fixer"
@@ -908,6 +949,10 @@ End Function
 Private Function ButtonTipText(nm As String) As String
     Select Case nm
         Case "cmdRun": ButtonTipText = "Run this cleanup tool"
+        Case "cmdApply": ButtonTipText = "Apply this preview using the same settings"
+        Case "cmdClear": ButtonTipText = "Remove preview highlighting and close this tool"
+        Case "cmdBack": ButtonTipText = "Return to the tool options"
+        Case "cmdClose": ButtonTipText = "Close this preview panel"
         Case "cmdSelectAll": ButtonTipText = "Select all custom options"
         Case "cmdDeselectAll": ButtonTipText = "Clear all custom options"
         Case "cmdUnicode": ButtonTipText = "Remove invisible Unicode characters"
@@ -946,6 +991,8 @@ Private Function ControlsForForm(formName As String) As Variant
                                     "lblCatLayout", "cmdHelpTable", "cmdTableClean", "lblDescTableClean", "cmdHelpBreak", "cmdBreakNorm", "lblDescBreakNorm", "cmdHelpHeaderFooter", "cmdHeaderFooter", "lblDescHeaderFooter", "cmdHelpTrim", "cmdDocTrim", "lblDescDocTrim", _
                                     "lblCatFormat", "cmdHelpFont", "cmdFontNorm", "lblDescFontNorm", "cmdHelpFormat", "cmdFormatStrip", "lblDescFormatStrip", "cmdHelpStyle", "cmdStyleClean", "lblDescStyleClean", "cmdHelpHyperlink", "cmdHyperlink", "lblDescHyperlink", _
                                     "lblCatReview", "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", "chkAutoSave")
+        Case "frmPreviewActions"
+            ControlsForForm = Array("lblTitle", "lblSummary", "lblHint", "cmdApply", "cmdClear", "cmdBack", "cmdClose")
         Case "frmPunctuationCleanup"
             ControlsForForm = Array("optAll", "optQuotes", "optDashes", "optEllipses", "optCustom", "fraCustom", _
                                     "chkCurlyDouble", "chkCurlySingle", "chkEmDash", "chkEnDash", "chkEllipses", _
@@ -1079,6 +1126,21 @@ Private Function modCleanupHelpers_Code() As String
     Dim s As String
     s = s & "Option Explicit" & vbCrLf
     s = s & "' Shared helper functions for cleanup forms" & vbCrLf
+    s = s & "Public gPreviewActionPanel As Object" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Sub ShowPreviewActions(sourceForm As Object, toolName As String, summaryText As String)" & vbCrLf
+    s = s & "    On Error GoTo Fallback" & vbCrLf
+    s = s & "    sourceForm.Hide" & vbCrLf
+    s = s & "    Set gPreviewActionPanel = New frmPreviewActions" & vbCrLf
+    s = s & "    gPreviewActionPanel.Configure sourceForm, toolName, summaryText" & vbCrLf
+    s = s & "    gPreviewActionPanel.Show vbModeless" & vbCrLf
+    s = s & "    Exit Sub" & vbCrLf
+    s = s & "Fallback:" & vbCrLf
+    s = s & "    MsgBox summaryText & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "           ""Preview is still visible in the document. Run again without Preview to apply, or clear highlighting manually."", _" & vbCrLf
+    s = s & "           vbInformation, toolName & "" Preview""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "Public Sub RemoveAllHighlighting(Optional scopeRange As Range = Nothing)" & vbCrLf
     s = s & "    Dim hlRange As Range" & vbCrLf
     s = s & "    If scopeRange Is Nothing Then" & vbCrLf
@@ -1326,6 +1388,10 @@ Private Function frmPunctuationCleanup_Code() As String
     s = s & "Private Sub cmdDeselectAll_Click()" & vbCrLf
     s = s & "    If fraCustom.Visible Then ClearCustomChecks" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub RunAfterPreview()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdRun_Click()" & vbCrLf
     s = s & "    If ActiveDocument.ProtectionType <> wdNoProtection Then" & vbCrLf
     s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected"": Exit Sub" & vbCrLf
@@ -1378,8 +1444,10 @@ Private Function frmPunctuationCleanup_Code() As String
     s = s & "            .Forward = True: .Wrap = wdFindStop: .MatchWildcards = False: .Execute Replace:=wdReplaceAll" & vbCrLf
     s = s & "        End With" & vbCrLf
     s = s & "    Next idx" & vbCrLf
-    s = s & "    MsgBox ""Preview complete. Matches highlighted."", vbInformation" & vbCrLf
-    s = s & "    If previewOnly Then Unload Me: Exit Sub" & vbCrLf
+    s = s & "    If previewOnly Then" & vbCrLf
+    s = s & "        ShowPreviewActions Me, ""Punctuation Normalizer"", ""Preview complete. Matches highlighted.""" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
+    s = s & "    End If" & vbCrLf
     s = s & "    MarkCleanupStart ""Punctuation Normalizer""" & vbCrLf
     s = s & "    Dim undoRec As UndoRecord" & vbCrLf
     s = s & "    Set undoRec = Application.UndoRecord" & vbCrLf
@@ -1512,6 +1580,10 @@ Private Function frmUnicodeCleanup_Code() As String
     s = s & "        UnicodeChar = ChrW$(codePoint)" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "End Function" & vbCrLf
+    s = s & "Public Sub RunAfterPreview()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdRun_Click()" & vbCrLf
     s = s & "    If ActiveDocument.ProtectionType <> wdNoProtection Then" & vbCrLf
     s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected"": Exit Sub" & vbCrLf
@@ -1554,8 +1626,10 @@ Private Function frmUnicodeCleanup_Code() As String
     s = s & "            .Forward = True: .Wrap = wdFindStop: .MatchWildcards = False: .Execute Replace:=wdReplaceAll" & vbCrLf
     s = s & "        End With" & vbCrLf
     s = s & "    Next idx" & vbCrLf
-    s = s & "    MsgBox ""Preview complete. Matches highlighted."", vbInformation" & vbCrLf
-    s = s & "    If previewOnly Then Unload Me: Exit Sub" & vbCrLf
+    s = s & "    If previewOnly Then" & vbCrLf
+    s = s & "        ShowPreviewActions Me, ""Unicode Cleaner"", ""Preview complete. Matches highlighted.""" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
+    s = s & "    End If" & vbCrLf
     s = s & "    MarkCleanupStart ""Unicode Cleaner""" & vbCrLf
     s = s & "    Dim undoRec As UndoRecord" & vbCrLf
     s = s & "    Set undoRec = Application.UndoRecord" & vbCrLf
@@ -1672,6 +1746,10 @@ Private Function frmSpacingCleanup_Code() As String
     s = s & "        ClearCustomChecks" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub RunAfterPreview()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdRun_Click()" & vbCrLf
     s = s & "    If ActiveDocument.ProtectionType <> wdNoProtection Then" & vbCrLf
     s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected"": Exit Sub" & vbCrLf
@@ -1743,8 +1821,10 @@ Private Function frmSpacingCleanup_Code() As String
     s = s & "            .Execute Replace:=wdReplaceAll" & vbCrLf
     s = s & "        End With" & vbCrLf
     s = s & "    End If" & vbCrLf
-    s = s & "    MsgBox ""Preview complete. Matches highlighted."", vbInformation" & vbCrLf
-    s = s & "    If previewOnly Then Unload Me: Exit Sub" & vbCrLf
+    s = s & "    If previewOnly Then" & vbCrLf
+    s = s & "        ShowPreviewActions Me, ""Spacing Fixer"", ""Preview complete. Matches highlighted.""" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
+    s = s & "    End If" & vbCrLf
     s = s & "    MarkCleanupStart ""Spacing Fixer""" & vbCrLf
     s = s & "    Dim undoRec As UndoRecord" & vbCrLf
     s = s & "    Set undoRec = Application.UndoRecord" & vbCrLf
@@ -1912,6 +1992,10 @@ Private Function frmCapitalizationCleanup_Code() As String
     s = s & "        ClearCustomChecks" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub RunAfterPreview()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdRun_Click()" & vbCrLf
     s = s & "    If ActiveDocument.ProtectionType <> wdNoProtection Then" & vbCrLf
     s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected"": Exit Sub" & vbCrLf
@@ -1949,8 +2033,10 @@ Private Function frmCapitalizationCleanup_Code() As String
     s = s & "            End If" & vbCrLf
     s = s & "        End If" & vbCrLf
     s = s & "    Next p" & vbCrLf
-    s = s & "    MsgBox ""Preview complete. "" & changedCount & "" paragraphs highlighted."", vbInformation" & vbCrLf
-    s = s & "    If previewOnly Then Unload Me: Exit Sub" & vbCrLf
+    s = s & "    If previewOnly Then" & vbCrLf
+    s = s & "        ShowPreviewActions Me, ""Capitalization Fixer"", ""Preview complete. "" & changedCount & "" paragraphs highlighted.""" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
+    s = s & "    End If" & vbCrLf
     s = s & "    MarkCleanupStart ""Capitalization Fixer""" & vbCrLf
     s = s & "    Dim undoRec As UndoRecord" & vbCrLf
     s = s & "    Set undoRec = Application.UndoRecord" & vbCrLf
@@ -2099,6 +2185,10 @@ Private Function frmListCleanup_Code() As String
     s = s & "        ClearCustomChecks" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub RunAfterPreview()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdRun_Click()" & vbCrLf
     s = s & "    If ActiveDocument.ProtectionType <> wdNoProtection Then" & vbCrLf
     s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected"": Exit Sub" & vbCrLf
@@ -2127,8 +2217,10 @@ Private Function frmListCleanup_Code() As String
     s = s & "        If doNumbering And txt Like ""[0-9]*.*"" Then p.Range.HighlightColorIndex = wdYellow: changed = changed + 1" & vbCrLf
     s = s & "        If doBullets And (Left$(txt, 2) = Chr(149) & "" "" Or Left$(txt, 2) = ""* "") Then p.Range.HighlightColorIndex = wdYellow: changed = changed + 1" & vbCrLf
     s = s & "    Next p" & vbCrLf
-    s = s & "    MsgBox ""Preview complete. "" & changed & "" paragraphs highlighted."", vbInformation" & vbCrLf
-    s = s & "    If previewOnly Then Unload Me: Exit Sub" & vbCrLf
+    s = s & "    If previewOnly Then" & vbCrLf
+    s = s & "        ShowPreviewActions Me, ""List Normalizer"", ""Preview complete. "" & changed & "" paragraphs highlighted.""" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
+    s = s & "    End If" & vbCrLf
     s = s & "    MarkCleanupStart ""List Normalizer""" & vbCrLf
     s = s & "    Dim undoRec As UndoRecord" & vbCrLf
     s = s & "    Set undoRec = Application.UndoRecord" & vbCrLf
@@ -2301,6 +2393,10 @@ Private Function frmParagraphCleanup_Code() As String
     s = s & "        ClearCustomChecks" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub RunAfterPreview()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdRun_Click()" & vbCrLf
     s = s & "    If ActiveDocument.ProtectionType <> wdNoProtection Then" & vbCrLf
     s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected"": Exit Sub" & vbCrLf
@@ -2326,8 +2422,10 @@ Private Function frmParagraphCleanup_Code() As String
     s = s & "            If (doRemove Or doCollapse) And Len(Trim$(p.Range.Text)) <= 1 Then p.Range.HighlightColorIndex = wdYellow: cnt = cnt + 1" & vbCrLf
     s = s & "        End If" & vbCrLf
     s = s & "    Next p" & vbCrLf
-    s = s & "    MsgBox ""Preview complete. "" & cnt & "" items highlighted."", vbInformation" & vbCrLf
-    s = s & "    If previewOnly Then Unload Me: Exit Sub" & vbCrLf
+    s = s & "    If previewOnly Then" & vbCrLf
+    s = s & "        ShowPreviewActions Me, ""Paragraph Fixer"", ""Preview complete. "" & cnt & "" items highlighted.""" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
+    s = s & "    End If" & vbCrLf
     s = s & "    MarkCleanupStart ""Paragraph Fixer""" & vbCrLf
     s = s & "    Dim undoRec As UndoRecord" & vbCrLf
     s = s & "    Set undoRec = Application.UndoRecord" & vbCrLf
@@ -2550,6 +2648,10 @@ Private Function frmDuplicateDetector_Code() As String
     s = s & "    Loop" & vbCrLf
     s = s & "    FindRoot = x" & vbCrLf
     s = s & "End Function" & vbCrLf
+    s = s & "Public Sub RunAfterPreview()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdRun_Click()" & vbCrLf
     s = s & "    If ActiveDocument.ProtectionType <> wdNoProtection Then" & vbCrLf
     s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected"": Exit Sub" & vbCrLf
@@ -2671,8 +2773,8 @@ Private Function frmDuplicateDetector_Code() As String
     s = s & "    If previewOnly Then" & vbCrLf
     s = s & "        undoRec.EndCustomRecord" & vbCrLf
     s = s & "        MarkCleanupEnd" & vbCrLf
-    s = s & "        MsgBox ""Preview complete. "" & dupCount & "" duplicate paragraphs highlighted."", vbInformation" & vbCrLf
-    s = s & "        Unload Me: Exit Sub" & vbCrLf
+    s = s & "        ShowPreviewActions Me, ""Duplicate Detector"", ""Preview complete. "" & dupCount & "" duplicate paragraphs highlighted.""" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    Dim results As Collection: Set results = New Collection" & vbCrLf
     s = s & "    If doRemove Then" & vbCrLf
@@ -2789,6 +2891,10 @@ Private Function frmFontNormalizer_Code() As String
     s = s & "    h = h & ""Preview mode highlights paragraphs with direct font overrides."" & vbCrLf" & vbCrLf
     s = s & "    MsgBox h, vbInformation, ""Help  --  Font Normalizer""" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub RunAfterPreview()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdRun_Click()" & vbCrLf
     s = s & "    If ActiveDocument.ProtectionType <> wdNoProtection Then" & vbCrLf
     s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected"": Exit Sub" & vbCrLf
@@ -2822,8 +2928,10 @@ Private Function frmFontNormalizer_Code() As String
     s = s & "            End If" & vbCrLf
     s = s & "        End If" & vbCrLf
     s = s & "    Next p" & vbCrLf
-    s = s & "    MsgBox ""Preview complete. "" & cnt & "" paragraphs with direct font overrides highlighted."", vbInformation" & vbCrLf
-    s = s & "    If previewOnly Then Unload Me: Exit Sub" & vbCrLf
+    s = s & "    If previewOnly Then" & vbCrLf
+    s = s & "        ShowPreviewActions Me, ""Font Normalizer"", ""Preview complete. "" & cnt & "" paragraphs with direct font overrides highlighted.""" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
+    s = s & "    End If" & vbCrLf
     s = s & "    MarkCleanupStart ""Font Normalizer""" & vbCrLf
     s = s & "    Dim undoRec As UndoRecord" & vbCrLf
     s = s & "    Set undoRec = Application.UndoRecord" & vbCrLf
@@ -2955,6 +3063,10 @@ Private Function frmTableCleaner_Code() As String
     s = s & "    Next r" & vbCrLf
     s = s & "    IsColEmpty = True" & vbCrLf
     s = s & "End Function" & vbCrLf
+    s = s & "Public Sub RunAfterPreview()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdRun_Click()" & vbCrLf
     s = s & "    If ActiveDocument.ProtectionType <> wdNoProtection Then" & vbCrLf
     s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected"": Exit Sub" & vbCrLf
@@ -2995,8 +3107,8 @@ Private Function frmTableCleaner_Code() As String
     s = s & "                Next rw" & vbCrLf
     s = s & "            End If" & vbCrLf
     s = s & "        Next t" & vbCrLf
-    s = s & "        MsgBox ""Preview complete. "" & cnt & "" empty rows highlighted across "" & tablesInScope.Count & "" tables."", vbInformation" & vbCrLf
-    s = s & "        Unload Me: Exit Sub" & vbCrLf
+    s = s & "        ShowPreviewActions Me, ""Table Cleaner"", ""Preview complete. "" & cnt & "" empty rows highlighted across "" & tablesInScope.Count & "" tables.""" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    MarkCleanupStart ""Table Cleaner""" & vbCrLf
     s = s & "    Dim undoRec As UndoRecord" & vbCrLf
@@ -3139,6 +3251,10 @@ Private Function frmBreakNormalizer_Code() As String
     s = s & "Private Sub chkConvertSectionBreaks_Click()" & vbCrLf
     s = s & "    fraConvertTo.Enabled = chkConvertSectionBreaks.Value" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub RunAfterPreview()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdRun_Click()" & vbCrLf
     s = s & "    If ActiveDocument.ProtectionType <> wdNoProtection Then" & vbCrLf
     s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected"": Exit Sub" & vbCrLf
@@ -3170,8 +3286,10 @@ Private Function frmBreakNormalizer_Code() As String
     s = s & "            If doCollPage Then .Text = ""^m^m"": .Replacement.Text = ""^&"": .Replacement.Highlight = True: .Execute Replace:=wdReplaceAll: cnt = cnt + 1" & vbCrLf
     s = s & "        End With" & vbCrLf
     s = s & "    End If" & vbCrLf
-    s = s & "    MsgBox ""Preview complete. Break sequences highlighted."", vbInformation" & vbCrLf
-    s = s & "    If previewOnly Then Unload Me: Exit Sub" & vbCrLf
+    s = s & "    If previewOnly Then" & vbCrLf
+    s = s & "        ShowPreviewActions Me, ""Break Normalizer"", ""Preview complete. Break sequences highlighted.""" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
+    s = s & "    End If" & vbCrLf
     s = s & "    MarkCleanupStart ""Break Normalizer""" & vbCrLf
     s = s & "    Dim undoRec As UndoRecord" & vbCrLf
     s = s & "    Set undoRec = Application.UndoRecord" & vbCrLf
@@ -3266,6 +3384,10 @@ Private Function frmDocumentTrim_Code() As String
     s = s & "    h = h & ""Run again without Preview to apply."" & vbCrLf" & vbCrLf
     s = s & "    MsgBox h, vbInformation, ""Help  --  Document Trim""" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub RunAfterPreview()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdRun_Click()" & vbCrLf
     s = s & "    If ActiveDocument.ProtectionType <> wdNoProtection Then" & vbCrLf
     s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected"": Exit Sub" & vbCrLf
@@ -3291,8 +3413,10 @@ Private Function frmDocumentTrim_Code() As String
     s = s & "    For i = totalParas To totalParas - toRemove + 1 Step -1" & vbCrLf
     s = s & "        ActiveDocument.Paragraphs(i).Range.HighlightColorIndex = wdYellow" & vbCrLf
     s = s & "    Next i" & vbCrLf
-    s = s & "    MsgBox ""Preview complete. "" & toRemove & "" trailing empty paragraphs highlighted."", vbInformation" & vbCrLf
-    s = s & "    If previewOnly Then Unload Me: Exit Sub" & vbCrLf
+    s = s & "    If previewOnly Then" & vbCrLf
+    s = s & "        ShowPreviewActions Me, ""Document Trim"", ""Preview complete. "" & toRemove & "" trailing empty paragraphs highlighted.""" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
+    s = s & "    End If" & vbCrLf
     s = s & "    MarkCleanupStart ""Document Trim""" & vbCrLf
     s = s & "    Dim undoRec As UndoRecord" & vbCrLf
     s = s & "    Set undoRec = Application.UndoRecord" & vbCrLf
@@ -3413,6 +3537,10 @@ Private Function frmFormattingStripper_Code() As String
     s = s & "    h = h & ""Preview mode highlights paragraphs carrying direct formatting."" & vbCrLf" & vbCrLf
     s = s & "    MsgBox h, vbInformation, ""Help  --  Direct Formatting Stripper""" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub RunAfterPreview()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdRun_Click()" & vbCrLf
     s = s & "    If ActiveDocument.ProtectionType <> wdNoProtection Then" & vbCrLf
     s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected"": Exit Sub" & vbCrLf
@@ -3438,8 +3566,8 @@ Private Function frmFormattingStripper_Code() As String
     s = s & "                If HasDirectFormatting(p, doResetChar, doResetPara) Then p.Range.HighlightColorIndex = wdYellow: pcnt = pcnt + 1" & vbCrLf
     s = s & "            End If" & vbCrLf
     s = s & "        Next p" & vbCrLf
-    s = s & "        MsgBox ""Preview complete. "" & pcnt & "" paragraphs with direct formatting highlighted."", vbInformation" & vbCrLf
-    s = s & "        Unload Me: Exit Sub" & vbCrLf
+    s = s & "        ShowPreviewActions Me, ""Formatting Stripper"", ""Preview complete. "" & pcnt & "" paragraphs with direct formatting highlighted.""" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    Dim emphMode As Integer: emphMode = 0" & vbCrLf
     s = s & "    If optEmphThorough.Value Then emphMode = 1" & vbCrLf
@@ -3662,6 +3790,10 @@ Private Function frmHyperlinkRemover_Code() As String
     s = s & "    h = h & ""Preview mode highlights every hyperlink that would be removed."" & vbCrLf" & vbCrLf
     s = s & "    MsgBox h, vbInformation, ""Help  --  Hyperlink Remover""" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub RunAfterPreview()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdRun_Click()" & vbCrLf
     s = s & "    If ActiveDocument.ProtectionType <> wdNoProtection Then" & vbCrLf
     s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected"": Exit Sub" & vbCrLf
@@ -3681,8 +3813,8 @@ Private Function frmHyperlinkRemover_Code() As String
     s = s & "            Dim hp As Hyperlink: Set hp = ActiveDocument.Hyperlinks(i)" & vbCrLf
     s = s & "            If hp.Range.Start >= targetRange.Start And hp.Range.End <= targetRange.End Then hp.Range.HighlightColorIndex = wdYellow: cnt = cnt + 1" & vbCrLf
     s = s & "        Next i" & vbCrLf
-    s = s & "        MsgBox ""Preview complete. "" & cnt & "" hyperlinks highlighted."", vbInformation" & vbCrLf
-    s = s & "        Unload Me: Exit Sub" & vbCrLf
+    s = s & "        ShowPreviewActions Me, ""Hyperlink Remover"", ""Preview complete. "" & cnt & "" hyperlinks highlighted.""" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    MarkCleanupStart ""Hyperlink Remover""" & vbCrLf
     s = s & "    Dim undoRec As UndoRecord" & vbCrLf
@@ -3780,6 +3912,10 @@ Private Function frmSoftReturnConverter_Code() As String
     s = s & "    h = h & ""Preview mode highlights the breaks that would be converted."" & vbCrLf" & vbCrLf
     s = s & "    MsgBox h, vbInformation, ""Help  --  Soft Return Converter""" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub RunAfterPreview()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdRun_Click()" & vbCrLf
     s = s & "    If ActiveDocument.ProtectionType <> wdNoProtection Then" & vbCrLf
     s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected"": Exit Sub" & vbCrLf
@@ -3808,8 +3944,8 @@ Private Function frmSoftReturnConverter_Code() As String
     s = s & "        End With" & vbCrLf
     s = s & "        Dim pt As String: pt = targetRange.Text" & vbCrLf
     s = s & "        Dim pc As Long: pc = Len(pt) - Len(Replace(pt, markChar, """"))" & vbCrLf
-    s = s & "        MsgBox ""Preview complete. "" & pc & "" breaks highlighted."", vbInformation" & vbCrLf
-    s = s & "        Unload Me: Exit Sub" & vbCrLf
+    s = s & "        ShowPreviewActions Me, ""Soft Return Converter"", ""Preview complete. "" & pc & "" breaks highlighted.""" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    MarkCleanupStart ""Soft Return Converter""" & vbCrLf
     s = s & "    Dim undoRec As UndoRecord" & vbCrLf
@@ -3901,6 +4037,10 @@ Private Function frmMetadataScrubber_Code() As String
     s = s & "    h = h & ""Preview mode shows the metadata currently in the document."" & vbCrLf" & vbCrLf
     s = s & "    MsgBox h, vbInformation, ""Help  --  Metadata Scrubber""" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub RunAfterPreview()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdRun_Click()" & vbCrLf
     s = s & "    If ActiveDocument.ProtectionType <> wdNoProtection Then" & vbCrLf
     s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected"": Exit Sub" & vbCrLf
@@ -3923,8 +4063,8 @@ Private Function frmMetadataScrubber_Code() As String
     s = s & "        info = info & ""Comments: "" & ActiveDocument.Comments.Count & vbCrLf" & vbCrLf
     s = s & "        info = info & ""Tracked changes: "" & ActiveDocument.Revisions.Count & vbCrLf & vbCrLf" & vbCrLf
     s = s & "        info = info & ""Run without Preview to remove the selected items.""" & vbCrLf
-    s = s & "        MsgBox info, vbInformation, ""Metadata Preview""" & vbCrLf
-    s = s & "        Unload Me: Exit Sub" & vbCrLf
+    s = s & "        ShowPreviewActions Me, ""Metadata Scrubber"", info" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    MarkCleanupStart ""Metadata Scrubber""" & vbCrLf
     s = s & "    Dim undoRec As UndoRecord" & vbCrLf
@@ -4045,6 +4185,10 @@ Private Function frmStyleCleanup_Code() As String
     s = s & "    RemapStyle = 1" & vbCrLf
     s = s & "    On Error GoTo 0" & vbCrLf
     s = s & "End Function" & vbCrLf
+    s = s & "Public Sub RunAfterPreview()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdRun_Click()" & vbCrLf
     s = s & "    If ActiveDocument.ProtectionType <> wdNoProtection Then" & vbCrLf
     s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected"": Exit Sub" & vbCrLf
@@ -4062,8 +4206,8 @@ Private Function frmStyleCleanup_Code() As String
     s = s & "                If Not StyleInUse(st) Then preCount = preCount + 1" & vbCrLf
     s = s & "            End If" & vbCrLf
     s = s & "        Next st" & vbCrLf
-    s = s & "        MsgBox ""Preview complete. "" & preCount & "" unused custom styles found."", vbInformation" & vbCrLf
-    s = s & "        Unload Me: Exit Sub" & vbCrLf
+    s = s & "        ShowPreviewActions Me, ""Style Cleanup"", ""Preview complete. "" & preCount & "" unused custom styles found.""" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    MarkCleanupStart ""Style Cleanup""" & vbCrLf
     s = s & "    Dim undoRec As UndoRecord" & vbCrLf
@@ -4170,6 +4314,10 @@ Private Function frmFootnoteRemover_Code() As String
     s = s & "Private Function InScope(r As Range, targetRange As Range) As Boolean" & vbCrLf
     s = s & "    InScope = (r.Start >= targetRange.Start And r.Start <= targetRange.End)" & vbCrLf
     s = s & "End Function" & vbCrLf
+    s = s & "Public Sub RunAfterPreview()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdRun_Click()" & vbCrLf
     s = s & "    If ActiveDocument.ProtectionType <> wdNoProtection Then" & vbCrLf
     s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected"": Exit Sub" & vbCrLf
@@ -4199,8 +4347,8 @@ Private Function frmFootnoteRemover_Code() As String
     s = s & "                If InScope(enP.Reference, targetRange) Then enP.Reference.HighlightColorIndex = wdYellow: pe = pe + 1" & vbCrLf
     s = s & "            Next enP" & vbCrLf
     s = s & "        End If" & vbCrLf
-    s = s & "        MsgBox ""Preview complete."" & vbCrLf & ""Footnotes to remove: "" & pf & vbCrLf & ""Endnotes to remove: "" & pe, vbInformation, ""Footnote / Endnote Preview""" & vbCrLf
-    s = s & "        Unload Me: Exit Sub" & vbCrLf
+    s = s & "        ShowPreviewActions Me, ""Footnote / Endnote Remover"", ""Preview complete."" & vbCrLf & ""Footnotes to remove: "" & pf & vbCrLf & ""Endnotes to remove: "" & pe" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    MarkCleanupStart ""Footnote / Endnote Remover""" & vbCrLf
     s = s & "    Dim undoRec As UndoRecord" & vbCrLf
@@ -4347,6 +4495,10 @@ Private Function frmHeaderFooterStandardizer_Code() As String
     s = s & "    End If" & vbCrLf
     s = s & "    cntAreas = cntAreas + 1" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub RunAfterPreview()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdRun_Click()" & vbCrLf
     s = s & "    If ActiveDocument.ProtectionType <> wdNoProtection Then" & vbCrLf
     s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected"": Exit Sub" & vbCrLf
@@ -4384,8 +4536,8 @@ Private Function frmHeaderFooterStandardizer_Code() As String
     s = s & "        Next sec" & vbCrLf
     s = s & "        Dim verb As String: verb = ""standardized""" & vbCrLf
     s = s & "        If doClear Then verb = ""cleared""" & vbCrLf
-    s = s & "        MsgBox ""Preview complete."" & vbCrLf & pc & "" header/footer areas across "" & ActiveDocument.Sections.Count & "" sections would be "" & verb & ""."", vbInformation, ""Header / Footer Preview""" & vbCrLf
-    s = s & "        Unload Me: Exit Sub" & vbCrLf
+    s = s & "        ShowPreviewActions Me, ""Header / Footer Standardizer"", ""Preview complete."" & vbCrLf & pc & "" header/footer areas across "" & ActiveDocument.Sections.Count & "" sections would be "" & verb & "".""" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    MarkCleanupStart ""Header / Footer Standardizer""" & vbCrLf
     s = s & "    Dim undoRec As UndoRecord" & vbCrLf
@@ -4588,6 +4740,10 @@ Private Function frmObjectRemover_Code() As String
     s = s & "    End If" & vbCrLf
     s = s & "    If found Then ProcessHiddenText = 1 Else ProcessHiddenText = 0" & vbCrLf
     s = s & "End Function" & vbCrLf
+    s = s & "Public Sub RunAfterPreview()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdRun_Click()" & vbCrLf
     s = s & "    If ActiveDocument.ProtectionType <> wdNoProtection Then" & vbCrLf
     s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected"": Exit Sub" & vbCrLf
@@ -4612,8 +4768,8 @@ Private Function frmObjectRemover_Code() As String
     s = s & "        If doHtml Then msg = msg & vbCrLf & ""HTML/ActiveX controls: "" & ProcessHtmlControls(False)" & vbCrLf
     s = s & "        If doTab Then msg = msg & vbCrLf & ""Tables: "" & ProcessTables(False)" & vbCrLf
     s = s & "        If doHid Then msg = msg & vbCrLf & ""Hidden text present: "" & IIf(ProcessHiddenText(False) > 0, ""Yes"", ""No"")" & vbCrLf
-    s = s & "        MsgBox msg, vbInformation, ""Remove Objects -- Preview""" & vbCrLf
-    s = s & "        Unload Me: Exit Sub" & vbCrLf
+    s = s & "        ShowPreviewActions Me, ""Object Remover"", msg" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    If doTab Then" & vbCrLf
     s = s & "        Dim tcount As Long: tcount = ActiveDocument.Tables.Count" & vbCrLf
@@ -4664,6 +4820,71 @@ Private Function frmObjectRemover_Code() As String
     s = s & "End Sub" & vbCrLf
     s = s & ""
     frmObjectRemover_Code = s
+End Function
+
+Private Function frmPreviewActions_Code() As String
+    Dim s As String
+    s = s & "Option Explicit" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private mSourceForm As Object" & vbCrLf
+    s = s & "Private mToolName As String" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Sub Configure(sourceForm As Object, toolName As String, summaryText As String)" & vbCrLf
+    s = s & "    Set mSourceForm = sourceForm" & vbCrLf
+    s = s & "    mToolName = toolName" & vbCrLf
+    s = s & "    lblTitle.Caption = toolName & "" Preview""" & vbCrLf
+    s = s & "    lblSummary.Caption = summaryText" & vbCrLf
+    s = s & "    lblHint.Caption = ""Review the highlighted results in the document, then choose what to do next.""" & vbCrLf
+    s = s & "    cmdApply.Caption = ""Apply""" & vbCrLf
+    s = s & "    cmdClear.Caption = ""Clear Preview""" & vbCrLf
+    s = s & "    cmdBack.Caption = ""Back""" & vbCrLf
+    s = s & "    cmdClose.Caption = ""Close""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub cmdApply_Click()" & vbCrLf
+    s = s & "    On Error GoTo ApplyErr" & vbCrLf
+    s = s & "    Me.Hide" & vbCrLf
+    s = s & "    If Not mSourceForm Is Nothing Then" & vbCrLf
+    s = s & "        CallByName mSourceForm, ""RunAfterPreview"", VbMethod" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    Set gPreviewActionPanel = Nothing" & vbCrLf
+    s = s & "    Unload Me" & vbCrLf
+    s = s & "    Exit Sub" & vbCrLf
+    s = s & "ApplyErr:" & vbCrLf
+    s = s & "    MsgBox ""Could not apply the preview: "" & Err.Description, vbExclamation, ""Preview Actions""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub cmdClear_Click()" & vbCrLf
+    s = s & "    RemoveAllHighlighting ActiveDocument.Content" & vbCrLf
+    s = s & "    CloseSourceForm" & vbCrLf
+    s = s & "    Set gPreviewActionPanel = Nothing" & vbCrLf
+    s = s & "    Unload Me" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub cmdBack_Click()" & vbCrLf
+    s = s & "    If Not mSourceForm Is Nothing Then mSourceForm.Show" & vbCrLf
+    s = s & "    Set gPreviewActionPanel = Nothing" & vbCrLf
+    s = s & "    Unload Me" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub cmdClose_Click()" & vbCrLf
+    s = s & "    CloseSourceForm" & vbCrLf
+    s = s & "    Set gPreviewActionPanel = Nothing" & vbCrLf
+    s = s & "    Unload Me" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)" & vbCrLf
+    s = s & "    Set gPreviewActionPanel = Nothing" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub CloseSourceForm()" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    If Not mSourceForm Is Nothing Then Unload mSourceForm" & vbCrLf
+    s = s & "    Set mSourceForm = Nothing" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & ""
+    frmPreviewActions_Code = s
 End Function
 
 Private Function frmCleanupSuiteLauncher_Code() As String

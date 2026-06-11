@@ -45,6 +45,10 @@ Private Sub cmdHelp_Click()
     h = h & "Preview mode highlights the breaks that would be converted." & vbCrLf
     MsgBox h, vbInformation, "Help  --  Soft Return Converter"
 End Sub
+Public Sub RunAfterPreview()
+    chkPreviewOnly.Value = False
+    cmdRun_Click
+End Sub
 Private Sub cmdRun_Click()
     If ActiveDocument.ProtectionType <> wdNoProtection Then
         MsgBox "This document is protected. Please remove protection before running cleanup.", vbExclamation, "Document Protected": Exit Sub
@@ -73,8 +77,8 @@ Private Sub cmdRun_Click()
         End With
         Dim pt As String: pt = targetRange.Text
         Dim pc As Long: pc = Len(pt) - Len(Replace(pt, markChar, ""))
-        MsgBox "Preview complete. " & pc & " breaks highlighted.", vbInformation
-        Unload Me: Exit Sub
+        ShowPreviewActions Me, "Soft Return Converter", "Preview complete. " & pc & " breaks highlighted."
+        Exit Sub
     End If
     MarkCleanupStart "Soft Return Converter"
     Dim undoRec As UndoRecord

@@ -38,6 +38,10 @@ Private Sub cmdHelp_Click()
     h = h & "Preview mode highlights every hyperlink that would be removed." & vbCrLf
     MsgBox h, vbInformation, "Help  --  Hyperlink Remover"
 End Sub
+Public Sub RunAfterPreview()
+    chkPreviewOnly.Value = False
+    cmdRun_Click
+End Sub
 Private Sub cmdRun_Click()
     If ActiveDocument.ProtectionType <> wdNoProtection Then
         MsgBox "This document is protected. Please remove protection before running cleanup.", vbExclamation, "Document Protected": Exit Sub
@@ -57,8 +61,8 @@ Private Sub cmdRun_Click()
             Dim hp As Hyperlink: Set hp = ActiveDocument.Hyperlinks(i)
             If hp.Range.Start >= targetRange.Start And hp.Range.End <= targetRange.End Then hp.Range.HighlightColorIndex = wdYellow: cnt = cnt + 1
         Next i
-        MsgBox "Preview complete. " & cnt & " hyperlinks highlighted.", vbInformation
-        Unload Me: Exit Sub
+        ShowPreviewActions Me, "Hyperlink Remover", "Preview complete. " & cnt & " hyperlinks highlighted."
+        Exit Sub
     End If
     MarkCleanupStart "Hyperlink Remover"
     Dim undoRec As UndoRecord

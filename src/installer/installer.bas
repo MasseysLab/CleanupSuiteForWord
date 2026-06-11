@@ -86,6 +86,7 @@ Public Sub InstallCleanupSuite()
     CreateOrReplaceForm vbProj, "frmFootnoteRemover", frmFootnoteRemover_Code, installLog
     CreateOrReplaceForm vbProj, "frmHeaderFooterStandardizer", frmHeaderFooterStandardizer_Code, installLog
     CreateOrReplaceForm vbProj, "frmObjectRemover", frmObjectRemover_Code, installLog
+    CreateOrReplaceForm vbProj, "frmPreviewActions", frmPreviewActions_Code, installLog
     CreateOrReplaceForm vbProj, "frmCleanupSuiteLauncher", frmCleanupSuiteLauncher_Code, installLog
 
     ' 3) Attempt to create controls programmatically (best-effort)
@@ -112,6 +113,7 @@ Public Sub InstallCleanupSuite()
     AttemptCreateControls vbProj, "frmFootnoteRemover", uiFailures
     AttemptCreateControls vbProj, "frmHeaderFooterStandardizer", uiFailures
     AttemptCreateControls vbProj, "frmObjectRemover", uiFailures
+    AttemptCreateControls vbProj, "frmPreviewActions", uiFailures
 
     ' 4) Post-install report
     Dim reportText As String
@@ -273,7 +275,7 @@ Private Function IsSuiteComponent(compName As String) As Boolean
         "frmBreakNormalizer", "frmDocumentTrim", "frmFormattingStripper", _
         "frmHyperlinkRemover", "frmSoftReturnConverter", "frmMetadataScrubber", _
         "frmStyleCleanup", "frmFootnoteRemover", "frmHeaderFooterStandardizer", _
-        "frmObjectRemover", "frmCleanupSuiteLauncher", "modCleanupLauncher", _
+        "frmObjectRemover", "frmPreviewActions", "frmCleanupSuiteLauncher", "modCleanupLauncher", _
         "modCleanupHelpers")
 
     Dim i As Long
@@ -399,6 +401,10 @@ Private Sub LayoutFormControls(comp As VBIDE.VBComponent)
         LayoutLauncherControls comp, designer
         Exit Sub
     End If
+    If comp.Name = "frmPreviewActions" Then
+        LayoutPreviewActionsControls comp, designer
+        Exit Sub
+    End If
 
     Const FORM_W As Single = 372
     Const MARGIN As Single = 12
@@ -453,6 +459,33 @@ Private Sub LayoutFormControls(comp As VBIDE.VBComponent)
     comp.Properties("Height") = y + 40
     designer.Width = FORM_W + 8
     designer.Height = y + 40
+End Sub
+
+Private Sub LayoutPreviewActionsControls(comp As VBIDE.VBComponent, designer As Object)
+    On Error Resume Next
+    Const FORM_W As Single = 390
+    Const MARGIN As Single = 14
+    Const BTN_W As Single = 78
+    Const BTN_H As Single = 24
+    Const GAP As Single = 8
+    Dim contentW As Single: contentW = FORM_W - (2 * MARGIN)
+    Dim y As Single: y = 12
+
+    PositionControl designer, "lblTitle", MARGIN, y, contentW, 20
+    y = y + 24
+    PositionControl designer, "lblSummary", MARGIN, y, contentW, 42
+    y = y + 46
+    PositionControl designer, "lblHint", MARGIN, y, contentW, 28
+    y = y + 36
+    PositionControl designer, "cmdApply", MARGIN, y, BTN_W, BTN_H
+    PositionControl designer, "cmdClear", MARGIN + BTN_W + GAP, y, BTN_W + 8, BTN_H
+    PositionControl designer, "cmdBack", MARGIN + (2 * BTN_W) + (2 * GAP) + 8, y, BTN_W, BTN_H
+    PositionControl designer, "cmdClose", FORM_W - MARGIN - BTN_W, y, BTN_W, BTN_H
+
+    comp.Properties("Width") = FORM_W + 8
+    comp.Properties("Height") = y + BTN_H + 42
+    designer.Width = FORM_W + 8
+    designer.Height = y + BTN_H + 42
 End Sub
 
 Private Sub LayoutLauncherControls(comp As VBIDE.VBComponent, designer As Object)
@@ -785,6 +818,9 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmPunctuationCleanup.optQuotes": ControlCaptionText = "Quotes only"
         Case "frmPunctuationCleanup.optScopeDocument": ControlCaptionText = "Entire document"
         Case "frmPunctuationCleanup.optScopeSelection": ControlCaptionText = "Selected text only"
+        Case "frmPreviewActions.lblTitle": ControlCaptionText = "Preview Actions"
+        Case "frmPreviewActions.lblSummary": ControlCaptionText = "Preview complete."
+        Case "frmPreviewActions.lblHint": ControlCaptionText = "Review the highlighted results in the document, then choose what to do next."
         Case "frmSoftReturnConverter.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
         Case "frmSoftReturnConverter.optParaToSoft": ControlCaptionText = "Convert paragraph marks to soft returns"
         Case "frmSoftReturnConverter.optScopeDocument": ControlCaptionText = "Entire document"
@@ -838,6 +874,10 @@ Private Sub SetButtonCaption(designer As Object, nm As String)
     Dim cap As String
     Select Case nm
         Case "cmdRun": cap = "Run"
+        Case "cmdApply": cap = "Apply"
+        Case "cmdClear": cap = "Clear Preview"
+        Case "cmdBack": cap = "Back"
+        Case "cmdClose": cap = "Close"
         Case "cmdSelectAll": cap = "Select All"
         Case "cmdDeselectAll": cap = "Deselect All"
         Case "cmdHelp": cap = "Help"
@@ -868,6 +908,7 @@ End Sub
 Private Function FriendlyFormCaption(formName As String) As String
     Select Case formName
         Case "frmCleanupSuiteLauncher": FriendlyFormCaption = "Cleanup Suite"
+        Case "frmPreviewActions": FriendlyFormCaption = "Preview Actions"
         Case "frmPunctuationCleanup": FriendlyFormCaption = "Punctuation Normalizer"
         Case "frmUnicodeCleanup": FriendlyFormCaption = "Invisible Unicode Cleaner"
         Case "frmSpacingCleanup": FriendlyFormCaption = "Spacing Fixer"
@@ -908,6 +949,10 @@ End Function
 Private Function ButtonTipText(nm As String) As String
     Select Case nm
         Case "cmdRun": ButtonTipText = "Run this cleanup tool"
+        Case "cmdApply": ButtonTipText = "Apply this preview using the same settings"
+        Case "cmdClear": ButtonTipText = "Remove preview highlighting and close this tool"
+        Case "cmdBack": ButtonTipText = "Return to the tool options"
+        Case "cmdClose": ButtonTipText = "Close this preview panel"
         Case "cmdSelectAll": ButtonTipText = "Select all custom options"
         Case "cmdDeselectAll": ButtonTipText = "Clear all custom options"
         Case "cmdUnicode": ButtonTipText = "Remove invisible Unicode characters"
@@ -946,6 +991,8 @@ Private Function ControlsForForm(formName As String) As Variant
                                     "lblCatLayout", "cmdHelpTable", "cmdTableClean", "lblDescTableClean", "cmdHelpBreak", "cmdBreakNorm", "lblDescBreakNorm", "cmdHelpHeaderFooter", "cmdHeaderFooter", "lblDescHeaderFooter", "cmdHelpTrim", "cmdDocTrim", "lblDescDocTrim", _
                                     "lblCatFormat", "cmdHelpFont", "cmdFontNorm", "lblDescFontNorm", "cmdHelpFormat", "cmdFormatStrip", "lblDescFormatStrip", "cmdHelpStyle", "cmdStyleClean", "lblDescStyleClean", "cmdHelpHyperlink", "cmdHyperlink", "lblDescHyperlink", _
                                     "lblCatReview", "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", "chkAutoSave")
+        Case "frmPreviewActions"
+            ControlsForForm = Array("lblTitle", "lblSummary", "lblHint", "cmdApply", "cmdClear", "cmdBack", "cmdClose")
         Case "frmPunctuationCleanup"
             ControlsForForm = Array("optAll", "optQuotes", "optDashes", "optEllipses", "optCustom", "fraCustom", _
                                     "chkCurlyDouble", "chkCurlySingle", "chkEmDash", "chkEnDash", "chkEllipses", _

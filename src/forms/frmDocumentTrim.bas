@@ -34,6 +34,10 @@ Private Sub cmdHelp_Click()
     h = h & "Run again without Preview to apply." & vbCrLf
     MsgBox h, vbInformation, "Help  --  Document Trim"
 End Sub
+Public Sub RunAfterPreview()
+    chkPreviewOnly.Value = False
+    cmdRun_Click
+End Sub
 Private Sub cmdRun_Click()
     If ActiveDocument.ProtectionType <> wdNoProtection Then
         MsgBox "This document is protected. Please remove protection before running cleanup.", vbExclamation, "Document Protected": Exit Sub
@@ -59,8 +63,10 @@ Private Sub cmdRun_Click()
     For i = totalParas To totalParas - toRemove + 1 Step -1
         ActiveDocument.Paragraphs(i).Range.HighlightColorIndex = wdYellow
     Next i
-    MsgBox "Preview complete. " & toRemove & " trailing empty paragraphs highlighted.", vbInformation
-    If previewOnly Then Unload Me: Exit Sub
+    If previewOnly Then
+        ShowPreviewActions Me, "Document Trim", "Preview complete. " & toRemove & " trailing empty paragraphs highlighted."
+        Exit Sub
+    End If
     MarkCleanupStart "Document Trim"
     Dim undoRec As UndoRecord
     Set undoRec = Application.UndoRecord

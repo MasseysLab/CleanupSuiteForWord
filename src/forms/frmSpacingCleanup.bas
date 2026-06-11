@@ -74,6 +74,10 @@ Private Sub cmdDeselectAll_Click()
         ClearCustomChecks
     End If
 End Sub
+Public Sub RunAfterPreview()
+    chkPreviewOnly.Value = False
+    cmdRun_Click
+End Sub
 Private Sub cmdRun_Click()
     If ActiveDocument.ProtectionType <> wdNoProtection Then
         MsgBox "This document is protected. Please remove protection before running cleanup.", vbExclamation, "Document Protected": Exit Sub
@@ -145,8 +149,10 @@ Private Sub cmdRun_Click()
             .Execute Replace:=wdReplaceAll
         End With
     End If
-    MsgBox "Preview complete. Matches highlighted.", vbInformation
-    If previewOnly Then Unload Me: Exit Sub
+    If previewOnly Then
+        ShowPreviewActions Me, "Spacing Fixer", "Preview complete. Matches highlighted."
+        Exit Sub
+    End If
     MarkCleanupStart "Spacing Fixer"
     Dim undoRec As UndoRecord
     Set undoRec = Application.UndoRecord

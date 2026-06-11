@@ -1,5 +1,20 @@
 Option Explicit
 ' Shared helper functions for cleanup forms
+Public gPreviewActionPanel As Object
+
+Public Sub ShowPreviewActions(sourceForm As Object, toolName As String, summaryText As String)
+    On Error GoTo Fallback
+    sourceForm.Hide
+    Set gPreviewActionPanel = New frmPreviewActions
+    gPreviewActionPanel.Configure sourceForm, toolName, summaryText
+    gPreviewActionPanel.Show vbModeless
+    Exit Sub
+Fallback:
+    MsgBox summaryText & vbCrLf & vbCrLf & _
+           "Preview is still visible in the document. Run again without Preview to apply, or clear highlighting manually.", _
+           vbInformation, toolName & " Preview"
+End Sub
+
 Public Sub RemoveAllHighlighting(Optional scopeRange As Range = Nothing)
     Dim hlRange As Range
     If scopeRange Is Nothing Then

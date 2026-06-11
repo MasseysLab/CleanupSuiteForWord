@@ -52,6 +52,10 @@ Private Sub cmdHelp_Click()
     h = h & "Preview mode highlights paragraphs with direct font overrides." & vbCrLf
     MsgBox h, vbInformation, "Help  --  Font Normalizer"
 End Sub
+Public Sub RunAfterPreview()
+    chkPreviewOnly.Value = False
+    cmdRun_Click
+End Sub
 Private Sub cmdRun_Click()
     If ActiveDocument.ProtectionType <> wdNoProtection Then
         MsgBox "This document is protected. Please remove protection before running cleanup.", vbExclamation, "Document Protected": Exit Sub
@@ -85,8 +89,10 @@ Private Sub cmdRun_Click()
             End If
         End If
     Next p
-    MsgBox "Preview complete. " & cnt & " paragraphs with direct font overrides highlighted.", vbInformation
-    If previewOnly Then Unload Me: Exit Sub
+    If previewOnly Then
+        ShowPreviewActions Me, "Font Normalizer", "Preview complete. " & cnt & " paragraphs with direct font overrides highlighted."
+        Exit Sub
+    End If
     MarkCleanupStart "Font Normalizer"
     Dim undoRec As UndoRecord
     Set undoRec = Application.UndoRecord

@@ -78,6 +78,10 @@ Private Function IsColEmpty(tbl As Table, colIdx As Long) As Boolean
     Next r
     IsColEmpty = True
 End Function
+Public Sub RunAfterPreview()
+    chkPreviewOnly.Value = False
+    cmdRun_Click
+End Sub
 Private Sub cmdRun_Click()
     If ActiveDocument.ProtectionType <> wdNoProtection Then
         MsgBox "This document is protected. Please remove protection before running cleanup.", vbExclamation, "Document Protected": Exit Sub
@@ -118,8 +122,8 @@ Private Sub cmdRun_Click()
                 Next rw
             End If
         Next t
-        MsgBox "Preview complete. " & cnt & " empty rows highlighted across " & tablesInScope.Count & " tables.", vbInformation
-        Unload Me: Exit Sub
+        ShowPreviewActions Me, "Table Cleaner", "Preview complete. " & cnt & " empty rows highlighted across " & tablesInScope.Count & " tables."
+        Exit Sub
     End If
     MarkCleanupStart "Table Cleaner"
     Dim undoRec As UndoRecord

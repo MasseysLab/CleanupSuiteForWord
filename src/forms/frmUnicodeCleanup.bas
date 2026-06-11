@@ -84,6 +84,10 @@ Private Function UnicodeChar(ByVal codePoint As Long) As String
         UnicodeChar = ChrW$(codePoint)
     End If
 End Function
+Public Sub RunAfterPreview()
+    chkPreviewOnly.Value = False
+    cmdRun_Click
+End Sub
 Private Sub cmdRun_Click()
     If ActiveDocument.ProtectionType <> wdNoProtection Then
         MsgBox "This document is protected. Please remove protection before running cleanup.", vbExclamation, "Document Protected": Exit Sub
@@ -126,8 +130,10 @@ Private Sub cmdRun_Click()
             .Forward = True: .Wrap = wdFindStop: .MatchWildcards = False: .Execute Replace:=wdReplaceAll
         End With
     Next idx
-    MsgBox "Preview complete. Matches highlighted.", vbInformation
-    If previewOnly Then Unload Me: Exit Sub
+    If previewOnly Then
+        ShowPreviewActions Me, "Unicode Cleaner", "Preview complete. Matches highlighted."
+        Exit Sub
+    End If
     MarkCleanupStart "Unicode Cleaner"
     Dim undoRec As UndoRecord
     Set undoRec = Application.UndoRecord

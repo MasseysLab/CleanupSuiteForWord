@@ -78,6 +78,10 @@ Private Sub cmdDeselectAll_Click()
         ClearCustomChecks
     End If
 End Sub
+Public Sub RunAfterPreview()
+    chkPreviewOnly.Value = False
+    cmdRun_Click
+End Sub
 Private Sub cmdRun_Click()
     If ActiveDocument.ProtectionType <> wdNoProtection Then
         MsgBox "This document is protected. Please remove protection before running cleanup.", vbExclamation, "Document Protected": Exit Sub
@@ -115,8 +119,10 @@ Private Sub cmdRun_Click()
             End If
         End If
     Next p
-    MsgBox "Preview complete. " & changedCount & " paragraphs highlighted.", vbInformation
-    If previewOnly Then Unload Me: Exit Sub
+    If previewOnly Then
+        ShowPreviewActions Me, "Capitalization Fixer", "Preview complete. " & changedCount & " paragraphs highlighted."
+        Exit Sub
+    End If
     MarkCleanupStart "Capitalization Fixer"
     Dim undoRec As UndoRecord
     Set undoRec = Application.UndoRecord

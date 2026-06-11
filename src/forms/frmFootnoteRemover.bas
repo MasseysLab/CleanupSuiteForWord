@@ -46,6 +46,10 @@ End Sub
 Private Function InScope(r As Range, targetRange As Range) As Boolean
     InScope = (r.Start >= targetRange.Start And r.Start <= targetRange.End)
 End Function
+Public Sub RunAfterPreview()
+    chkPreviewOnly.Value = False
+    cmdRun_Click
+End Sub
 Private Sub cmdRun_Click()
     If ActiveDocument.ProtectionType <> wdNoProtection Then
         MsgBox "This document is protected. Please remove protection before running cleanup.", vbExclamation, "Document Protected": Exit Sub
@@ -75,8 +79,8 @@ Private Sub cmdRun_Click()
                 If InScope(enP.Reference, targetRange) Then enP.Reference.HighlightColorIndex = wdYellow: pe = pe + 1
             Next enP
         End If
-        MsgBox "Preview complete." & vbCrLf & "Footnotes to remove: " & pf & vbCrLf & "Endnotes to remove: " & pe, vbInformation, "Footnote / Endnote Preview"
-        Unload Me: Exit Sub
+        ShowPreviewActions Me, "Footnote / Endnote Remover", "Preview complete." & vbCrLf & "Footnotes to remove: " & pf & vbCrLf & "Endnotes to remove: " & pe
+        Exit Sub
     End If
     MarkCleanupStart "Footnote / Endnote Remover"
     Dim undoRec As UndoRecord

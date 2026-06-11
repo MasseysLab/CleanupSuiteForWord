@@ -63,6 +63,10 @@ Private Function RemapStyle(fromName As String, toName As String) As Long
     RemapStyle = 1
     On Error GoTo 0
 End Function
+Public Sub RunAfterPreview()
+    chkPreviewOnly.Value = False
+    cmdRun_Click
+End Sub
 Private Sub cmdRun_Click()
     If ActiveDocument.ProtectionType <> wdNoProtection Then
         MsgBox "This document is protected. Please remove protection before running cleanup.", vbExclamation, "Document Protected": Exit Sub
@@ -80,8 +84,8 @@ Private Sub cmdRun_Click()
                 If Not StyleInUse(st) Then preCount = preCount + 1
             End If
         Next st
-        MsgBox "Preview complete. " & preCount & " unused custom styles found.", vbInformation
-        Unload Me: Exit Sub
+        ShowPreviewActions Me, "Style Cleanup", "Preview complete. " & preCount & " unused custom styles found."
+        Exit Sub
     End If
     MarkCleanupStart "Style Cleanup"
     Dim undoRec As UndoRecord

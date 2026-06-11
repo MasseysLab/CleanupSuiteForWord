@@ -66,6 +66,10 @@ End Sub
 Private Sub chkConvertSectionBreaks_Click()
     fraConvertTo.Enabled = chkConvertSectionBreaks.Value
 End Sub
+Public Sub RunAfterPreview()
+    chkPreviewOnly.Value = False
+    cmdRun_Click
+End Sub
 Private Sub cmdRun_Click()
     If ActiveDocument.ProtectionType <> wdNoProtection Then
         MsgBox "This document is protected. Please remove protection before running cleanup.", vbExclamation, "Document Protected": Exit Sub
@@ -97,8 +101,10 @@ Private Sub cmdRun_Click()
             If doCollPage Then .Text = "^m^m": .Replacement.Text = "^&": .Replacement.Highlight = True: .Execute Replace:=wdReplaceAll: cnt = cnt + 1
         End With
     End If
-    MsgBox "Preview complete. Break sequences highlighted.", vbInformation
-    If previewOnly Then Unload Me: Exit Sub
+    If previewOnly Then
+        ShowPreviewActions Me, "Break Normalizer", "Preview complete. Break sequences highlighted."
+        Exit Sub
+    End If
     MarkCleanupStart "Break Normalizer"
     Dim undoRec As UndoRecord
     Set undoRec = Application.UndoRecord
