@@ -478,9 +478,7 @@ Private Sub LayoutPreviewActionsControls(comp As VBIDE.VBComponent, designer As 
     PositionControl designer, "lblHint", MARGIN, y, contentW, 28
     y = y + 36
     PositionControl designer, "cmdApply", MARGIN, y, BTN_W, BTN_H
-    PositionControl designer, "cmdClear", MARGIN + BTN_W + GAP, y, BTN_W + 8, BTN_H
-    PositionControl designer, "cmdBack", MARGIN + (2 * BTN_W) + (2 * GAP) + 8, y, BTN_W, BTN_H
-    PositionControl designer, "cmdClose", FORM_W - MARGIN - BTN_W, y, BTN_W, BTN_H
+    PositionControl designer, "cmdClear", MARGIN + BTN_W + GAP, y, BTN_W + 26, BTN_H
 
     comp.Properties("Width") = FORM_W + 8
     comp.Properties("Height") = y + BTN_H + 42
@@ -820,7 +818,7 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmPunctuationCleanup.optScopeSelection": ControlCaptionText = "Selected text only"
         Case "frmPreviewActions.lblTitle": ControlCaptionText = "Preview Actions"
         Case "frmPreviewActions.lblSummary": ControlCaptionText = "Preview complete."
-        Case "frmPreviewActions.lblHint": ControlCaptionText = "Apply reruns the same settings without Preview. Clear Preview removes the yellow marks."
+        Case "frmPreviewActions.lblHint": ControlCaptionText = "Apply reruns the same settings without Preview. Reset Preview clears yellow marks and returns here."
         Case "frmSoftReturnConverter.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
         Case "frmSoftReturnConverter.optParaToSoft": ControlCaptionText = "Convert paragraph marks to soft returns"
         Case "frmSoftReturnConverter.optScopeDocument": ControlCaptionText = "Entire document"
@@ -876,8 +874,6 @@ Private Sub SetButtonCaption(designer As Object, nm As String)
         Case "cmdRun": cap = "Run"
         Case "cmdApply": cap = "Apply"
         Case "cmdClear": cap = "Reset Preview"
-        Case "cmdBack": cap = "Back"
-        Case "cmdClose": cap = "Close"
         Case "cmdSelectAll": cap = "Select All"
         Case "cmdDeselectAll": cap = "Deselect All"
         Case "cmdHelp": cap = "Help"
@@ -950,9 +946,7 @@ Private Function ButtonTipText(nm As String) As String
     Select Case nm
         Case "cmdRun": ButtonTipText = "Run this cleanup tool"
         Case "cmdApply": ButtonTipText = "Apply this preview using the same settings"
-        Case "cmdClear": ButtonTipText = "Remove preview highlighting and close this tool"
-        Case "cmdBack": ButtonTipText = "Return to the tool options"
-        Case "cmdClose": ButtonTipText = "Close this preview panel"
+        Case "cmdClear": ButtonTipText = "Remove preview highlighting and return to this tool"
         Case "cmdSelectAll": ButtonTipText = "Select all custom options"
         Case "cmdDeselectAll": ButtonTipText = "Clear all custom options"
         Case "cmdUnicode": ButtonTipText = "Remove invisible Unicode characters"
@@ -992,7 +986,7 @@ Private Function ControlsForForm(formName As String) As Variant
                                     "lblCatFormat", "cmdHelpFont", "cmdFontNorm", "lblDescFontNorm", "cmdHelpFormat", "cmdFormatStrip", "lblDescFormatStrip", "cmdHelpStyle", "cmdStyleClean", "lblDescStyleClean", "cmdHelpHyperlink", "cmdHyperlink", "lblDescHyperlink", _
                                     "lblCatReview", "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", "chkAutoSave")
         Case "frmPreviewActions"
-            ControlsForForm = Array("lblTitle", "lblSummary", "lblHint", "cmdApply", "cmdClear", "cmdBack", "cmdClose")
+            ControlsForForm = Array("lblTitle", "lblSummary", "lblHint", "cmdApply", "cmdClear")
         Case "frmPunctuationCleanup"
             ControlsForForm = Array("optAll", "optQuotes", "optDashes", "optEllipses", "optCustom", "fraCustom", _
                                     "chkCurlyDouble", "chkCurlySingle", "chkEmDash", "chkEnDash", "chkEllipses", _

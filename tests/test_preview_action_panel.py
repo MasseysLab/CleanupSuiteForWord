@@ -33,6 +33,29 @@ class PreviewActionPanelTests(unittest.TestCase):
         self.assertIn("RemoveAllHighlighting ActiveDocument.Content", panel)
         self.assertIn("Me.Hide", panel)
         self.assertIn("mSourceForm.Show", panel)
+        self.assertIn("ShowCleanupSuiteLauncher", panel)
+        self.assertIn('cmdClear.Caption = "Reset Preview"', panel)
+        self.assertNotIn("cmdBack", panel)
+        self.assertNotIn("cmdClose", panel)
+
+    def test_preview_panel_has_only_decisive_actions(self):
+        installer = read("src/installer/installer.bas")
+
+        self.assertIn(
+            'ControlsForForm = Array("lblTitle", "lblSummary", "lblHint", "cmdApply", "cmdClear")',
+            installer,
+        )
+        self.assertNotIn('"cmdBack"', installer)
+        self.assertNotIn('"cmdClose"', installer)
+
+    def test_launcher_hides_while_subtool_is_open(self):
+        launcher = read("src/forms/frmCleanupSuiteLauncher.bas")
+
+        self.assertIn("Private Sub OpenCleanupTool(toolForm As Object)", launcher)
+        self.assertIn("Me.Hide", launcher)
+        self.assertIn("toolForm.Show", launcher)
+        self.assertIn("OpenCleanupTool frmUnicodeCleanup", launcher)
+        self.assertNotIn("frmUnicodeCleanup.Show", launcher)
 
     def test_preview_capable_forms_can_apply_from_panel(self):
         form_paths = [

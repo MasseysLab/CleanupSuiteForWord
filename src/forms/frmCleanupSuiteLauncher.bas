@@ -17,25 +17,29 @@ Private Sub chkAutoSave_Click()
     End If
     SetAutoSaveSetting chkAutoSave.Value
 End Sub
-Private Sub cmdUnicode_Click(): frmUnicodeCleanup.Show: End Sub
-Private Sub cmdPunctuation_Click(): frmPunctuationCleanup.Show: End Sub
-Private Sub cmdSpacing_Click(): frmSpacingCleanup.Show: End Sub
-Private Sub cmdCapitalization_Click(): frmCapitalizationCleanup.Show: End Sub
-Private Sub cmdList_Click(): frmListCleanup.Show: End Sub
-Private Sub cmdParagraph_Click(): frmParagraphCleanup.Show: End Sub
-Private Sub cmdDuplicate_Click(): frmDuplicateDetector.Show: End Sub
-Private Sub cmdFontNorm_Click(): frmFontNormalizer.Show: End Sub
-Private Sub cmdTableClean_Click(): frmTableCleaner.Show: End Sub
-Private Sub cmdBreakNorm_Click(): frmBreakNormalizer.Show: End Sub
-Private Sub cmdDocTrim_Click(): frmDocumentTrim.Show: End Sub
-Private Sub cmdFormatStrip_Click(): frmFormattingStripper.Show: End Sub
-Private Sub cmdHyperlink_Click(): frmHyperlinkRemover.Show: End Sub
-Private Sub cmdSoftReturn_Click(): frmSoftReturnConverter.Show: End Sub
-Private Sub cmdMetadata_Click(): frmMetadataScrubber.Show: End Sub
-Private Sub cmdStyleClean_Click(): frmStyleCleanup.Show: End Sub
-Private Sub cmdFootnote_Click(): frmFootnoteRemover.Show: End Sub
-Private Sub cmdHeaderFooter_Click(): frmHeaderFooterStandardizer.Show: End Sub
-Private Sub cmdObjectRemover_Click(): frmObjectRemover.Show: End Sub
+Private Sub OpenCleanupTool(toolForm As Object)
+    Me.Hide
+    toolForm.Show
+End Sub
+Private Sub cmdUnicode_Click(): OpenCleanupTool frmUnicodeCleanup: End Sub
+Private Sub cmdPunctuation_Click(): OpenCleanupTool frmPunctuationCleanup: End Sub
+Private Sub cmdSpacing_Click(): OpenCleanupTool frmSpacingCleanup: End Sub
+Private Sub cmdCapitalization_Click(): OpenCleanupTool frmCapitalizationCleanup: End Sub
+Private Sub cmdList_Click(): OpenCleanupTool frmListCleanup: End Sub
+Private Sub cmdParagraph_Click(): OpenCleanupTool frmParagraphCleanup: End Sub
+Private Sub cmdDuplicate_Click(): OpenCleanupTool frmDuplicateDetector: End Sub
+Private Sub cmdFontNorm_Click(): OpenCleanupTool frmFontNormalizer: End Sub
+Private Sub cmdTableClean_Click(): OpenCleanupTool frmTableCleaner: End Sub
+Private Sub cmdBreakNorm_Click(): OpenCleanupTool frmBreakNormalizer: End Sub
+Private Sub cmdDocTrim_Click(): OpenCleanupTool frmDocumentTrim: End Sub
+Private Sub cmdFormatStrip_Click(): OpenCleanupTool frmFormattingStripper: End Sub
+Private Sub cmdHyperlink_Click(): OpenCleanupTool frmHyperlinkRemover: End Sub
+Private Sub cmdSoftReturn_Click(): OpenCleanupTool frmSoftReturnConverter: End Sub
+Private Sub cmdMetadata_Click(): OpenCleanupTool frmMetadataScrubber: End Sub
+Private Sub cmdStyleClean_Click(): OpenCleanupTool frmStyleCleanup: End Sub
+Private Sub cmdFootnote_Click(): OpenCleanupTool frmFootnoteRemover: End Sub
+Private Sub cmdHeaderFooter_Click(): OpenCleanupTool frmHeaderFooterStandardizer: End Sub
+Private Sub cmdObjectRemover_Click(): OpenCleanupTool frmObjectRemover: End Sub
 Private Sub cmdHelpUnicode_Click()
     Dim h As String
     h = "Invisible Unicode Cleaner" & vbCrLf & vbCrLf
