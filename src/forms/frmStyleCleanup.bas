@@ -15,6 +15,7 @@ Private Sub UserForm_Initialize()
     chkRemoveUnused.Caption = "Remove unused styles"
     chkRemapVariants.Caption = "Remap style variants to canonical equivalents"
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
@@ -63,6 +64,17 @@ Private Function RemapStyle(fromName As String, toName As String) As Long
     RemapStyle = 1
     On Error GoTo 0
 End Function
+Private Sub cmdPreview_Click()
+    PreviewFromPanel
+End Sub
+Public Sub PreviewFromPanel()
+    chkPreviewOnly.Value = True
+    cmdRun_Click
+End Sub
+Private Sub cmdReset_Click()
+    UserForm_Initialize
+    chkPreviewOnly.Value = False
+End Sub
 Public Sub RunAfterPreview()
     chkPreviewOnly.Value = False
     cmdRun_Click

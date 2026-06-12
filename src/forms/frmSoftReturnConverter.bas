@@ -23,6 +23,7 @@ Private Sub UserForm_Initialize()
     optSoftToPara.Caption = "Convert soft returns (Shift+Enter) to paragraph marks"
     optParaToSoft.Caption = "Convert paragraph marks to soft returns"
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
@@ -44,6 +45,17 @@ Private Sub cmdHelp_Click()
     h = h & vbCrLf
     h = h & "Preview mode highlights the breaks that would be converted." & vbCrLf
     MsgBox h, vbInformation, "Help  --  Soft Return Converter"
+End Sub
+Private Sub cmdPreview_Click()
+    PreviewFromPanel
+End Sub
+Public Sub PreviewFromPanel()
+    chkPreviewOnly.Value = True
+    cmdRun_Click
+End Sub
+Private Sub cmdReset_Click()
+    UserForm_Initialize
+    chkPreviewOnly.Value = False
 End Sub
 Public Sub RunAfterPreview()
     chkPreviewOnly.Value = False

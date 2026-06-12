@@ -29,6 +29,7 @@ Private Sub UserForm_Initialize()
     optScopeSelection.Enabled = False
     fraScopeSelection.Enabled = False
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
@@ -153,6 +154,17 @@ Private Function ProcessHiddenText(doDelete As Boolean) As Long
     End If
     If found Then ProcessHiddenText = 1 Else ProcessHiddenText = 0
 End Function
+Private Sub cmdPreview_Click()
+    PreviewFromPanel
+End Sub
+Public Sub PreviewFromPanel()
+    chkPreviewOnly.Value = True
+    cmdRun_Click
+End Sub
+Private Sub cmdReset_Click()
+    UserForm_Initialize
+    chkPreviewOnly.Value = False
+End Sub
 Public Sub RunAfterPreview()
     chkPreviewOnly.Value = False
     cmdRun_Click

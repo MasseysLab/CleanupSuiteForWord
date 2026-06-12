@@ -37,6 +37,7 @@ Private Sub UserForm_Initialize()
     optScopeDocument.Caption = "Entire document (always)"
     optScopeSelection.Enabled = False
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
@@ -87,6 +88,17 @@ Private Sub ApplyToHF(hf As HeaderFooter, doClear As Boolean, doFont As Boolean,
         End If
     End If
     cntAreas = cntAreas + 1
+End Sub
+Private Sub cmdPreview_Click()
+    PreviewFromPanel
+End Sub
+Public Sub PreviewFromPanel()
+    chkPreviewOnly.Value = True
+    cmdRun_Click
+End Sub
+Private Sub cmdReset_Click()
+    UserForm_Initialize
+    chkPreviewOnly.Value = False
 End Sub
 Public Sub RunAfterPreview()
     chkPreviewOnly.Value = False

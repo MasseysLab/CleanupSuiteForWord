@@ -31,31 +31,32 @@ class LauncherRedesignTests(unittest.TestCase):
         ]:
             self.assertIn(label, installer)
 
-    def test_launcher_layout_is_row_based_instead_of_flat_button_grid(self):
+    def test_launcher_layout_is_two_column_row_based_instead_of_flat_button_grid(self):
         installer = read("src/installer/installer.bas")
 
         self.assertIn("LayoutLauncherCategory", installer)
         self.assertIn("LayoutLauncherToolRow", installer)
-        self.assertIn("LEFT_X As Single", installer)
-        self.assertIn("RIGHT_X As Single", installer)
+        self.assertIn("COL1_X As Single", installer)
+        self.assertIn("COL2_X As Single", installer)
+        self.assertNotIn("COL3_X As Single", installer)
         self.assertNotIn('Array("cmdUnicode", "cmdHelpUnicode")', installer)
 
-    def test_launcher_is_two_column_with_help_buttons_before_tools(self):
+    def test_launcher_is_two_column_with_review_under_right_column(self):
         installer = read("src/installer/installer.bas")
 
         self.assertIn(
-            'LayoutLauncherToolRow(designer, "cmdHelpUnicode", "cmdUnicode", "lblDescUnicode", LEFT_X, yLeft, COL_W)',
+            'LayoutLauncherToolRow(designer, "cmdHelpUnicode", "cmdUnicode", "lblDescUnicode", COL1_X, yCol1, COL_W)',
             installer,
         )
         self.assertIn(
-            'LayoutLauncherToolRow(designer, "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", RIGHT_X, yRight, COL_W)',
+            'LayoutLauncherToolRow(designer, "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", COL2_X, yCol2, COL_W)',
             installer,
         )
         self.assertIn(
             '"lblCatText", "cmdHelpUnicode", "cmdUnicode", "lblDescUnicode"',
             installer,
         )
-        self.assertIn("MaxSingle(yLeft, yRight)", installer)
+        self.assertIn("MaxSingle(yCol1, yCol2)", installer)
 
     def test_launcher_milestone_version_is_060(self):
         launcher = read("src/modules/modCleanupLauncher.bas")

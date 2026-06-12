@@ -35,6 +35,37 @@ Public Sub RemoveAllHighlighting(Optional scopeRange As Range = Nothing)
         .Execute Replace:=wdReplaceAll
     End With
 End Sub
+Public Function DocumentHasVisibleContent(Optional scopeRange As Range = Nothing) As Boolean
+    On Error GoTo SafeExit
+
+    Dim textValue As String
+    If scopeRange Is Nothing Then
+        textValue = ActiveDocument.Content.Text
+    Else
+        textValue = scopeRange.Text
+    End If
+
+    textValue = Replace(textValue, vbCr, "")
+    textValue = Replace(textValue, vbLf, "")
+    textValue = Replace(textValue, vbTab, "")
+    textValue = Replace(textValue, Chr$(11), "")
+    textValue = Replace(textValue, Chr$(12), "")
+    textValue = Replace(textValue, ChrW$(160), "")
+    If Len(Trim$(textValue)) > 0 Then
+        DocumentHasVisibleContent = True
+        Exit Function
+    End If
+
+    If Not scopeRange Is Nothing Then Exit Function
+    If ActiveDocument.Tables.Count > 0 Then DocumentHasVisibleContent = True: Exit Function
+    If ActiveDocument.InlineShapes.Count > 0 Then DocumentHasVisibleContent = True: Exit Function
+    If ActiveDocument.Shapes.Count > 0 Then DocumentHasVisibleContent = True: Exit Function
+    If ActiveDocument.Hyperlinks.Count > 0 Then DocumentHasVisibleContent = True: Exit Function
+    If ActiveDocument.Footnotes.Count > 0 Then DocumentHasVisibleContent = True: Exit Function
+    If ActiveDocument.Endnotes.Count > 0 Then DocumentHasVisibleContent = True: Exit Function
+    If ActiveDocument.Comments.Count > 0 Then DocumentHasVisibleContent = True: Exit Function
+SafeExit:
+End Function
 Public Function GuardBeforeCleanup(toolName As String) As Boolean
     GuardBeforeCleanup = False
     If ActiveDocument.Path = "" Then
@@ -104,6 +135,126 @@ Public Sub SetAutoSaveSetting(enabled As Boolean)
         LinkToContent:=False, Type:=msoPropertyTypeString, _
         Value:=IIf(enabled, "True", "False")
     On Error GoTo 0
+End Sub
+Public Function GetReturnToMainAfterApplySetting() As Boolean
+    ' Returns True by default so Apply keeps the current workflow unless changed.
+    On Error Resume Next
+    Dim prop As Object
+    Set prop = ActiveDocument.CustomDocumentProperties("CleanupSuiteReturnToMainAfterApply")
+    If Err.Number <> 0 Then
+        GetReturnToMainAfterApplySetting = True
+        Err.Clear
+    Else
+        GetReturnToMainAfterApplySetting = (prop.Value = "True")
+    End If
+    On Error GoTo 0
+End Function
+Public Sub SetReturnToMainAfterApplySetting(enabled As Boolean)
+    On Error Resume Next
+    ActiveDocument.CustomDocumentProperties("CleanupSuiteReturnToMainAfterApply").Delete
+    Err.Clear
+    ActiveDocument.CustomDocumentProperties.Add Name:="CleanupSuiteReturnToMainAfterApply", _
+        LinkToContent:=False, Type:=msoPropertyTypeString, _
+        Value:=IIf(enabled, "True", "False")
+    On Error GoTo 0
+End Sub
+Public Sub ResetCleanupSuiteDefaults()
+    On Error Resume Next
+    RemoveAllHighlighting ActiveDocument.Content
+    SetAutoSaveSetting True
+    SetReturnToMainAfterApplySetting True
+    If Not gPreviewActionPanel Is Nothing Then Unload gPreviewActionPanel
+    Set gPreviewActionPanel = Nothing
+    Unload frmPunctuationCleanup
+    Unload frmUnicodeCleanup
+    Unload frmSpacingCleanup
+    Unload frmCapitalizationCleanup
+    Unload frmListCleanup
+    Unload frmParagraphCleanup
+    Unload frmDuplicateDetector
+    Unload frmFontNormalizer
+    Unload frmTableCleaner
+    Unload frmBreakNormalizer
+    Unload frmDocumentTrim
+    Unload frmFormattingStripper
+    Unload frmHyperlinkRemover
+    Unload frmSoftReturnConverter
+    Unload frmMetadataScrubber
+    Unload frmStyleCleanup
+    Unload frmFootnoteRemover
+    Unload frmHeaderFooterStandardizer
+    Unload frmObjectRemover
+    On Error GoTo 0
+End Sub
+Public Sub LayoutCleanupToolForm(toolForm As Object)
+    On Error Resume Next
+    Const M As Single = 12
+    Const GAP As Single = 8
+    Const BH As Single = 26
+    Dim contentW As Single
+    contentW = toolForm.Width - (2 * M) - 10
+    If contentW < 320 Then contentW = 344
+
+    toolForm.Controls("chkPreviewOnly").Visible = False
+    toolForm.Controls("fraScopeSelection").Visible = False
+
+    Dim bottomY As Single
+    Dim ctl As Object
+    For Each ctl In toolForm.Controls
+        Select Case ctl.Name
+            Case "cmdPreview", "cmdRun", "cmdReset", "cmdHelp", "chkPreviewOnly", "fraScopeSelection", "optScopeDocument", "optScopeSelection"
+                ' laid out below the option area
+            Case Else
+                If ctl.Visible Then
+                    If ctl.Top + ctl.Height > bottomY Then bottomY = ctl.Top + ctl.Height
+                End If
+        End Select
+    Next ctl
+
+    Dim y As Single
+    y = bottomY + 12
+    With toolForm.Controls("cmdPreview")
+        .Move M, y, contentW, BH
+        .Caption = "Preview"
+        .Enabled = True
+        .Visible = True
+    End With
+    y = y + BH + GAP
+
+    Dim halfW As Single
+    halfW = (contentW - GAP) / 2
+    With toolForm.Controls("cmdRun")
+        .Move M, y, halfW, BH
+        .Caption = "Apply"
+        .Visible = True
+        .Enabled = True
+    End With
+    With toolForm.Controls("cmdReset")
+        .Move M + halfW + GAP, y, halfW, BH
+        .Caption = "Reset"
+        .Visible = True
+        .Enabled = True
+    End With
+    y = y + BH + 10
+
+    With toolForm.Controls("optScopeDocument")
+        .Move M + 8, y, contentW - 8, 18
+        .Visible = True
+    End With
+    y = y + 24
+    With toolForm.Controls("optScopeSelection")
+        .Move M + 8, y, contentW - 8, 18
+        .Visible = True
+    End With
+    y = y + 34
+
+    With toolForm.Controls("cmdHelp")
+        .Move M, y, contentW, BH
+        .Caption = "Help"
+        .Visible = True
+    End With
+    y = y + BH + 34
+    If toolForm.Height < y Then toolForm.Height = y
 End Sub
 Public Function GetTargetRange() As Range
     If Selection.Type = wdSelectionNormal Or Selection.Type = wdSelectionColumn Then

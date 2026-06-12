@@ -40,6 +40,7 @@ Private Sub UserForm_Initialize()
     optFuzzyMedium.Caption = "Medium  (70% word overlap)"
     optFuzzyStrict.Caption = "Strict  (90% word overlap)"
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub optMatchExact_Click()
     lblFuzzyWarning.Caption = "Exact match: paragraphs must be identical apart from letter case."
@@ -143,6 +144,17 @@ Private Function FindRoot(ByRef par() As Long, ByVal x As Long) As Long
     Loop
     FindRoot = x
 End Function
+Private Sub cmdPreview_Click()
+    PreviewFromPanel
+End Sub
+Public Sub PreviewFromPanel()
+    chkPreviewOnly.Value = True
+    cmdRun_Click
+End Sub
+Private Sub cmdReset_Click()
+    UserForm_Initialize
+    chkPreviewOnly.Value = False
+End Sub
 Public Sub RunAfterPreview()
     chkPreviewOnly.Value = False
     cmdRun_Click

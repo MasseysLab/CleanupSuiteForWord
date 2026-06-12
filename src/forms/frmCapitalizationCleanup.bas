@@ -36,6 +36,7 @@ Private Sub UserForm_Initialize()
     chkLower.Caption = "Fix all-lowercase paragraphs"
     chkSmartSentences.Caption = "Smart sentence detection (skip abbreviations)"
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
@@ -77,6 +78,17 @@ Private Sub cmdDeselectAll_Click()
     If fraCustom.Visible Then
         ClearCustomChecks
     End If
+End Sub
+Private Sub cmdPreview_Click()
+    PreviewFromPanel
+End Sub
+Public Sub PreviewFromPanel()
+    chkPreviewOnly.Value = True
+    cmdRun_Click
+End Sub
+Private Sub cmdReset_Click()
+    UserForm_Initialize
+    chkPreviewOnly.Value = False
 End Sub
 Public Sub RunAfterPreview()
     chkPreviewOnly.Value = False

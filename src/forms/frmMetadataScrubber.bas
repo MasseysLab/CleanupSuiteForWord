@@ -20,6 +20,7 @@ Private Sub UserForm_Initialize()
     chkComments.Caption = "Remove all comments"
     chkRevisions.Caption = "Accept tracked changes and clear revision marks"
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
@@ -42,6 +43,17 @@ Private Sub cmdHelp_Click()
     h = h & vbCrLf
     h = h & "Preview mode shows the metadata currently in the document." & vbCrLf
     MsgBox h, vbInformation, "Help  --  Metadata Scrubber"
+End Sub
+Private Sub cmdPreview_Click()
+    PreviewFromPanel
+End Sub
+Public Sub PreviewFromPanel()
+    chkPreviewOnly.Value = True
+    cmdRun_Click
+End Sub
+Private Sub cmdReset_Click()
+    UserForm_Initialize
+    chkPreviewOnly.Value = False
 End Sub
 Public Sub RunAfterPreview()
     chkPreviewOnly.Value = False

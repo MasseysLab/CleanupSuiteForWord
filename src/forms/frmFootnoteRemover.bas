@@ -22,6 +22,7 @@ Private Sub UserForm_Initialize()
         optScopeSelection.Enabled = False
     End If
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
@@ -46,6 +47,17 @@ End Sub
 Private Function InScope(r As Range, targetRange As Range) As Boolean
     InScope = (r.Start >= targetRange.Start And r.Start <= targetRange.End)
 End Function
+Private Sub cmdPreview_Click()
+    PreviewFromPanel
+End Sub
+Public Sub PreviewFromPanel()
+    chkPreviewOnly.Value = True
+    cmdRun_Click
+End Sub
+Private Sub cmdReset_Click()
+    UserForm_Initialize
+    chkPreviewOnly.Value = False
+End Sub
 Public Sub RunAfterPreview()
     chkPreviewOnly.Value = False
     cmdRun_Click

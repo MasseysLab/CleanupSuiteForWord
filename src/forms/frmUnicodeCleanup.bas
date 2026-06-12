@@ -37,6 +37,7 @@ Private Sub UserForm_Initialize()
     chkSoftHyphen.Caption = "Soft hyphens (U+00AD)"
     chkNBHyphen.Caption = "Non-breaking hyphens (U+2011)"
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
@@ -84,6 +85,17 @@ Private Function UnicodeChar(ByVal codePoint As Long) As String
         UnicodeChar = ChrW$(codePoint)
     End If
 End Function
+Private Sub cmdPreview_Click()
+    PreviewFromPanel
+End Sub
+Public Sub PreviewFromPanel()
+    chkPreviewOnly.Value = True
+    cmdRun_Click
+End Sub
+Private Sub cmdReset_Click()
+    UserForm_Initialize
+    chkPreviewOnly.Value = False
+End Sub
 Public Sub RunAfterPreview()
     chkPreviewOnly.Value = False
     cmdRun_Click

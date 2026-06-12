@@ -26,6 +26,7 @@ Private Sub UserForm_Initialize()
     chkItalic.Caption = "Normalize direct italic overrides"
     chkFontColor.Caption = "Remove direct font color overrides"
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
@@ -51,6 +52,17 @@ Private Sub cmdHelp_Click()
     h = h & vbCrLf
     h = h & "Preview mode highlights paragraphs with direct font overrides." & vbCrLf
     MsgBox h, vbInformation, "Help  --  Font Normalizer"
+End Sub
+Private Sub cmdPreview_Click()
+    PreviewFromPanel
+End Sub
+Public Sub PreviewFromPanel()
+    chkPreviewOnly.Value = True
+    cmdRun_Click
+End Sub
+Private Sub cmdReset_Click()
+    UserForm_Initialize
+    chkPreviewOnly.Value = False
 End Sub
 Public Sub RunAfterPreview()
     chkPreviewOnly.Value = False

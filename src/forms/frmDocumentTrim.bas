@@ -13,6 +13,7 @@ Private Sub UserForm_Initialize()
     optScopeDocument.Caption = "Entire document (always)"
     optScopeSelection.Enabled = False
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
@@ -33,6 +34,17 @@ Private Sub cmdHelp_Click()
     h = h & "Preview mode highlights the trailing paragraphs that would be removed." & vbCrLf
     h = h & "Run again without Preview to apply." & vbCrLf
     MsgBox h, vbInformation, "Help  --  Document Trim"
+End Sub
+Private Sub cmdPreview_Click()
+    PreviewFromPanel
+End Sub
+Public Sub PreviewFromPanel()
+    chkPreviewOnly.Value = True
+    cmdRun_Click
+End Sub
+Private Sub cmdReset_Click()
+    UserForm_Initialize
+    chkPreviewOnly.Value = False
 End Sub
 Public Sub RunAfterPreview()
     chkPreviewOnly.Value = False

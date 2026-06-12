@@ -34,6 +34,7 @@ Private Sub UserForm_Initialize()
     optConvertEvenPage.Caption = "Even Page"
     optConvertOddPage.Caption = "Odd Page"
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
@@ -65,6 +66,17 @@ Private Sub cmdHelp_Click()
 End Sub
 Private Sub chkConvertSectionBreaks_Click()
     fraConvertTo.Enabled = chkConvertSectionBreaks.Value
+End Sub
+Private Sub cmdPreview_Click()
+    PreviewFromPanel
+End Sub
+Public Sub PreviewFromPanel()
+    chkPreviewOnly.Value = True
+    cmdRun_Click
+End Sub
+Private Sub cmdReset_Click()
+    UserForm_Initialize
+    chkPreviewOnly.Value = False
 End Sub
 Public Sub RunAfterPreview()
     chkPreviewOnly.Value = False

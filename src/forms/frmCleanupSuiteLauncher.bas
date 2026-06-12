@@ -1,7 +1,12 @@
 Option Explicit
 Private Sub UserForm_Initialize()
+    chkReturnToMainAfterApply.Caption = "Return to main menu after apply"
+    chkReturnToMainAfterApply.Value = GetReturnToMainAfterApplySetting()
     chkAutoSave.Caption = "Auto-save before running each tool"
     chkAutoSave.Value = GetAutoSaveSetting()
+End Sub
+Private Sub chkReturnToMainAfterApply_Click()
+    SetReturnToMainAfterApplySetting chkReturnToMainAfterApply.Value
 End Sub
 Private Sub chkAutoSave_Click()
     If Not chkAutoSave.Value Then
@@ -17,29 +22,31 @@ Private Sub chkAutoSave_Click()
     End If
     SetAutoSaveSetting chkAutoSave.Value
 End Sub
-Private Sub OpenCleanupTool(toolForm As Object)
-    Me.Hide
-    toolForm.Show
+Private Sub cmdResetAll_Click()
+    ResetCleanupSuiteDefaults
+    chkReturnToMainAfterApply.Value = GetReturnToMainAfterApplySetting()
+    chkAutoSave.Value = GetAutoSaveSetting()
+    MsgBox "All Cleanup Suite tool settings have been reset to defaults.", vbInformation, "Cleanup Suite"
 End Sub
-Private Sub cmdUnicode_Click(): OpenCleanupTool frmUnicodeCleanup: End Sub
-Private Sub cmdPunctuation_Click(): OpenCleanupTool frmPunctuationCleanup: End Sub
-Private Sub cmdSpacing_Click(): OpenCleanupTool frmSpacingCleanup: End Sub
-Private Sub cmdCapitalization_Click(): OpenCleanupTool frmCapitalizationCleanup: End Sub
-Private Sub cmdList_Click(): OpenCleanupTool frmListCleanup: End Sub
-Private Sub cmdParagraph_Click(): OpenCleanupTool frmParagraphCleanup: End Sub
-Private Sub cmdDuplicate_Click(): OpenCleanupTool frmDuplicateDetector: End Sub
-Private Sub cmdFontNorm_Click(): OpenCleanupTool frmFontNormalizer: End Sub
-Private Sub cmdTableClean_Click(): OpenCleanupTool frmTableCleaner: End Sub
-Private Sub cmdBreakNorm_Click(): OpenCleanupTool frmBreakNormalizer: End Sub
-Private Sub cmdDocTrim_Click(): OpenCleanupTool frmDocumentTrim: End Sub
-Private Sub cmdFormatStrip_Click(): OpenCleanupTool frmFormattingStripper: End Sub
-Private Sub cmdHyperlink_Click(): OpenCleanupTool frmHyperlinkRemover: End Sub
-Private Sub cmdSoftReturn_Click(): OpenCleanupTool frmSoftReturnConverter: End Sub
-Private Sub cmdMetadata_Click(): OpenCleanupTool frmMetadataScrubber: End Sub
-Private Sub cmdStyleClean_Click(): OpenCleanupTool frmStyleCleanup: End Sub
-Private Sub cmdFootnote_Click(): OpenCleanupTool frmFootnoteRemover: End Sub
-Private Sub cmdHeaderFooter_Click(): OpenCleanupTool frmHeaderFooterStandardizer: End Sub
-Private Sub cmdObjectRemover_Click(): OpenCleanupTool frmObjectRemover: End Sub
+Private Sub cmdUnicode_Click(): Me.Hide: frmUnicodeCleanup.Show: End Sub
+Private Sub cmdPunctuation_Click(): Me.Hide: frmPunctuationCleanup.Show: End Sub
+Private Sub cmdSpacing_Click(): Me.Hide: frmSpacingCleanup.Show: End Sub
+Private Sub cmdCapitalization_Click(): Me.Hide: frmCapitalizationCleanup.Show: End Sub
+Private Sub cmdList_Click(): Me.Hide: frmListCleanup.Show: End Sub
+Private Sub cmdParagraph_Click(): Me.Hide: frmParagraphCleanup.Show: End Sub
+Private Sub cmdDuplicate_Click(): Me.Hide: frmDuplicateDetector.Show: End Sub
+Private Sub cmdFontNorm_Click(): Me.Hide: frmFontNormalizer.Show: End Sub
+Private Sub cmdTableClean_Click(): Me.Hide: frmTableCleaner.Show: End Sub
+Private Sub cmdBreakNorm_Click(): Me.Hide: frmBreakNormalizer.Show: End Sub
+Private Sub cmdDocTrim_Click(): Me.Hide: frmDocumentTrim.Show: End Sub
+Private Sub cmdFormatStrip_Click(): Me.Hide: frmFormattingStripper.Show: End Sub
+Private Sub cmdHyperlink_Click(): Me.Hide: frmHyperlinkRemover.Show: End Sub
+Private Sub cmdSoftReturn_Click(): Me.Hide: frmSoftReturnConverter.Show: End Sub
+Private Sub cmdMetadata_Click(): Me.Hide: frmMetadataScrubber.Show: End Sub
+Private Sub cmdStyleClean_Click(): Me.Hide: frmStyleCleanup.Show: End Sub
+Private Sub cmdFootnote_Click(): Me.Hide: frmFootnoteRemover.Show: End Sub
+Private Sub cmdHeaderFooter_Click(): Me.Hide: frmHeaderFooterStandardizer.Show: End Sub
+Private Sub cmdObjectRemover_Click(): Me.Hide: frmObjectRemover.Show: End Sub
 Private Sub cmdHelpUnicode_Click()
     Dim h As String
     h = "Invisible Unicode Cleaner" & vbCrLf & vbCrLf

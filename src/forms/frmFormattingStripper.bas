@@ -36,6 +36,7 @@ Private Sub UserForm_Initialize()
     optEmphThorough.Caption = "Thorough  (preserve word-level emphasis)"
     optEmphStrip.Caption = "Strip  (remove all direct formatting)"
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub optEmphQuick_Click()
     lblSpeedWarning.Caption = "Quick mode is fast and preserves emphasis that applies to whole paragraphs."
@@ -78,6 +79,17 @@ Private Sub cmdHelp_Click()
     h = h & vbCrLf
     h = h & "Preview mode highlights paragraphs carrying direct formatting." & vbCrLf
     MsgBox h, vbInformation, "Help  --  Direct Formatting Stripper"
+End Sub
+Private Sub cmdPreview_Click()
+    PreviewFromPanel
+End Sub
+Public Sub PreviewFromPanel()
+    chkPreviewOnly.Value = True
+    cmdRun_Click
+End Sub
+Private Sub cmdReset_Click()
+    UserForm_Initialize
+    chkPreviewOnly.Value = False
 End Sub
 Public Sub RunAfterPreview()
     chkPreviewOnly.Value = False

@@ -138,22 +138,54 @@ Public Sub InstallCleanupSuite()
     reportText = reportText & vbCrLf & "Manual checklist (if any UI items failed to create):" & vbCrLf
     reportText = reportText & ManualChecklistText()
 
-    ' Write report to temp file and open it
-    Dim reportPath As String
-    reportPath = Environ$("TEMP") & "\CleanupSuite_Install_Report.txt"
-    Dim ff As Integer: ff = FreeFile
-    Open reportPath For Output As #ff
-    Print #ff, reportText
-    Close #ff
-    Shell "notepad.exe " & Chr(34) & reportPath & Chr(34), vbNormalFocus
-
-    MsgBox "Installer finished. The report has been opened in Notepad." & vbCrLf & _
-           "Follow the manual checklist if needed, then compile the project (VBA editor -> Debug -> Compile).", vbInformation, "Install Complete"
+    WriteInstallReport reportText
 
     Exit Sub
 
 InstallerErr:
     MsgBox "Installer encountered an error: " & Err.Number & " - " & Err.Description, vbCritical, "Installer Error"
+End Sub
+
+Private Sub WriteInstallReport(reportText As String)
+    On Error GoTo ReportErr
+
+    Dim tempFolder As String
+    tempFolder = Environ$("TEMP")
+    If Len(tempFolder) = 0 Then tempFolder = Environ$("TMP")
+    If Len(tempFolder) = 0 Then tempFolder = CurDir$
+    If Right$(tempFolder, 1) = "\" Then tempFolder = Left$(tempFolder, Len(tempFolder) - 1)
+
+    Dim reportPath As String
+    reportPath = tempFolder & "\CleanupSuite_Install_Report_" & Format$(Now, "yyyymmdd_hhnnss") & ".txt"
+
+    Dim ff As Integer
+    ff = FreeFile
+    Open reportPath For Output As #ff
+    Print #ff, reportText
+    Close #ff
+
+    On Error Resume Next
+    Shell "notepad.exe " & Chr(34) & reportPath & Chr(34), vbNormalFocus
+    On Error GoTo 0
+
+    MsgBox "Installer finished. The report has been saved to:" & vbCrLf & _
+           reportPath & vbCrLf & vbCrLf & _
+           "Follow the manual checklist if needed, then compile the project (VBA editor -> Debug -> Compile).", vbInformation, "Install Complete"
+    Exit Sub
+
+ReportErr:
+    Dim reportErrNumber As Long
+    Dim reportErrDescription As String
+    reportErrNumber = Err.Number
+    reportErrDescription = Err.Description
+
+    On Error Resume Next
+    If ff <> 0 Then Close #ff
+    On Error GoTo 0
+
+    MsgBox "Installer finished, but the report could not be written or opened." & vbCrLf & _
+           "Report error " & reportErrNumber & ": " & reportErrDescription & vbCrLf & vbCrLf & _
+           "The Cleanup Suite components were already installed before the report step.", vbExclamation, "Install Complete"
 End Sub
 
 Sub UninstallCleanupSuite()
@@ -418,9 +450,27 @@ Private Sub LayoutFormControls(comp As VBIDE.VBComponent)
     Dim cn As Variant, pfx As String
     Dim h As Single, lft As Single, w As Single
     For Each cn In ctrlNames
+        If CStr(cn) = "chkPreviewOnly" Then
+            designer.Controls(CStr(cn)).Visible = False
+            GoTo NextControl
+        End If
+        If CStr(cn) = "fraScopeSelection" Then
+            designer.Controls(CStr(cn)).Visible = False
+            GoTo NextControl
+        End If
         pfx = Left$(CStr(cn), 3)
         If pfx = "cmd" Then
             SetButtonCaption designer, CStr(cn)
+            If CStr(cn) = "cmdPreview" Then
+                If Len(pend) > 0 Then
+                    PositionControl designer, pend, MARGIN, y, contentW, BTN_H
+                    y = y + BTN_H + GAP
+                    pend = ""
+                End If
+                PositionControl designer, "cmdPreview", MARGIN, y, contentW, BTN_H
+                y = y + BTN_H + GAP
+                GoTo NextControl
+            End If
             If Len(pend) > 0 Then
                 PositionControl designer, pend, MARGIN, y, halfW, BTN_H
                 PositionControl designer, CStr(cn), MARGIN + halfW + 8, y, halfW, BTN_H
@@ -450,6 +500,7 @@ Private Sub LayoutFormControls(comp As VBIDE.VBComponent)
             PositionControl designer, CStr(cn), lft, y, w, h
             y = y + h + GAP
         End If
+NextControl:
     Next cn
     If Len(pend) > 0 Then
         PositionControl designer, pend, MARGIN, y, contentW, BTN_H
@@ -463,85 +514,89 @@ End Sub
 
 Private Sub LayoutPreviewActionsControls(comp As VBIDE.VBComponent, designer As Object)
     On Error Resume Next
-    Const FORM_W As Single = 390
-    Const MARGIN As Single = 14
-    Const BTN_W As Single = 78
-    Const BTN_H As Single = 24
-    Const GAP As Single = 8
-    Dim contentW As Single: contentW = FORM_W - (2 * MARGIN)
-    Dim y As Single: y = 12
+    Const FORM_W As Single = 530
+    Const FORM_H As Single = 160
+    Const CONTENT_W As Single = 250
+    Const MARGIN As Single = 8
+    Const BTN_W As Single = 80
+    Const BTN_H As Single = 17
+    Const GAP As Single = 5
 
-    PositionControl designer, "lblTitle", MARGIN, y, contentW, 20
-    y = y + 24
-    PositionControl designer, "lblSummary", MARGIN, y, contentW, 42
-    y = y + 46
-    PositionControl designer, "lblHint", MARGIN, y, contentW, 28
-    y = y + 36
-    PositionControl designer, "cmdApply", MARGIN, y, BTN_W, BTN_H
-    PositionControl designer, "cmdClear", MARGIN + BTN_W + GAP, y, BTN_W + 26, BTN_H
+    ' Keep the design-time MSForms canvas caption blank; Configure sets the native title bar.
+    comp.Properties("Caption") = ""
+    designer.Caption = ""
+    PositionControl designer, "lblTitle", 0, 0, 0, 0
+    PositionControl designer, "lblHint", MARGIN, 2, CONTENT_W, 12
+    PositionControl designer, "cmdPreview", MARGIN, 17, BTN_W, BTN_H
+    PositionControl designer, "cmdClear", MARGIN + BTN_W + GAP, 17, BTN_W, BTN_H
+    PositionControl designer, "cmdApply", MARGIN + (2 * (BTN_W + GAP)), 17, BTN_W, BTN_H
+    PositionControl designer, "lblSummary", MARGIN, 39, CONTENT_W, 18
+    designer.Controls("lblTitle").Caption = ""
+    designer.Controls("lblTitle").Visible = False
+    designer.Controls("lblSummary").WordWrap = True
 
     comp.Properties("Width") = FORM_W + 8
-    comp.Properties("Height") = y + BTN_H + 42
+    comp.Properties("Height") = FORM_H
     designer.Width = FORM_W + 8
-    designer.Height = y + BTN_H + 42
+    designer.Height = FORM_H
 End Sub
 
 Private Sub LayoutLauncherControls(comp As VBIDE.VBComponent, designer As Object)
     On Error Resume Next
-    Const FORM_W As Single = 840
+    Const FORM_W As Single = 760
     Const MARGIN As Single = 14
-    Const GAP As Single = 6
-    Const COL_GAP As Single = 14
+    Const GAP As Single = 4
+    Const COL_GAP As Single = 16
     Dim contentW As Single: contentW = FORM_W - (2 * MARGIN)
     Const COL_W As Single = (FORM_W - (2 * MARGIN) - COL_GAP) / 2
-    Const LEFT_X As Single = MARGIN
-    Const RIGHT_X As Single = MARGIN + COL_W + COL_GAP
+    Const COL1_X As Single = MARGIN
+    Const COL2_X As Single = MARGIN + COL_W + COL_GAP
     Dim y As Single: y = 12
-    Dim yLeft As Single
-    Dim yRight As Single
+    Dim yCol1 As Single
+    Dim yCol2 As Single
 
     PositionControl designer, "lblLauncherTitle", MARGIN, y, contentW, 20
     y = y + 22
-    PositionControl designer, "lblLauncherSubtitle", MARGIN, y, contentW, 28
-    y = y + 34
+    PositionControl designer, "lblLauncherSubtitle", MARGIN, y, contentW, 22
+    y = y + 28
 
-    yLeft = y
-    yLeft = LayoutLauncherCategory(designer, "lblCatText", LEFT_X, yLeft, COL_W)
-    yLeft = LayoutLauncherToolRow(designer, "cmdHelpUnicode", "cmdUnicode", "lblDescUnicode", LEFT_X, yLeft, COL_W)
-    yLeft = LayoutLauncherToolRow(designer, "cmdHelpPunct", "cmdPunctuation", "lblDescPunctuation", LEFT_X, yLeft, COL_W)
-    yLeft = LayoutLauncherToolRow(designer, "cmdHelpSpacing", "cmdSpacing", "lblDescSpacing", LEFT_X, yLeft, COL_W)
-    yLeft = LayoutLauncherToolRow(designer, "cmdHelpCap", "cmdCapitalization", "lblDescCapitalization", LEFT_X, yLeft, COL_W)
-    yLeft = yLeft + GAP
+    yCol1 = y
+    yCol1 = LayoutLauncherCategory(designer, "lblCatText", COL1_X, yCol1, COL_W)
+    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpUnicode", "cmdUnicode", "lblDescUnicode", COL1_X, yCol1, COL_W)
+    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpPunct", "cmdPunctuation", "lblDescPunctuation", COL1_X, yCol1, COL_W)
+    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpSpacing", "cmdSpacing", "lblDescSpacing", COL1_X, yCol1, COL_W)
+    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpCap", "cmdCapitalization", "lblDescCapitalization", COL1_X, yCol1, COL_W)
+    yCol1 = yCol1 + GAP
+    yCol1 = LayoutLauncherCategory(designer, "lblCatPara", COL1_X, yCol1, COL_W)
+    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpList", "cmdList", "lblDescList", COL1_X, yCol1, COL_W)
+    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpPara", "cmdParagraph", "lblDescParagraph", COL1_X, yCol1, COL_W)
+    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpSoftReturn", "cmdSoftReturn", "lblDescSoftReturn", COL1_X, yCol1, COL_W)
+    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpDuplicate", "cmdDuplicate", "lblDescDuplicate", COL1_X, yCol1, COL_W)
 
-    yLeft = LayoutLauncherCategory(designer, "lblCatPara", LEFT_X, yLeft, COL_W)
-    yLeft = LayoutLauncherToolRow(designer, "cmdHelpList", "cmdList", "lblDescList", LEFT_X, yLeft, COL_W)
-    yLeft = LayoutLauncherToolRow(designer, "cmdHelpPara", "cmdParagraph", "lblDescParagraph", LEFT_X, yLeft, COL_W)
-    yLeft = LayoutLauncherToolRow(designer, "cmdHelpSoftReturn", "cmdSoftReturn", "lblDescSoftReturn", LEFT_X, yLeft, COL_W)
-    yLeft = LayoutLauncherToolRow(designer, "cmdHelpDuplicate", "cmdDuplicate", "lblDescDuplicate", LEFT_X, yLeft, COL_W)
-    yLeft = yLeft + GAP
+    yCol2 = y
+    yCol2 = LayoutLauncherCategory(designer, "lblCatLayout", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpTable", "cmdTableClean", "lblDescTableClean", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpBreak", "cmdBreakNorm", "lblDescBreakNorm", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpHeaderFooter", "cmdHeaderFooter", "lblDescHeaderFooter", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpTrim", "cmdDocTrim", "lblDescDocTrim", COL2_X, yCol2, COL_W)
+    yCol2 = yCol2 + GAP
+    yCol2 = LayoutLauncherCategory(designer, "lblCatFormat", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpFont", "cmdFontNorm", "lblDescFontNorm", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpFormat", "cmdFormatStrip", "lblDescFormatStrip", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpStyle", "cmdStyleClean", "lblDescStyleClean", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpHyperlink", "cmdHyperlink", "lblDescHyperlink", COL2_X, yCol2, COL_W)
+    yCol2 = yCol2 + GAP
+    yCol2 = LayoutLauncherCategory(designer, "lblCatReview", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", COL2_X, yCol2, COL_W)
+    y = MaxSingle(yCol1, yCol2) + 8
 
-    yRight = y
-    yRight = LayoutLauncherCategory(designer, "lblCatLayout", RIGHT_X, yRight, COL_W)
-    yRight = LayoutLauncherToolRow(designer, "cmdHelpTable", "cmdTableClean", "lblDescTableClean", RIGHT_X, yRight, COL_W)
-    yRight = LayoutLauncherToolRow(designer, "cmdHelpBreak", "cmdBreakNorm", "lblDescBreakNorm", RIGHT_X, yRight, COL_W)
-    yRight = LayoutLauncherToolRow(designer, "cmdHelpHeaderFooter", "cmdHeaderFooter", "lblDescHeaderFooter", RIGHT_X, yRight, COL_W)
-    yRight = LayoutLauncherToolRow(designer, "cmdHelpTrim", "cmdDocTrim", "lblDescDocTrim", RIGHT_X, yRight, COL_W)
-    yRight = yRight + GAP
-
-    yRight = LayoutLauncherCategory(designer, "lblCatFormat", RIGHT_X, yRight, COL_W)
-    yRight = LayoutLauncherToolRow(designer, "cmdHelpFont", "cmdFontNorm", "lblDescFontNorm", RIGHT_X, yRight, COL_W)
-    yRight = LayoutLauncherToolRow(designer, "cmdHelpFormat", "cmdFormatStrip", "lblDescFormatStrip", RIGHT_X, yRight, COL_W)
-    yRight = LayoutLauncherToolRow(designer, "cmdHelpStyle", "cmdStyleClean", "lblDescStyleClean", RIGHT_X, yRight, COL_W)
-    yRight = LayoutLauncherToolRow(designer, "cmdHelpHyperlink", "cmdHyperlink", "lblDescHyperlink", RIGHT_X, yRight, COL_W)
-    yRight = yRight + GAP
-
-    yRight = LayoutLauncherCategory(designer, "lblCatReview", RIGHT_X, yRight, COL_W)
-    yRight = LayoutLauncherToolRow(designer, "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", RIGHT_X, yRight, COL_W)
-    yRight = LayoutLauncherToolRow(designer, "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", RIGHT_X, yRight, COL_W)
-    yRight = LayoutLauncherToolRow(designer, "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", RIGHT_X, yRight, COL_W)
-    y = MaxSingle(yLeft, yRight) + 8
-
+    PositionControl designer, "chkReturnToMainAfterApply", MARGIN + 2, y, FORM_W - (2 * MARGIN), 18
+    y = y + 20
     PositionControl designer, "chkAutoSave", MARGIN + 2, y, FORM_W - (2 * MARGIN), 18
+    y = y + 24
+    PositionControl designer, "cmdResetAll", MARGIN + 2, y, 110, 24
 
     comp.Properties("Width") = FORM_W + 8
     comp.Properties("Height") = y + 58
@@ -551,23 +606,23 @@ End Sub
 
 Private Function LayoutLauncherCategory(designer As Object, labelName As String, L As Single, T As Single, W As Single) As Single
     On Error Resume Next
-    PositionControl designer, labelName, L, T, W, 18
-    LayoutLauncherCategory = T + 20
+    PositionControl designer, labelName, L, T, W, 16
+    LayoutLauncherCategory = T + 18
 End Function
 
 Private Function LayoutLauncherToolRow(designer As Object, helpName As String, buttonName As String, descName As String, L As Single, T As Single, W As Single) As Single
     On Error Resume Next
-    Const ROW_H As Single = 32
-    Const BTN_W As Single = 132
-    Const HELP_W As Single = 24
-    Const INNER_GAP As Single = 8
+    Const ROW_H As Single = 26
+    Const BTN_W As Single = 98
+    Const HELP_W As Single = 20
+    Const INNER_GAP As Single = 6
     Dim descW As Single
     descW = W - BTN_W - HELP_W - (2 * INNER_GAP)
 
-    PositionControl designer, helpName, L, T + 4, HELP_W, 24
+    PositionControl designer, helpName, L, T + 3, HELP_W, 20
     PositionControl designer, buttonName, L + HELP_W + INNER_GAP, T, BTN_W, ROW_H
     PositionControl designer, descName, L + HELP_W + BTN_W + (2 * INNER_GAP), T + 1, descW, ROW_H
-    LayoutLauncherToolRow = T + ROW_H + 4
+    LayoutLauncherToolRow = T + ROW_H + 3
 End Function
 
 Private Function MaxSingle(a As Single, b As Single) As Single
@@ -610,9 +665,15 @@ Private Sub ApplyControlStyle(designer As Object, formName As String, nm As Stri
     Select Case Left$(nm, 3)
         Case "cmd"
             SetButtonCaption designer, nm
+            ctl.Enabled = True
             ctl.Font.Bold = False
             ctl.BackColor = RGB(255, 255, 255)
             ctl.ControlTipText = ButtonTipText(nm)
+            If formName = "frmPreviewActions" Then
+                ctl.Font.Size = 10
+                ctl.Font.Bold = True
+                ctl.ForeColor = RGB(0, 0, 0)
+            End If
             If Left$(nm, 7) = "cmdHelp" And nm <> "cmdHelp" Then
                 ctl.Caption = "?"
                 ctl.ControlTipText = "Show help for this tool"
@@ -620,7 +681,12 @@ Private Sub ApplyControlStyle(designer As Object, formName As String, nm As Stri
             End If
             If nm = "cmdRun" Then
                 ctl.Font.Bold = True
-                ctl.ControlTipText = "Run the selected cleanup options"
+                ctl.ControlTipText = "Apply the selected cleanup options"
+            End If
+            If nm = "cmdPreview" And formName <> "frmPreviewActions" Then
+                ctl.ControlTipText = "Preview with the current settings"
+                ctl.Font.Bold = True
+                ctl.ForeColor = RGB(24, 90, 145)
             End If
         Case "fra"
             ctl.Caption = FrameCaption(nm)
@@ -631,6 +697,19 @@ Private Sub ApplyControlStyle(designer As Object, formName As String, nm As Stri
             ctl.BackColor = RGB(248, 249, 251)
             ctl.ForeColor = RGB(84, 91, 104)
             If Len(ControlCaptionText(formName, nm)) > 0 Then ctl.Caption = ControlCaptionText(formName, nm)
+            If formName = "frmPreviewActions" Then
+                ctl.WordWrap = False
+                ctl.AutoSize = False
+                ctl.ForeColor = RGB(0, 0, 0)
+                ctl.Font.Size = 11
+                ctl.Font.Bold = False
+                If nm = "lblHint" Then
+                    ctl.Font.Bold = True
+                ElseIf nm = "lblSummary" Then
+                    ctl.Font.Size = 10
+                    ctl.Font.Bold = True
+                End If
+            End If
             If formName = "frmCleanupSuiteLauncher" Then
                 ctl.WordWrap = True
                 ctl.AutoSize = False
@@ -683,6 +762,7 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmCapitalizationCleanup.optTitle": ControlCaptionText = "Title case"
         Case "frmCapitalizationCleanup.optUpper": ControlCaptionText = "ALL CAPS -> Title Case"
         Case "frmCleanupSuiteLauncher.chkAutoSave": ControlCaptionText = "Auto-save before running each tool"
+        Case "frmCleanupSuiteLauncher.chkReturnToMainAfterApply": ControlCaptionText = "Return to main menu after apply"
         Case "frmCleanupSuiteLauncher.lblLauncherTitle": ControlCaptionText = "Cleanup Suite"
         Case "frmCleanupSuiteLauncher.lblLauncherSubtitle": ControlCaptionText = "Choose the kind of cleanup you need. Tools are grouped by what you are trying to fix, not by how the VBA code is built."
         Case "frmCleanupSuiteLauncher.lblCatText": ControlCaptionText = "Text and Characters"
@@ -816,9 +896,9 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmPunctuationCleanup.optQuotes": ControlCaptionText = "Quotes only"
         Case "frmPunctuationCleanup.optScopeDocument": ControlCaptionText = "Entire document"
         Case "frmPunctuationCleanup.optScopeSelection": ControlCaptionText = "Selected text only"
-        Case "frmPreviewActions.lblTitle": ControlCaptionText = "Preview Actions"
+        Case "frmPreviewActions.lblTitle": ControlCaptionText = ""
         Case "frmPreviewActions.lblSummary": ControlCaptionText = "Preview complete."
-        Case "frmPreviewActions.lblHint": ControlCaptionText = "Apply reruns the same settings without Preview. Reset Preview clears yellow marks and returns here."
+        Case "frmPreviewActions.lblHint": ControlCaptionText = "Tool Name"
         Case "frmSoftReturnConverter.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
         Case "frmSoftReturnConverter.optParaToSoft": ControlCaptionText = "Convert paragraph marks to soft returns"
         Case "frmSoftReturnConverter.optScopeDocument": ControlCaptionText = "Entire document"
@@ -871,9 +951,12 @@ Private Sub SetButtonCaption(designer As Object, nm As String)
     On Error Resume Next
     Dim cap As String
     Select Case nm
-        Case "cmdRun": cap = "Run"
+        Case "cmdRun": cap = "Apply"
+        Case "cmdPreview": cap = "Preview"
         Case "cmdApply": cap = "Apply"
-        Case "cmdClear": cap = "Reset Preview"
+        Case "cmdClear": cap = "Reconfigure"
+        Case "cmdReset": cap = "Reset"
+        Case "cmdResetAll": cap = "Reset All"
         Case "cmdSelectAll": cap = "Select All"
         Case "cmdDeselectAll": cap = "Deselect All"
         Case "cmdHelp": cap = "Help"
@@ -944,9 +1027,12 @@ End Function
 
 Private Function ButtonTipText(nm As String) As String
     Select Case nm
-        Case "cmdRun": ButtonTipText = "Run this cleanup tool"
+        Case "cmdRun": ButtonTipText = "Apply this cleanup tool"
+        Case "cmdPreview": ButtonTipText = "Preview with the current settings"
         Case "cmdApply": ButtonTipText = "Apply this preview using the same settings"
-        Case "cmdClear": ButtonTipText = "Remove preview highlighting and return to this tool"
+        Case "cmdClear": ButtonTipText = "Return to this tool without resetting its controls"
+        Case "cmdReset": ButtonTipText = "Reset this tool to its defaults"
+        Case "cmdResetAll": ButtonTipText = "Reset all tools and global settings to defaults"
         Case "cmdSelectAll": ButtonTipText = "Select all custom options"
         Case "cmdDeselectAll": ButtonTipText = "Clear all custom options"
         Case "cmdUnicode": ButtonTipText = "Remove invisible Unicode characters"
@@ -984,84 +1070,84 @@ Private Function ControlsForForm(formName As String) As Variant
                                     "lblCatPara", "cmdHelpList", "cmdList", "lblDescList", "cmdHelpPara", "cmdParagraph", "lblDescParagraph", "cmdHelpSoftReturn", "cmdSoftReturn", "lblDescSoftReturn", "cmdHelpDuplicate", "cmdDuplicate", "lblDescDuplicate", _
                                     "lblCatLayout", "cmdHelpTable", "cmdTableClean", "lblDescTableClean", "cmdHelpBreak", "cmdBreakNorm", "lblDescBreakNorm", "cmdHelpHeaderFooter", "cmdHeaderFooter", "lblDescHeaderFooter", "cmdHelpTrim", "cmdDocTrim", "lblDescDocTrim", _
                                     "lblCatFormat", "cmdHelpFont", "cmdFontNorm", "lblDescFontNorm", "cmdHelpFormat", "cmdFormatStrip", "lblDescFormatStrip", "cmdHelpStyle", "cmdStyleClean", "lblDescStyleClean", "cmdHelpHyperlink", "cmdHyperlink", "lblDescHyperlink", _
-                                    "lblCatReview", "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", "chkAutoSave")
+                                    "lblCatReview", "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", "chkReturnToMainAfterApply", "chkAutoSave", "cmdResetAll")
         Case "frmPreviewActions"
-            ControlsForForm = Array("lblTitle", "lblSummary", "lblHint", "cmdApply", "cmdClear")
+            ControlsForForm = Array("lblTitle", "lblSummary", "lblHint", "cmdApply", "cmdPreview", "cmdClear")
         Case "frmPunctuationCleanup"
             ControlsForForm = Array("optAll", "optQuotes", "optDashes", "optEllipses", "optCustom", "fraCustom", _
                                     "chkCurlyDouble", "chkCurlySingle", "chkEmDash", "chkEnDash", "chkEllipses", _
-                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdRun", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
         Case "frmUnicodeCleanup"
             ControlsForForm = Array("optAll", "optNBSP", "optZeroWidth", "optCustom", "fraCustom", _
                                     "chkNBSP", "chkZWSP", "chkZWNJ", "chkZWJ", "chkBOM", "chkSoftHyphen", "chkNBHyphen", _
-                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdRun", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
         Case "frmSpacingCleanup"
             ControlsForForm = Array("optAll", "optDoubleSpaces", "optTrim", "optCustom", "fraCustom", _
                                     "chkDoubleSpaces", "chkTrimSpaces", "chkSpaceBeforePunct", "chkNormalizeAfterPunct", "chkExtraBlankLines", _
-                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdRun", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
         Case "frmCapitalizationCleanup"
             ControlsForForm = Array("optAll", "optSentence", "optTitle", "optUpper", "optLower", "optCustom", "fraCustom", _
                                     "chkSentence", "chkTitle", "chkUpper", "chkLower", "chkSmartSentences", _
-                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdRun", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
         Case "frmListCleanup"
             ControlsForForm = Array("optAll", "optBullets", "optNumbering", "optIndent", "optCustom", "fraCustom", _
                                     "chkNormalizeBullets", "chkNormalizeNumbering", "chkFixIndent", "chkHyphenToBullets", _
-                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdRun", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
         Case "frmParagraphCleanup"
             ControlsForForm = Array("optAll", "optRemoveEmpty", "optNormalizeSpacing", "optCustom", "fraCustom", _
                                     "chkRemoveEmpty", "chkCollapseBreaks", "chkNormalizeParaSpacing", "chkFixIndent", _
-                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdRun", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
         Case "frmDuplicateDetector"
             ControlsForForm = Array("optHighlightOnly", "optRemoveDupes", "fraMatching", _
                                     "optMatchExact", "optMatchNormalized", "optMatchFuzzy", _
                                     "fraThreshold", "optFuzzyLoose", "optFuzzyMedium", "optFuzzyStrict", "lblFuzzyWarning", _
-                                    "chkPreviewOnly", "cmdRun", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
         Case "frmFontNormalizer"
             ControlsForForm = Array("chkFontFace", "chkFontSize", "chkBold", "chkItalic", "chkFontColor", _
-                                    "chkPreviewOnly", "cmdRun", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
         Case "frmTableCleaner"
             ControlsForForm = Array("chkRemoveEmptyRows", "chkRemoveEmptyCols", "chkNormalizePadding", _
                                     "chkStripDirectFormat", "chkNormalizeBorders", "chkRemoveBorders", "chkConvertToText", _
-                                    "chkPreviewOnly", "cmdRun", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
         Case "frmBreakNormalizer"
             ControlsForForm = Array("chkCollapseSectionBreaks", "chkCollapsePageBreaks", _
                                     "chkConvertSectionBreaks", "fraConvertTo", _
                                     "optConvertNextPage", "optConvertContinuous", "optConvertEvenPage", "optConvertOddPage", _
-                                    "chkPreviewOnly", "cmdRun", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
         Case "frmDocumentTrim"
-            ControlsForForm = Array("chkPreviewOnly", "cmdRun", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+            ControlsForForm = Array("chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
         Case "frmFormattingStripper"
             ControlsForForm = Array("chkResetChar", "chkResetPara", "fraEmphasis", _
                                     "optEmphQuick", "optEmphThorough", "optEmphStrip", "lblSpeedWarning", _
-                                    "chkPreserveHighlight", "chkPreserveDropCaps", "chkPreviewOnly", "cmdRun", "cmdHelp", _
+                                    "chkPreserveHighlight", "chkPreserveDropCaps", "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmHyperlinkRemover"
-            ControlsForForm = Array("chkRemoveFormat", "chkPreviewOnly", "cmdRun", "cmdHelp", _
+            ControlsForForm = Array("chkRemoveFormat", "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmSoftReturnConverter"
-            ControlsForForm = Array("optSoftToPara", "optParaToSoft", "chkPreviewOnly", "cmdRun", "cmdHelp", _
+            ControlsForForm = Array("optSoftToPara", "optParaToSoft", "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmMetadataScrubber"
             ControlsForForm = Array("chkProperties", "chkPersonalInfo", "chkComments", "chkRevisions", _
-                                    "chkPreviewOnly", "cmdRun", "cmdHelp", _
+                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmStyleCleanup"
-            ControlsForForm = Array("chkRemoveUnused", "chkRemapVariants", "chkPreviewOnly", "cmdRun", "cmdHelp", _
+            ControlsForForm = Array("chkRemoveUnused", "chkRemapVariants", "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmFootnoteRemover"
             ControlsForForm = Array("chkFootnotes", "chkEndnotes", "chkKeepTextInline", _
-                                    "chkPreviewOnly", "cmdRun", "cmdHelp", _
+                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmHeaderFooterStandardizer"
             ControlsForForm = Array("optStandardize", "optClearAll", "fraOptions", _
                                     "chkHeaders", "chkFooters", "chkFont", "chkSpacing", "chkAlignment", _
                                     "fraAlign", "optAlignLeft", "optAlignCenter", "optAlignRight", "chkBreakLinks", _
-                                    "chkPreviewOnly", "cmdRun", "cmdHelp", _
+                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmObjectRemover"
             ControlsForForm = Array("chkPictures", "chkTextBoxes", "chkFrames", "chkHorizontalLines", _
                                     "chkHtmlControls", "chkHiddenText", "chkTables", _
-                                    "chkPreviewOnly", "cmdRun", "cmdHelp", _
+                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case Else
             ControlsForForm = Array()
@@ -1101,12 +1187,12 @@ Private Function ManualChecklistText() As String
     s = s & "" & vbCrLf
     s = s & "B. Exact control names (copy/paste into the designer):" & vbCrLf
     s = s & "   frmCleanupSuiteLauncher: cmdUnicode, cmdPunctuation, cmdSpacing, cmdCapitalization, cmdList, cmdParagraph" & vbCrLf
-    s = s & "   frmPunctuationCleanup: optAll, optQuotes, optDashes, optEllipses, optCustom, fraCustom, chkCurlyDouble, chkCurlySingle, chkEmDash, chkEnDash, chkEllipses, chkPreviewOnly, cmdSelectAll, cmdDeselectAll, cmdRun" & vbCrLf
-    s = s & "   frmUnicodeCleanup: optAll, optNBSP, optZeroWidth, optCustom, fraCustom, chkNBSP, chkZWSP, chkZWNJ, chkZWJ, chkBOM, chkSoftHyphen, chkNBHyphen, chkPreviewOnly, cmdSelectAll, cmdDeselectAll, cmdRun" & vbCrLf
-    s = s & "   frmSpacingCleanup: optAll, optDoubleSpaces, optTrim, optCustom, fraCustom, chkDoubleSpaces, chkTrimSpaces, chkSpaceBeforePunct, chkNormalizeAfterPunct, chkExtraBlankLines, chkPreviewOnly, cmdSelectAll, cmdDeselectAll, cmdRun" & vbCrLf
-    s = s & "   frmCapitalizationCleanup: optAll, optSentence, optTitle, optUpper, optLower, optCustom, fraCustom, chkSentence, chkTitle, chkUpper, chkLower, chkSmartSentences, chkPreviewOnly, cmdSelectAll, cmdDeselectAll, cmdRun" & vbCrLf
-    s = s & "   frmListCleanup: optAll, optBullets, optNumbering, optIndent, optCustom, fraCustom, chkNormalizeBullets, chkNormalizeNumbering, chkFixIndent, chkHyphenToBullets, chkPreviewOnly, cmdSelectAll, cmdDeselectAll, cmdRun" & vbCrLf
-    s = s & "   frmParagraphCleanup: optAll, optRemoveEmpty, optNormalizeSpacing, optCustom, fraCustom, chkRemoveEmpty, chkCollapseBreaks, chkNormalizeParaSpacing, chkFixIndent, chkPreviewOnly, cmdSelectAll, cmdDeselectAll, cmdRun" & vbCrLf
+    s = s & "   frmPunctuationCleanup: optAll, optQuotes, optDashes, optEllipses, optCustom, fraCustom, chkCurlyDouble, chkCurlySingle, chkEmDash, chkEnDash, chkEllipses, chkPreviewOnly, cmdSelectAll, cmdDeselectAll, cmdPreview, cmdRun, cmdReset" & vbCrLf
+    s = s & "   frmUnicodeCleanup: optAll, optNBSP, optZeroWidth, optCustom, fraCustom, chkNBSP, chkZWSP, chkZWNJ, chkZWJ, chkBOM, chkSoftHyphen, chkNBHyphen, chkPreviewOnly, cmdSelectAll, cmdDeselectAll, cmdPreview, cmdRun, cmdReset" & vbCrLf
+    s = s & "   frmSpacingCleanup: optAll, optDoubleSpaces, optTrim, optCustom, fraCustom, chkDoubleSpaces, chkTrimSpaces, chkSpaceBeforePunct, chkNormalizeAfterPunct, chkExtraBlankLines, chkPreviewOnly, cmdSelectAll, cmdDeselectAll, cmdPreview, cmdRun, cmdReset" & vbCrLf
+    s = s & "   frmCapitalizationCleanup: optAll, optSentence, optTitle, optUpper, optLower, optCustom, fraCustom, chkSentence, chkTitle, chkUpper, chkLower, chkSmartSentences, chkPreviewOnly, cmdSelectAll, cmdDeselectAll, cmdPreview, cmdRun, cmdReset" & vbCrLf
+    s = s & "   frmListCleanup: optAll, optBullets, optNumbering, optIndent, optCustom, fraCustom, chkNormalizeBullets, chkNormalizeNumbering, chkFixIndent, chkHyphenToBullets, chkPreviewOnly, cmdSelectAll, cmdDeselectAll, cmdPreview, cmdRun, cmdReset" & vbCrLf
+    s = s & "   frmParagraphCleanup: optAll, optRemoveEmpty, optNormalizeSpacing, optCustom, fraCustom, chkRemoveEmpty, chkCollapseBreaks, chkNormalizeParaSpacing, chkFixIndent, chkPreviewOnly, cmdSelectAll, cmdDeselectAll, cmdPreview, cmdRun, cmdReset" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "C. After adding controls and verifying code: Debug -> Compile. Then run ShowCleanupSuiteLauncher and test each tool in Preview Only mode on a copy of a document." & vbCrLf
     s = s & ""
@@ -1155,6 +1241,37 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "        .Execute Replace:=wdReplaceAll" & vbCrLf
     s = s & "    End With" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "Public Function DocumentHasVisibleContent(Optional scopeRange As Range = Nothing) As Boolean" & vbCrLf
+    s = s & "    On Error GoTo SafeExit" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim textValue As String" & vbCrLf
+    s = s & "    If scopeRange Is Nothing Then" & vbCrLf
+    s = s & "        textValue = ActiveDocument.Content.Text" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        textValue = scopeRange.Text" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    textValue = Replace(textValue, vbCr, """")" & vbCrLf
+    s = s & "    textValue = Replace(textValue, vbLf, """")" & vbCrLf
+    s = s & "    textValue = Replace(textValue, vbTab, """")" & vbCrLf
+    s = s & "    textValue = Replace(textValue, Chr$(11), """")" & vbCrLf
+    s = s & "    textValue = Replace(textValue, Chr$(12), """")" & vbCrLf
+    s = s & "    textValue = Replace(textValue, ChrW$(160), """")" & vbCrLf
+    s = s & "    If Len(Trim$(textValue)) > 0 Then" & vbCrLf
+    s = s & "        DocumentHasVisibleContent = True" & vbCrLf
+    s = s & "        Exit Function" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If Not scopeRange Is Nothing Then Exit Function" & vbCrLf
+    s = s & "    If ActiveDocument.Tables.Count > 0 Then DocumentHasVisibleContent = True: Exit Function" & vbCrLf
+    s = s & "    If ActiveDocument.InlineShapes.Count > 0 Then DocumentHasVisibleContent = True: Exit Function" & vbCrLf
+    s = s & "    If ActiveDocument.Shapes.Count > 0 Then DocumentHasVisibleContent = True: Exit Function" & vbCrLf
+    s = s & "    If ActiveDocument.Hyperlinks.Count > 0 Then DocumentHasVisibleContent = True: Exit Function" & vbCrLf
+    s = s & "    If ActiveDocument.Footnotes.Count > 0 Then DocumentHasVisibleContent = True: Exit Function" & vbCrLf
+    s = s & "    If ActiveDocument.Endnotes.Count > 0 Then DocumentHasVisibleContent = True: Exit Function" & vbCrLf
+    s = s & "    If ActiveDocument.Comments.Count > 0 Then DocumentHasVisibleContent = True: Exit Function" & vbCrLf
+    s = s & "SafeExit:" & vbCrLf
+    s = s & "End Function" & vbCrLf
     s = s & "Public Function GuardBeforeCleanup(toolName As String) As Boolean" & vbCrLf
     s = s & "    GuardBeforeCleanup = False" & vbCrLf
     s = s & "    If ActiveDocument.Path = """" Then" & vbCrLf
@@ -1224,6 +1341,126 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "        LinkToContent:=False, Type:=msoPropertyTypeString, _" & vbCrLf
     s = s & "        Value:=IIf(enabled, ""True"", ""False"")" & vbCrLf
     s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Function GetReturnToMainAfterApplySetting() As Boolean" & vbCrLf
+    s = s & "    ' Returns True by default so Apply keeps the current workflow unless changed." & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    Dim prop As Object" & vbCrLf
+    s = s & "    Set prop = ActiveDocument.CustomDocumentProperties(""CleanupSuiteReturnToMainAfterApply"")" & vbCrLf
+    s = s & "    If Err.Number <> 0 Then" & vbCrLf
+    s = s & "        GetReturnToMainAfterApplySetting = True" & vbCrLf
+    s = s & "        Err.Clear" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        GetReturnToMainAfterApplySetting = (prop.Value = ""True"")" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "Public Sub SetReturnToMainAfterApplySetting(enabled As Boolean)" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    ActiveDocument.CustomDocumentProperties(""CleanupSuiteReturnToMainAfterApply"").Delete" & vbCrLf
+    s = s & "    Err.Clear" & vbCrLf
+    s = s & "    ActiveDocument.CustomDocumentProperties.Add Name:=""CleanupSuiteReturnToMainAfterApply"", _" & vbCrLf
+    s = s & "        LinkToContent:=False, Type:=msoPropertyTypeString, _" & vbCrLf
+    s = s & "        Value:=IIf(enabled, ""True"", ""False"")" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub ResetCleanupSuiteDefaults()" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    RemoveAllHighlighting ActiveDocument.Content" & vbCrLf
+    s = s & "    SetAutoSaveSetting True" & vbCrLf
+    s = s & "    SetReturnToMainAfterApplySetting True" & vbCrLf
+    s = s & "    If Not gPreviewActionPanel Is Nothing Then Unload gPreviewActionPanel" & vbCrLf
+    s = s & "    Set gPreviewActionPanel = Nothing" & vbCrLf
+    s = s & "    Unload frmPunctuationCleanup" & vbCrLf
+    s = s & "    Unload frmUnicodeCleanup" & vbCrLf
+    s = s & "    Unload frmSpacingCleanup" & vbCrLf
+    s = s & "    Unload frmCapitalizationCleanup" & vbCrLf
+    s = s & "    Unload frmListCleanup" & vbCrLf
+    s = s & "    Unload frmParagraphCleanup" & vbCrLf
+    s = s & "    Unload frmDuplicateDetector" & vbCrLf
+    s = s & "    Unload frmFontNormalizer" & vbCrLf
+    s = s & "    Unload frmTableCleaner" & vbCrLf
+    s = s & "    Unload frmBreakNormalizer" & vbCrLf
+    s = s & "    Unload frmDocumentTrim" & vbCrLf
+    s = s & "    Unload frmFormattingStripper" & vbCrLf
+    s = s & "    Unload frmHyperlinkRemover" & vbCrLf
+    s = s & "    Unload frmSoftReturnConverter" & vbCrLf
+    s = s & "    Unload frmMetadataScrubber" & vbCrLf
+    s = s & "    Unload frmStyleCleanup" & vbCrLf
+    s = s & "    Unload frmFootnoteRemover" & vbCrLf
+    s = s & "    Unload frmHeaderFooterStandardizer" & vbCrLf
+    s = s & "    Unload frmObjectRemover" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub LayoutCleanupToolForm(toolForm As Object)" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    Const M As Single = 12" & vbCrLf
+    s = s & "    Const GAP As Single = 8" & vbCrLf
+    s = s & "    Const BH As Single = 26" & vbCrLf
+    s = s & "    Dim contentW As Single" & vbCrLf
+    s = s & "    contentW = toolForm.Width - (2 * M) - 10" & vbCrLf
+    s = s & "    If contentW < 320 Then contentW = 344" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    toolForm.Controls(""chkPreviewOnly"").Visible = False" & vbCrLf
+    s = s & "    toolForm.Controls(""fraScopeSelection"").Visible = False" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim bottomY As Single" & vbCrLf
+    s = s & "    Dim ctl As Object" & vbCrLf
+    s = s & "    For Each ctl In toolForm.Controls" & vbCrLf
+    s = s & "        Select Case ctl.Name" & vbCrLf
+    s = s & "            Case ""cmdPreview"", ""cmdRun"", ""cmdReset"", ""cmdHelp"", ""chkPreviewOnly"", ""fraScopeSelection"", ""optScopeDocument"", ""optScopeSelection""" & vbCrLf
+    s = s & "                ' laid out below the option area" & vbCrLf
+    s = s & "            Case Else" & vbCrLf
+    s = s & "                If ctl.Visible Then" & vbCrLf
+    s = s & "                    If ctl.Top + ctl.Height > bottomY Then bottomY = ctl.Top + ctl.Height" & vbCrLf
+    s = s & "                End If" & vbCrLf
+    s = s & "        End Select" & vbCrLf
+    s = s & "    Next ctl" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim y As Single" & vbCrLf
+    s = s & "    y = bottomY + 12" & vbCrLf
+    s = s & "    With toolForm.Controls(""cmdPreview"")" & vbCrLf
+    s = s & "        .Move M, y, contentW, BH" & vbCrLf
+    s = s & "        .Caption = ""Preview""" & vbCrLf
+    s = s & "        .Enabled = True" & vbCrLf
+    s = s & "        .Visible = True" & vbCrLf
+    s = s & "    End With" & vbCrLf
+    s = s & "    y = y + BH + GAP" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim halfW As Single" & vbCrLf
+    s = s & "    halfW = (contentW - GAP) / 2" & vbCrLf
+    s = s & "    With toolForm.Controls(""cmdRun"")" & vbCrLf
+    s = s & "        .Move M, y, halfW, BH" & vbCrLf
+    s = s & "        .Caption = ""Apply""" & vbCrLf
+    s = s & "        .Visible = True" & vbCrLf
+    s = s & "        .Enabled = True" & vbCrLf
+    s = s & "    End With" & vbCrLf
+    s = s & "    With toolForm.Controls(""cmdReset"")" & vbCrLf
+    s = s & "        .Move M + halfW + GAP, y, halfW, BH" & vbCrLf
+    s = s & "        .Caption = ""Reset""" & vbCrLf
+    s = s & "        .Visible = True" & vbCrLf
+    s = s & "        .Enabled = True" & vbCrLf
+    s = s & "    End With" & vbCrLf
+    s = s & "    y = y + BH + 10" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    With toolForm.Controls(""optScopeDocument"")" & vbCrLf
+    s = s & "        .Move M + 8, y, contentW - 8, 18" & vbCrLf
+    s = s & "        .Visible = True" & vbCrLf
+    s = s & "    End With" & vbCrLf
+    s = s & "    y = y + 24" & vbCrLf
+    s = s & "    With toolForm.Controls(""optScopeSelection"")" & vbCrLf
+    s = s & "        .Move M + 8, y, contentW - 8, 18" & vbCrLf
+    s = s & "        .Visible = True" & vbCrLf
+    s = s & "    End With" & vbCrLf
+    s = s & "    y = y + 34" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    With toolForm.Controls(""cmdHelp"")" & vbCrLf
+    s = s & "        .Move M, y, contentW, BH" & vbCrLf
+    s = s & "        .Caption = ""Help""" & vbCrLf
+    s = s & "        .Visible = True" & vbCrLf
+    s = s & "    End With" & vbCrLf
+    s = s & "    y = y + BH + 34" & vbCrLf
+    s = s & "    If toolForm.Height < y Then toolForm.Height = y" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Public Function GetTargetRange() As Range" & vbCrLf
     s = s & "    If Selection.Type = wdSelectionNormal Or Selection.Type = wdSelectionColumn Then" & vbCrLf
@@ -1338,6 +1575,7 @@ Private Function frmPunctuationCleanup_Code() As String
     s = s & "    chkEnDash.Caption = ""En dash  ->  hyphen-minus  -""" & vbCrLf
     s = s & "    chkEllipses.Caption = ""Ellipsis character  ->  three dots  ...""" & vbCrLf
     s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
+    s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -1381,6 +1619,17 @@ Private Function frmPunctuationCleanup_Code() As String
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdDeselectAll_Click()" & vbCrLf
     s = s & "    If fraCustom.Visible Then ClearCustomChecks" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdPreview_Click()" & vbCrLf
+    s = s & "    PreviewFromPanel" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub PreviewFromPanel()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = True" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdReset_Click()" & vbCrLf
+    s = s & "    UserForm_Initialize" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Public Sub RunAfterPreview()" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
@@ -1527,6 +1776,7 @@ Private Function frmUnicodeCleanup_Code() As String
     s = s & "    chkSoftHyphen.Caption = ""Soft hyphens (U+00AD)""" & vbCrLf
     s = s & "    chkNBHyphen.Caption = ""Non-breaking hyphens (U+2011)""" & vbCrLf
     s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
+    s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -1574,6 +1824,17 @@ Private Function frmUnicodeCleanup_Code() As String
     s = s & "        UnicodeChar = ChrW$(codePoint)" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "End Function" & vbCrLf
+    s = s & "Private Sub cmdPreview_Click()" & vbCrLf
+    s = s & "    PreviewFromPanel" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub PreviewFromPanel()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = True" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdReset_Click()" & vbCrLf
+    s = s & "    UserForm_Initialize" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Public Sub RunAfterPreview()" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "    cmdRun_Click" & vbCrLf
@@ -1698,6 +1959,7 @@ Private Function frmSpacingCleanup_Code() As String
     s = s & "    chkNormalizeAfterPunct.Caption = ""Normalize spacing after punctuation""" & vbCrLf
     s = s & "    chkExtraBlankLines.Caption = ""Collapse extra blank lines between paragraphs""" & vbCrLf
     s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
+    s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -1739,6 +2001,17 @@ Private Function frmSpacingCleanup_Code() As String
     s = s & "    If fraCustom.Visible Then" & vbCrLf
     s = s & "        ClearCustomChecks" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdPreview_Click()" & vbCrLf
+    s = s & "    PreviewFromPanel" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub PreviewFromPanel()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = True" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdReset_Click()" & vbCrLf
+    s = s & "    UserForm_Initialize" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Public Sub RunAfterPreview()" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
@@ -1944,6 +2217,7 @@ Private Function frmCapitalizationCleanup_Code() As String
     s = s & "    chkLower.Caption = ""Fix all-lowercase paragraphs""" & vbCrLf
     s = s & "    chkSmartSentences.Caption = ""Smart sentence detection (skip abbreviations)""" & vbCrLf
     s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
+    s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -1985,6 +2259,17 @@ Private Function frmCapitalizationCleanup_Code() As String
     s = s & "    If fraCustom.Visible Then" & vbCrLf
     s = s & "        ClearCustomChecks" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdPreview_Click()" & vbCrLf
+    s = s & "    PreviewFromPanel" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub PreviewFromPanel()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = True" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdReset_Click()" & vbCrLf
+    s = s & "    UserForm_Initialize" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Public Sub RunAfterPreview()" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
@@ -2140,6 +2425,7 @@ Private Function frmListCleanup_Code() As String
     s = s & "    chkFixIndent.Caption = ""Fix list indentation""" & vbCrLf
     s = s & "    chkHyphenToBullets.Caption = ""Convert hyphen-dash lines to bullets""" & vbCrLf
     s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
+    s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -2178,6 +2464,17 @@ Private Function frmListCleanup_Code() As String
     s = s & "    If fraCustom.Visible Then" & vbCrLf
     s = s & "        ClearCustomChecks" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdPreview_Click()" & vbCrLf
+    s = s & "    PreviewFromPanel" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub PreviewFromPanel()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = True" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdReset_Click()" & vbCrLf
+    s = s & "    UserForm_Initialize" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Public Sub RunAfterPreview()" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
@@ -2347,6 +2644,7 @@ Private Function frmParagraphCleanup_Code() As String
     s = s & "    chkNormalizeParaSpacing.Caption = ""Normalize Space Before / Space After settings""" & vbCrLf
     s = s & "    chkFixIndent.Caption = ""Remove manual tab / space indentation at paragraph start""" & vbCrLf
     s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
+    s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -2386,6 +2684,17 @@ Private Function frmParagraphCleanup_Code() As String
     s = s & "    If fraCustom.Visible Then" & vbCrLf
     s = s & "        ClearCustomChecks" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdPreview_Click()" & vbCrLf
+    s = s & "    PreviewFromPanel" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub PreviewFromPanel()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = True" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdReset_Click()" & vbCrLf
+    s = s & "    UserForm_Initialize" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Public Sub RunAfterPreview()" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
@@ -2539,6 +2848,7 @@ Private Function frmDuplicateDetector_Code() As String
     s = s & "    optFuzzyMedium.Caption = ""Medium  (70% word overlap)""" & vbCrLf
     s = s & "    optFuzzyStrict.Caption = ""Strict  (90% word overlap)""" & vbCrLf
     s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
+    s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub optMatchExact_Click()" & vbCrLf
     s = s & "    lblFuzzyWarning.Caption = ""Exact match: paragraphs must be identical apart from letter case.""" & vbCrLf
@@ -2642,6 +2952,17 @@ Private Function frmDuplicateDetector_Code() As String
     s = s & "    Loop" & vbCrLf
     s = s & "    FindRoot = x" & vbCrLf
     s = s & "End Function" & vbCrLf
+    s = s & "Private Sub cmdPreview_Click()" & vbCrLf
+    s = s & "    PreviewFromPanel" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub PreviewFromPanel()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = True" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdReset_Click()" & vbCrLf
+    s = s & "    UserForm_Initialize" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Public Sub RunAfterPreview()" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "    cmdRun_Click" & vbCrLf
@@ -2859,6 +3180,7 @@ Private Function frmFontNormalizer_Code() As String
     s = s & "    chkItalic.Caption = ""Normalize direct italic overrides""" & vbCrLf
     s = s & "    chkFontColor.Caption = ""Remove direct font color overrides""" & vbCrLf
     s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
+    s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -2884,6 +3206,17 @@ Private Function frmFontNormalizer_Code() As String
     s = s & "    h = h & vbCrLf" & vbCrLf
     s = s & "    h = h & ""Preview mode highlights paragraphs with direct font overrides."" & vbCrLf" & vbCrLf
     s = s & "    MsgBox h, vbInformation, ""Help  --  Font Normalizer""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdPreview_Click()" & vbCrLf
+    s = s & "    PreviewFromPanel" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub PreviewFromPanel()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = True" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdReset_Click()" & vbCrLf
+    s = s & "    UserForm_Initialize" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Public Sub RunAfterPreview()" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
@@ -3010,6 +3343,7 @@ Private Function frmTableCleaner_Code() As String
     s = s & "    chkRemoveBorders.Caption = ""Remove all borders""" & vbCrLf
     s = s & "    chkConvertToText.Caption = ""Convert single-column tables to plain text""" & vbCrLf
     s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
+    s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -3057,6 +3391,17 @@ Private Function frmTableCleaner_Code() As String
     s = s & "    Next r" & vbCrLf
     s = s & "    IsColEmpty = True" & vbCrLf
     s = s & "End Function" & vbCrLf
+    s = s & "Private Sub cmdPreview_Click()" & vbCrLf
+    s = s & "    PreviewFromPanel" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub PreviewFromPanel()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = True" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdReset_Click()" & vbCrLf
+    s = s & "    UserForm_Initialize" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Public Sub RunAfterPreview()" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "    cmdRun_Click" & vbCrLf
@@ -3213,6 +3558,7 @@ Private Function frmBreakNormalizer_Code() As String
     s = s & "    optConvertEvenPage.Caption = ""Even Page""" & vbCrLf
     s = s & "    optConvertOddPage.Caption = ""Odd Page""" & vbCrLf
     s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
+    s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -3244,6 +3590,17 @@ Private Function frmBreakNormalizer_Code() As String
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub chkConvertSectionBreaks_Click()" & vbCrLf
     s = s & "    fraConvertTo.Enabled = chkConvertSectionBreaks.Value" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdPreview_Click()" & vbCrLf
+    s = s & "    PreviewFromPanel" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub PreviewFromPanel()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = True" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdReset_Click()" & vbCrLf
+    s = s & "    UserForm_Initialize" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Public Sub RunAfterPreview()" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
@@ -3357,6 +3714,7 @@ Private Function frmDocumentTrim_Code() As String
     s = s & "    optScopeDocument.Caption = ""Entire document (always)""" & vbCrLf
     s = s & "    optScopeSelection.Enabled = False" & vbCrLf
     s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
+    s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -3377,6 +3735,17 @@ Private Function frmDocumentTrim_Code() As String
     s = s & "    h = h & ""Preview mode highlights the trailing paragraphs that would be removed."" & vbCrLf" & vbCrLf
     s = s & "    h = h & ""Run again without Preview to apply."" & vbCrLf" & vbCrLf
     s = s & "    MsgBox h, vbInformation, ""Help  --  Document Trim""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdPreview_Click()" & vbCrLf
+    s = s & "    PreviewFromPanel" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub PreviewFromPanel()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = True" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdReset_Click()" & vbCrLf
+    s = s & "    UserForm_Initialize" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Public Sub RunAfterPreview()" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
@@ -3488,6 +3857,7 @@ Private Function frmFormattingStripper_Code() As String
     s = s & "    optEmphThorough.Caption = ""Thorough  (preserve word-level emphasis)""" & vbCrLf
     s = s & "    optEmphStrip.Caption = ""Strip  (remove all direct formatting)""" & vbCrLf
     s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
+    s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub optEmphQuick_Click()" & vbCrLf
     s = s & "    lblSpeedWarning.Caption = ""Quick mode is fast and preserves emphasis that applies to whole paragraphs.""" & vbCrLf
@@ -3530,6 +3900,17 @@ Private Function frmFormattingStripper_Code() As String
     s = s & "    h = h & vbCrLf" & vbCrLf
     s = s & "    h = h & ""Preview mode highlights paragraphs carrying direct formatting."" & vbCrLf" & vbCrLf
     s = s & "    MsgBox h, vbInformation, ""Help  --  Direct Formatting Stripper""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdPreview_Click()" & vbCrLf
+    s = s & "    PreviewFromPanel" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub PreviewFromPanel()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = True" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdReset_Click()" & vbCrLf
+    s = s & "    UserForm_Initialize" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Public Sub RunAfterPreview()" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
@@ -3765,6 +4146,7 @@ Private Function frmHyperlinkRemover_Code() As String
     s = s & "    End If" & vbCrLf
     s = s & "    chkRemoveFormat.Caption = ""Remove hyperlink character style (blue underline)""" & vbCrLf
     s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
+    s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -3783,6 +4165,17 @@ Private Function frmHyperlinkRemover_Code() As String
     s = s & "    h = h & vbCrLf" & vbCrLf
     s = s & "    h = h & ""Preview mode highlights every hyperlink that would be removed."" & vbCrLf" & vbCrLf
     s = s & "    MsgBox h, vbInformation, ""Help  --  Hyperlink Remover""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdPreview_Click()" & vbCrLf
+    s = s & "    PreviewFromPanel" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub PreviewFromPanel()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = True" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdReset_Click()" & vbCrLf
+    s = s & "    UserForm_Initialize" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Public Sub RunAfterPreview()" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
@@ -3884,6 +4277,7 @@ Private Function frmSoftReturnConverter_Code() As String
     s = s & "    optSoftToPara.Caption = ""Convert soft returns (Shift+Enter) to paragraph marks""" & vbCrLf
     s = s & "    optParaToSoft.Caption = ""Convert paragraph marks to soft returns""" & vbCrLf
     s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
+    s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -3905,6 +4299,17 @@ Private Function frmSoftReturnConverter_Code() As String
     s = s & "    h = h & vbCrLf" & vbCrLf
     s = s & "    h = h & ""Preview mode highlights the breaks that would be converted."" & vbCrLf" & vbCrLf
     s = s & "    MsgBox h, vbInformation, ""Help  --  Soft Return Converter""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdPreview_Click()" & vbCrLf
+    s = s & "    PreviewFromPanel" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub PreviewFromPanel()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = True" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdReset_Click()" & vbCrLf
+    s = s & "    UserForm_Initialize" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Public Sub RunAfterPreview()" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
@@ -4008,6 +4413,7 @@ Private Function frmMetadataScrubber_Code() As String
     s = s & "    chkComments.Caption = ""Remove all comments""" & vbCrLf
     s = s & "    chkRevisions.Caption = ""Accept tracked changes and clear revision marks""" & vbCrLf
     s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
+    s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -4030,6 +4436,17 @@ Private Function frmMetadataScrubber_Code() As String
     s = s & "    h = h & vbCrLf" & vbCrLf
     s = s & "    h = h & ""Preview mode shows the metadata currently in the document."" & vbCrLf" & vbCrLf
     s = s & "    MsgBox h, vbInformation, ""Help  --  Metadata Scrubber""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdPreview_Click()" & vbCrLf
+    s = s & "    PreviewFromPanel" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub PreviewFromPanel()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = True" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdReset_Click()" & vbCrLf
+    s = s & "    UserForm_Initialize" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Public Sub RunAfterPreview()" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
@@ -4131,6 +4548,7 @@ Private Function frmStyleCleanup_Code() As String
     s = s & "    chkRemoveUnused.Caption = ""Remove unused styles""" & vbCrLf
     s = s & "    chkRemapVariants.Caption = ""Remap style variants to canonical equivalents""" & vbCrLf
     s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
+    s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -4179,6 +4597,17 @@ Private Function frmStyleCleanup_Code() As String
     s = s & "    RemapStyle = 1" & vbCrLf
     s = s & "    On Error GoTo 0" & vbCrLf
     s = s & "End Function" & vbCrLf
+    s = s & "Private Sub cmdPreview_Click()" & vbCrLf
+    s = s & "    PreviewFromPanel" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub PreviewFromPanel()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = True" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdReset_Click()" & vbCrLf
+    s = s & "    UserForm_Initialize" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Public Sub RunAfterPreview()" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "    cmdRun_Click" & vbCrLf
@@ -4284,6 +4713,7 @@ Private Function frmFootnoteRemover_Code() As String
     s = s & "        optScopeSelection.Enabled = False" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
+    s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -4308,6 +4738,17 @@ Private Function frmFootnoteRemover_Code() As String
     s = s & "Private Function InScope(r As Range, targetRange As Range) As Boolean" & vbCrLf
     s = s & "    InScope = (r.Start >= targetRange.Start And r.Start <= targetRange.End)" & vbCrLf
     s = s & "End Function" & vbCrLf
+    s = s & "Private Sub cmdPreview_Click()" & vbCrLf
+    s = s & "    PreviewFromPanel" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub PreviewFromPanel()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = True" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdReset_Click()" & vbCrLf
+    s = s & "    UserForm_Initialize" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Public Sub RunAfterPreview()" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "    cmdRun_Click" & vbCrLf
@@ -4438,6 +4879,7 @@ Private Function frmHeaderFooterStandardizer_Code() As String
     s = s & "    optScopeDocument.Caption = ""Entire document (always)""" & vbCrLf
     s = s & "    optScopeSelection.Enabled = False" & vbCrLf
     s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
+    s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -4488,6 +4930,17 @@ Private Function frmHeaderFooterStandardizer_Code() As String
     s = s & "        End If" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    cntAreas = cntAreas + 1" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdPreview_Click()" & vbCrLf
+    s = s & "    PreviewFromPanel" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub PreviewFromPanel()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = True" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdReset_Click()" & vbCrLf
+    s = s & "    UserForm_Initialize" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Public Sub RunAfterPreview()" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
@@ -4610,6 +5063,7 @@ Private Function frmObjectRemover_Code() As String
     s = s & "    optScopeSelection.Enabled = False" & vbCrLf
     s = s & "    fraScopeSelection.Enabled = False" & vbCrLf
     s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
+    s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
@@ -4734,6 +5188,17 @@ Private Function frmObjectRemover_Code() As String
     s = s & "    End If" & vbCrLf
     s = s & "    If found Then ProcessHiddenText = 1 Else ProcessHiddenText = 0" & vbCrLf
     s = s & "End Function" & vbCrLf
+    s = s & "Private Sub cmdPreview_Click()" & vbCrLf
+    s = s & "    PreviewFromPanel" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Public Sub PreviewFromPanel()" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = True" & vbCrLf
+    s = s & "    cmdRun_Click" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdReset_Click()" & vbCrLf
+    s = s & "    UserForm_Initialize" & vbCrLf
+    s = s & "    chkPreviewOnly.Value = False" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Public Sub RunAfterPreview()" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "    cmdRun_Click" & vbCrLf
@@ -4822,29 +5287,130 @@ Private Function frmPreviewActions_Code() As String
     s = s & "" & vbCrLf
     s = s & "Private mSourceForm As Object" & vbCrLf
     s = s & "Private mToolName As String" & vbCrLf
+    s = s & "Private mPreviewOn As Boolean" & vbCrLf
+    s = s & "Private mSummaryText As String" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "Public Sub Configure(sourceForm As Object, toolName As String, summaryText As String)" & vbCrLf
     s = s & "    Set mSourceForm = sourceForm" & vbCrLf
     s = s & "    mToolName = toolName" & vbCrLf
-    s = s & "    lblTitle.Caption = toolName & "" Preview""" & vbCrLf
-    s = s & "    lblSummary.Caption = summaryText" & vbCrLf
-    s = s & "    lblHint.Caption = ""Apply reruns the same settings without Preview. Reset Preview clears yellow marks and returns here.""" & vbCrLf
+    s = s & "    mSummaryText = summaryText" & vbCrLf
+    s = s & "    mPreviewOn = True" & vbCrLf
+    s = s & "    Me.Caption = ""Preview Actions""" & vbCrLf
+    s = s & "    lblTitle.Caption = """"" & vbCrLf
+    s = s & "    lblHint.Caption = toolName" & vbCrLf
+    s = s & "    lblSummary.Caption = mSummaryText" & vbCrLf
     s = s & "    cmdApply.Caption = ""Apply""" & vbCrLf
-    s = s & "    cmdClear.Caption = ""Reset Preview""" & vbCrLf
+    s = s & "    cmdPreview.Caption = ""Preview is ON""" & vbCrLf
+    s = s & "    cmdPreview.Enabled = True" & vbCrLf
+    s = s & "    cmdPreview.Visible = True" & vbCrLf
+    s = s & "    cmdClear.Caption = ""Reconfigure""" & vbCrLf
+    s = s & "    LayoutPanel" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub LayoutPanel()" & vbCrLf
+    s = s & "    Const FORM_W As Single = 530" & vbCrLf
+    s = s & "    Const FORM_H As Single = 160" & vbCrLf
+    s = s & "    Const CONTENT_W As Single = 250" & vbCrLf
+    s = s & "    Const M As Single = 8" & vbCrLf
+    s = s & "    Const BH As Single = 17" & vbCrLf
+    s = s & "    Const GAP As Single = 5" & vbCrLf
+    s = s & "    Const BTN_W As Single = 80" & vbCrLf
+    s = s & "    Me.Width = FORM_W" & vbCrLf
+    s = s & "    Me.Height = FORM_H" & vbCrLf
+    s = s & "    lblTitle.Caption = """"" & vbCrLf
+    s = s & "    lblTitle.Visible = False" & vbCrLf
+    s = s & "    StyleActionBar" & vbCrLf
+    s = s & "    lblTitle.Move 0, 0, 0, 0" & vbCrLf
+    s = s & "    lblHint.Move M, 2, CONTENT_W, 12" & vbCrLf
+    s = s & "    cmdPreview.Move M, 17, BTN_W, BH" & vbCrLf
+    s = s & "    cmdClear.Move M + BTN_W + GAP, 17, BTN_W, BH" & vbCrLf
+    s = s & "    cmdApply.Move M + (2 * (BTN_W + GAP)), 17, BTN_W, BH" & vbCrLf
+    s = s & "    lblSummary.Move M, 39, CONTENT_W, 18" & vbCrLf
+    s = s & "    lblTitle.Visible = False" & vbCrLf
+    s = s & "    lblTitle.WordWrap = False" & vbCrLf
+    s = s & "    lblSummary.WordWrap = True" & vbCrLf
+    s = s & "    lblHint.WordWrap = False" & vbCrLf
+    s = s & "    lblHint.TextAlign = 2" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub StyleActionBar()" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    Me.BackColor = RGB(248, 249, 251)" & vbCrLf
+    s = s & "    Me.SpecialEffect = 0" & vbCrLf
+    s = s & "    StyleLabel lblTitle, 11, False, RGB(0, 0, 0)" & vbCrLf
+    s = s & "    StyleLabel lblHint, 9, True, RGB(0, 0, 0)" & vbCrLf
+    s = s & "    StyleLabel lblSummary, 8.5, False, RGB(0, 0, 0)" & vbCrLf
+    s = s & "    StyleButton cmdApply, True" & vbCrLf
+    s = s & "    StyleButton cmdPreview, True" & vbCrLf
+    s = s & "    StyleButton cmdClear, True" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub StyleLabel(ctl As Object, fontSize As Single, isBold As Boolean, fontColor As Long)" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    ctl.Font.Name = ""Segoe UI""" & vbCrLf
+    s = s & "    ctl.Font.Size = fontSize" & vbCrLf
+    s = s & "    ctl.Font.Bold = isBold" & vbCrLf
+    s = s & "    ctl.ForeColor = fontColor" & vbCrLf
+    s = s & "    ctl.BackColor = RGB(248, 249, 251)" & vbCrLf
+    s = s & "    ctl.AutoSize = False" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub StyleButton(ctl As Object, isBold As Boolean)" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    ctl.Font.Name = ""Segoe UI""" & vbCrLf
+    s = s & "    ctl.Font.Size = 8.5" & vbCrLf
+    s = s & "    ctl.Font.Bold = isBold" & vbCrLf
+    s = s & "    ctl.BackColor = RGB(255, 255, 255)" & vbCrLf
+    s = s & "    ctl.ForeColor = RGB(0, 0, 0)" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "Private Sub cmdApply_Click()" & vbCrLf
     s = s & "    On Error GoTo ApplyErr" & vbCrLf
+    s = s & "    If Not DocumentHasVisibleContent() Then" & vbCrLf
+    s = s & "        RemoveAllHighlighting ActiveDocument.Content" & vbCrLf
+    s = s & "        MsgBox ""This document appears to be blank. There is nothing to apply."", vbInformation, ""Preview Actions""" & vbCrLf
+    s = s & "        Me.Hide" & vbCrLf
+    s = s & "        If Not mSourceForm Is Nothing Then mSourceForm.Hide" & vbCrLf
+    s = s & "        Set gPreviewActionPanel = Nothing" & vbCrLf
+    s = s & "        Unload Me" & vbCrLf
+    s = s & "        If GetReturnToMainAfterApplySetting() Then ShowCleanupSuiteLauncher" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
+    s = s & "    End If" & vbCrLf
     s = s & "    Me.Hide" & vbCrLf
     s = s & "    If Not mSourceForm Is Nothing Then" & vbCrLf
     s = s & "        CallByName mSourceForm, ""RunAfterPreview"", VbMethod" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    Set gPreviewActionPanel = Nothing" & vbCrLf
     s = s & "    Unload Me" & vbCrLf
-    s = s & "    ShowCleanupSuiteLauncher" & vbCrLf
+    s = s & "    If GetReturnToMainAfterApplySetting() Then ShowCleanupSuiteLauncher" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "ApplyErr:" & vbCrLf
     s = s & "    MsgBox ""Could not apply the preview: "" & Err.Description, vbExclamation, ""Preview Actions""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub cmdPreview_Click()" & vbCrLf
+    s = s & "    On Error GoTo PreviewErr" & vbCrLf
+    s = s & "    If mPreviewOn Then" & vbCrLf
+    s = s & "        RemoveAllHighlighting ActiveDocument.Content" & vbCrLf
+    s = s & "        mPreviewOn = False" & vbCrLf
+    s = s & "        cmdPreview.Caption = ""Preview is OFF""" & vbCrLf
+    s = s & "        cmdPreview.Enabled = True" & vbCrLf
+    s = s & "        cmdPreview.Visible = True" & vbCrLf
+    s = s & "        lblSummary.Caption = mSummaryText" & vbCrLf
+    s = s & "        LayoutPanel" & vbCrLf
+    s = s & "        Me.Hide" & vbCrLf
+    s = s & "        Me.Show vbModeless" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        Dim src As Object" & vbCrLf
+    s = s & "        Set src = mSourceForm" & vbCrLf
+    s = s & "        Set gPreviewActionPanel = Nothing" & vbCrLf
+    s = s & "        Me.Hide" & vbCrLf
+    s = s & "        Unload Me" & vbCrLf
+    s = s & "        If Not src Is Nothing Then CallByName src, ""PreviewFromPanel"", VbMethod" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    Exit Sub" & vbCrLf
+    s = s & "PreviewErr:" & vbCrLf
+    s = s & "    MsgBox ""Could not refresh the preview: "" & Err.Description, vbExclamation, ""Preview Actions""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "Private Sub cmdClear_Click()" & vbCrLf
@@ -4858,7 +5424,12 @@ Private Function frmPreviewActions_Code() As String
     s = s & "Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)" & vbCrLf
     s = s & "    If CloseMode = vbFormControlMenu Then" & vbCrLf
     s = s & "        Cancel = True" & vbCrLf
-    s = s & "        cmdClear_Click" & vbCrLf
+    s = s & "        If mPreviewOn Then" & vbCrLf
+    s = s & "            cmdClear_Click" & vbCrLf
+    s = s & "        Else" & vbCrLf
+    s = s & "            Set gPreviewActionPanel = Nothing" & vbCrLf
+    s = s & "            Me.Hide" & vbCrLf
+    s = s & "        End If" & vbCrLf
     s = s & "    Else" & vbCrLf
     s = s & "        Set gPreviewActionPanel = Nothing" & vbCrLf
     s = s & "    End If" & vbCrLf
@@ -4871,8 +5442,13 @@ Private Function frmCleanupSuiteLauncher_Code() As String
     Dim s As String
     s = s & "Option Explicit" & vbCrLf
     s = s & "Private Sub UserForm_Initialize()" & vbCrLf
+    s = s & "    chkReturnToMainAfterApply.Caption = ""Return to main menu after apply""" & vbCrLf
+    s = s & "    chkReturnToMainAfterApply.Value = GetReturnToMainAfterApplySetting()" & vbCrLf
     s = s & "    chkAutoSave.Caption = ""Auto-save before running each tool""" & vbCrLf
     s = s & "    chkAutoSave.Value = GetAutoSaveSetting()" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub chkReturnToMainAfterApply_Click()" & vbCrLf
+    s = s & "    SetReturnToMainAfterApplySetting chkReturnToMainAfterApply.Value" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub chkAutoSave_Click()" & vbCrLf
     s = s & "    If Not chkAutoSave.Value Then" & vbCrLf
@@ -4888,29 +5464,31 @@ Private Function frmCleanupSuiteLauncher_Code() As String
     s = s & "    End If" & vbCrLf
     s = s & "    SetAutoSaveSetting chkAutoSave.Value" & vbCrLf
     s = s & "End Sub" & vbCrLf
-    s = s & "Private Sub OpenCleanupTool(toolForm As Object)" & vbCrLf
-    s = s & "    Me.Hide" & vbCrLf
-    s = s & "    toolForm.Show" & vbCrLf
+    s = s & "Private Sub cmdResetAll_Click()" & vbCrLf
+    s = s & "    ResetCleanupSuiteDefaults" & vbCrLf
+    s = s & "    chkReturnToMainAfterApply.Value = GetReturnToMainAfterApplySetting()" & vbCrLf
+    s = s & "    chkAutoSave.Value = GetAutoSaveSetting()" & vbCrLf
+    s = s & "    MsgBox ""All Cleanup Suite tool settings have been reset to defaults."", vbInformation, ""Cleanup Suite""" & vbCrLf
     s = s & "End Sub" & vbCrLf
-    s = s & "Private Sub cmdUnicode_Click(): OpenCleanupTool frmUnicodeCleanup: End Sub" & vbCrLf
-    s = s & "Private Sub cmdPunctuation_Click(): OpenCleanupTool frmPunctuationCleanup: End Sub" & vbCrLf
-    s = s & "Private Sub cmdSpacing_Click(): OpenCleanupTool frmSpacingCleanup: End Sub" & vbCrLf
-    s = s & "Private Sub cmdCapitalization_Click(): OpenCleanupTool frmCapitalizationCleanup: End Sub" & vbCrLf
-    s = s & "Private Sub cmdList_Click(): OpenCleanupTool frmListCleanup: End Sub" & vbCrLf
-    s = s & "Private Sub cmdParagraph_Click(): OpenCleanupTool frmParagraphCleanup: End Sub" & vbCrLf
-    s = s & "Private Sub cmdDuplicate_Click(): OpenCleanupTool frmDuplicateDetector: End Sub" & vbCrLf
-    s = s & "Private Sub cmdFontNorm_Click(): OpenCleanupTool frmFontNormalizer: End Sub" & vbCrLf
-    s = s & "Private Sub cmdTableClean_Click(): OpenCleanupTool frmTableCleaner: End Sub" & vbCrLf
-    s = s & "Private Sub cmdBreakNorm_Click(): OpenCleanupTool frmBreakNormalizer: End Sub" & vbCrLf
-    s = s & "Private Sub cmdDocTrim_Click(): OpenCleanupTool frmDocumentTrim: End Sub" & vbCrLf
-    s = s & "Private Sub cmdFormatStrip_Click(): OpenCleanupTool frmFormattingStripper: End Sub" & vbCrLf
-    s = s & "Private Sub cmdHyperlink_Click(): OpenCleanupTool frmHyperlinkRemover: End Sub" & vbCrLf
-    s = s & "Private Sub cmdSoftReturn_Click(): OpenCleanupTool frmSoftReturnConverter: End Sub" & vbCrLf
-    s = s & "Private Sub cmdMetadata_Click(): OpenCleanupTool frmMetadataScrubber: End Sub" & vbCrLf
-    s = s & "Private Sub cmdStyleClean_Click(): OpenCleanupTool frmStyleCleanup: End Sub" & vbCrLf
-    s = s & "Private Sub cmdFootnote_Click(): OpenCleanupTool frmFootnoteRemover: End Sub" & vbCrLf
-    s = s & "Private Sub cmdHeaderFooter_Click(): OpenCleanupTool frmHeaderFooterStandardizer: End Sub" & vbCrLf
-    s = s & "Private Sub cmdObjectRemover_Click(): OpenCleanupTool frmObjectRemover: End Sub" & vbCrLf
+    s = s & "Private Sub cmdUnicode_Click(): Me.Hide: frmUnicodeCleanup.Show: End Sub" & vbCrLf
+    s = s & "Private Sub cmdPunctuation_Click(): Me.Hide: frmPunctuationCleanup.Show: End Sub" & vbCrLf
+    s = s & "Private Sub cmdSpacing_Click(): Me.Hide: frmSpacingCleanup.Show: End Sub" & vbCrLf
+    s = s & "Private Sub cmdCapitalization_Click(): Me.Hide: frmCapitalizationCleanup.Show: End Sub" & vbCrLf
+    s = s & "Private Sub cmdList_Click(): Me.Hide: frmListCleanup.Show: End Sub" & vbCrLf
+    s = s & "Private Sub cmdParagraph_Click(): Me.Hide: frmParagraphCleanup.Show: End Sub" & vbCrLf
+    s = s & "Private Sub cmdDuplicate_Click(): Me.Hide: frmDuplicateDetector.Show: End Sub" & vbCrLf
+    s = s & "Private Sub cmdFontNorm_Click(): Me.Hide: frmFontNormalizer.Show: End Sub" & vbCrLf
+    s = s & "Private Sub cmdTableClean_Click(): Me.Hide: frmTableCleaner.Show: End Sub" & vbCrLf
+    s = s & "Private Sub cmdBreakNorm_Click(): Me.Hide: frmBreakNormalizer.Show: End Sub" & vbCrLf
+    s = s & "Private Sub cmdDocTrim_Click(): Me.Hide: frmDocumentTrim.Show: End Sub" & vbCrLf
+    s = s & "Private Sub cmdFormatStrip_Click(): Me.Hide: frmFormattingStripper.Show: End Sub" & vbCrLf
+    s = s & "Private Sub cmdHyperlink_Click(): Me.Hide: frmHyperlinkRemover.Show: End Sub" & vbCrLf
+    s = s & "Private Sub cmdSoftReturn_Click(): Me.Hide: frmSoftReturnConverter.Show: End Sub" & vbCrLf
+    s = s & "Private Sub cmdMetadata_Click(): Me.Hide: frmMetadataScrubber.Show: End Sub" & vbCrLf
+    s = s & "Private Sub cmdStyleClean_Click(): Me.Hide: frmStyleCleanup.Show: End Sub" & vbCrLf
+    s = s & "Private Sub cmdFootnote_Click(): Me.Hide: frmFootnoteRemover.Show: End Sub" & vbCrLf
+    s = s & "Private Sub cmdHeaderFooter_Click(): Me.Hide: frmHeaderFooterStandardizer.Show: End Sub" & vbCrLf
+    s = s & "Private Sub cmdObjectRemover_Click(): Me.Hide: frmObjectRemover.Show: End Sub" & vbCrLf
     s = s & "Private Sub cmdHelpUnicode_Click()" & vbCrLf
     s = s & "    Dim h As String" & vbCrLf
     s = s & "    h = ""Invisible Unicode Cleaner"" & vbCrLf & vbCrLf" & vbCrLf
