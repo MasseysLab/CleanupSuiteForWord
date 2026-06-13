@@ -102,6 +102,10 @@ class LauncherRedesignTests(unittest.TestCase):
         )
         self.assertIn('ctl.TextAlign = 2', installer)
         self.assertIn('PositionControl designer, "chkReturnToMainAfterClose"', installer)
+        self.assertIn('PositionControl designer, "chkReturnToMainAfterApply", MARGIN + 2, y, COL_W, 18', installer)
+        self.assertIn('PositionControl designer, "chkReturnToMainAfterClose", MARGIN + 2, y, COL_W, 18', installer)
+        self.assertIn('PositionControl designer, "chkAutoSave", MARGIN + 2, y, COL_W, 18', installer)
+        self.assertNotIn('PositionControl designer, "chkReturnToMainAfterApply", MARGIN + 2, y, FORM_W - (2 * MARGIN), 18', installer)
 
     def test_individual_tool_forms_return_to_main_menu_when_closed_by_user(self):
         form_paths = [

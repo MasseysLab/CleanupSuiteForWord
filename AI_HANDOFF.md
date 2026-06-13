@@ -965,3 +965,52 @@ Known remaining issues:
 
 Next recommended step:
 - Commit this starting point, then decide the first scoped `0.7.0` feature task before making behavior changes.
+
+## Session: 2026-06-12 21:45
+Agent: Codex
+
+Goal:
+- Fix the Main Menu overlap where the moved-up global settings painted over the right-column Review section.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-12_21-33-48_v0.7.0-launcher-overlap-fix.zip`
+
+Git/repo state:
+- Remote: `origin https://github.com/MasseysLab/CleanupSuiteForWord.git`
+- Branch: `codex-0.7.0-start`
+- Status before: clean at local `0.7.0` start commit `b2651c4`.
+- Status after: pending commit of the launcher overlap fix.
+- GitHub/local/generated/.docm sync checked: yes for local source, root generated bundle, practice generated bundle, main `.docm`, and practice `.docm`.
+
+Files changed:
+- `AI_HANDOFF.md`
+- `CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`
+- `VBA_Cleanup_tool.txt`
+- `src\installer\installer.bas`
+- `tests\test_launcher_redesign.py`
+
+Summary of changes:
+- Root cause: the global setting checkboxes were moved upward under the left column, but their generated widths still spanned the full form (`FORM_W - 2 * MARGIN`). MSForms paints the checkbox background across that full rectangle, covering controls in the right column.
+- Changed generated launcher layout so `chkReturnToMainAfterApply`, `chkReturnToMainAfterClose`, and `chkAutoSave` use `COL_W` width, confining their painted area to the left column.
+- Added a regression test asserting the setting checkboxes use `COL_W` and do not use the full-form width.
+- Rebuilt generated bundles and updated both embedded `.docm` copies.
+
+Important observations:
+- Window size was not increased.
+- The right-column Review section should no longer be hidden by the global settings controls.
+
+Tests/checks run:
+- TDD red check: focused launcher test failed while the checkboxes still used full-form width.
+- Focused launcher test passed after the fix.
+- Rebuilt generated bundle with bundled Python `assemble.py`; build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Synced `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`.
+- Embedded read-back verified both `.docm` files have installer layout using `COL_W`, and the three setting checkbox widths match the left-column width (`358`).
+- Full test discovery with bundled Python: `-m unittest discover -s tests` -> 16 tests OK.
+
+Known remaining issues:
+- Chris should visually re-open the Main Menu and confirm the Review section is no longer covered.
+
+Next recommended step:
+- Commit this overlap fix on `codex-0.7.0-start`; then continue with a scoped `0.7.0` feature plan.

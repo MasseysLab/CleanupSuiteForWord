@@ -595,11 +595,11 @@ Private Sub LayoutLauncherControls(comp As VBIDE.VBComponent, designer As Object
     yCol2 = LayoutLauncherToolRow(designer, "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", COL2_X, yCol2, COL_W)
     y = yCol1 + 8
 
-    PositionControl designer, "chkReturnToMainAfterApply", MARGIN + 2, y, FORM_W - (2 * MARGIN), 18
+    PositionControl designer, "chkReturnToMainAfterApply", MARGIN + 2, y, COL_W, 18
     y = y + 20
-    PositionControl designer, "chkReturnToMainAfterClose", MARGIN + 2, y, FORM_W - (2 * MARGIN), 18
+    PositionControl designer, "chkReturnToMainAfterClose", MARGIN + 2, y, COL_W, 18
     y = y + 20
-    PositionControl designer, "chkAutoSave", MARGIN + 2, y, FORM_W - (2 * MARGIN), 18
+    PositionControl designer, "chkAutoSave", MARGIN + 2, y, COL_W, 18
     y = y + 24
     PositionControl designer, "cmdResetAll", MARGIN + 2, y, 110, 24
 
