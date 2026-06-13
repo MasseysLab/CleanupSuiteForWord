@@ -6,9 +6,9 @@ The project uses a simple SemVer-style ladder, but with `0.x.0` milestones until
 
 ## Current Version
 
-`0.6.4`
+`0.6.5`
 
-This is the final programming-side release candidate and code-freeze target for the `0.6.x` line.
+This is the documentation-complete release for the `0.6.x` line, using the same codebase as `0.6.4` except for version metadata and documentation.
 
 ## Roadmap
 

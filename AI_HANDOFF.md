@@ -853,3 +853,63 @@ Known remaining issues:
 
 Next recommended step:
 - Commit and push `0.6.4` to GitHub, then pause programming work while documentation is prepared from that pushed state.
+
+## Session: 2026-06-12 20:18
+Agent: Codex
+
+Goal:
+- Create the `0.6.5` documentation-complete release from the pushed `0.6.4` code-freeze state using ChatGPT's documentation package.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-12_20-09-48_v0.6.5-docs-release.zip`
+
+Git/repo state:
+- Remote: `origin https://github.com/MasseysLab/CleanupSuiteForWord.git`
+- Branch: `main`
+- Status before: clean at pushed `0.6.4` code-freeze commit `c787a70`.
+- Status after: pending commit/push of the `0.6.5` documentation-complete release.
+- GitHub/local/generated/.docm sync checked: yes for local source, root generated bundle, practice generated bundle, main `.docm`, and practice `.docm`.
+
+Files changed:
+- `AI_HANDOFF.md`
+- `CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`
+- `README.md`
+- `VBA_Cleanup_tool.txt`
+- `VERSIONING.md`
+- `src\modules\modCleanupLauncher.bas`
+- `tests\test_launcher_redesign.py`
+- `docs\User_Manual_v0.6.5.md`
+- `docs\Quick_Start_v0.6.5.md`
+- `docs\Troubleshooting_v0.6.5.md`
+- `docs\Release_Notes_0.6.4_to_0.6.5.md`
+- `docs\Documentation_Handoff_0.6.5.md`
+- `docs\README_DOC_PACKAGE.md`
+- `documents\CleanupSuite_User_Manual_v0.6.5.docx`
+
+Summary of changes:
+- Added the polished documentation package from `cleanup_suite_docs_0_6_5_from_0_6_4.zip`.
+- Stored the package README as `docs\README_DOC_PACKAGE.md` to keep release-doc package notes with the other docs.
+- Updated project version metadata from `0.6.4` to `0.6.5` in `README.md`, `VERSIONING.md`, `src\modules\modCleanupLauncher.bas`, and the matching version test.
+- Rebuilt generated bundles so the distributable installer text carries `SUITE_VERSION = "0.6.5"`.
+- Updated both embedded `.docm` files by replacing only `modCleanupLauncher` and the assembled installer module for the version bump.
+- Confirmed no feature changes, UI changes, Preview Actions changes, launcher behavior changes, or cleanup-tool behavior changes were made beyond required version metadata and generated/docm updates caused by that metadata.
+
+Important observations:
+- `0.6.5` is documentation-complete relative to `0.6.4`; do not start `0.7.0` work until Chris confirms this release looks good.
+- The documentation package states it was written from pushed `0.6.4` commit `c787a70c8b78a6150a2fe1a94b3760a8fde3e6cc`.
+
+Tests/checks run:
+- Created fresh backup zip and verified it exists and excludes the `backups/` folder.
+- Inspected the ChatGPT documentation package contents before copying files.
+- Rebuilt generated bundle with bundled Python `assemble.py`; build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Synced `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`; root/practice generated bundles compare equal.
+- Embedded read-back verified both `.docm` files contain `SUITE_VERSION = "0.6.5"`, the assembled installer has `0.6.5`, installer builder functions are present, and both documents are saved.
+- Full test discovery with bundled Python: `-m unittest discover -s tests` -> 16 tests OK.
+
+Known remaining issues:
+- None for the documentation-complete release commit. Live review of the new docs by Chris is still the safest next human check.
+
+Next recommended step:
+- Commit and push `0.6.5`, then wait for Chris confirmation before any `0.7.0` work.

@@ -117,13 +117,13 @@ class LauncherRedesignTests(unittest.TestCase):
                 self.assertIn("Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)", source)
                 self.assertIn("If CloseMode = vbFormControlMenu Then ReturnToMainAfterToolClose", source)
 
-    def test_launcher_milestone_version_is_064(self):
+    def test_launcher_milestone_version_is_065(self):
         launcher = read("src/modules/modCleanupLauncher.bas")
         versioning = read("VERSIONING.md")
 
-        self.assertIn('Public Const SUITE_VERSION As String = "0.6.4"', launcher)
-        self.assertIn("## Current Version\n\n`0.6.4`", versioning)
-        self.assertIn("Code freeze / final programming-side release candidate", versioning)
+        self.assertIn('Public Const SUITE_VERSION As String = "0.6.5"', launcher)
+        self.assertIn("## Current Version\n\n`0.6.5`", versioning)
+        self.assertIn("documentation-complete release", versioning)
 
 
 if __name__ == "__main__":
