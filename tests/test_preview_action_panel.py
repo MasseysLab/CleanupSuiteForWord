@@ -90,6 +90,11 @@ class PreviewActionPanelTests(unittest.TestCase):
         self.assertIn('cmdPreview.Caption = "Preview is ON"', panel)
         self.assertIn("cmdPreview.Enabled = True", panel)
         self.assertIn('cmdPreview.Caption = "Preview is OFF"', panel)
+        self.assertIn('lblSummary.Caption = "You may now edit your document if you wish."', panel)
+        self.assertLess(
+            panel.index('cmdPreview.Caption = "Preview is OFF"'),
+            panel.index('lblSummary.Caption = "You may now edit your document if you wish."'),
+        )
         self.assertIn("ShowModelessAtCurrentPosition", panel)
         self.assertIn('cmdClear.Caption = "Reconfigure"', panel)
         self.assertNotIn('cmdClear.Caption = "Settings"', panel)

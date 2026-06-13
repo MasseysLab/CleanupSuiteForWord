@@ -5521,7 +5521,7 @@ Private Function frmPreviewActions_Code() As String
     s = s & "        cmdPreview.Caption = ""Preview is OFF""" & vbCrLf
     s = s & "        cmdPreview.Enabled = True" & vbCrLf
     s = s & "        cmdPreview.Visible = True" & vbCrLf
-    s = s & "        lblSummary.Caption = mSummaryText" & vbCrLf
+    s = s & "        lblSummary.Caption = ""You may now edit your document if you wish.""" & vbCrLf
     s = s & "        LayoutPanel" & vbCrLf
     s = s & "        ShowModelessAtCurrentPosition" & vbCrLf
     s = s & "    Else" & vbCrLf

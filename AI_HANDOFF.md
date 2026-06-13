@@ -1014,3 +1014,52 @@ Known remaining issues:
 
 Next recommended step:
 - Commit this overlap fix on `codex-0.7.0-start`; then continue with a scoped `0.7.0` feature plan.
+
+## Session: 2026-06-12 22:02
+Agent: Codex
+
+Goal:
+- Change the Preview Actions OFF-state message so it invites editing instead of repeating the preview findings summary.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-12_21-52-53_preview-off-message.zip`
+
+Git/repo state:
+- Remote: `origin https://github.com/MasseysLab/CleanupSuiteForWord.git`
+- Branch: `codex-0.7.0-start`
+- Status before: clean at local overlap-fix commit `c8e040d`; an Office temp lock file from a visible/hidden Word session briefly appeared and was not treated as project content.
+- Status after: pending commit of the Preview Actions OFF-message change.
+- GitHub/local/generated/.docm sync checked: yes for local source, root generated bundle, practice generated bundle, main `.docm`, and practice `.docm`.
+
+Files changed:
+- `AI_HANDOFF.md`
+- `CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`
+- `VBA_Cleanup_tool.txt`
+- `src\forms\frmPreviewActions.bas`
+- `tests\test_preview_action_panel.py`
+
+Summary of changes:
+- In `frmPreviewActions.cmdPreview_Click`, when preview is turned OFF the summary label now says: "You may now edit your document if you wish."
+- The ON-state still shows the original tool findings summary through `Configure`.
+- Added a regression test that verifies the OFF caption is set after `cmdPreview.Caption = "Preview is OFF"`.
+- Rebuilt generated bundles and updated both embedded `.docm` copies with the refreshed Preview Actions form and assembled installer.
+
+Important observations:
+- No launcher changes, cleanup-tool behavior changes, or layout size changes were made for this request.
+
+Tests/checks run:
+- Created backup zip after resolving the file-lock problem with shared-read backup handling; skipped only Office `~$` temp files.
+- TDD red check: focused preview-panel test failed before the source change.
+- Focused preview-panel test passed after the source change.
+- Rebuilt generated bundle with bundled Python `assemble.py`; build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Synced `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`.
+- Embedded read-back verified both `.docm` files contain the new OFF message in `frmPreviewActions` and in the assembled installer module; both documents saved.
+- Full test discovery with bundled Python: `-m unittest discover -s tests` -> 16 tests OK.
+
+Known remaining issues:
+- Chris should live-test toggling Preview OFF to confirm the panel displays the edit message.
+
+Next recommended step:
+- Commit the Preview OFF message fix on `codex-0.7.0-start`.

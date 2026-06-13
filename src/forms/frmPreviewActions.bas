@@ -122,7 +122,7 @@ Private Sub cmdPreview_Click()
         cmdPreview.Caption = "Preview is OFF"
         cmdPreview.Enabled = True
         cmdPreview.Visible = True
-        lblSummary.Caption = mSummaryText
+        lblSummary.Caption = "You may now edit your document if you wish."
         LayoutPanel
         ShowModelessAtCurrentPosition
     Else
