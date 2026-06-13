@@ -6,9 +6,9 @@ The project uses a simple SemVer-style ladder, but with `0.x.0` milestones until
 
 ## Current Version
 
-`0.6.5`
+`0.7.0`
 
-This is the documentation-complete release for the `0.6.x` line, using the same codebase as `0.6.4` except for version metadata and documentation.
+This begins the next programming milestone after the `0.6.5` documentation-complete release.
 
 ## Roadmap
 
@@ -18,7 +18,9 @@ This is the documentation-complete release for the `0.6.x` line, using the same 
 | `0.6.0` | Launcher redesign with better categories, tool descriptions, and help placement. |
 | `0.6.4` | Code freeze / final programming-side release candidate. |
 | `0.6.5` | Documentation-complete release using the same codebase as `0.6.4`, except for documentation-blocking bug fixes if required. |
-| `0.7.0` | Post-preview action model with compact review controls such as Apply, Close Preview, Undo, and Back to Options. |
+| `0.7.0` | Next programming milestone begins. |
+| `0.7.4` | Code freeze / final programming-side release candidate for the `0.7.x` line. |
+| `0.7.5` | Documentation-complete release using the same codebase as `0.7.4`, except for documentation-blocking bug fixes if required. |
 | `0.8.0` | Complex tool form redesigns using the approved modern panel style. |
 | `0.9.0` | Simple tool form polish, consistency pass, help/caption cleanup, and release-candidate testing. |
 | `1.0.0` | Global `.dotm` Word add-in/template release suitable for normal use on any document. |
@@ -30,6 +32,7 @@ This is the documentation-complete release for the `0.6.x` line, using the same 
 - Mention the version in backup zip names when the backup represents a milestone.
 - Keep Git commits small enough that each milestone can be understood later.
 - After `0.6.4` is pushed, no feature or code changes go into `0.6.5` unless required to correct documentation-blocking bugs.
+- After `0.7.4` is pushed, no feature or code changes go into `0.7.5` unless required to correct documentation-blocking bugs.
 - Do not call the project `1.0.0` until the global add-in/template workflow is stable.
 
 ## Naming Examples

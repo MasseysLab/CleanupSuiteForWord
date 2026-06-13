@@ -60,7 +60,7 @@ vbaeval.py             ← validation library + CLI (used by assemble.py)
 
 ## Versioning
 
-The current source milestone is `0.6.5`.
+The current source milestone is `0.7.0`.
 
 See [`VERSIONING.md`](VERSIONING.md) for the `0.5.0` through `1.0.0` roadmap and the rule for when `SUITE_VERSION` should change.
 

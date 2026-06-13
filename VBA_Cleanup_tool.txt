@@ -1555,7 +1555,7 @@ End Function
 Private Function modCleanupLauncher_Code() As String
     Dim s As String
     s = s & "Option Explicit" & vbCrLf
-    s = s & "Public Const SUITE_VERSION As String = ""0.6.5""" & vbCrLf
+    s = s & "Public Const SUITE_VERSION As String = ""0.7.0""" & vbCrLf
     s = s & "Public gRibbon As Object   ' IRibbonUI -- stored for optional Invalidate calls" & vbCrLf
     s = s & "Sub ShowCleanupSuiteLauncher()" & vbCrLf
     s = s & "    frmCleanupSuiteLauncher.Show" & vbCrLf

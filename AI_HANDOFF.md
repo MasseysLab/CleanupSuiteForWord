@@ -913,3 +913,55 @@ Known remaining issues:
 
 Next recommended step:
 - Commit and push `0.6.5`, then wait for Chris confirmation before any `0.7.0` work.
+
+## Session: 2026-06-12 21:30
+Agent: Codex
+
+Goal:
+- Start the `0.7.0` development line cleanly after Chris confirmed the `0.6.5` documentation-complete release.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-12_21-18-46_v0.7.0-start.zip`
+
+Git/repo state:
+- Remote: `origin https://github.com/MasseysLab/CleanupSuiteForWord.git`
+- Starting branch/status: clean `main` at pushed `0.6.5` commit `d8ea6a1`.
+- Working branch: `codex-0.7.0-start` (slash-style `codex/0.7.0-start` branch creation hit a local Git ref-lock/permission issue, so this safe equivalent branch name was used).
+- Status after: pending commit of the `0.7.0` starting-point metadata and generated/docm sync.
+- GitHub/local/generated/.docm sync checked: yes for local source, root generated bundle, practice generated bundle, main `.docm`, and practice `.docm`.
+
+Files changed:
+- `AI_HANDOFF.md`
+- `CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`
+- `README.md`
+- `VBA_Cleanup_tool.txt`
+- `VERSIONING.md`
+- `src\modules\modCleanupLauncher.bas`
+- `tests\test_launcher_redesign.py`
+
+Summary of changes:
+- Bumped project version metadata from `0.6.5` to `0.7.0`.
+- Updated `VERSIONING.md` to define the next release rhythm:
+  - `0.7.0` = next programming milestone begins.
+  - `0.7.4` = code freeze / final programming-side release candidate for `0.7.x`.
+  - `0.7.5` = documentation-complete release using the same codebase as `0.7.4`, except for documentation-blocking bug fixes if required.
+- Rebuilt generated bundles and refreshed embedded `.docm` modules so generated/distributable and embedded states carry `SUITE_VERSION = "0.7.0"`.
+- No feature work, UI work, Preview Actions changes, launcher behavior changes, or cleanup-tool behavior changes were made.
+
+Important observations:
+- This commit should be treated as the clean start marker for `0.7.0`; actual feature planning/implementation should happen after this marker.
+
+Tests/checks run:
+- Created fresh backup zip and verified it exists and excludes the `backups/` folder.
+- Rebuilt generated bundle with bundled Python `assemble.py`; build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Synced `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`; root/practice generated bundles compare equal.
+- Embedded read-back verified both `.docm` files contain `SUITE_VERSION = "0.7.0"`, the assembled installer has `0.7.0`, installer builder functions are present, and both documents are saved.
+- Full test discovery with bundled Python: `-m unittest discover -s tests` -> 16 tests OK.
+
+Known remaining issues:
+- None for the `0.7.0` start marker.
+
+Next recommended step:
+- Commit this starting point, then decide the first scoped `0.7.0` feature task before making behavior changes.
