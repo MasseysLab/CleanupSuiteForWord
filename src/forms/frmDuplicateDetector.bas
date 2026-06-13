@@ -1,4 +1,7 @@
 Option Explicit
+Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
+    If CloseMode = vbFormControlMenu Then ReturnToMainAfterToolClose
+End Sub
 ' --------------------------------------------------------------
 '  Duplicate Paragraph Detector
 '  Finds repeated paragraphs and highlights them, or removes all but the

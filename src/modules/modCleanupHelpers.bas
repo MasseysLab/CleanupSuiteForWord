@@ -1,12 +1,32 @@
 Option Explicit
 ' Shared helper functions for cleanup forms
 Public gPreviewActionPanel As Object
+Private gPreviewActionPanelHasPosition As Boolean
+Private gPreviewActionPanelLeft As Single
+Private gPreviewActionPanelTop As Single
+
+Public Sub RememberPreviewActionPanelPosition(panelLeft As Single, panelTop As Single)
+    gPreviewActionPanelLeft = panelLeft
+    gPreviewActionPanelTop = panelTop
+    gPreviewActionPanelHasPosition = True
+End Sub
+
+Private Sub ApplyPreviewActionPanelPosition(panel As Object)
+    On Error Resume Next
+    If gPreviewActionPanelHasPosition Then
+        panel.StartUpPosition = 0
+        panel.Left = gPreviewActionPanelLeft
+        panel.Top = gPreviewActionPanelTop
+    End If
+    On Error GoTo 0
+End Sub
 
 Public Sub ShowPreviewActions(sourceForm As Object, toolName As String, summaryText As String)
     On Error GoTo Fallback
     sourceForm.Hide
     Set gPreviewActionPanel = New frmPreviewActions
     gPreviewActionPanel.Configure sourceForm, toolName, summaryText
+    ApplyPreviewActionPanelPosition gPreviewActionPanel
     gPreviewActionPanel.Show
     Exit Sub
 Fallback:
@@ -158,11 +178,40 @@ Public Sub SetReturnToMainAfterApplySetting(enabled As Boolean)
         Value:=IIf(enabled, "True", "False")
     On Error GoTo 0
 End Sub
+Public Function GetReturnToMainAfterCloseSetting() As Boolean
+    ' Returns True by default so closing a tool menu restores the launcher.
+    On Error Resume Next
+    Dim prop As Object
+    Set prop = ActiveDocument.CustomDocumentProperties("CleanupSuiteReturnToMainAfterClose")
+    If Err.Number <> 0 Then
+        GetReturnToMainAfterCloseSetting = True
+        Err.Clear
+    Else
+        GetReturnToMainAfterCloseSetting = (prop.Value = "True")
+    End If
+    On Error GoTo 0
+End Function
+Public Sub SetReturnToMainAfterCloseSetting(enabled As Boolean)
+    On Error Resume Next
+    ActiveDocument.CustomDocumentProperties("CleanupSuiteReturnToMainAfterClose").Delete
+    Err.Clear
+    ActiveDocument.CustomDocumentProperties.Add Name:="CleanupSuiteReturnToMainAfterClose", _
+        LinkToContent:=False, Type:=msoPropertyTypeString, _
+        Value:=IIf(enabled, "True", "False")
+    On Error GoTo 0
+End Sub
+Public Sub ReturnToMainAfterToolClose()
+    On Error Resume Next
+    If GetReturnToMainAfterCloseSetting() Then ShowCleanupSuiteLauncher
+    On Error GoTo 0
+End Sub
 Public Sub ResetCleanupSuiteDefaults()
     On Error Resume Next
     RemoveAllHighlighting ActiveDocument.Content
     SetAutoSaveSetting True
     SetReturnToMainAfterApplySetting True
+    SetReturnToMainAfterCloseSetting True
+    gPreviewActionPanelHasPosition = False
     If Not gPreviewActionPanel Is Nothing Then Unload gPreviewActionPanel
     Set gPreviewActionPanel = Nothing
     Unload frmPunctuationCleanup

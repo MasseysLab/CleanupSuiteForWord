@@ -1,4 +1,7 @@
 Option Explicit
+Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
+    If CloseMode = vbFormControlMenu Then ReturnToMainAfterToolClose
+End Sub
 ' --------------------------------------------------------------
 '  Header / Footer Standardizer
 '  Standardizes header/footer text across every section and slot

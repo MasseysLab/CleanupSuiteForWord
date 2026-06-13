@@ -23,13 +23,13 @@ Public Sub Configure(sourceForm As Object, toolName As String, summaryText As St
 End Sub
 
 Private Sub LayoutPanel()
-    Const FORM_W As Single = 530
-    Const FORM_H As Single = 160
-    Const CONTENT_W As Single = 250
+    Const FORM_W As Single = 300
+    Const FORM_H As Single = 90
+    Const CONTENT_W As Single = 262
     Const M As Single = 8
-    Const BH As Single = 17
+    Const BH As Single = 18
     Const GAP As Single = 5
-    Const BTN_W As Single = 80
+    Const BTN_W As Single = 84
     Me.Width = FORM_W
     Me.Height = FORM_H
     lblTitle.Caption = ""
@@ -40,7 +40,7 @@ Private Sub LayoutPanel()
     cmdPreview.Move M, 17, BTN_W, BH
     cmdClear.Move M + BTN_W + GAP, 17, BTN_W, BH
     cmdApply.Move M + (2 * (BTN_W + GAP)), 17, BTN_W, BH
-    lblSummary.Move M, 39, CONTENT_W, 18
+    lblSummary.Move M, 40, CONTENT_W, 16
     lblTitle.Visible = False
     lblTitle.WordWrap = False
     lblSummary.WordWrap = True
@@ -53,8 +53,8 @@ Private Sub StyleActionBar()
     Me.BackColor = RGB(248, 249, 251)
     Me.SpecialEffect = 0
     StyleLabel lblTitle, 11, False, RGB(0, 0, 0)
-    StyleLabel lblHint, 9, True, RGB(0, 0, 0)
-    StyleLabel lblSummary, 8.5, False, RGB(0, 0, 0)
+    StyleLabel lblHint, 8, True, RGB(0, 0, 0)
+    StyleLabel lblSummary, 7.5, False, RGB(0, 0, 0)
     StyleButton cmdApply, True
     StyleButton cmdPreview, True
     StyleButton cmdClear, True
@@ -73,10 +73,21 @@ End Sub
 Private Sub StyleButton(ctl As Object, isBold As Boolean)
     On Error Resume Next
     ctl.Font.Name = "Segoe UI"
-    ctl.Font.Size = 8.5
+    ctl.Font.Size = 7.5
     ctl.Font.Bold = isBold
     ctl.BackColor = RGB(255, 255, 255)
     ctl.ForeColor = RGB(0, 0, 0)
+End Sub
+
+Private Sub ShowModelessAtCurrentPosition()
+    Dim panelLeft As Single
+    Dim panelTop As Single
+    panelLeft = Me.Left
+    panelTop = Me.Top
+    Me.Hide
+    Me.Show vbModeless
+    Me.Left = panelLeft
+    Me.Top = panelTop
 End Sub
 
 Private Sub cmdApply_Click()
@@ -113,11 +124,11 @@ Private Sub cmdPreview_Click()
         cmdPreview.Visible = True
         lblSummary.Caption = mSummaryText
         LayoutPanel
-        Me.Hide
-        Me.Show vbModeless
+        ShowModelessAtCurrentPosition
     Else
         Dim src As Object
         Set src = mSourceForm
+        RememberPreviewActionPanelPosition Me.Left, Me.Top
         Set gPreviewActionPanel = Nothing
         Me.Hide
         Unload Me

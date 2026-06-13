@@ -1,4 +1,7 @@
 Option Explicit
+Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
+    If CloseMode = vbFormControlMenu Then ReturnToMainAfterToolClose
+End Sub
 ' --------------------------------------------------------------
 '  Invisible Unicode Cleaner
 '  Finds and removes invisible Unicode characters that accumulate from

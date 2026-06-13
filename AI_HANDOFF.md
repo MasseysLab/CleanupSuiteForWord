@@ -528,3 +528,328 @@ Known remaining issues:
 
 Next recommended step:
 - Run through a normal preview/reconfigure/apply workflow in the practice `.docm` to confirm the action bar feels right during actual editing.
+
+## Session: 2026-06-12 14:32
+Agent: Codex
+
+Goal:
+- Reinstall Cleanup Suite from the current local working tree.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-12_14-27-31.zip`
+
+Git/repo state:
+- Remote: `origin https://github.com/MasseysLab/CleanupSuiteForWord.git`
+- Branch: `main`
+- Status before: clean relative to `origin/main` except Chris had locally edited the Preview Actions action-bar size in `src\forms\frmPreviewActions.bas` and `src\installer\installer.bas` from `530/160` to `300/90`.
+- Status after: dirty working tree with the `300/90` size changes, rebuilt generated bundles, and both `.docm` files reinstalled/updated.
+- GitHub/local/generated/.docm sync checked: yes for local source, generated root bundle, generated practice bundle, main `.docm`, and practice `.docm`; all verified to contain `FORM_W = 300` and `FORM_H = 90` for Preview Actions.
+
+Files changed:
+- `src\forms\frmPreviewActions.bas`
+- `src\installer\installer.bas`
+- `VBA_Cleanup_tool.txt`
+- `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`
+- `CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+- `AI_HANDOFF.md`
+
+Summary of changes:
+- Preserved Chris's local action-bar size edit (`300/90`) rather than reverting it to the previously pushed `530/160`.
+- Rebuilt `VBA_Cleanup_tool.txt` from current source and synced the practice generated bundle.
+- Refreshed `modCleanupSuiteInstaller` inside both `.docm` files from the rebuilt generated bundle.
+- Attempted `ReinstallCleanupSuite`; the deferred `OnTime` install did not complete and left forms removed.
+- Corrected the half-reinstalled state by running `InstallCleanupSuite` directly in both `.docm` files.
+- Saved both `.docm` files after successful direct install.
+
+Important observations:
+- After the first deferred reinstall pass, both `.docm` files had only installer/helper modules plus empty `UserForm*` shells; `frmPreviewActions` and other tool forms were missing.
+- Running `InstallCleanupSuite` directly restored all expected Cleanup Suite forms and modules.
+- Verification found 28 VBA components in each `.docm`, all expected suite components present, no numbered duplicate suite components, blank `frmPreviewActions` design caption, 6 Preview Actions controls, and saved state true.
+- The current `300/90` action-bar size contradicts the pushed test expectations for `530/160`; this may clip visually under high DPI unless Chris intentionally wants to test that smaller size.
+- Word was closed after automation. Installer report Notepad windows were opened; two closed cleanly, one packaged Windows Notepad process remained with an encoded CleanupSuite install-report session path despite `Stop-Process`.
+
+Tests/checks run:
+- Created backup zip before reinstall work.
+- Ran bundled Python `assemble.py`; build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Ran bundled Python full test discovery: `python -m unittest discover -s tests` -> failed 2 tests because they still expect `FORM_W = 530` and `FORM_H = 160` in `frmPreviewActions` and installer source.
+- Verified both `.docm` files read-only after direct install: expected components present, `FORM_W = 300`, `FORM_H = 90`, installer also has `300/90`, `PreviewControls = 6`, `DesignerCaption=[]`, no numbered duplicate suite components, saved state true.
+- Confirmed no `WINWORD` process remained.
+
+Known remaining issues:
+- Tests need either the action-bar expectation updated to `300/90` or the action bar reverted to the last verified `530/160` size.
+- The `300/90` action bar has not been visually checked after reinstall and may be too small at 200% scaling.
+- One packaged Windows Notepad process for an install report remained after attempted cleanup.
+
+Next recommended step:
+- Decide whether `300/90` is the intended new size. If yes, update the tests and visually verify the action bar in Word; if not, restore `530/160`, rebuild, reinstall, and rerun tests.
+
+## Session: 2026-06-12 14:52
+Agent: Codex
+
+Goal:
+- Keep the Preview Actions bar at Chris's smaller `300/90` shell size, but reduce font pressure and make the buttons slightly larger.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-12_14-45-38.zip`
+
+Git/repo state:
+- Remote: `origin https://github.com/MasseysLab/CleanupSuiteForWord.git`
+- Branch: `main`
+- Status before: dirty working tree from the `300/90` local size edit, rebuilt bundles, reinstalled `.docm` files, and the prior handoff entry.
+- Status after: dirty working tree with tests/source/generated bundles/embedded `.docm` copies updated for the adjusted small-bar style.
+- GitHub/local/generated/.docm sync checked: yes for local source, generated root bundle, generated practice bundle, main `.docm`, and practice `.docm`.
+
+Files changed:
+- `src\forms\frmPreviewActions.bas`
+- `src\installer\installer.bas`
+- `tests\test_preview_action_panel.py`
+- `VBA_Cleanup_tool.txt`
+- `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`
+- `CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+- `AI_HANDOFF.md`
+
+Summary of changes:
+- Preserved the smaller Preview Actions shell: `FORM_W = 300`, `FORM_H = 90`.
+- Reduced visual text pressure: tool name font `8`, summary font `7.5`, button font `7.5`.
+- Made buttons slightly larger without overflowing the small shell: `BTN_W = 84`, `BH = 18`, `CONTENT_W = 262`.
+- Updated tests to encode the new intended small-bar geometry and typography.
+- Rebuilt generated bundles and updated both embedded `.docm` copies with the new `frmPreviewActions` code/control positions and refreshed installer module text.
+
+Important observations:
+- Chris's screenshots showed the window shell size was not the issue; the labels were too large for the buttons.
+- A trial with `BTN_W = 90` overflowed under the automated `PrintWindow` capture, so the final button width was reduced to `84`.
+- Automated `PrintWindow` capture appears unreliable/cropped for the very small `300/90` form; verification relied on code/embedded-state checks plus Chris's real screenshots for the visual diagnosis.
+
+Tests/checks run:
+- Created backup zip before edits.
+- TDD red check: focused preview test failed after updating expectations because production still had 80-wide buttons and larger fonts.
+- Focused test after production changes: `python -m unittest tests.test_preview_action_panel` -> 10 tests OK.
+- Full test discovery: `python -m unittest discover -s tests` -> 14 tests OK.
+- Rebuilt generated bundle with bundled Python `assemble.py`; build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Synced `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`.
+- Verified both `.docm` files read-only: `FORM_W = 300`, `FORM_H = 90`, `BTN_W = 84`, `BH = 18`, smaller font calls present, installer matches, 6 controls, blank design caption, no temp audit modules, saved state true.
+- Confirmed no `WINWORD` or `notepad` process remained.
+- Removed temporary capture screenshots.
+
+Known remaining issues:
+- The adjusted small bar should still be checked by Chris in the live Word UI, because automated capture is unreliable for this very small form.
+- The working tree is dirty and has not been committed/pushed after this adjustment.
+
+Next recommended step:
+- Have Chris visually confirm the new small-bar button/font balance in Word. If it looks right, commit and push this adjusted style.
+
+## Session: 2026-06-12 15:04
+Agent: Codex
+
+Goal:
+- Fix Preview Actions moving back to its startup position when the user toggles preview off after dragging the bar.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-12_15-00-45.zip`
+
+Git/repo state:
+- Remote: `origin https://github.com/MasseysLab/CleanupSuiteForWord.git`
+- Branch: `main`
+- Status before: dirty working tree from the small-bar style adjustment.
+- Status after: dirty working tree with position-preservation fix added to source, tests, generated bundles, and both embedded `.docm` files.
+- GitHub/local/generated/.docm sync checked: yes for local source, root generated bundle, practice generated bundle, main `.docm`, and practice `.docm`.
+
+Files changed:
+- `src\forms\frmPreviewActions.bas`
+- `tests\test_preview_action_panel.py`
+- `VBA_Cleanup_tool.txt`
+- `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`
+- `CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+- `AI_HANDOFF.md`
+
+Summary of changes:
+- Root cause: `cmdPreview_Click` toggled preview off by calling `Me.Hide` and then `Me.Show vbModeless`; MSForms reapplied the form startup position during the second show.
+- Added `ShowModelessAtCurrentPosition`, which stores `Me.Left` and `Me.Top`, hides/shows the form modelessly, then restores the saved coordinates.
+- Updated the preview-off toggle path to call the helper instead of directly hiding/showing.
+- Added regression assertions requiring the helper and coordinate restoration.
+- Rebuilt generated bundles and updated both embedded `.docm` copies with the refreshed `frmPreviewActions` code and installer module text.
+
+Important observations:
+- This fix preserves the user's current dragged position only across the Preview ON -> OFF toggle in the same panel instance.
+- It does not try to persist panel position across a full close/reopen or a new Preview Actions instance.
+
+Tests/checks run:
+- Created backup zip before edits.
+- TDD red check: focused preview test failed because the position-preserving helper was not present.
+- Focused test after code change: `python -m unittest tests.test_preview_action_panel` -> 10 tests OK.
+- Full test discovery: `python -m unittest discover -s tests` -> 14 tests OK.
+- Rebuilt generated bundle with bundled Python `assemble.py`; build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Synced `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`.
+- Verified both `.docm` files read-only: position helper present, toggle uses helper, no temp audit modules, saved state true.
+- Confirmed no `WINWORD` or `notepad` process remained.
+
+Known remaining issues:
+- Chris should confirm in live Word that dragging the bar, then clicking `Preview is ON`, leaves the bar in place.
+- The working tree is dirty and has not been committed/pushed after the small-bar style plus position fix.
+
+Next recommended step:
+- Live-test the drag-and-toggle behavior in Word. If it feels right, commit and push the accumulated small-bar style and position-preservation changes.
+
+## Session: 2026-06-12 15:18
+Agent: Codex
+
+Goal:
+- Fix Preview Actions moving back to its startup position when the user turns preview back on after turning it off.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-12_15-00-45.zip`
+
+Git/repo state:
+- Remote: `origin https://github.com/MasseysLab/CleanupSuiteForWord.git`
+- Branch: `main`
+- Status before: dirty working tree from the small-bar style adjustment and preview-off position fix.
+- Status after: dirty working tree with preview-on position memory added to source, tests, generated bundles, and both embedded `.docm` files.
+- GitHub/local/generated/.docm sync checked: yes for local source, root generated bundle, practice generated bundle, main `.docm`, and practice `.docm`.
+
+Files changed:
+- `src\modules\modCleanupHelpers.bas`
+- `src\forms\frmPreviewActions.bas`
+- `tests\test_preview_action_panel.py`
+- `VBA_Cleanup_tool.txt`
+- `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`
+- `CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+- `AI_HANDOFF.md`
+
+Summary of changes:
+- Root cause: the preview-on path unloads the current Preview Actions form and asks the source tool to run `PreviewFromPanel`, which creates a new Preview Actions instance through `ShowPreviewActions`; the new instance did not know where the user had dragged the old one.
+- Added shared preview-panel position memory in `modCleanupHelpers`: `RememberPreviewActionPanelPosition` stores `Left/Top`, and `ApplyPreviewActionPanelPosition` sets `StartUpPosition = 0` plus the stored `Left/Top` before showing the newly-created panel.
+- Updated `frmPreviewActions.cmdPreview_Click` so the preview-on branch remembers `Me.Left` and `Me.Top` before unloading and calling `PreviewFromPanel`.
+- Kept the prior preview-off helper (`ShowModelessAtCurrentPosition`) for the same-instance hide/show path.
+- Rebuilt generated bundles and updated both embedded `.docm` copies with refreshed `modCleanupHelpers`, `frmPreviewActions`, and installer module text.
+
+Important observations:
+- Position is now preserved across both preview toggles:
+  - ON -> OFF: same panel hides/shows and restores its own position.
+  - OFF -> ON: old panel stores position; the newly-created panel applies it before show.
+- Position memory is reset by `ResetCleanupSuiteDefaults`.
+- This is intentionally session-level behavior, not a persistent saved preference across future Word sessions.
+
+Tests/checks run:
+- TDD red check: focused preview test failed because shared position memory helpers were absent.
+- Focused test after code changes: `python -m unittest tests.test_preview_action_panel` -> 10 tests OK.
+- Full test discovery: `python -m unittest discover -s tests` -> 14 tests OK.
+- Rebuilt generated bundle with bundled Python `assemble.py`; build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Synced `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`.
+- Verified both `.docm` files read-only: helper stores position, helper applies before `gPreviewActionPanel.Show`, preview form remembers position before `PreviewFromPanel`, no temp audit modules, saved state true.
+- Confirmed no `WINWORD` or `notepad` process remained.
+
+Known remaining issues:
+- Chris should live-test moving the bar, toggling preview off, then toggling preview back on to confirm the panel stays put through both transitions.
+- The working tree is dirty and has not been committed/pushed after the small-bar style plus both position fixes.
+
+Next recommended step:
+- If Chris confirms the bar now stays where placed through both toggles, commit and push the accumulated changes.
+
+## Session: 2026-06-12 15:52
+Agent: Codex
+
+Goal:
+- Update the Main Menu wording/alignment, add a global "Return to main menu after closing individual tool menus" setting, and remove the launcher design-time caption repeat.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-12_15-46-16.zip`
+
+Git/repo state:
+- Remote: `origin https://github.com/MasseysLab/CleanupSuiteForWord.git`
+- Branch: `main`
+- Status before: dirty working tree from the compact Preview Actions bar and position-preservation changes.
+- Status after: dirty working tree with the Main Menu changes added to source, tests, generated bundles, and both embedded `.docm` files.
+
+Files changed:
+- `src\forms\frmCleanupSuiteLauncher.bas`
+- All individual tool form files under `src\forms\frm*.bas` except `frmCleanupSuiteLauncher.bas` and `frmPreviewActions.bas`
+- `src\modules\modCleanupHelpers.bas`
+- `src\installer\installer.bas`
+- `tests\test_launcher_redesign.py`
+- `tests\test_preview_action_panel.py`
+- `VBA_Cleanup_tool.txt`
+- `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`
+- `CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+- `AI_HANDOFF.md`
+
+Summary of changes:
+- Shortened the Main Menu subtitle to: "Choose the kind of cleanup you need. Tools are grouped by what you are trying to fix."
+- Centered `lblLauncherTitle` and `lblLauncherSubtitle` in both runtime launcher code and installer-created designer styling.
+- Added `chkReturnToMainAfterClose` between the existing "Return to main menu after apply" and "Auto-save before running each tool" global settings.
+- Added persistent document-property helpers: `GetReturnToMainAfterCloseSetting`, `SetReturnToMainAfterCloseSetting`, and `ReturnToMainAfterToolClose`.
+- Reset defaults now restores the close-return setting to `True`.
+- Added `UserForm_QueryClose` to every individual tool menu so closing with the window close button reopens the launcher only when the new setting is enabled.
+- Blank design-time caption is applied in `LayoutLauncherControls`; runtime `frmCleanupSuiteLauncher.UserForm_Initialize` sets `Me.Caption = "Cleanup Suite"` so the title bar remains useful without the in-body duplicate-caption artifact.
+
+Tests/checks run:
+- TDD red check: `python -m unittest tests.test_launcher_redesign` failed for the new missing launcher setting/close hooks before production code was changed.
+- Focused tests after code changes: bundled Python `-m unittest tests.test_launcher_redesign tests.test_preview_action_panel` -> 16 tests OK.
+- Rebuilt generated bundle with bundled Python `assemble.py`; build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Synced `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`.
+- Updated both embedded `.docm` files with the assembled installer module, refreshed helper/form modules, and the new launcher checkbox/control layout.
+- Embedded read-back verified both `.docm` files contain the generated installer builder, the new checkbox, centered title/subtitle, the shortened subtitle, launcher close-setting code, and individual tool close hooks.
+- Final full test discovery after generated/docm/handoff updates: bundled Python `-m unittest discover -s tests` -> 16 tests OK.
+
+Known remaining issues:
+- A live Word UI smoke test of closing a tool menu with the new setting on/off would be useful before the next commit.
+
+## Session: 2026-06-12 19:55
+Agent: Codex
+
+Goal:
+- Prepare `0.6.4` as the final programming-side release candidate / code-freeze target, then commit and push it for documentation work.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-12_19-47-28_v0.6.4-code-freeze.zip`
+
+Git/repo state:
+- Remote: `origin https://github.com/MasseysLab/CleanupSuiteForWord.git`
+- Branch: `main`
+- Status before: dirty working tree containing the compact Preview Actions bar, position-preservation fixes, Main Menu setting/layout work, generated bundles, embedded `.docm` updates, and tests.
+- Status after: pending commit/push of the `0.6.4` code-freeze candidate.
+- GitHub/local/generated/.docm sync checked: yes for local source, root generated bundle, practice generated bundle, main `.docm`, and practice `.docm`.
+
+Files changed:
+- `AI_HANDOFF.md`
+- `CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`
+- `README.md`
+- `VBA_Cleanup_tool.txt`
+- `VERSIONING.md`
+- all individual tool form source files under `src\forms\frm*.bas` except `frmPreviewActions.bas` changes are from the compact preview/action work and `frmCleanupSuiteLauncher.bas` changes are from the Main Menu setting/layout work
+- `src\forms\frmPreviewActions.bas`
+- `src\installer\installer.bas`
+- `src\modules\modCleanupHelpers.bas`
+- `src\modules\modCleanupLauncher.bas`
+- `tests\test_launcher_redesign.py`
+- `tests\test_preview_action_panel.py`
+
+Summary of changes:
+- Bumped `SUITE_VERSION` and project milestone metadata from `0.6.0` to `0.6.4`.
+- Documented `0.6.4` as the code-freeze / final programming-side release candidate.
+- Documented `0.6.5` as the documentation-complete release using the same codebase, except for documentation-blocking bug fixes if required.
+- Preserved the already-completed programming changes in this local candidate: compact Preview Actions bar, preview-panel position preservation, Main Menu subtitle/centering, close-to-main-menu setting, and moved-up Main Menu global settings/reset controls.
+- Rebuilt generated bundles and refreshed embedded `.docm` modules so generated/distributable and embedded states carry the same `0.6.4` version.
+
+Important observations:
+- After `0.6.4` is pushed, no feature/code changes should go into `0.6.5` unless they are required to correct documentation-blocking bugs.
+- Do not start `0.7.0` work yet.
+
+Tests/checks run:
+- Created fresh milestone backup zip and verified it exists, excludes the `backups/` folder, and `backups/` is ignored by Git.
+- Rebuilt generated bundle with bundled Python `assemble.py`; build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Synced `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`; root/practice generated bundles compare equal.
+- Embedded read-back verified both `.docm` files contain `SUITE_VERSION = "0.6.4"`, the assembled installer has `0.6.4`, installer builder functions are present, and both documents are saved.
+- Full test discovery with bundled Python: `-m unittest discover -s tests` -> 16 tests OK.
+
+Known remaining issues:
+- A live Word UI smoke test of the final `0.6.4` candidate remains useful, but this handoff marks the programming-side candidate ready for commit/push.
+
+Next recommended step:
+- Commit and push `0.6.4` to GitHub, then pause programming work while documentation is prepared from that pushed state.

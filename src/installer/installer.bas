@@ -514,12 +514,12 @@ End Sub
 
 Private Sub LayoutPreviewActionsControls(comp As VBIDE.VBComponent, designer As Object)
     On Error Resume Next
-    Const FORM_W As Single = 530
-    Const FORM_H As Single = 160
-    Const CONTENT_W As Single = 250
+    Const FORM_W As Single = 300
+    Const FORM_H As Single = 90
+    Const CONTENT_W As Single = 262
     Const MARGIN As Single = 8
-    Const BTN_W As Single = 80
-    Const BTN_H As Single = 17
+    Const BTN_W As Single = 84
+    Const BTN_H As Single = 18
     Const GAP As Single = 5
 
     ' Keep the design-time MSForms canvas caption blank; Configure sets the native title bar.
@@ -530,7 +530,7 @@ Private Sub LayoutPreviewActionsControls(comp As VBIDE.VBComponent, designer As 
     PositionControl designer, "cmdPreview", MARGIN, 17, BTN_W, BTN_H
     PositionControl designer, "cmdClear", MARGIN + BTN_W + GAP, 17, BTN_W, BTN_H
     PositionControl designer, "cmdApply", MARGIN + (2 * (BTN_W + GAP)), 17, BTN_W, BTN_H
-    PositionControl designer, "lblSummary", MARGIN, 39, CONTENT_W, 18
+    PositionControl designer, "lblSummary", MARGIN, 40, CONTENT_W, 16
     designer.Controls("lblTitle").Caption = ""
     designer.Controls("lblTitle").Visible = False
     designer.Controls("lblSummary").WordWrap = True
@@ -554,6 +554,9 @@ Private Sub LayoutLauncherControls(comp As VBIDE.VBComponent, designer As Object
     Dim y As Single: y = 12
     Dim yCol1 As Single
     Dim yCol2 As Single
+
+    comp.Properties("Caption") = ""
+    designer.Caption = ""
 
     PositionControl designer, "lblLauncherTitle", MARGIN, y, contentW, 20
     y = y + 22
@@ -590,9 +593,11 @@ Private Sub LayoutLauncherControls(comp As VBIDE.VBComponent, designer As Object
     yCol2 = LayoutLauncherToolRow(designer, "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", COL2_X, yCol2, COL_W)
     yCol2 = LayoutLauncherToolRow(designer, "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", COL2_X, yCol2, COL_W)
     yCol2 = LayoutLauncherToolRow(designer, "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", COL2_X, yCol2, COL_W)
-    y = MaxSingle(yCol1, yCol2) + 8
+    y = yCol1 + 8
 
     PositionControl designer, "chkReturnToMainAfterApply", MARGIN + 2, y, FORM_W - (2 * MARGIN), 18
+    y = y + 20
+    PositionControl designer, "chkReturnToMainAfterClose", MARGIN + 2, y, FORM_W - (2 * MARGIN), 18
     y = y + 20
     PositionControl designer, "chkAutoSave", MARGIN + 2, y, FORM_W - (2 * MARGIN), 18
     y = y + 24
@@ -714,10 +719,12 @@ Private Sub ApplyControlStyle(designer As Object, formName As String, nm As Stri
                 ctl.WordWrap = True
                 ctl.AutoSize = False
                 If nm = "lblLauncherTitle" Then
+                    ctl.TextAlign = 2
                     ctl.Font.Size = 14
                     ctl.Font.Bold = True
                     ctl.ForeColor = RGB(28, 43, 58)
                 ElseIf nm = "lblLauncherSubtitle" Then
+                    ctl.TextAlign = 2
                     ctl.Font.Size = 8.5
                     ctl.ForeColor = RGB(88, 101, 116)
                 ElseIf Left$(nm, 6) = "lblCat" Then
@@ -763,8 +770,9 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmCapitalizationCleanup.optUpper": ControlCaptionText = "ALL CAPS -> Title Case"
         Case "frmCleanupSuiteLauncher.chkAutoSave": ControlCaptionText = "Auto-save before running each tool"
         Case "frmCleanupSuiteLauncher.chkReturnToMainAfterApply": ControlCaptionText = "Return to main menu after apply"
+        Case "frmCleanupSuiteLauncher.chkReturnToMainAfterClose": ControlCaptionText = "Return to main menu after closing individual tool menus"
         Case "frmCleanupSuiteLauncher.lblLauncherTitle": ControlCaptionText = "Cleanup Suite"
-        Case "frmCleanupSuiteLauncher.lblLauncherSubtitle": ControlCaptionText = "Choose the kind of cleanup you need. Tools are grouped by what you are trying to fix, not by how the VBA code is built."
+        Case "frmCleanupSuiteLauncher.lblLauncherSubtitle": ControlCaptionText = "Choose the kind of cleanup you need. Tools are grouped by what you are trying to fix."
         Case "frmCleanupSuiteLauncher.lblCatText": ControlCaptionText = "Text and Characters"
         Case "frmCleanupSuiteLauncher.lblCatPara": ControlCaptionText = "Paragraphs, Breaks, and Lists"
         Case "frmCleanupSuiteLauncher.lblCatLayout": ControlCaptionText = "Layout and Document Structure"
@@ -1070,7 +1078,7 @@ Private Function ControlsForForm(formName As String) As Variant
                                     "lblCatPara", "cmdHelpList", "cmdList", "lblDescList", "cmdHelpPara", "cmdParagraph", "lblDescParagraph", "cmdHelpSoftReturn", "cmdSoftReturn", "lblDescSoftReturn", "cmdHelpDuplicate", "cmdDuplicate", "lblDescDuplicate", _
                                     "lblCatLayout", "cmdHelpTable", "cmdTableClean", "lblDescTableClean", "cmdHelpBreak", "cmdBreakNorm", "lblDescBreakNorm", "cmdHelpHeaderFooter", "cmdHeaderFooter", "lblDescHeaderFooter", "cmdHelpTrim", "cmdDocTrim", "lblDescDocTrim", _
                                     "lblCatFormat", "cmdHelpFont", "cmdFontNorm", "lblDescFontNorm", "cmdHelpFormat", "cmdFormatStrip", "lblDescFormatStrip", "cmdHelpStyle", "cmdStyleClean", "lblDescStyleClean", "cmdHelpHyperlink", "cmdHyperlink", "lblDescHyperlink", _
-                                    "lblCatReview", "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", "chkReturnToMainAfterApply", "chkAutoSave", "cmdResetAll")
+                                    "lblCatReview", "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", "chkReturnToMainAfterApply", "chkReturnToMainAfterClose", "chkAutoSave", "cmdResetAll")
         Case "frmPreviewActions"
             ControlsForForm = Array("lblTitle", "lblSummary", "lblHint", "cmdApply", "cmdPreview", "cmdClear")
         Case "frmPunctuationCleanup"

@@ -1,12 +1,22 @@
 Option Explicit
 Private Sub UserForm_Initialize()
+    Me.Caption = "Cleanup Suite"
+    lblLauncherTitle.Caption = "Cleanup Suite"
+    lblLauncherTitle.TextAlign = 2
+    lblLauncherSubtitle.Caption = "Choose the kind of cleanup you need. Tools are grouped by what you are trying to fix."
+    lblLauncherSubtitle.TextAlign = 2
     chkReturnToMainAfterApply.Caption = "Return to main menu after apply"
     chkReturnToMainAfterApply.Value = GetReturnToMainAfterApplySetting()
+    chkReturnToMainAfterClose.Caption = "Return to main menu after closing individual tool menus"
+    chkReturnToMainAfterClose.Value = GetReturnToMainAfterCloseSetting()
     chkAutoSave.Caption = "Auto-save before running each tool"
     chkAutoSave.Value = GetAutoSaveSetting()
 End Sub
 Private Sub chkReturnToMainAfterApply_Click()
     SetReturnToMainAfterApplySetting chkReturnToMainAfterApply.Value
+End Sub
+Private Sub chkReturnToMainAfterClose_Click()
+    SetReturnToMainAfterCloseSetting chkReturnToMainAfterClose.Value
 End Sub
 Private Sub chkAutoSave_Click()
     If Not chkAutoSave.Value Then
@@ -25,6 +35,7 @@ End Sub
 Private Sub cmdResetAll_Click()
     ResetCleanupSuiteDefaults
     chkReturnToMainAfterApply.Value = GetReturnToMainAfterApplySetting()
+    chkReturnToMainAfterClose.Value = GetReturnToMainAfterCloseSetting()
     chkAutoSave.Value = GetAutoSaveSetting()
     MsgBox "All Cleanup Suite tool settings have been reset to defaults.", vbInformation, "Cleanup Suite"
 End Sub

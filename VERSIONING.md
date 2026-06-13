@@ -6,9 +6,9 @@ The project uses a simple SemVer-style ladder, but with `0.x.0` milestones until
 
 ## Current Version
 
-`0.6.0`
+`0.6.4`
 
-This means the working suite baseline now includes the category-based launcher redesign.
+This is the final programming-side release candidate and code-freeze target for the `0.6.x` line.
 
 ## Roadmap
 
@@ -16,6 +16,8 @@ This means the working suite baseline now includes the category-based launcher r
 | --- | --- |
 | `0.5.0` | Working suite baseline, safety fixes, design direction, project tracking, and versioning discipline. |
 | `0.6.0` | Launcher redesign with better categories, tool descriptions, and help placement. |
+| `0.6.4` | Code freeze / final programming-side release candidate. |
+| `0.6.5` | Documentation-complete release using the same codebase as `0.6.4`, except for documentation-blocking bug fixes if required. |
 | `0.7.0` | Post-preview action model with compact review controls such as Apply, Close Preview, Undo, and Back to Options. |
 | `0.8.0` | Complex tool form redesigns using the approved modern panel style. |
 | `0.9.0` | Simple tool form polish, consistency pass, help/caption cleanup, and release-candidate testing. |
@@ -27,6 +29,7 @@ This means the working suite baseline now includes the category-based launcher r
 - Rebuild `VBA_Cleanup_tool.txt` with `python assemble.py` before distributing a version.
 - Mention the version in backup zip names when the backup represents a milestone.
 - Keep Git commits small enough that each milestone can be understood later.
+- After `0.6.4` is pushed, no feature or code changes go into `0.6.5` unless required to correct documentation-blocking bugs.
 - Do not call the project `1.0.0` until the global add-in/template workflow is stable.
 
 ## Naming Examples
