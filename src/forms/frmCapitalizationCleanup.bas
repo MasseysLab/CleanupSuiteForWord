@@ -1,6 +1,6 @@
 Option Explicit
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
-    If CloseMode = vbFormControlMenu Then ReturnToMainAfterToolClose
+    ReturnToMainAfterToolClose Me, Cancel, CloseMode
 End Sub
 ' --------------------------------------------------------------
 '  Capitalization Fixer
@@ -10,6 +10,7 @@ End Sub
 '  Operates paragraph by paragraph within the target scope.
 ' --------------------------------------------------------------
 Private Sub UserForm_Initialize()
+    ApplyMSFormTitleStrategy Me, True
     optAll.GroupName = "CapMode"
     optSentence.GroupName = "CapMode"
     optTitle.GroupName = "CapMode"
@@ -27,49 +28,92 @@ Private Sub UserForm_Initialize()
     Else
         optScopeSelection.Enabled = False
     End If
-    optAll.Caption = "All capitalization fixes"
+    lblIntro.Caption = "Choose how you want capitalization cleaned up."
+    optAll.Caption = "Fix sentence starts"
     optSentence.Caption = "Sentence case"
     optTitle.Caption = "Title case"
-    optUpper.Caption = "ALL CAPS -> Title Case"
-    optLower.Caption = "lowercase -> Sentence case"
-    optCustom.Caption = "Custom (choose below)"
+    optUpper.Caption = "UPPERCASE"
+    optLower.Caption = "lowercase"
+    optCustom.Caption = "Custom"
     chkSentence.Caption = "Capitalize sentence starts"
     chkTitle.Caption = "Apply title case to headings"
     chkUpper.Caption = "Convert ALL-CAPS words (5+ letters)"
     chkLower.Caption = "Fix all-lowercase paragraphs"
     chkSmartSentences.Caption = "Smart sentence detection (skip abbreviations)"
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
-    LayoutCleanupToolForm Me
+    UpdateModeSummary
+    LayoutCapitalizationCleanupForm Me
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
     h = "Capitalization Fixer" & vbCrLf & vbCrLf
-    h = h & "Applies consistent capitalisation to every paragraph in the target scope." & vbCrLf
+    h = h & "Applies consistent capitalization to every paragraph in the target scope." & vbCrLf
     h = h & vbCrLf
     h = h & "MODES" & vbCrLf
-    h = h & "  All (Smart)   --  Default. Capitalises the first letter after sentence-ending" & vbCrLf
-    h = h & "                    punctuation (. ? !).  Best choice for general text." & vbCrLf
-    h = h & "  Sentence case --  First letter of paragraph capitalised; rest lowercased." & vbCrLf
-    h = h & "  Title Case    --  First letter of every word capitalised." & vbCrLf
-    h = h & "  UPPERCASE     --  Every letter uppercased." & vbCrLf
-    h = h & "  lowercase     --  Every letter lowercased." & vbCrLf
-    h = h & "  Custom        --  Combine modes using the checkboxes.  If more than one " & _
-            "is selected, each is applied in sequence -- the last" & vbCrLf
-    h = h & "                    one applied wins." & vbCrLf
+    h = h & "Fix sentence starts" & vbCrLf
+    h = h & "  Recommended. Capitalizes likely sentence starts after . ? !." & vbCrLf
     h = h & vbCrLf
-    h = h & "NOTE: Capitalisation is applied to the full text content of each paragraph, " & _
-            "including any directly formatted runs within it." & vbCrLf
+    h = h & "Sentence case" & vbCrLf
+    h = h & "  Capitalizes the first character and lowercases the rest." & vbCrLf
+    h = h & vbCrLf
+    h = h & "Title case" & vbCrLf
+    h = h & "  Capitalizes the first letter of every word." & vbCrLf
+    h = h & vbCrLf
+    h = h & "UPPERCASE / lowercase" & vbCrLf
+    h = h & "  Converts affected paragraph text to that case." & vbCrLf
+    h = h & vbCrLf
+    h = h & "Custom" & vbCrLf
+    h = h & "  Runs the selected choices from top to bottom." & vbCrLf
+    h = h & "  Later choices can override earlier choices." & vbCrLf
+    h = h & vbCrLf
+    h = h & "NOTE" & vbCrLf
+    h = h & "Capitalization is applied to the full text content of each paragraph." & vbCrLf
     h = h & vbCrLf
     h = h & "SCOPE" & vbCrLf
-    h = h & "  Select text before opening to limit changes to the selection." & vbCrLf
+    h = h & "Select text before opening this tool to enable Selected text only." & vbCrLf
     h = h & vbCrLf
     h = h & "Preview mode highlights paragraphs that would change." & vbCrLf
-    MsgBox h, vbInformation, "Help  --  Capitalization Fixer"
+    MsgBox h, vbInformation, "Capitalization Fixer Help"
 End Sub
-Private Sub UpdateCustomVisibility(): fraCustom.Visible = optCustom.Value: End Sub
+Private Sub UpdateCustomVisibility()
+    fraCustom.Visible = False
+    chkSentence.Visible = optCustom.Value
+    chkTitle.Visible = optCustom.Value
+    chkUpper.Visible = optCustom.Value
+    chkLower.Visible = optCustom.Value
+    chkSmartSentences.Visible = optCustom.Value
+    cmdSelectAll.Visible = optCustom.Value
+    cmdDeselectAll.Visible = optCustom.Value
+End Sub
+Private Sub UpdateModeSummary()
+    If optAll.Value Then
+        lblModeSummary.Caption = "Recommended: capitalizes likely sentence starts after . ? ! while leaving existing casing alone where possible."
+    ElseIf optSentence.Value Then
+        lblModeSummary.Caption = "Makes each paragraph sentence case: first character uppercase, remaining text lowercase."
+    ElseIf optTitle.Value Then
+        lblModeSummary.Caption = "Applies Title Case to every word in each affected paragraph."
+    ElseIf optUpper.Value Then
+        lblModeSummary.Caption = "Converts affected paragraph text to UPPERCASE."
+    ElseIf optLower.Value Then
+        lblModeSummary.Caption = "Converts affected paragraph text to lowercase."
+    ElseIf optCustom.Value Then
+        lblModeSummary.Caption = "Custom runs selected choices in order; later choices can override earlier ones."
+    End If
+End Sub
+Private Sub RefreshCapitalizationChoices()
+    UpdateCustomVisibility
+    UpdateModeSummary
+    LayoutCapitalizationCleanupForm Me
+End Sub
+Private Sub optAll_Click(): RefreshCapitalizationChoices: End Sub
+Private Sub optSentence_Click(): RefreshCapitalizationChoices: End Sub
+Private Sub optTitle_Click(): RefreshCapitalizationChoices: End Sub
+Private Sub optUpper_Click(): RefreshCapitalizationChoices: End Sub
+Private Sub optLower_Click(): RefreshCapitalizationChoices: End Sub
+Private Sub optCustom_Click(): RefreshCapitalizationChoices: End Sub
 Private Sub ClearCustomChecks(): chkSentence.Value = False: chkTitle.Value = False: chkUpper.Value = False: chkLower.Value = False: chkSmartSentences.Value = False: End Sub
 Private Sub cmdSelectAll_Click()
-    If fraCustom.Visible Then
+    If optCustom.Value Then
         chkSentence.Value = True
         chkTitle.Value = True
         chkUpper.Value = True
@@ -78,7 +122,7 @@ Private Sub cmdSelectAll_Click()
     End If
 End Sub
 Private Sub cmdDeselectAll_Click()
-    If fraCustom.Visible Then
+    If optCustom.Value Then
         ClearCustomChecks
     End If
 End Sub
@@ -88,6 +132,7 @@ End Sub
 Public Sub PreviewFromPanel()
     chkPreviewOnly.Value = True
     cmdRun_Click
+    chkPreviewOnly.Value = False
 End Sub
 Private Sub cmdReset_Click()
     UserForm_Initialize
@@ -163,6 +208,7 @@ Private Sub cmdRun_Click()
     ShowCleanupReport "Capitalization Cleanup", results
     undoRec.EndCustomRecord
     MarkCleanupEnd
+    MarkCleanupToolApplied
     Unload Me
     Exit Sub
 RunErr:

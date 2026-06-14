@@ -48,7 +48,7 @@ class PreviewActionPanelTests(unittest.TestCase):
         self.assertIn("Me.Show vbModeless", panel)
         self.assertIn("Me.Hide", panel)
         self.assertIn("mSourceForm.Show", panel)
-        self.assertIn("ShowCleanupSuiteLauncher", panel)
+        self.assertNotIn("ShowCleanupSuiteLauncher", panel)
         self.assertIn("Private Sub LayoutPanel()", panel)
         self.assertIn("LayoutPanel", panel)
         self.assertIn("Private Sub ShowModelessAtCurrentPosition()", panel)
@@ -116,10 +116,16 @@ class PreviewActionPanelTests(unittest.TestCase):
     def test_launcher_hides_while_subtool_is_open(self):
         launcher = read("src/forms/frmCleanupSuiteLauncher.bas")
 
-        self.assertNotIn("OpenCleanupTool(toolForm As Object)", launcher)
-        self.assertNotIn("OpenCleanupTool frmUnicodeCleanup", launcher)
-        self.assertIn("Private Sub cmdUnicode_Click(): Me.Hide: frmUnicodeCleanup.Show: End Sub", launcher)
-        self.assertIn("Private Sub cmdCapitalization_Click(): Me.Hide: frmCapitalizationCleanup.Show: End Sub", launcher)
+        self.assertIn("Private Sub OpenCleanupTool(ByVal formName As String)", launcher)
+        self.assertIn("Me.Hide", launcher)
+        self.assertIn("Set toolForm = VBA.UserForms.Add(formName)", launcher)
+        self.assertIn("toolForm.Show", launcher)
+        self.assertIn("If ShouldReturnToLauncherAfterToolSession() Then Me.Show", launcher)
+        self.assertNotIn("toolForm.Hide", launcher)
+        self.assertNotIn("Private Sub cmdUnicode_Click(): Me.Hide: frmUnicodeCleanup.Show: End Sub", launcher)
+        self.assertNotIn("Private Sub cmdCapitalization_Click(): Me.Hide: frmCapitalizationCleanup.Show: End Sub", launcher)
+        self.assertIn('Private Sub cmdUnicode_Click(): OpenCleanupTool "frmUnicodeCleanup": End Sub', launcher)
+        self.assertIn('Private Sub cmdCapitalization_Click(): OpenCleanupTool "frmCapitalizationCleanup": End Sub', launcher)
 
     def test_preview_capable_forms_can_apply_from_panel(self):
         form_paths = [
@@ -136,6 +142,7 @@ class PreviewActionPanelTests(unittest.TestCase):
                 self.assertIn("chkPreviewOnly.Value = False", source)
                 self.assertIn("cmdRun_Click", source)
                 self.assertIn("ShowPreviewActions Me", source)
+                self.assertIn("MarkCleanupToolApplied", source)
 
     def test_apply_and_preview_button_language(self):
         installer = read("src/installer/installer.bas")
@@ -195,9 +202,24 @@ class PreviewActionPanelTests(unittest.TestCase):
                 self.assertIn("Public Sub PreviewFromPanel()", source)
                 self.assertIn("Private Sub cmdReset_Click()", source)
                 self.assertIn("UserForm_Initialize", source)
-                self.assertIn("LayoutCleanupToolForm Me", source)
+                self.assertTrue(
+                    "LayoutCleanupToolForm Me" in source
+                    or "LayoutCapitalizationCleanupForm Me" in source
+                )
                 self.assertIn("chkPreviewOnly.Value = True", source)
                 self.assertIn("cmdRun_Click", source)
+                preview_from_panel = source[
+                    source.index("Public Sub PreviewFromPanel()"):
+                    source.index("Private Sub cmdReset_Click()")
+                ]
+                self.assertLess(
+                    preview_from_panel.index("chkPreviewOnly.Value = True"),
+                    preview_from_panel.index("cmdRun_Click"),
+                )
+                self.assertLess(
+                    preview_from_panel.index("cmdRun_Click"),
+                    preview_from_panel.rindex("chkPreviewOnly.Value = False"),
+                )
 
     def test_return_to_main_after_apply_setting_is_wired(self):
         launcher = read("src/forms/frmCleanupSuiteLauncher.bas")
@@ -207,15 +229,25 @@ class PreviewActionPanelTests(unittest.TestCase):
 
         self.assertIn("chkReturnToMainAfterApply.Value = GetReturnToMainAfterApplySetting()", launcher)
         self.assertIn("SetReturnToMainAfterApplySetting chkReturnToMainAfterApply.Value", launcher)
+        self.assertIn("chkShowCompletionReviewAfterApply.Value = GetShowCompletionReviewAfterApplySetting()", launcher)
         self.assertIn("Public Function GetReturnToMainAfterApplySetting() As Boolean", helpers)
         self.assertIn("Public Sub SetReturnToMainAfterApplySetting(enabled As Boolean)", helpers)
+        self.assertIn("Public Function GetShowCompletionReviewAfterApplySetting() As Boolean", helpers)
+        self.assertIn("Public Sub SetShowCompletionReviewAfterApplySetting(enabled As Boolean)", helpers)
         self.assertIn("Public Sub ResetCleanupSuiteDefaults()", helpers)
         self.assertIn("SetAutoSaveSetting True", helpers)
         self.assertIn("SetReturnToMainAfterApplySetting True", helpers)
-        self.assertIn("If GetReturnToMainAfterApplySetting() Then ShowCleanupSuiteLauncher", panel)
-        self.assertIn('"chkReturnToMainAfterApply", "chkReturnToMainAfterClose", "chkAutoSave", "cmdResetAll"', installer)
+        self.assertIn("SetShowCompletionReviewAfterApplySetting True", helpers)
+        self.assertIn("If Not GetShowCompletionReviewAfterApplySetting() Then Exit Sub", helpers)
+        self.assertIn("If ShouldReturnToLauncherAfterToolSession() Then Me.Show", launcher)
+        self.assertNotIn("If GetReturnToMainAfterApplySetting() Then ShowCleanupSuiteLauncher", panel)
+        self.assertIn('"chkShowCompletionReviewAfterApply", "chkReturnToMainAfterApply", "chkReturnToMainAfterClose", "chkAutoSave", "cmdResetAll"', installer)
         self.assertIn(
-            'Case "frmCleanupSuiteLauncher.chkReturnToMainAfterApply": ControlCaptionText = "Return to main menu after apply"',
+            'Case "frmCleanupSuiteLauncher.chkReturnToMainAfterApply": ControlCaptionText = "Return to main menu after completion review"',
+            installer,
+        )
+        self.assertIn(
+            'Case "frmCleanupSuiteLauncher.chkShowCompletionReviewAfterApply": ControlCaptionText = "Show completion review after apply"',
             installer,
         )
         self.assertIn("Private Sub cmdResetAll_Click()", launcher)

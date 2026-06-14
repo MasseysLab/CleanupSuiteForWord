@@ -43,6 +43,8 @@
 '  Always set OptionButton .GroupName in UserForm_Initialize -- controls are
 '  created flat, so frames do not group them.  CONTRIBUTING.md has the full
 '  safety chain, control-naming rules, builder-string rules, and cautions.
+'  Generic tool menus use a two-column guided layout for opt/chk choices,
+'  including Custom choices revealed after optCustom is selected.
 ' ---------------------------------------------------------------------------
 ' Paste this entire module into a new standard module and run InstallCleanupSuite
 Option Explicit
@@ -437,79 +439,226 @@ Private Sub LayoutFormControls(comp As VBIDE.VBComponent)
         LayoutPreviewActionsControls comp, designer
         Exit Sub
     End If
+    If comp.Name = "frmCapitalizationCleanup" Then
+        LayoutCapitalizationControls comp, designer
+        Exit Sub
+    End If
 
-    Const FORM_W As Single = 372
-    Const MARGIN As Single = 12
-    Const GAP As Single = 5
+    LayoutGenericToolControls comp, designer
+End Sub
+
+Private Sub LayoutGenericToolControls(comp As VBIDE.VBComponent, designer As Object)
+    On Error Resume Next
+    Const FORM_W As Single = 420
+    Const MARGIN As Single = 14
+    Const GAP As Single = 6
     Const BTN_H As Single = 24
-    Dim contentW As Single: contentW = FORM_W - 2 * MARGIN
-    Dim halfW As Single: halfW = (contentW - 8) / 2
-    Dim y As Single: y = 10
+    Dim contentW As Single: contentW = FORM_W - (2 * MARGIN)
+    Dim halfW As Single: halfW = (contentW - GAP) / 2
+    Dim thirdW As Single: thirdW = (contentW - (2 * GAP)) / 3
+    Dim y As Single: y = 64
     Dim pend As String: pend = ""
+    Dim pendingChoice As String: pendingChoice = ""
     Dim ctrlNames As Variant: ctrlNames = ControlsForForm(comp.Name)
     Dim cn As Variant, pfx As String
     Dim h As Single, lft As Single, w As Single
     For Each cn In ctrlNames
-        If CStr(cn) = "chkPreviewOnly" Then
+        If CStr(cn) = "chkPreviewOnly" Or CStr(cn) = "fraScopeSelection" Then
+            FlushGenericPendingChoice designer, pendingChoice, MARGIN, y, contentW, GAP
+            FlushGenericPendingButton designer, pend, MARGIN, y, contentW, BTN_H, GAP
             designer.Controls(CStr(cn)).Visible = False
+            PositionControl designer, CStr(cn), 0, 0, 0, 0
             GoTo NextControl
         End If
-        If CStr(cn) = "fraScopeSelection" Then
+        If CStr(cn) = "cmdPreview" Then
+            GoTo NextControl
+        End If
+        If CStr(cn) = "cmdRun" Or CStr(cn) = "cmdReset" Or CStr(cn) = "cmdHelp" Then
+            GoTo NextControl
+        End If
+        If Left$(CStr(cn), 3) = "fra" Then
+            FlushGenericPendingChoice designer, pendingChoice, MARGIN, y, contentW, GAP
+            FlushGenericPendingButton designer, pend, MARGIN, y, contentW, BTN_H, GAP
+            PositionControl designer, CStr(cn), 0, 0, 0, 0
             designer.Controls(CStr(cn)).Visible = False
             GoTo NextControl
         End If
         pfx = Left$(CStr(cn), 3)
         If pfx = "cmd" Then
+            FlushGenericPendingChoice designer, pendingChoice, MARGIN, y, contentW, GAP
             SetButtonCaption designer, CStr(cn)
-            If CStr(cn) = "cmdPreview" Then
-                If Len(pend) > 0 Then
-                    PositionControl designer, pend, MARGIN, y, contentW, BTN_H
-                    y = y + BTN_H + GAP
-                    pend = ""
-                End If
-                PositionControl designer, "cmdPreview", MARGIN, y, contentW, BTN_H
-                y = y + BTN_H + GAP
-                GoTo NextControl
-            End If
             If Len(pend) > 0 Then
                 PositionControl designer, pend, MARGIN, y, halfW, BTN_H
-                PositionControl designer, CStr(cn), MARGIN + halfW + 8, y, halfW, BTN_H
+                PositionControl designer, CStr(cn), MARGIN + halfW + GAP, y, halfW, BTN_H
                 y = y + BTN_H + GAP
                 pend = ""
             Else
                 pend = CStr(cn)
             End If
         Else
-            If Len(pend) > 0 Then
-                PositionControl designer, pend, MARGIN, y, contentW, BTN_H
-                y = y + BTN_H + GAP
-                pend = ""
-            End If
             Select Case pfx
                 Case "lbl"
+                    FlushGenericPendingChoice designer, pendingChoice, MARGIN, y, contentW, GAP
+                    FlushGenericPendingButton designer, pend, MARGIN, y, contentW, BTN_H, GAP
                     h = 34: lft = MARGIN: w = contentW
                     designer.Controls(CStr(cn)).WordWrap = True
                     designer.Controls(CStr(cn)).AutoSize = False
+                    PositionControl designer, CStr(cn), lft, y, w, h
+                    y = y + h + GAP
                 Case "opt", "chk"
-                    h = 18: lft = MARGIN + 8: w = contentW - 8
-                Case "fra"
-                    h = 22: lft = MARGIN: w = contentW
+                    FlushGenericPendingButton designer, pend, MARGIN, y, contentW, BTN_H, GAP
+                    If Len(pendingChoice) > 0 Then
+                        PositionGenericChoicePair designer, pendingChoice, CStr(cn), MARGIN, y, contentW, GAP
+                    Else
+                        pendingChoice = CStr(cn)
+                    End If
                 Case Else
+                    FlushGenericPendingChoice designer, pendingChoice, MARGIN, y, contentW, GAP
+                    FlushGenericPendingButton designer, pend, MARGIN, y, contentW, BTN_H, GAP
                     h = 20: lft = MARGIN: w = contentW
+                    PositionControl designer, CStr(cn), lft, y, w, h
+                    y = y + h + GAP
             End Select
-            PositionControl designer, CStr(cn), lft, y, w, h
-            y = y + h + GAP
         End If
 NextControl:
     Next cn
-    If Len(pend) > 0 Then
-        PositionControl designer, pend, MARGIN, y, contentW, BTN_H
-        y = y + BTN_H + GAP
-    End If
+    FlushGenericPendingChoice designer, pendingChoice, MARGIN, y, contentW, GAP
+    FlushGenericPendingButton designer, pend, MARGIN, y, contentW, BTN_H, GAP
+    y = y + 2
+    PositionControl designer, "optScopeDocument", MARGIN, y, halfW, 18
+    PositionControl designer, "optScopeSelection", MARGIN + halfW + GAP, y, halfW, 18
+    y = y + 28
+    PositionControl designer, "cmdPreview", MARGIN, y, contentW, BTN_H
+    y = y + BTN_H + GAP
+    PositionControl designer, "cmdRun", MARGIN, y, thirdW, BTN_H
+    PositionControl designer, "cmdReset", MARGIN + thirdW + GAP, y, thirdW, BTN_H
+    PositionControl designer, "cmdHelp", MARGIN + (2 * (thirdW + GAP)), y, thirdW, BTN_H
+    y = y + BTN_H + 28
     comp.Properties("Width") = FORM_W + 8
     comp.Properties("Height") = y + 40
     designer.Width = FORM_W + 8
     designer.Height = y + 40
+End Sub
+
+Private Sub FlushGenericPendingButton(designer As Object, ByRef pendingButton As String, ByVal MARGIN As Single, ByRef y As Single, ByVal contentW As Single, ByVal BTN_H As Single, ByVal GAP As Single)
+    On Error Resume Next
+    If Len(pendingButton) = 0 Then Exit Sub
+    PositionControl designer, pendingButton, MARGIN, y, contentW, BTN_H
+    y = y + BTN_H + GAP
+    pendingButton = ""
+End Sub
+
+Private Sub FlushGenericPendingChoice(designer As Object, ByRef pendingChoice As String, ByVal MARGIN As Single, ByRef y As Single, ByVal contentW As Single, ByVal GAP As Single)
+    On Error Resume Next
+    If Len(pendingChoice) = 0 Then Exit Sub
+    Dim choiceW As Single
+    choiceW = (contentW - GAP) / 2
+    Dim rowH As Single
+    rowH = GenericChoiceHeight(designer, pendingChoice)
+    PositionControl designer, pendingChoice, MARGIN + 8, y, choiceW - 8, rowH
+    designer.Controls(pendingChoice).WordWrap = True
+    designer.Controls(pendingChoice).AutoSize = False
+    y = y + rowH + GAP
+    pendingChoice = ""
+End Sub
+
+Private Sub PositionGenericChoicePair(designer As Object, ByRef pendingChoice As String, ByVal controlName As String, ByVal MARGIN As Single, ByRef y As Single, ByVal contentW As Single, ByVal GAP As Single)
+    On Error Resume Next
+    Dim choiceW As Single
+    choiceW = (contentW - GAP) / 2
+    Dim rowH As Single
+    rowH = GenericChoiceRowHeight(designer, pendingChoice, controlName)
+    PositionControl designer, pendingChoice, MARGIN + 8, y, choiceW - 8, rowH
+    PositionControl designer, controlName, MARGIN + choiceW + GAP + 8, y, choiceW - 8, rowH
+    designer.Controls(pendingChoice).WordWrap = True
+    designer.Controls(pendingChoice).AutoSize = False
+    designer.Controls(controlName).WordWrap = True
+    designer.Controls(controlName).AutoSize = False
+    y = y + rowH + GAP
+    pendingChoice = ""
+End Sub
+
+Private Function GenericChoiceRowHeight(designer As Object, ByVal firstName As String, ByVal secondName As String) As Single
+    On Error Resume Next
+    GenericChoiceRowHeight = GenericChoiceHeight(designer, firstName)
+    If GenericChoiceHeight(designer, secondName) > GenericChoiceRowHeight Then GenericChoiceRowHeight = GenericChoiceHeight(designer, secondName)
+End Function
+
+Private Function GenericChoiceHeight(designer As Object, ByVal controlName As String) As Single
+    On Error Resume Next
+    Dim captionLength As Long
+    captionLength = Len(CStr(designer.Controls(controlName).Caption))
+    If captionLength > 72 Then
+        GenericChoiceHeight = 44
+    ElseIf captionLength > 34 Then
+        GenericChoiceHeight = 28
+    Else
+        GenericChoiceHeight = 18
+    End If
+End Function
+
+Private Sub LayoutCapitalizationControls(comp As VBIDE.VBComponent, designer As Object)
+    On Error Resume Next
+    Const FORM_W As Single = 420
+    Const MARGIN As Single = 14
+    Const GAP As Single = 6
+    Const BTN_H As Single = 24
+    Dim contentW As Single: contentW = FORM_W - (2 * MARGIN)
+    Dim optionW As Single: optionW = (contentW - GAP) / 2
+    Dim y As Single
+
+    PositionControl designer, "lblIntro", MARGIN, 10, contentW, 18
+    designer.Controls("lblIntro").TextAlign = 2
+
+    y = 36
+    PositionControl designer, "optAll", MARGIN, y, optionW, 18
+    PositionControl designer, "optSentence", MARGIN + optionW + GAP, y, optionW, 18
+    y = y + 24
+    PositionControl designer, "optTitle", MARGIN, y, optionW, 18
+    PositionControl designer, "optUpper", MARGIN + optionW + GAP, y, optionW, 18
+    y = y + 24
+    PositionControl designer, "optLower", MARGIN, y, optionW, 18
+    PositionControl designer, "optCustom", MARGIN + optionW + GAP, y, optionW, 18
+    y = y + 28
+
+    PositionControl designer, "lblModeSummary", MARGIN, y, contentW, 34
+    designer.Controls("lblModeSummary").WordWrap = True
+    y = y + 42
+
+    PositionControl designer, "fraCustom", 0, 0, 0, 0
+    designer.Controls("fraCustom").Visible = False
+    PositionControl designer, "chkSentence", MARGIN + 8, y, contentW - 16, 16
+    PositionControl designer, "chkTitle", MARGIN + 8, y + 18, contentW - 16, 16
+    PositionControl designer, "chkUpper", MARGIN + 8, y + 36, contentW - 16, 16
+    PositionControl designer, "chkLower", MARGIN + 8, y + 54, contentW - 16, 16
+    PositionControl designer, "chkSmartSentences", MARGIN + 8, y + 72, contentW - 16, 16
+    designer.Controls("chkSentence").Visible = False
+    designer.Controls("chkTitle").Visible = False
+    designer.Controls("chkUpper").Visible = False
+    designer.Controls("chkLower").Visible = False
+    designer.Controls("chkSmartSentences").Visible = False
+    PositionControl designer, "cmdSelectAll", MARGIN, y + 94, (contentW - GAP) / 2, BTN_H
+    PositionControl designer, "cmdDeselectAll", MARGIN + ((contentW - GAP) / 2) + GAP, y + 94, (contentW - GAP) / 2, BTN_H
+    designer.Controls("cmdSelectAll").Visible = False
+    designer.Controls("cmdDeselectAll").Visible = False
+
+    PositionControl designer, "optScopeDocument", MARGIN, y, (contentW - GAP) / 2, 18
+    PositionControl designer, "optScopeSelection", MARGIN + ((contentW - GAP) / 2) + GAP, y, (contentW - GAP) / 2, 18
+    designer.Controls("fraScopeSelection").Visible = False
+    designer.Controls("chkPreviewOnly").Visible = False
+    y = y + 28
+
+    PositionControl designer, "cmdPreview", MARGIN, y, contentW, BTN_H
+    y = y + BTN_H + GAP
+    PositionControl designer, "cmdRun", MARGIN, y, (contentW - (2 * GAP)) / 3, BTN_H
+    PositionControl designer, "cmdReset", MARGIN + ((contentW - (2 * GAP)) / 3) + GAP, y, (contentW - (2 * GAP)) / 3, BTN_H
+    PositionControl designer, "cmdHelp", MARGIN + (2 * (((contentW - (2 * GAP)) / 3) + GAP)), y, (contentW - (2 * GAP)) / 3, BTN_H
+    y = y + BTN_H + 28
+
+    comp.Properties("Width") = FORM_W + 8
+    comp.Properties("Height") = y + 34
+    designer.Width = FORM_W + 8
+    designer.Height = y + 34
 End Sub
 
 Private Sub LayoutPreviewActionsControls(comp As VBIDE.VBComponent, designer As Object)
@@ -595,6 +744,8 @@ Private Sub LayoutLauncherControls(comp As VBIDE.VBComponent, designer As Object
     yCol2 = LayoutLauncherToolRow(designer, "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", COL2_X, yCol2, COL_W)
     y = yCol1 + 8
 
+    PositionControl designer, "chkShowCompletionReviewAfterApply", MARGIN + 2, y, COL_W, 18
+    y = y + 20
     PositionControl designer, "chkReturnToMainAfterApply", MARGIN + 2, y, COL_W, 18
     y = y + 20
     PositionControl designer, "chkReturnToMainAfterClose", MARGIN + 2, y, COL_W, 18
@@ -653,9 +804,27 @@ Private Sub ApplyFormStyle(comp As VBIDE.VBComponent, designer As Object)
     On Error Resume Next
     comp.Properties("Caption") = FriendlyFormCaption(comp.Name)
     designer.Caption = FriendlyFormCaption(comp.Name)
+    If FormBodyOwnsTitle(comp.Name) Then
+        comp.Properties("Caption") = ""
+        designer.Caption = ""
+    End If
     designer.BackColor = RGB(248, 249, 251)
     designer.SpecialEffect = 0
 End Sub
+Private Function FormBodyOwnsTitle(formName As String) As Boolean
+    Select Case formName
+        Case "frmCleanupSuiteLauncher", "frmPreviewActions", "frmCapitalizationCleanup", _
+             "frmPunctuationCleanup", "frmUnicodeCleanup", "frmSpacingCleanup", _
+             "frmListCleanup", "frmParagraphCleanup", "frmDuplicateDetector", _
+             "frmFontNormalizer", "frmTableCleaner", "frmBreakNormalizer", _
+             "frmDocumentTrim", "frmFormattingStripper", "frmHyperlinkRemover", _
+             "frmSoftReturnConverter", "frmMetadataScrubber", "frmStyleCleanup", _
+             "frmFootnoteRemover", "frmHeaderFooterStandardizer", "frmObjectRemover"
+            FormBodyOwnsTitle = True
+        Case Else
+            FormBodyOwnsTitle = False
+    End Select
+End Function
 
 Private Sub ApplyControlStyle(designer As Object, formName As String, nm As String)
     On Error Resume Next
@@ -736,6 +905,21 @@ Private Sub ApplyControlStyle(designer As Object, formName As String, nm As Stri
                     ctl.ForeColor = RGB(93, 105, 119)
                 End If
             End If
+            If formName = "frmCapitalizationCleanup" Then
+                ctl.WordWrap = True
+                ctl.AutoSize = False
+                If nm = "lblIntro" Then
+                    ctl.TextAlign = 2
+                    ctl.Font.Size = 9
+                    ctl.ForeColor = RGB(88, 101, 116)
+                ElseIf nm = "lblModeSummary" Then
+                    ctl.Font.Size = 8.5
+                    ctl.ForeColor = RGB(67, 80, 96)
+                    ctl.BackColor = RGB(255, 255, 255)
+                    ctl.BorderStyle = 1
+                    ctl.SpecialEffect = 0
+                End If
+            End If
         Case "chk", "opt"
             ctl.BackColor = RGB(248, 249, 251)
             If Len(ControlCaptionText(formName, nm)) > 0 Then ctl.Caption = ControlCaptionText(formName, nm)
@@ -760,16 +944,19 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmCapitalizationCleanup.chkSmartSentences": ControlCaptionText = "Smart sentence detection (skip abbreviations)"
         Case "frmCapitalizationCleanup.chkTitle": ControlCaptionText = "Apply title case to headings"
         Case "frmCapitalizationCleanup.chkUpper": ControlCaptionText = "Convert ALL-CAPS words (5+ letters)"
-        Case "frmCapitalizationCleanup.optAll": ControlCaptionText = "All capitalization fixes"
-        Case "frmCapitalizationCleanup.optCustom": ControlCaptionText = "Custom (choose below)"
-        Case "frmCapitalizationCleanup.optLower": ControlCaptionText = "lowercase -> Sentence case"
+        Case "frmCapitalizationCleanup.lblIntro": ControlCaptionText = "Choose how you want capitalization cleaned up."
+        Case "frmCapitalizationCleanup.lblModeSummary": ControlCaptionText = "Recommended: capitalizes likely sentence starts after . ? ! while leaving existing casing alone where possible."
+        Case "frmCapitalizationCleanup.optAll": ControlCaptionText = "Fix sentence starts"
+        Case "frmCapitalizationCleanup.optCustom": ControlCaptionText = "Custom"
+        Case "frmCapitalizationCleanup.optLower": ControlCaptionText = "lowercase"
         Case "frmCapitalizationCleanup.optScopeDocument": ControlCaptionText = "Entire document"
         Case "frmCapitalizationCleanup.optScopeSelection": ControlCaptionText = "Selected text only"
         Case "frmCapitalizationCleanup.optSentence": ControlCaptionText = "Sentence case"
         Case "frmCapitalizationCleanup.optTitle": ControlCaptionText = "Title case"
-        Case "frmCapitalizationCleanup.optUpper": ControlCaptionText = "ALL CAPS -> Title Case"
+        Case "frmCapitalizationCleanup.optUpper": ControlCaptionText = "UPPERCASE"
         Case "frmCleanupSuiteLauncher.chkAutoSave": ControlCaptionText = "Auto-save before running each tool"
-        Case "frmCleanupSuiteLauncher.chkReturnToMainAfterApply": ControlCaptionText = "Return to main menu after apply"
+        Case "frmCleanupSuiteLauncher.chkReturnToMainAfterApply": ControlCaptionText = "Return to main menu after completion review"
+        Case "frmCleanupSuiteLauncher.chkShowCompletionReviewAfterApply": ControlCaptionText = "Show completion review after apply"
         Case "frmCleanupSuiteLauncher.chkReturnToMainAfterClose": ControlCaptionText = "Return to main menu after closing individual tool menus"
         Case "frmCleanupSuiteLauncher.lblLauncherTitle": ControlCaptionText = "Cleanup Suite"
         Case "frmCleanupSuiteLauncher.lblLauncherSubtitle": ControlCaptionText = "Choose the kind of cleanup you need. Tools are grouped by what you are trying to fix."
@@ -1078,7 +1265,7 @@ Private Function ControlsForForm(formName As String) As Variant
                                     "lblCatPara", "cmdHelpList", "cmdList", "lblDescList", "cmdHelpPara", "cmdParagraph", "lblDescParagraph", "cmdHelpSoftReturn", "cmdSoftReturn", "lblDescSoftReturn", "cmdHelpDuplicate", "cmdDuplicate", "lblDescDuplicate", _
                                     "lblCatLayout", "cmdHelpTable", "cmdTableClean", "lblDescTableClean", "cmdHelpBreak", "cmdBreakNorm", "lblDescBreakNorm", "cmdHelpHeaderFooter", "cmdHeaderFooter", "lblDescHeaderFooter", "cmdHelpTrim", "cmdDocTrim", "lblDescDocTrim", _
                                     "lblCatFormat", "cmdHelpFont", "cmdFontNorm", "lblDescFontNorm", "cmdHelpFormat", "cmdFormatStrip", "lblDescFormatStrip", "cmdHelpStyle", "cmdStyleClean", "lblDescStyleClean", "cmdHelpHyperlink", "cmdHyperlink", "lblDescHyperlink", _
-                                    "lblCatReview", "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", "chkReturnToMainAfterApply", "chkReturnToMainAfterClose", "chkAutoSave", "cmdResetAll")
+                                    "lblCatReview", "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", "chkShowCompletionReviewAfterApply", "chkReturnToMainAfterApply", "chkReturnToMainAfterClose", "chkAutoSave", "cmdResetAll")
         Case "frmPreviewActions"
             ControlsForForm = Array("lblTitle", "lblSummary", "lblHint", "cmdApply", "cmdPreview", "cmdClear")
         Case "frmPunctuationCleanup"
@@ -1094,7 +1281,7 @@ Private Function ControlsForForm(formName As String) As Variant
                                     "chkDoubleSpaces", "chkTrimSpaces", "chkSpaceBeforePunct", "chkNormalizeAfterPunct", "chkExtraBlankLines", _
                                     "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
         Case "frmCapitalizationCleanup"
-            ControlsForForm = Array("optAll", "optSentence", "optTitle", "optUpper", "optLower", "optCustom", "fraCustom", _
+            ControlsForForm = Array("lblIntro", "optAll", "optSentence", "optTitle", "optUpper", "optLower", "optCustom", "lblModeSummary", "fraCustom", _
                                     "chkSentence", "chkTitle", "chkUpper", "chkLower", "chkSmartSentences", _
                                     "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
         Case "frmListCleanup"

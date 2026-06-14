@@ -1,6 +1,6 @@
 Option Explicit
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
-    If CloseMode = vbFormControlMenu Then ReturnToMainAfterToolClose
+    ReturnToMainAfterToolClose Me, Cancel, CloseMode
 End Sub
 ' --------------------------------------------------------------
 '  Break Normalizer
@@ -69,6 +69,7 @@ Private Sub cmdHelp_Click()
 End Sub
 Private Sub chkConvertSectionBreaks_Click()
     fraConvertTo.Enabled = chkConvertSectionBreaks.Value
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
@@ -76,6 +77,7 @@ End Sub
 Public Sub PreviewFromPanel()
     chkPreviewOnly.Value = True
     cmdRun_Click
+    chkPreviewOnly.Value = False
 End Sub
 Private Sub cmdReset_Click()
     UserForm_Initialize
@@ -155,6 +157,7 @@ Private Sub cmdRun_Click()
     ShowCleanupReport "Break Normalizer", results
     undoRec.EndCustomRecord
     MarkCleanupEnd
+    MarkCleanupToolApplied
     Unload Me
     Exit Sub
 RunErr:

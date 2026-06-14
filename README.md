@@ -54,13 +54,14 @@ vbaeval.py             ← validation library + CLI (used by assemble.py)
 1. Create `src/forms/frmMyTool.bas` with the form's VBA.
 2. Wire the remaining touch-points in `installer.bas` and `frmCleanupSuiteLauncher.bas`.
 3. Add the new builder entry to `manifest.txt` (copy the pattern of an adjacent form).
-4. Run `python assemble.py`.
+4. Follow the shared two-column guided layout rule for generic tool choices and Custom choices.
+5. Run `python assemble.py`.
 
 ---
 
 ## Versioning
 
-The current source milestone is `0.7.0`.
+The current source milestone is `0.7.4`.
 
 See [`VERSIONING.md`](VERSIONING.md) for the `0.5.0` through `1.0.0` roadmap and the rule for when `SUITE_VERSION` should change.
 

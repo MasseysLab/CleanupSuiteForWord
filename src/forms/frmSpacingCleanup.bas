@@ -1,6 +1,6 @@
 Option Explicit
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
-    If CloseMode = vbFormControlMenu Then ReturnToMainAfterToolClose
+    ReturnToMainAfterToolClose Me, Cancel, CloseMode
 End Sub
 ' --------------------------------------------------------------
 '  Spacing Fixer
@@ -59,13 +59,17 @@ Private Sub cmdHelp_Click()
     h = h & "Preview mode highlights problem areas without making changes." & vbCrLf
     MsgBox h, vbInformation, "Help  --  Spacing Fixer"
 End Sub
-Private Sub UpdateCustomVisibility(): fraCustom.Visible = optCustom.Value: End Sub
+Private Sub UpdateCustomVisibility(): fraCustom.Visible = False: End Sub
+Private Sub optAll_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
+Private Sub optDoubleSpaces_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
+Private Sub optTrim_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
+Private Sub optCustom_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
 Private Sub ClearCustomChecks()
     chkDoubleSpaces.Value = False: chkTrimSpaces.Value = False: chkSpaceBeforePunct.Value = False
     chkNormalizeAfterPunct.Value = False: chkExtraBlankLines.Value = False
 End Sub
 Private Sub cmdSelectAll_Click()
-    If fraCustom.Visible Then
+    If optCustom.Value Then
         chkDoubleSpaces.Value = True
         chkTrimSpaces.Value = True
         chkSpaceBeforePunct.Value = True
@@ -74,7 +78,7 @@ Private Sub cmdSelectAll_Click()
     End If
 End Sub
 Private Sub cmdDeselectAll_Click()
-    If fraCustom.Visible Then
+    If optCustom.Value Then
         ClearCustomChecks
     End If
 End Sub
@@ -84,6 +88,7 @@ End Sub
 Public Sub PreviewFromPanel()
     chkPreviewOnly.Value = True
     cmdRun_Click
+    chkPreviewOnly.Value = False
 End Sub
 Private Sub cmdReset_Click()
     UserForm_Initialize
@@ -232,6 +237,7 @@ Private Sub cmdRun_Click()
     ShowCleanupReport "Spacing Cleanup", results
     undoRec.EndCustomRecord
     MarkCleanupEnd
+    MarkCleanupToolApplied
     Unload Me
     Exit Sub
 RunErr:

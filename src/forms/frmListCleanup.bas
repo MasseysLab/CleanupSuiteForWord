@@ -1,6 +1,6 @@
 Option Explicit
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
-    If CloseMode = vbFormControlMenu Then ReturnToMainAfterToolClose
+    ReturnToMainAfterToolClose Me, Cancel, CloseMode
 End Sub
 ' --------------------------------------------------------------
 '  List Normalizer
@@ -61,10 +61,15 @@ Private Sub cmdHelp_Click()
     h = h & "Preview mode highlights list paragraphs that would be affected." & vbCrLf
     MsgBox h, vbInformation, "Help  --  List Normalizer"
 End Sub
-Private Sub UpdateCustomVisibility(): fraCustom.Visible = optCustom.Value: End Sub
+Private Sub UpdateCustomVisibility(): fraCustom.Visible = False: End Sub
+Private Sub optAll_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
+Private Sub optBullets_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
+Private Sub optNumbering_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
+Private Sub optIndent_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
+Private Sub optCustom_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
 Private Sub ClearCustomChecks(): chkNormalizeBullets.Value = False: chkNormalizeNumbering.Value = False: chkFixIndent.Value = False: chkHyphenToBullets.Value = False: End Sub
 Private Sub cmdSelectAll_Click()
-    If fraCustom.Visible Then
+    If optCustom.Value Then
         chkNormalizeBullets.Value = True
         chkNormalizeNumbering.Value = True
         chkFixIndent.Value = True
@@ -72,7 +77,7 @@ Private Sub cmdSelectAll_Click()
     End If
 End Sub
 Private Sub cmdDeselectAll_Click()
-    If fraCustom.Visible Then
+    If optCustom.Value Then
         ClearCustomChecks
     End If
 End Sub
@@ -82,6 +87,7 @@ End Sub
 Public Sub PreviewFromPanel()
     chkPreviewOnly.Value = True
     cmdRun_Click
+    chkPreviewOnly.Value = False
 End Sub
 Private Sub cmdReset_Click()
     UserForm_Initialize
@@ -142,6 +148,7 @@ Private Sub cmdRun_Click()
     ShowCleanupReport "List Normalization", results
     undoRec.EndCustomRecord
     MarkCleanupEnd
+    MarkCleanupToolApplied
     Unload Me
     Exit Sub
 RunErr:

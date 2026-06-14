@@ -1063,3 +1063,711 @@ Known remaining issues:
 
 Next recommended step:
 - Commit the Preview OFF message fix on `codex-0.7.0-start`.
+
+## Session: 2026-06-13 01:26
+Agent: Codex
+
+Goal:
+- Begin the 0.7.0 sub-tool menu redesign with Capitalization Fixer as the first guided, more modern form.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-13_00-58-49_capitalization-guided-form.zip`
+
+Git/repo state:
+- Remote: `origin https://github.com/MasseysLab/CleanupSuiteForWord.git`
+- Branch: `codex-0.7.0-start`
+- Status before: clean after `4b1ac15 Update preview off message`.
+- Status after: pending source/test/generated changes; embedded `.docm` files not updated.
+- GitHub/local/generated/.docm sync checked: local source and generated bundles synced; embedded `.docm` sync attempted but blocked by Word COM timeouts.
+
+Files changed:
+- `AI_HANDOFF.md`
+- `VBA_Cleanup_tool.txt`
+- `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`
+- `src\forms\frmCapitalizationCleanup.bas`
+- `src\installer\installer.bas`
+- `src\modules\modCleanupHelpers.bas`
+- `tests\test_capitalization_guided_form.py`
+- `tests\test_preview_action_panel.py`
+
+Summary of changes:
+- Reworked Capitalization Fixer into a guided mode-selection flow while preserving the existing transformation logic.
+- Added `lblIntro` and `lblModeSummary` so the form explains the selected action instead of presenting only mechanical controls.
+- Renamed mode captions to user-facing actions: `Fix sentence starts`, `Sentence case`, `Title case`, `UPPERCASE`, `lowercase`, and `Custom`.
+- Added dynamic summary text and click handlers so the guidance updates when a mode changes.
+- Added `LayoutCapitalizationCleanupForm` for a compact two-column guided layout, with Custom controls hidden until Custom is selected.
+- Updated the installer control list, captions, style handling, and generated design-time layout for the new Capitalization controls.
+- Updated tests so Capitalization may use its specialized layout while other preview-capable forms continue using the shared layout helper.
+
+Important observations:
+- No capitalization cleanup algorithm changes were made. The existing `optAll`, `optSentence`, `optTitle`, `optUpper`, `optLower`, and `optCustom` behavior remains wired the same way.
+- Generated root and practice `VBA_Cleanup_tool.txt` files compare equal.
+- Multiple Word COM attempts to update/read the `.docm` files timed out or produced a Word installer/modal state. Stale Word processes and `~$` lock files were cleared afterward.
+- Git does not show either `.docm` as modified, so Chris should treat the source/generated bundle as updated but the embedded documents as not yet synced for this change.
+
+Tests/checks run:
+- Focused tests: bundled Python `-m unittest tests.test_capitalization_guided_form tests.test_preview_action_panel` -> 12 tests OK.
+- Full test discovery: bundled Python `-m unittest discover -s tests` -> 18 tests OK.
+- Rebuilt generated bundle with bundled Python `assemble.py`; build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Synced `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`; root/practice generated bundles compare equal.
+
+Known remaining issues:
+- Embedded `.docm` files still need a successful Word/VBA sync pass before Chris can test the new Capitalization form from the workspace documents.
+
+Next recommended step:
+- Resolve the Word COM `.docm` sync blocker, then update both `.docm` files and visually inspect Capitalization Fixer in Word.
+
+## Session: 2026-06-13 08:30
+Agent: Codex
+
+Goal:
+- Resolve the `.docm` sync blocker from the Capitalization guided-form pass and verify the embedded documents.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-13_08-12-42_before-docm-sync-retry.zip`
+
+Git/repo state:
+- Remote: `origin https://github.com/MasseysLab/CleanupSuiteForWord.git`
+- Branch: `codex-0.7.0-start`
+- Status before: pending Capitalization guided-form source/test/generated changes; embedded `.docm` files not yet synced.
+- Status after: pending Capitalization guided-form changes with both embedded `.docm` files updated and verified.
+- GitHub/local/generated/.docm sync checked: yes for local source, root generated bundle, practice generated bundle, main `.docm`, and practice `.docm`.
+
+Files changed:
+- `AI_HANDOFF.md`
+- `CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+
+Summary of changes:
+- Diagnosed the Word COM blocker: `Documents.Open` hung when using the long project path with spaces, but opened normally when using a temporary copy or the DOS short path.
+- Updated both embedded `.docm` files by copying each document to `%TEMP%`, opening the temp copy, syncing changed VBA/form components, saving it, then replacing the original document with the synced copy.
+- Synced embedded `modCleanupHelpers`, `frmCapitalizationCleanup`, and `modCleanupSuiteInstaller`.
+- Added the new embedded `frmCapitalizationCleanup` label controls `lblIntro` and `lblModeSummary` to both documents.
+
+Important observations:
+- The actual `.docm` files are now modified in Git and contain the new Capitalization guided-form code and controls.
+- Future Word COM automation against this project may need DOS short paths or temp-copy editing for reliable `.docm` opens.
+- No Word processes or Office `~$` lock files remained after the sync.
+
+Tests/checks run:
+- Read-back verification using DOS short paths confirmed both `.docm` files contain:
+  - `LayoutCapitalizationCleanupForm` in `modCleanupHelpers`
+  - `lblIntro.Caption` and the custom summary text in `frmCapitalizationCleanup`
+  - `LayoutCapitalizationControls` in `modCleanupSuiteInstaller`
+  - embedded controls `lblIntro` and `lblModeSummary`
+  - saved state true
+- Runtime audit on a temporary synced `.docm` copy loaded `frmCapitalizationCleanup` successfully and recorded:
+  - intro: `Choose how you want capitalization cleaned up.`
+  - default summary: `Recommended: capitalizes likely sentence starts after . ? ! while leaving existing casing alone where possible.`
+  - default mode: `Fix sentence starts: True`
+  - custom visible: `False`
+  - buttons: `Preview` and `Apply`
+  - form size: `428 x 264`
+- Full test discovery with bundled Python: `-m unittest discover -s tests` -> 18 tests OK.
+
+Known remaining issues:
+- Chris should visually open Capitalization Fixer in Word and decide whether this is the right first-pass feel before applying the same pattern to other sub-tool menus.
+
+Next recommended step:
+- Visually review Capitalization Fixer in the workspace `.docm`; then either refine this first guided-form pattern or choose the next tool menu to redesign.
+
+## Session: 2026-06-13 09:48
+Agent: Codex
+
+Goal:
+- Polish the first Capitalization guided-form pass based on Chris's screenshots and feedback.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-13_09-40-15_capitalization-polish.zip`
+
+Git/repo state:
+- Remote: `origin https://github.com/MasseysLab/CleanupSuiteForWord.git`
+- Branch: `codex-0.7.0-start`
+- Status before: pending Capitalization guided-form source/test/generated/docm changes.
+- Status after: pending Capitalization guided-form polish changes with generated bundles and both embedded `.docm` files updated.
+- GitHub/local/generated/.docm sync checked: yes for local source, generated root/practice bundles, main `.docm`, and practice `.docm`.
+
+Files changed:
+- `AI_HANDOFF.md`
+- `CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`
+- `VBA_Cleanup_tool.txt`
+- `src\forms\frmCapitalizationCleanup.bas`
+- `src\installer\installer.bas`
+- `src\modules\modCleanupHelpers.bas`
+- `tests\test_capitalization_guided_form.py`
+
+Summary of changes:
+- Removed the visible duplicate in-form title by adding runtime hiding for legacy controls whose caption is `Capitalization Fixer`.
+- Added bottom room to the Capitalization guided layout so the bottom action buttons are not clipped.
+- Fixed Custom mode visibility by sending the decorative `fraCustom` frame behind the actual custom checkbox controls and bringing choices/buttons forward.
+- Cleaned and realigned the Help message, removing the awkward split sentence and switching to clearer mode-by-mode text.
+- Updated installer-generated layout height/Z-order so fresh installs match the runtime polish.
+- Added/updated regression coverage for the duplicate-title guard, bottom height, Custom Z-order, and Help text cleanup.
+
+Important observations:
+- No cleanup algorithm changes were made.
+- The previous Word COM workaround was used successfully: update temp `.docm` copies, then replace the originals.
+- No Word processes remained after verification.
+
+Tests/checks run:
+- Focused Capitalization guided-form tests: bundled Python `-m unittest tests.test_capitalization_guided_form` -> 2 tests OK.
+- Rebuilt generated bundle with bundled Python `assemble.py`; build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Synced `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`; root/practice generated bundles compare equal.
+- Embedded read-back using short paths confirmed both `.docm` files contain the duplicate-title hide helper, height padding, cleaned Help title, and installer height update; saved state true.
+- Runtime audit on a temporary synced `.docm` copy loaded `frmCapitalizationCleanup` and recorded:
+  - default height: `298`
+  - default custom visible: `False`
+  - default bottom button extent: `236`
+  - Custom height: `456`
+  - Custom frame visible: `True`
+  - all five Custom choice checkboxes visible: `True`
+  - Custom bottom button extent: `394`
+  - summary: `Custom runs selected choices in order; later choices can override earlier ones.`
+- Full test discovery with bundled Python: `-m unittest discover -s tests` -> 18 tests OK.
+
+Known remaining issues:
+- Chris should visually confirm the polished Capitalization form in Word. The automated runtime audit confirms the controls are visible and not clipped, but this final judgment is visual/design feel.
+
+Next recommended step:
+- Open Capitalization Fixer in Word, check normal and Custom modes, then decide whether to make one more polish pass or use this pattern for the next sub-tool menu.
+
+## Session: 2026-06-13 10:24
+Agent: Codex
+
+Goal:
+- Finish the remaining Capitalization guided-form issues from Chris's follow-up screenshots: Custom options visible and duplicate title removed.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-13_09-56-08_capitalization-custom-title-fix.zip`
+
+Git/repo state:
+- Remote: `origin https://github.com/MasseysLab/CleanupSuiteForWord.git`
+- Branch: `codex-0.7.0-start`
+- Status before: pending Capitalization guided-form polish changes.
+- Status after: pending Capitalization guided-form polish changes with source, generated bundles, tests, and both embedded `.docm` files updated.
+- GitHub/local/generated/.docm sync checked: yes for local source, generated root/practice bundles, main `.docm`, and practice `.docm`.
+
+Files changed:
+- `AI_HANDOFF.md`
+- `CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`
+- `VBA_Cleanup_tool.txt`
+- `src\forms\frmCapitalizationCleanup.bas`
+- `src\installer\installer.bas`
+- `src\modules\modCleanupHelpers.bas`
+- `tests\test_capitalization_guided_form.py`
+
+Summary of changes:
+- Changed Custom mode to show the five Custom checkboxes directly on the form instead of inside a visible `fraCustom` frame; the frame is now hidden at runtime and in generated layout.
+- Confirmed the duplicate visible title was not a normal visible control in runtime audit; it was tied to the MSForms/UserForm caption behavior.
+- Set `Me.Caption = ""` in `frmCapitalizationCleanup.UserForm_Initialize` and blanked the generated design-time caption for this one form to prevent the double-title display.
+- Kept the cleaned Help dialog title/text intact.
+
+Important observations:
+- Help does not show the same double title because it is a native `MsgBox`, not the custom MSForms `UserForm` surface.
+- The Capitalization form now relies on the centered instruction text rather than a native/userform caption.
+- No cleanup algorithm changes were made.
+
+Tests/checks run:
+- Focused Capitalization guided-form tests: bundled Python `-m unittest tests.test_capitalization_guided_form` -> 2 tests OK.
+- Rebuilt generated bundle with bundled Python `assemble.py`; build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Synced `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`; root/practice generated bundles compare equal.
+- Updated both embedded `.docm` files using the temp-copy Word COM method.
+- Runtime audit on a temporary synced `.docm` copy confirmed:
+  - `formCaption=[]`
+  - intro caption present
+  - default height `298`
+  - Custom frame hidden
+  - Custom choices visible (`chkSentence=True`, `chkSmartSentences=True`)
+- Full test discovery with bundled Python: `-m unittest discover -s tests` -> 18 tests OK.
+- No Word processes or Office `~$` lock files remained after verification.
+
+Known remaining issues:
+- Chris should visually confirm the blank-caption approach removes the persistent duplicate title in the live Word form.
+
+Next recommended step:
+- Visually re-open Capitalization Fixer in Word in normal and Custom modes. If this is approved, commit the Capitalization guided-form pass or apply the same design pattern to the next sub-tool menu.
+
+## Session: 2026-06-13 12:36
+Agent: Codex
+
+Goal:
+- Apply the successful MSForms double-title handling as a shared project pattern, record both title-handling methods, and document project workarounds/coding mechanisms.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-13_12-18-12_projectwide-msform-caption-docs.zip`
+
+Git/repo state:
+- Branch: `codex-0.7.0-start`
+- Status before: pending 0.7.0 Capitalization guided-form UI/source/generated/docm changes.
+- Status after: pending shared MSForm title-strategy changes, generated bundle sync, embedded `.docm` sync, tests, and new workaround documentation.
+- GitHub/local/generated/.docm sync checked: yes for local source, root generated bundle, practice generated bundle, main `.docm`, and practice `.docm`.
+
+Files changed/added in this pass:
+- `docs\Cool_work_arounds_and_coding_mechanisms_for_VBA_programmed_through_Python.md`
+- `src\modules\modCleanupHelpers.bas`
+- `src\forms\frmCleanupSuiteLauncher.bas`
+- `src\forms\frmPreviewActions.bas`
+- `src\forms\frmCapitalizationCleanup.bas`
+- `src\installer\installer.bas`
+- `tests\test_capitalization_guided_form.py`
+- `tests\test_launcher_redesign.py`
+- `tests\test_preview_action_panel.py`
+- `VBA_Cleanup_tool.txt`
+- `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`
+- `CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+
+Summary of changes:
+- Added shared `ApplyMSFormTitleStrategy` helper with two recorded methods:
+  - Method 1 blanks the native UserForm caption when the body owns the title.
+  - Method 2 keeps the native caption and hides legacy in-body `lblTitle` controls.
+- Applied Method 1 to the Main Menu, Preview Actions action bar, and Capitalization guided form.
+- Applied Method 2 through `LayoutCleanupToolForm` for the older generic tool forms.
+- Added installer-side `FormBodyOwnsTitle` so generated installs blank design-time captions for the body-owned-title forms.
+- Added the requested workaround/coding-mechanism document under `docs\`.
+- Rebuilt generated bundles and synced both embedded `.docm` files.
+
+Important observations:
+- Help dialogs do not show the same double-title issue because they are native `MsgBox` dialogs, not custom MSForms UserForms.
+- The failed long-path read-back attempt reproduced the known Word COM limitation; verification was redone successfully from short temp copies.
+- One leftover invisible Word automation process from the timed-out long-path read-back was closed/cleared; no Word processes remained after final checks.
+- No cleanup algorithm changes were made as part of this title/documentation pass.
+
+Tests/checks run:
+- Focused tests after source updates: bundled Python `-m unittest tests.test_capitalization_guided_form tests.test_launcher_redesign tests.test_preview_action_panel` -> 18 tests OK.
+- Rebuilt generated bundle with bundled Python `assemble.py`; build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Synced `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`; root/practice generated bundles compare equal.
+- Updated both embedded `.docm` files using the temp-copy Word COM method.
+- Embedded read-back from short temp copies confirmed both `.docm` files contain `ApplyMSFormTitleStrategy`, `HideLegacyTitleControls`, `FormBodyOwnsTitle`, and `ApplyMSFormTitleStrategy Me, True` in Launcher, Preview Actions, and Capitalization.
+- Full test discovery with bundled Python: `-m unittest discover -s tests` -> 18 tests OK.
+
+Known remaining issues:
+- Chris should visually confirm the Main Menu, Preview Actions bar, Capitalization form, and one generic older sub-tool form in Word to make sure the two title methods feel right in the actual UI.
+
+Next recommended step:
+- If the shared title behavior looks good visually, continue the 0.7.0 guided-form modernization with the next sub-tool menu.
+
+## Session: 2026-06-13 13:16
+Agent: Codex
+
+Goal:
+- Fix runtime error 400 when reopening the same tool from the Main Menu after returning to it.
+- Add a global completion-review setting and clarify how it interacts with "Return to main menu after apply."
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-13_13-08-47_return-review-reopen-fix.zip`
+
+Git/repo state:
+- Branch: `codex-0.7.0-start`
+- Status before: pending 0.7.0 guided-form/title-strategy work plus generated/docm sync.
+- Status after: pending reopen fix, completion-review setting, generated bundle sync, embedded `.docm` sync, tests, and this handoff entry.
+- GitHub/local/generated/.docm sync checked: yes for local source, root generated bundle, practice generated bundle, main `.docm`, and practice `.docm`.
+
+Files changed:
+- `AI_HANDOFF.md`
+- `CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`
+- `VBA_Cleanup_tool.txt`
+- all individual tool form files under `src\forms` for the close callback update
+- `src\forms\frmCleanupSuiteLauncher.bas`
+- `src\installer\installer.bas`
+- `src\modules\modCleanupHelpers.bas`
+- `tests\test_launcher_redesign.py`
+- `tests\test_preview_action_panel.py`
+
+Summary of changes:
+- Root cause of error 400: the launcher was trying to show a default UserForm instance that could still be considered displayed after returning to the Main Menu from that same tool.
+- Added `OpenCleanupTool(toolForm As Object)` in the launcher. It hides the launcher, hides the target tool instance if it is already displayed, then shows it. Tool buttons now call this helper instead of direct `frmX.Show`.
+- Updated individual tool `UserForm_QueryClose` handlers to call `ReturnToMainAfterToolClose Me`, allowing the helper to hide the closing form before showing the Main Menu.
+- Updated `ReturnToMainAfterToolClose` to accept the optional closing form and hide it before showing the launcher.
+- Added global setting `Show completion review after apply`, stored as `CleanupSuiteShowCompletionReviewAfterApply`.
+- Default for completion review is ON.
+- `ShowCleanupReport` now exits silently when completion review is disabled.
+- Main Menu wording now changes dynamically:
+  - review ON: `Return to main menu after completion review`
+  - review OFF: `Return to main menu after apply`
+- Reset All restores completion review to ON.
+
+Important observations:
+- The new completion-review setting controls whether post-apply result dialogs appear.
+- The return-to-main setting controls where the user lands after apply/review flow finishes.
+- No cleanup algorithms were changed.
+- Word/VBE was not running during `.docm` sync; no Word processes remained after verification.
+
+Tests/checks run:
+- Focused tests initially failed for the expected missing behavior, then passed after implementation.
+- Focused tests: bundled Python `-m unittest tests.test_launcher_redesign tests.test_preview_action_panel` -> 17 tests OK.
+- Full tests before generated sync: bundled Python `-m unittest discover -s tests` -> 19 tests OK.
+- Rebuilt generated bundle with bundled Python `assemble.py`; build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Synced `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`; root/practice generated bundles compare equal.
+- Updated both embedded `.docm` files using the temp-copy Word COM method.
+- Embedded read-back from short temp copies confirmed both `.docm` files contain:
+  - `OpenCleanupTool`
+  - `toolForm.Hide` before `toolForm.Show`
+  - Capitalization launcher click uses `OpenCleanupTool frmCapitalizationCleanup`
+  - Capitalization close callback passes `Me`
+  - completion-review helper functions
+  - `ShowCleanupReport` skip guard
+  - installer-generated completion-review control
+- Final full test discovery: bundled Python `-m unittest discover -s tests` -> 19 tests OK.
+
+Known remaining issues:
+- Chris should visually confirm the exact sequence that failed before: open a tool, return to Main Menu, reopen the same tool. The source/generated/embedded checks specifically cover the fix, but the final confidence check is in live Word.
+
+Next recommended step:
+- Test the Main Menu settings in Word:
+  - with completion review ON, confirm the return label says `Return to main menu after completion review`;
+  - with completion review OFF, confirm it says `Return to main menu after apply`;
+  - confirm reopening the same tool no longer raises runtime error 400.
+
+## Session: 2026-06-13 13:28
+Agent: Codex
+
+Goal:
+- Fix compile error when launching CleanupSuite after adding the `Show completion review after apply` setting.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-13_13-22-17_launcher-missing-review-control-fix.zip`
+
+Git/repo state:
+- Branch: `codex-0.7.0-start`
+- Status before: pending reopen/completion-review source/generated/docm changes.
+- Status after: same pending source/generated/docm changes, with both embedded `.docm` launcher designers patched to include the missing checkbox control.
+- GitHub/local/generated/.docm sync checked: yes for both embedded `.docm` files.
+
+Files changed:
+- `AI_HANDOFF.md`
+- `CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+
+Summary of changes:
+- Root cause: source code and generated installer knew about `chkShowCompletionReviewAfterApply`, but the existing embedded `.docm` form designer did not have that new checkbox control. VBA therefore raised `Compile error: Variable not defined` in `frmCleanupSuiteLauncher.UserForm_Initialize`.
+- Patched both embedded `frmCleanupSuiteLauncher` designers to add `chkShowCompletionReviewAfterApply`.
+- Positioned the new checkbox between `chkReturnToMainAfterApply` and `chkReturnToMainAfterClose`, then moved `chkReturnToMainAfterClose`, `chkAutoSave`, and `cmdResetAll` down to match the installer layout.
+
+Important observations:
+- This was not a source-code bug in the installer path; it was an embedded `.docm` designer-sync bug.
+- When adding a new MSForms control, syncing only code modules is not enough. The existing `.docm` designer must also receive the new control, or the form code will not compile.
+- First COM designer patch attempt failed due to a stale/null object reference from `Controls.Add`; retrying by adding the control and then fetching it by name was reliable.
+- One invisible Word automation instance was left after the failed COM attempt and had to be force-stopped because it rejected cleanup calls.
+
+Tests/checks run:
+- Patched both `.docm` files using Word COM and short temp copies.
+- Embedded read-back verified both `.docm` launchers contain `chkShowCompletionReviewAfterApply` with caption `Show completion review after apply`.
+- Smoke macro on short temp copies created and unloaded `frmCleanupSuiteLauncher` successfully in both `.docm` files, proving the compile error path is fixed.
+- Full test discovery with bundled Python: `-m unittest discover -s tests` -> 19 tests OK.
+- No Word processes remained after verification.
+
+Known remaining issues:
+- Chris should retry launching from the Ribbon button and Alt-F8 `ShowCleanupSuiteLauncher` in the live document to confirm the compile dialog is gone.
+
+Next recommended step:
+- After visual/runtime confirmation, consider improving the `.docm` sync workflow so new controls are automatically created or the installer is rerun whenever `ControlsForForm` changes.
+
+## Session: 2026-06-13 13:58
+Agent: Codex
+
+Goal:
+- Fix the runtime error sequence where reopening a tool from the Main Menu, using Help/Apply, and closing nested forms could leave stale form state and raise `Run-time error '13': Type mismatch`.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-13_13-42-26_byval-preview-flag-fix.zip`
+
+Git/repo state:
+- Branch: `codex-0.7.0-start`
+- Status before: pending 0.7.0 form-redesign/global-setting changes.
+- Status after: same pending 0.7.0 changes, plus the launcher/tool reopen fix and preview-flag reset.
+- Generated bundle and both `.docm` files synced after source changes.
+
+Files changed in this fix:
+- `src\forms\frmCleanupSuiteLauncher.bas`
+- `src\modules\modCleanupHelpers.bas`
+- all preview-capable `src\forms\frm*.bas` tool forms
+- `VBA_Cleanup_tool.txt`
+- `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`
+- `CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+- `tests\test_launcher_redesign.py`
+- `tests\test_preview_action_panel.py`
+- `tests\test_capitalization_guided_form.py`
+- `AI_HANDOFF.md`
+
+Summary of changes:
+- Root cause 1: `OpenCleanupTool(toolForm As Object)` passed UserForm default instances by reference. In this reopen path, VBA could throw `Run-time error '13': Type mismatch`. The launcher helper now uses `Private Sub OpenCleanupTool(ByVal toolForm As Object)`.
+- Root cause 2: `PreviewFromPanel` set `chkPreviewOnly.Value = True` before calling `cmdRun_Click`, but did not clear it afterward. Returning to the sub-tool and pressing Apply could therefore launch Preview Actions again instead of the apply/completion flow. Each preview-capable form now resets `chkPreviewOnly.Value = False` after `cmdRun_Click`.
+- Related object-helper parameters in `modCleanupHelpers.bas` were made `ByVal` where they receive form/control objects.
+- Removed a stray BOM marker from `frmCapitalizationCleanup.bas` before final rebuild/sync.
+
+Tests/checks run:
+- Focused tests after test updates: bundled Python `-m unittest tests.test_launcher_redesign tests.test_preview_action_panel tests.test_capitalization_guided_form` -> 19 tests OK.
+- Full tests before sync: bundled Python `-m unittest discover -s tests` -> 19 tests OK.
+- Rebuilt generated bundle with `python assemble.py`; build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Synced `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`; root/practice SHA-256 hashes match.
+- Synced both embedded `.docm` files using short temp copies and Word COM.
+- Embedded read-back/smoke on both `.docm` files confirmed:
+  - `OpenCleanupTool(ByVal toolForm As Object)`
+  - `ReturnToMainAfterToolClose(Optional ByVal closingForm As Object = Nothing)`
+  - capitalization `PreviewFromPanel` resets `chkPreviewOnly.Value = False`
+  - `chkShowCompletionReviewAfterApply` exists in the launcher designer
+  - temporary smoke macro can create and unload `frmCleanupSuiteLauncher`
+- Final full tests after sync: bundled Python `-m unittest discover -s tests` -> 19 tests OK.
+- No Word processes remained after verification.
+
+Known remaining issues:
+- Chris should retry the exact live Word path that failed: open a tool, use Help, close Help, Apply, close/reopen through Main Menu, and close the sub-tool. Source/generated/embedded checks cover the identified root causes, but the final confidence check is the live UI sequence.
+
+## Session: 2026-06-13 14:22
+Agent: Codex
+
+Goal:
+- Fix the no-visible-error runtime flaw where a sub-tool could be opened, closed, reopened, and then refuse to close cleanly, leaving a hidden/background submenu and confused Preview Actions/apply flow.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-13_14-15-34_tool-session-lifecycle-fix.zip`
+
+Root cause:
+- The previous close flow showed the Main Menu from inside each sub-tool's `UserForm_QueryClose` event. That meant a new modal form could be opened before the closing sub-tool had actually unwound, leaving hidden/default UserForm instances in an unstable state.
+- The launcher also reused default UserForm instances (`frmCapitalizationCleanup`, etc.). That made stale hidden forms more likely after close/reopen cycles.
+
+Summary of changes:
+- The launcher now owns the whole tool session:
+  - hides itself,
+  - creates a fresh tool instance with `VBA.UserForms.Add(formName)`,
+  - waits for `toolForm.Show` to return,
+  - then decides whether to show the Main Menu again.
+- Sub-tool `QueryClose` handlers no longer show the Main Menu directly. They call `ReturnToMainAfterToolClose Me, Cancel, CloseMode`, which only marks that the user closed the tool.
+- Successful apply paths now call `MarkCleanupToolApplied` before unloading.
+- Preview Actions no longer shows the Main Menu directly after Apply; it lets the launcher finish the session and make the return decision.
+- Generated installer bundle, practice bundle, and both `.docm` files were synced.
+
+Tests/checks run:
+- RED tests first failed against the old lifecycle as expected.
+- Focused lifecycle tests after implementation: bundled Python `-m unittest tests.test_launcher_redesign tests.test_preview_action_panel` -> 17 tests OK.
+- Full tests before sync: bundled Python `-m unittest discover -s tests` -> 19 tests OK.
+- Rebuilt generated bundle with `python assemble.py`; build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Synced `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`; root/practice SHA-256 hashes match.
+- Synced both embedded `.docm` files using short temp copies and Word COM.
+- Embedded Word COM smoke on both `.docm` temp copies verified:
+  - `VBA.UserForms.Add("frmCapitalizationCleanup")` compiles and runs,
+  - close-session marker returns to launcher when close setting is ON,
+  - apply-session marker returns to launcher when apply setting is ON,
+  - `frmCleanupSuiteLauncher` can instantiate/unload cleanly,
+  - embedded code contains the new launcher and close-hook patterns.
+- Final full test discovery: bundled Python `-m unittest discover -s tests` -> 19 tests OK.
+- No Word processes remained after verification.
+
+Known remaining issues:
+- The exact UI sequence should still be visually retried in Word: open a tool, close it, open it again or open another tool then the first, close it, apply, preview/apply, and confirm no submenu remains behind the current workflow.
+
+## Session: 2026-06-13 15:19
+Agent: Codex
+
+Goal:
+- Apply the new 0.7.0 guided submenu direction across the rest of the cleanup-tool submenus while preserving the stable launcher/tool lifecycle fix.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-13_15-05-57_projectwide-guided-submenus.zip`
+
+Summary of changes:
+- Extended the shared generic submenu helper `LayoutCleanupToolForm` so all non-Capitalization tool forms inherit a cleaner guided layout:
+  - body-owned runtime title and intro labels,
+  - native MSForm caption blanking through `ApplyMSFormTitleStrategy toolForm, True`,
+  - hidden frame placeholders,
+  - consistent option/check/label styling,
+  - compact scope row,
+  - full-width Preview button,
+  - Apply / Reset / Help bottom row.
+- Added the matching generated-installer layout helper `LayoutGenericToolControls` so regenerated installs reserve the same guided surface and action layout.
+- Expanded `FormBodyOwnsTitle` so all Cleanup Suite UserForms can avoid the duplicate-title problem through the body-title method.
+- Preserved the older title-removal mechanism (`HideLegacyTitleControls` / `IsLegacyTitleControlName`) as a fallback and documented both approaches.
+- Updated `docs\Cool_work_arounds_and_coding_mechanisms_for_VBA_programmed_through_Python.md` with:
+  - the project-wide guided submenu mechanism,
+  - the updated title strategy,
+  - the completion-review global setting.
+- Rebuilt `VBA_Cleanup_tool.txt` and synced `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`.
+
+Tests/checks run:
+- Focused RED test before implementation failed as expected for missing project-wide guided layout helpers.
+- Focused test after implementation: bundled Python `-m unittest tests.test_capitalization_guided_form` -> 3 tests OK.
+- Full tests before assemble: bundled Python `-m unittest discover -s tests` -> 20 tests OK.
+- Rebuilt generated bundle with `python assemble.py`; build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Full tests after assemble and practice bundle sync: bundled Python `-m unittest discover -s tests` -> 20 tests OK.
+- Final full test run after `.docm` sync/smoke: bundled Python `-m unittest discover -s tests` -> 20 tests OK.
+
+Sync status:
+- Source files and generated text bundles are synced.
+- Embedded `.docm` sync was retried successfully using the normal short-temp-copy Word COM plan.
+- Both `CleanupSuite_Workspace.docm` and `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm` were synced from repo source and verified by embedded read-back.
+- Embedded read-back confirmed:
+  - `EnsureGuidedLabel`,
+  - `LayoutGuidedActionButtons toolForm, M, y, contentW`,
+  - launcher `VBA.UserForms.Add(formName)`.
+- Runtime smoke on a temporary synced `.docm` copy instantiated:
+  - `frmCleanupSuiteLauncher` -> caption blank, size `767.9 x 553`,
+  - `frmCapitalizationCleanup` -> caption blank, size `428 x 298`,
+  - `frmUnicodeCleanup` -> guided title `Invisible Unicode Cleaner`,
+  - `frmDuplicateDetector` -> guided title `Duplicate Paragraph Detector`,
+  - `frmHeaderFooterStandardizer` -> guided title `Header / Footer Standardizer`,
+  - `frmObjectRemover` -> guided title `Object Remover`,
+  - `frmPreviewActions` -> caption blank, size `308 x 89.95`.
+- No Word processes or Office `~$` lock files remained after verification.
+
+Known remaining issues:
+- Live visual QA is still useful, especially for high-control-count forms such as Header / Footer Standardizer and Object Remover. Runtime smoke confirms they instantiate with the guided title/introduction and expected compact widths.
+
+## Session: 2026-06-13 22:50
+Agent: Codex
+
+Goal:
+- Finish the two-column guided layout follow-up: generic tool choices and any Custom-revealed choices should follow the Capitalization tool's compact two-column pattern.
+- Record that rule in the new-tool/building guidance so future tools do not drift back to single-column menus.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-13_22-34-31_before-two-column-guided-tools.zip`
+
+Summary of changes:
+- Updated `LayoutCleanupToolForm` in `src\modules\modCleanupHelpers.bas` so visible `opt`/`chk` choices are paired left/right into two-column rows.
+- Applied the same two-column pairing rule to Custom-revealed choices, break conversion choices, duplicate fuzzy choices, and other conditional choice groups because they flow through the same shared layout helper.
+- Updated `LayoutGenericToolControls` in `src\installer\installer.bas` so newly installed/rebuilt generic tools use the same two-column choice layout from the start.
+- Kept command buttons, description labels, frames, hidden controls, and scoped controls in the existing guided flow; only the choice rows changed.
+- Documented the two-column rule in:
+  - `CONTRIBUTING.md`,
+  - `README.md`,
+  - `docs\Cool_work_arounds_and_coding_mechanisms_for_VBA_programmed_through_Python.md`.
+- Rebuilt `VBA_Cleanup_tool.txt` and synced `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`.
+
+Tests/checks run:
+- Focused RED tests first failed against the old single-column expectation.
+- Focused test after implementation: bundled Python `-m unittest tests.test_guided_tool_dynamic_layout` -> 6 tests OK.
+- Full tests before assemble: bundled Python `-m unittest discover -s tests` -> 26 tests OK.
+- Rebuilt generated bundle with `python assemble.py`; build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Full tests after assemble and practice bundle sync: bundled Python `-m unittest discover -s tests` -> 26 tests OK.
+- Static VBA bundle validation: bundled Python `vbaeval.py validate` -> `OK 24 builders | balance, if-traps, wiring, strings, round-trip all clean`.
+- No Office `~$` lock files were found in the workspace after the safe checks.
+
+Sync status / blocker:
+- Source files and generated text bundles are synced.
+- Embedded `.docm` sync and Word runtime smoke were attempted next, but the Codex app escalation/usage gate rejected the Word COM automation request before it could run.
+- Do **not** consider the two-column changes embedded in `CleanupSuite_Workspace.docm` or the practice `.docm` yet.
+- Next safe step is to rerun the normal Word COM `.docm` sync and runtime smoke check when escalation/usage is available again.
+
+## Session: 2026-06-14 00:20
+Agent: Codex
+
+Goal:
+- Finish the previously blocked `.docm` sync and runtime verification for the two-column guided layout work.
+
+Summary:
+- Synced updated source VBA into both embedded macro documents through Word COM:
+  - `CleanupSuite_Workspace.docm`,
+  - `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`.
+- Rebuilt `VBA_Cleanup_tool.txt` and refreshed `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`.
+- Ran temporary smoke macros inside both `.docm` files and removed the temporary smoke modules afterward.
+
+Runtime smoke coverage:
+- Normal two-column choices:
+  - `frmSoftReturnConverter`: `optSoftToPara` / `optParaToSoft`,
+  - `frmFontNormalizer`: `chkFontFace` / `chkFontSize`.
+- Custom-revealed two-column choices:
+  - `frmUnicodeCleanup`: `chkNBSP` / `chkZWSP`,
+  - `frmPunctuationCleanup`: `chkCurlyDouble` / `chkCurlySingle`.
+- Conditional two-column choices:
+  - `frmBreakNormalizer`: conversion choices hidden until conversion is enabled, then paired,
+  - `frmDuplicateDetector`: fuzzy thresholds hidden until Fuzzy is selected, then paired,
+  - `frmHeaderFooterStandardizer`: alignment choices hidden until Set alignment is enabled, then paired.
+
+Tests/checks run:
+- `python assemble.py` -> build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Bundled Python `-m unittest discover -s tests` -> 26 tests OK.
+- Bundled Python `vbaeval.py validate` -> `OK 24 builders | balance, if-traps, wiring, strings, round-trip all clean`.
+- Workspace `.docm` two-column smoke -> `OK`.
+- Practice `.docm` two-column smoke -> `OK`.
+
+Status:
+- The earlier `.docm` sync blocker is resolved.
+- Source, generated bundles, and both `.docm` files are now synced for the two-column guided layout pass.
+
+## Session: 2026-06-14 11:00
+Agent: Codex
+
+Goal:
+- Examine the current 0.7.x work, fix release-blocking issues if found, and push `0.7.4` as the code-freeze / final programming-side release candidate.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-14_10-59-32_v0.7.4-code-freeze-prep.zip`
+
+Summary of release prep:
+- Bumped current project metadata from `0.7.0` to `0.7.4` in:
+  - `README.md`,
+  - `VERSIONING.md`,
+  - `src\modules\modCleanupLauncher.bas`,
+  - the version assertion in `tests\test_launcher_redesign.py`.
+- Rebuilt `VBA_Cleanup_tool.txt` and refreshed `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`.
+- Synced updated source VBA into both embedded macro documents:
+  - `CleanupSuite_Workspace.docm`,
+  - `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`.
+- Normalized newly changed blank `SEP` manifest lines so the release diff passes whitespace checks.
+
+Exam / verification:
+- `python assemble.py` -> build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Bundled Python `-m unittest discover -s tests` -> 26 tests OK.
+- Bundled Python `vbaeval.py validate` -> `OK 24 builders | balance, if-traps, wiring, strings, round-trip all clean`.
+- `git diff --check` -> clean.
+- Embedded version read-back confirmed both `.docm` files contain `SUITE_VERSION = "0.7.4"`.
+- Runtime layout smoke inside both `.docm` files returned `OK` for normal two-column choices, Custom-revealed choices, break conversion choices, duplicate fuzzy thresholds, and Header/Footer alignment choices.
+- Preview OFF message remains covered by `tests\test_preview_action_panel.py`; a temporary COM smoke probe for that private click handler was removed because VBA cannot invoke the private handler from a temporary module.
+- No Word processes or Office `~$` lock files remained after verification.
+
+Code-freeze rule:
+- Treat this `0.7.4` state as the programming-side code-freeze candidate for the `0.7.x` line.
+- After `0.7.4` is pushed, do not make feature/code changes for `0.7.5` unless required to correct documentation-blocking bugs.
+
+## Session: 2026-06-13 22:20
+Agent: Codex
+
+Goal:
+- Finish the 0.7.0 guided submenu pass by applying the Capitalization-style functional design rules to the remaining tool menus, not just the visual shell.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-13_21-52-35_before-all-tool-design-pass.zip`
+
+Summary of changes:
+- Updated the shared `LayoutCleanupToolForm` runtime helper so generic tool menus are state-aware:
+  - hides stale duplicate title labels by caption as well as by legacy title-label names,
+  - hides custom option groups until `Custom` is selected,
+  - hides break conversion choices until `Convert section breaks` is enabled,
+  - hides fuzzy duplicate thresholds until `Fuzzy match` is selected,
+  - hides Header/Footer alignment choices until `Set alignment` is selected,
+  - hides Header/Footer standardize-only controls when `Clear all header/footer content` is selected,
+  - hides blank `optScopeSelection` controls so whole-document-only tools do not show an empty radio button.
+- Added relayout hooks to custom and conditional forms so choosing modes immediately redraws the menu:
+  - Unicode, Punctuation, Spacing, Lists, Paragraphs, Capitalization,
+  - Break Normalizer,
+  - Duplicate Paragraph Detector,
+  - Header / Footer Standardizer.
+- Fixed Select All / Deselect All guards to use `optCustom.Value` instead of hidden frame visibility.
+- Swapped the first two Main Menu global settings so `Show completion review after apply` appears before `Return to main menu after completion review`.
+- Rebuilt generated bundles and synced both `.docm` files.
+
+Tests/checks run:
+- Focused RED test first failed against the old behavior as expected.
+- Focused test after implementation: bundled Python `-m unittest tests.test_guided_tool_dynamic_layout` -> 4 tests OK.
+- Full tests before assemble: bundled Python `-m unittest discover -s tests` -> 24 tests OK.
+- Rebuilt generated bundle with bundled Python `assemble.py`; build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Synced `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`.
+- Synced both embedded `.docm` files through Word COM with macros disabled while opening:
+  - `CleanupSuite_Workspace.docm`,
+  - `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`.
+- Embedded workspace `.docm` smoke macro returned `OK` for:
+  - Unicode custom controls hidden by default and visible after Custom,
+  - Break conversion choices hidden by default and visible after enabling conversion,
+  - Duplicate fuzzy threshold controls hidden by default and visible after Fuzzy,
+  - Header/Footer alignment and clear-all state visibility,
+  - Document Trim blank scope radio hidden,
+  - Punctuation has exactly one visible title label.
+- Final full test discovery: bundled Python `-m unittest discover -s tests` -> 24 tests OK.

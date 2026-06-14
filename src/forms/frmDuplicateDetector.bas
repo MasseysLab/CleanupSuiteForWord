@@ -1,6 +1,6 @@
 Option Explicit
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
-    If CloseMode = vbFormControlMenu Then ReturnToMainAfterToolClose
+    ReturnToMainAfterToolClose Me, Cancel, CloseMode
 End Sub
 ' --------------------------------------------------------------
 '  Duplicate Paragraph Detector
@@ -47,12 +47,15 @@ Private Sub UserForm_Initialize()
 End Sub
 Private Sub optMatchExact_Click()
     lblFuzzyWarning.Caption = "Exact match: paragraphs must be identical apart from letter case."
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub optMatchNormalized_Click()
     lblFuzzyWarning.Caption = "Normalized match: ignores punctuation, extra spaces, and letter case."
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub optMatchFuzzy_Click()
     lblFuzzyWarning.Caption = "Fuzzy match: groups paragraphs sharing the chosen percentage of words.  Slower on large documents."
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
     Dim h As String
@@ -153,6 +156,7 @@ End Sub
 Public Sub PreviewFromPanel()
     chkPreviewOnly.Value = True
     cmdRun_Click
+    chkPreviewOnly.Value = False
 End Sub
 Private Sub cmdReset_Click()
     UserForm_Initialize
@@ -322,6 +326,7 @@ Private Sub cmdRun_Click()
     ShowCleanupReport "Duplicate Detector", results
     undoRec.EndCustomRecord
     MarkCleanupEnd
+    MarkCleanupToolApplied
     Unload Me
     Exit Sub
 RunErr:

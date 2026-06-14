@@ -270,5 +270,6 @@ Private Function NextRelationshipId(relsXml As String) As String
 End Function
 
 ' ---------------------------
+
 ' End of ribbon setup module
 ' ---------------------------

@@ -10,7 +10,7 @@ Public Sub Configure(sourceForm As Object, toolName As String, summaryText As St
     mToolName = toolName
     mSummaryText = summaryText
     mPreviewOn = True
-    Me.Caption = "Preview Actions"
+    ApplyMSFormTitleStrategy Me, True
     lblTitle.Caption = ""
     lblHint.Caption = toolName
     lblSummary.Caption = mSummaryText
@@ -97,9 +97,9 @@ Private Sub cmdApply_Click()
         MsgBox "This document appears to be blank. There is nothing to apply.", vbInformation, "Preview Actions"
         Me.Hide
         If Not mSourceForm Is Nothing Then mSourceForm.Hide
+        MarkCleanupToolApplied
         Set gPreviewActionPanel = Nothing
         Unload Me
-        If GetReturnToMainAfterApplySetting() Then ShowCleanupSuiteLauncher
         Exit Sub
     End If
     Me.Hide
@@ -108,7 +108,6 @@ Private Sub cmdApply_Click()
     End If
     Set gPreviewActionPanel = Nothing
     Unload Me
-    If GetReturnToMainAfterApplySetting() Then ShowCleanupSuiteLauncher
     Exit Sub
 ApplyErr:
     MsgBox "Could not apply the preview: " & Err.Description, vbExclamation, "Preview Actions"

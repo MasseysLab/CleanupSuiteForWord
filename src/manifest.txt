@@ -11,7 +11,7 @@
 
 VERBATIM  installer/installer.bas
 
-SEP  DQonIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQ0KJyBNYW51YWwgY2hlY2tsaXN0IHRleHQgKGRldGFpbGVkIGluc3RydWN0aW9ucyBmb3IgZmluaXNoaW5nIFVJKQ0KJyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0=
+SEP  DQoNCg0KJyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0NCicgTWFudWFsIGNoZWNrbGlzdCB0ZXh0IChkZXRhaWxlZCBpbnN0cnVjdGlvbnMgZm9yIGZpbmlzaGluZyBVSSkNCicgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
 BUILDER  installer/checklist.bas  ManualChecklistText
 SEP  DQonIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQ0KJyBIZWxwZXIgY29kZSBtb2R1bGUgKHNoYXJlZCBoZWxwZXJzIHVzZWQgYnkgaW5qZWN0ZWQgZm9ybXMpDQonIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQ==
 BUILDER  modules/modCleanupHelpers.bas  modCleanupHelpers_Code
@@ -49,13 +49,13 @@ SEP  DQonIE1ldGFkYXRhIFNjcnViYmVy
 BUILDER  forms/frmMetadataScrubber.bas  frmMetadataScrubber_Code
 SEP  DQonIFN0eWxlIENsZWFudXA=
 BUILDER  forms/frmStyleCleanup.bas  frmStyleCleanup_Code
-SEP  
+SEP
 BUILDER  forms/frmFootnoteRemover.bas  frmFootnoteRemover_Code
-SEP  
+SEP
 BUILDER  forms/frmHeaderFooterStandardizer.bas  frmHeaderFooterStandardizer_Code
-SEP  
+SEP
 BUILDER  forms/frmObjectRemover.bas  frmObjectRemover_Code
-SEP  
+SEP
 BUILDER  forms/frmPreviewActions.bas  frmPreviewActions_Code
 SEP
 BUILDER  forms/frmCleanupSuiteLauncher.bas  frmCleanupSuiteLauncher_Code

@@ -1,6 +1,6 @@
 Option Explicit
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
-    If CloseMode = vbFormControlMenu Then ReturnToMainAfterToolClose
+    ReturnToMainAfterToolClose Me, Cancel, CloseMode
 End Sub
 ' --------------------------------------------------------------
 '  Header / Footer Standardizer
@@ -71,6 +71,15 @@ Private Sub cmdHelp_Click()
             "works on the whole document." & vbCrLf
     MsgBox h, vbInformation, "Help  --  Header / Footer Standardizer"
 End Sub
+Private Sub optStandardize_Click()
+    LayoutCleanupToolForm Me
+End Sub
+Private Sub optClearAll_Click()
+    LayoutCleanupToolForm Me
+End Sub
+Private Sub chkAlignment_Click()
+    LayoutCleanupToolForm Me
+End Sub
 Private Sub ApplyToHF(hf As HeaderFooter, doClear As Boolean, doFont As Boolean, doSpacing As Boolean, doAlign As Boolean, alignVal As Long, baseName As String, baseSize As Single, breakLinks As Boolean, ByRef cntAreas As Long, ByRef cntCleared As Long)
     On Error Resume Next
     If breakLinks Then hf.LinkToPrevious = False
@@ -98,6 +107,7 @@ End Sub
 Public Sub PreviewFromPanel()
     chkPreviewOnly.Value = True
     cmdRun_Click
+    chkPreviewOnly.Value = False
 End Sub
 Private Sub cmdReset_Click()
     UserForm_Initialize
@@ -171,6 +181,7 @@ Private Sub cmdRun_Click()
     ShowCleanupReport "Header / Footer Standardizer", results
     undoRec.EndCustomRecord
     MarkCleanupEnd
+    MarkCleanupToolApplied
     Unload Me
     Exit Sub
 RunErr:

@@ -1,6 +1,6 @@
 Option Explicit
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
-    If CloseMode = vbFormControlMenu Then ReturnToMainAfterToolClose
+    ReturnToMainAfterToolClose Me, Cancel, CloseMode
 End Sub
 ' --------------------------------------------------------------
 '  Invisible Unicode Cleaner
@@ -66,20 +66,24 @@ Private Sub cmdHelp_Click()
     MsgBox h, vbInformation, "Help  --  Invisible Unicode Cleaner"
 End Sub
 Private Sub UpdateCustomVisibility()
-    fraCustom.Visible = optCustom.Value
+    fraCustom.Visible = False
 End Sub
+Private Sub optAll_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
+Private Sub optNBSP_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
+Private Sub optZeroWidth_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
+Private Sub optCustom_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
 Private Sub ClearCustomChecks()
     chkNBSP.Value = False: chkZWSP.Value = False: chkZWNJ.Value = False: chkZWJ.Value = False
     chkBOM.Value = False: chkSoftHyphen.Value = False: chkNBHyphen.Value = False
 End Sub
 Private Sub cmdSelectAll_Click()
-    If fraCustom.Visible Then
+    If optCustom.Value Then
         chkNBSP.Value = True: chkZWSP.Value = True: chkZWNJ.Value = True: chkZWJ.Value = True
         chkBOM.Value = True: chkSoftHyphen.Value = True: chkNBHyphen.Value = True
     End If
 End Sub
 Private Sub cmdDeselectAll_Click()
-    If fraCustom.Visible Then ClearCustomChecks
+    If optCustom.Value Then ClearCustomChecks
 End Sub
 Private Function UnicodeChar(ByVal codePoint As Long) As String
     If codePoint > &H7FFF Then
@@ -94,6 +98,7 @@ End Sub
 Public Sub PreviewFromPanel()
     chkPreviewOnly.Value = True
     cmdRun_Click
+    chkPreviewOnly.Value = False
 End Sub
 Private Sub cmdReset_Click()
     UserForm_Initialize
@@ -166,6 +171,7 @@ Private Sub cmdRun_Click()
     ShowCleanupReport "Unicode Cleanup", results
     undoRec.EndCustomRecord
     MarkCleanupEnd
+    MarkCleanupToolApplied
     Unload Me
     Exit Sub
 RunErr:

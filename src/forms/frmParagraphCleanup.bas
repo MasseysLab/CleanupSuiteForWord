@@ -1,6 +1,6 @@
 Option Explicit
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
-    If CloseMode = vbFormControlMenu Then ReturnToMainAfterToolClose
+    ReturnToMainAfterToolClose Me, Cancel, CloseMode
 End Sub
 ' --------------------------------------------------------------
 '  Paragraph Structure Fixer
@@ -60,10 +60,14 @@ Private Sub cmdHelp_Click()
     h = h & "Preview mode highlights empty paragraphs before any changes are made." & vbCrLf
     MsgBox h, vbInformation, "Help  --  Paragraph Structure Fixer"
 End Sub
-Private Sub UpdateCustomVisibility(): fraCustom.Visible = optCustom.Value: End Sub
+Private Sub UpdateCustomVisibility(): fraCustom.Visible = False: End Sub
+Private Sub optAll_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
+Private Sub optRemoveEmpty_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
+Private Sub optNormalizeSpacing_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
+Private Sub optCustom_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
 Private Sub ClearCustomChecks(): chkRemoveEmpty.Value = False: chkCollapseBreaks.Value = False: chkNormalizeParaSpacing.Value = False: chkFixIndent.Value = False: End Sub
 Private Sub cmdSelectAll_Click()
-    If fraCustom.Visible Then
+    If optCustom.Value Then
         chkRemoveEmpty.Value = True
         chkCollapseBreaks.Value = True
         chkNormalizeParaSpacing.Value = True
@@ -71,7 +75,7 @@ Private Sub cmdSelectAll_Click()
     End If
 End Sub
 Private Sub cmdDeselectAll_Click()
-    If fraCustom.Visible Then
+    If optCustom.Value Then
         ClearCustomChecks
     End If
 End Sub
@@ -81,6 +85,7 @@ End Sub
 Public Sub PreviewFromPanel()
     chkPreviewOnly.Value = True
     cmdRun_Click
+    chkPreviewOnly.Value = False
 End Sub
 Private Sub cmdReset_Click()
     UserForm_Initialize
@@ -173,6 +178,7 @@ Private Sub cmdRun_Click()
     ShowCleanupReport "Paragraph Cleanup", results
     undoRec.EndCustomRecord
     MarkCleanupEnd
+    MarkCleanupToolApplied
     Unload Me
     Exit Sub
 RunErr:

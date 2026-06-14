@@ -6,7 +6,7 @@ The project uses a simple SemVer-style ladder, but with `0.x.0` milestones until
 
 ## Current Version
 
-`0.7.0`
+`0.7.4`
 
 This begins the next programming milestone after the `0.6.5` documentation-complete release.
 

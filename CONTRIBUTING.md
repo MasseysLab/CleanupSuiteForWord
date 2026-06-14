@@ -88,6 +88,14 @@ never created.
                                "chkPreviewOnly", "cmdRun", "cmdHelp", _
                                "fraScopeSelection", "optScopeDocument", "optScopeSelection")
    ```
+   Cleanup Suite tool menus use the shared **two-column guided layout**. In
+   generic tool forms, normal opt/chk choices are paired into two columns by
+   `LayoutCleanupToolForm Me` at runtime and by `LayoutGenericToolControls` at
+   install time. Custom choices are still two-column choices: list the `optCustom`
+   trigger, the hidden compatibility frame such as `fraCustom`, then the custom
+   `chk`/`opt` controls in the order they should read. Do not hand-stack generic
+   choices in a single column unless the tool has a special hand-authored layout
+   like Capitalization.
 
 5. **Launcher — open handler.** In `frmCleanupSuiteLauncher_Code`, add:
    ```vba
@@ -331,8 +339,12 @@ expected behavior, not a bug — don't "fix" it by removing the guard.
 
 ### 7.10 Auto-layout ordering
 `LayoutFormControls` positions controls in the **exact order of the
-`ControlsForForm` array**, top to bottom, with command buttons paired two per row.
-So order the array the way you want the form to read.
+`ControlsForForm` array**, top to bottom. Generic sub-tool menus use a
+**two-column guided layout**: normal `opt`/`chk` choices are paired into two
+columns, Custom choices are still two-column choices when they are revealed, and
+command buttons are paired or placed in the standard Preview / Apply / Reset /
+Help action area. So order the array the way you want the form to read from left
+to right, then top to bottom.
 
 ---
 
@@ -366,8 +378,10 @@ Static checks are not enough — VBA only truly validates at compile time.
   as a separate run. `ReinstallCleanupSuite` does both in one click via
   `Application.OnTime` (needs the host code in a standard module). A first run on a
   clean project needs neither.
-- **Auto-layout is functional, not hand-tuned.** Forms come out as a clean single
-  column. If you want pixel-perfect layout, adjust in the designer after install.
+- **Auto-layout is functional, not hand-tuned.** Generic tool forms come out as
+  a clean two-column guided layout. If you want pixel-perfect layout, adjust in
+  the designer after install or write a dedicated layout helper like the
+  Capitalization form.
 - **The pasted module is what end users see.** Keep end-user-facing comments
   minimal; put developer documentation here, not in the `.txt`.
 
