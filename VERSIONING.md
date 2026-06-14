@@ -6,9 +6,9 @@ The project uses a simple SemVer-style ladder, but with `0.x.0` milestones until
 
 ## Current Version
 
-`0.7.4`
+`0.7.5`
 
-This begins the next programming milestone after the `0.6.5` documentation-complete release.
+This is the documentation-complete release for the `0.7.x` line, using the same tool behavior as the locked `0.7.4` code checkpoint.
 
 ## Roadmap
 

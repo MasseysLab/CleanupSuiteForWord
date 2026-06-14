@@ -1,10 +1,10 @@
 ﻿# CleanupSuite Tool Reference - Refined Tool Sections
 
-**Target release:** 0.7.4 documentation add-on
+**Target release:** 0.7.5 documentation-complete release
 **Prepared:** 2026-06-14
 **Repo:** `MasseysLab/CleanupSuiteForWord`
 
-> Documentation basis: prepared for CleanupSuite 0.7.4 after Chris reported the code is locked. ChatGPT could only directly inspect the pushed GitHub state visible in this chat, so Codex should compare these docs against the local locked 0.7.4 project before committing. Screenshots are intentionally deferred.
+> Documentation basis: prepared for CleanupSuite 0.7.5 as the documentation-complete release based on the locked 0.7.4 code checkpoint. Screenshots are intentionally deferred.
 
 
 ## Purpose

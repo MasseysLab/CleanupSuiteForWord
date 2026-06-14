@@ -425,6 +425,74 @@ Known remaining issues:
 Next recommended step:
 - Run the normal test suite and git whitespace/status checks, then commit only these documentation and handoff changes with `Add 0.7.4 user and developer documentation`.
 
+## Session: 2026-06-14 14:51
+Agent: Codex
+
+Goal:
+- Correct the release plan so `0.7.4` remains the programming-side/code-freeze checkpoint and `0.7.5` becomes the official documentation-complete release.
+- Keep feature/tool behavior identical to `0.7.4`.
+- Update documentation, version wording, `SUITE_VERSION`, generated bundles, and embedded `.docm` version metadata so Word identifies the documented release as `0.7.5`.
+- Commit and push the `0.7.5` documentation-release preparation.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-14_14-44-24_before-v0.7.5-doc-release.zip`
+
+Git/repo state:
+- Remote: `origin https://github.com/MasseysLab/CleanupSuiteForWord.git`
+- Branch: `codex-0.7.0-start`
+- Status before: clean branch at pushed commit `c48038f Add 0.7.4 user and developer documentation`.
+- Status after: pending commit at the time this entry was written.
+- GitHub/local/generated/.docm sync checked: yes for version metadata. Source, generated root bundle, practice bundle, and both embedded `.docm` files were checked for `SUITE_VERSION = "0.7.5"`.
+
+Files changed:
+- `README.md`
+- `VERSIONING.md`
+- `src\modules\modCleanupLauncher.bas`
+- `VBA_Cleanup_tool.txt`
+- `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`
+- `CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+- `tests\test_launcher_redesign.py`
+- `docs\Documentation_Addon_Handoff_v0.7.5.md`
+- `docs\Human_Friendly_User_Manual_v0.7.5.md`
+- `docs\Programmers_Guide_Adding_Tools_v0.7.5.md`
+- `docs\Tool_Reference_Refined_v0.7.5.md`
+- `docs\Release_Notes_0.7.4_to_0.7.5.md`
+- `documents\CleanupSuite_Human_Friendly_User_Manual_v0.7.5.docx`
+- `documents\CleanupSuite_Programmers_Guide_Adding_Tools_v0.7.5.docx`
+- `AI_HANDOFF.md`
+
+Summary of changes:
+- Renamed the 0.7.4 documentation add-on files to 0.7.5 release-documentation files.
+- Added `docs\Release_Notes_0.7.4_to_0.7.5.md`.
+- Updated README and VERSIONING to describe `0.7.5` as the current documented release based on locked `0.7.4` behavior.
+- Updated `SUITE_VERSION` from `0.7.4` to `0.7.5`.
+- Rebuilt `VBA_Cleanup_tool.txt`, refreshed the practice bundle, and synced the updated version module into both `.docm` files.
+- Updated the version assertion test to expect `0.7.5`.
+
+Important observations:
+- This is not a feature release. Tool behavior should remain the same as `0.7.4`.
+- The `.docm` files changed because the embedded `modCleanupLauncher` version module was synced to `0.7.5`.
+- An initial bulk text replacement caused encoding damage in a few existing files; those local edits were restored before final patching, and the final diffs for existing text/source files are targeted version-only changes.
+
+Tests/checks run:
+- Backup zip created and verified; it does not include `backups`.
+- `python assemble.py` -> build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- `python -m unittest discover -s tests` -> 26 tests OK.
+- `python vbaeval.py validate --file=VBA_Cleanup_tool.txt` -> `OK 24 builders | balance, if-traps, wiring, strings, round-trip all clean`.
+- Source/generated/practice bundle check confirmed `0.7.5` version strings.
+- Embedded `.docm` COM read-back confirmed both `.docm` files have `SUITE_VERSION = "0.7.5"` and not `0.7.4`.
+- DOCX files were readable through bundled Python `python-docx` and their target-release text says `0.7.5 documentation-complete release`.
+- DOCX render QA with bundled `render_docx.py` was attempted but failed because the renderer could not find LibreOffice/soffice (`FileNotFoundError [WinError 2]`).
+- No Office `~$` lock files were found, and no `WINWORD` process remained after COM sync.
+
+Known remaining issues:
+- DOCX visual render QA is still blocked by the missing LibreOffice/soffice renderer dependency.
+- Screenshots remain intentionally deferred.
+
+Next recommended step:
+- Run final `git diff --check`, status, and tests after this handoff entry, then commit with `Prepare 0.7.5 documentation release` and push `codex-0.7.0-start`.
+
 ## Session: 2026-06-11 23:56
 Agent: Codex
 
