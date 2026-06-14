@@ -363,6 +363,68 @@ Known remaining issues:
 Next recommended step:
 - Start the next Codex session by reading this handoff, asking the startup permission prompt above, creating a fresh backup after permission is granted, and then continuing the Preview Actions/action-bar verification work.
 
+## Session: 2026-06-14 12:45
+Agent: Codex
+
+Goal:
+- Add ChatGPT's `cleanup_suite_docs_0_7_4_addon.zip` documentation package to the locked 0.7.4 release.
+- Keep the work documentation-only and avoid code behavior changes.
+- Compare package wording against the actual local 0.7.4 UI/tool behavior before committing.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-14_12-39-54_before-docs-0.7.4-addon.zip`
+
+Git/repo state:
+- Remote: `origin https://github.com/MasseysLab/CleanupSuiteForWord.git`
+- Branch: `codex-0.7.0-start`
+- Status before: clean working tree.
+- Status after: documentation files and `AI_HANDOFF.md` changed, pending commit at the time this entry was written.
+- GitHub/local/generated/.docm sync checked: local source/tests were checked for the documented UI labels; no GitHub sync or `.docm` rewrite was needed because this was docs-only.
+
+Files changed:
+- `docs\Documentation_Addon_Handoff_v0.7.4.md`
+- `docs\Human_Friendly_User_Manual_v0.7.4.md`
+- `docs\Programmers_Guide_Adding_Tools_v0.7.4.md`
+- `docs\Tool_Reference_Refined_v0.7.4.md`
+- `documents\CleanupSuite_Human_Friendly_User_Manual_v0.7.4.docx`
+- `documents\CleanupSuite_Programmers_Guide_Adding_Tools_v0.7.4.docx`
+- `AI_HANDOFF.md`
+
+Summary of changes:
+- Added the Markdown documentation package under `docs\`.
+- Added the DOCX documentation package under `documents\`.
+- Did not add screenshots.
+- Did not copy package wrapper files `CODEX_ADD_0.7.4_DOCS_TASK.md` or `README_DOC_PACKAGE.md` into the repo because the package task listed the release docs themselves as the files to add.
+- Removed package Markdown trailing whitespace so `git diff --check` passes; this was formatting-only.
+
+Documentation wording adjusted after local 0.7.4 comparison:
+- In the user manual Markdown, changed the older setting label `Return to main menu after apply` to the current 0.7.4 pair:
+  - `Show completion review after apply`
+  - `Return to main menu after completion review`
+- In Markdown and the user-manual DOCX, changed `Direct Formatting Stripper` section heading to `Formatting Stripper / Strip Formatting` to reflect both the current form name and launcher label.
+- In Markdown and the user-manual DOCX, changed `Remove Objects & Elements` section heading to `Object Remover / Objects` to reflect the current form name and launcher label.
+
+Important observations:
+- Local 0.7.4 source/tests confirm current labels for `Preview is ON`, `Preview is OFF`, `Reconfigure`, `Apply`, `Show completion review after apply`, and `Return to main menu after completion review`.
+- `src\forms\frmFormattingStripper.bas` still contains older help text that says `Direct Formatting Stripper`, while shared/current guided UI naming uses `Formatting Stripper`; the docs use a combined heading to avoid misleading either route.
+- This change intentionally does not touch source code, generated VBA bundles, or `.docm` files.
+
+Tests/checks run:
+- Confirmed the package zip exists at `C:\Users\Chris\Downloads\cleanup_suite_docs_0_7_4_addon.zip`.
+- Created and verified a backup zip; confirmed it does not contain the `backups` folder.
+- Extracted the package to a temp folder before copying.
+- Compared docs against local source/tests with `rg` for 0.7.4 labels and tool names.
+- Verified copied Markdown contains the adjusted 0.7.4 wording.
+- Verified both DOCX files are readable with bundled Python `python-docx`.
+- Attempted DOCX render QA with bundled `render_docx.py`, but rendering failed because the renderer could not find its LibreOffice/soffice executable. No PNG visual QA was available from that tool.
+
+Known remaining issues:
+- DOCX visual render QA was not completed because the renderer dependency was unavailable.
+- Screenshots are intentionally deferred for a later documentation pass.
+
+Next recommended step:
+- Run the normal test suite and git whitespace/status checks, then commit only these documentation and handoff changes with `Add 0.7.4 user and developer documentation`.
+
 ## Session: 2026-06-11 23:56
 Agent: Codex
 
