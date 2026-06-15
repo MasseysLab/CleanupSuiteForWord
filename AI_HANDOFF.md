@@ -1976,3 +1976,35 @@ Tests/checks run:
 Notes:
 - Word COM runtime smoke/readback attempts hung after hidden modal automation prompts. Headless `WINWORD` processes and Office lock stubs were cleaned up.
 - Because the earlier `.docm` sync command completed successfully before the smoke attempts, both `.docm` files should contain the updated code, but a later embedded readback could not be completed due to Word COM hanging.
+
+## Session: 2026-06-15 11:31
+Agent: Codex
+
+Goal:
+- Finalize the documentation-complete `0.7.5` release from the pushed `0.7.4.5` bugfix bridge state.
+- Add/update the 0.7.5 documentation wording to reflect that `0.7.5` includes the locked `0.7.4` work plus the `0.7.4.5` release-blocking bridge fixes.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-15_11-31-37_before-v0.7.5-final-from-0.7.4.5.zip`
+
+Summary of changes:
+- The Google Drive package link required sign-in and could not be downloaded directly in automation; the failed placeholder download was removed.
+- Used the existing local `0.7.5` Markdown/DOCX documentation package and adjusted Markdown wording against the actual locked local `0.7.4.5` behavior.
+- Updated project version metadata from `0.7.4.5` to `0.7.5`.
+- Rebuilt generated bundles with `python assemble.py`.
+- Synced `VBA_Cleanup_tool.txt` to `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`.
+- Synced both `.docm` files through Word COM using temp copies, then replaced the workspace and practice documents.
+- No feature/UI/tool behavior changes were made beyond carrying forward the already-pushed `0.7.4.5` bridge fixes and the required `0.7.5` version metadata.
+
+Documentation notes:
+- Updated the 0.7.5 user manual, tool reference, programmer guide, release notes, and documentation handoff wording so they honestly describe the `0.7.4.5` bridge.
+- Added the Word COM caveat to release documentation, while also recording that this session completed embedded `.docm` readback successfully.
+- DOCX files were inspected; they did not contain the detailed basis/caveat wording that needed Markdown correction, so they were left unchanged.
+
+Tests/checks run:
+- `python assemble.py` -> OK (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Embedded `.docm` readback on temp copies -> OK for both workspace documents; verified `SUITE_VERSION = "0.7.5"`, Preview Actions height/summary dimensions, Spacing compile fix, and Table Cleaner compile fix.
+- `python -m unittest discover -s tests` -> 28 tests OK.
+- `python vbaeval.py validate` -> OK.
+- `git diff --check` -> OK.
+- No lingering `WINWORD` process, temp sync file, or Office lock stub remained after sync/readback.

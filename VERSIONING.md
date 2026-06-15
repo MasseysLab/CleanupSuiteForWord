@@ -6,9 +6,9 @@ The project uses a simple SemVer-style ladder, but with `0.x.0` milestones until
 
 ## Current Version
 
-`0.7.4.5`
+`0.7.5`
 
-This is a bugfix bridge release after the locked `0.7.4` code checkpoint and before the documentation-complete `0.7.5` release.
+This is the documentation-complete release for the `0.7.x` line, based on the locked `0.7.4` code checkpoint plus the `0.7.4.5` bridge fixes.
 
 ## Roadmap
 

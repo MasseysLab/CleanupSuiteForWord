@@ -4,7 +4,7 @@
 **Prepared:** 2026-06-14
 **Repo:** `MasseysLab/CleanupSuiteForWord`
 
-> Documentation basis: prepared for CleanupSuite 0.7.5 as the documentation-complete release based on the locked 0.7.4 code checkpoint. Screenshots are intentionally deferred.
+> Documentation basis: prepared for CleanupSuite 0.7.5 as the documentation-complete release based on the locked 0.7.4 code checkpoint plus the 0.7.4.5 bridge fixes. Screenshots are intentionally deferred.
 
 
 ## Purpose
