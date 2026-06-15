@@ -1857,6 +1857,42 @@ Code-freeze rule:
 - Treat this `0.7.4` state as the programming-side code-freeze candidate for the `0.7.x` line.
 - After `0.7.4` is pushed, do not make feature/code changes for `0.7.5` unless required to correct documentation-blocking bugs.
 
+## Session: 2026-06-15 03:25
+Agent: Codex
+
+Goal:
+- Add ChatGPT's `cleanup_suite_docs_0_7_4_addon.zip` documentation package to the locked local 0.7.4 release as documentation-only work.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-15_03-25-35_before_0.7.4_docs_addon.zip`
+
+Files added:
+- `docs\Human_Friendly_User_Manual_v0.7.4.md`
+- `docs\Tool_Reference_Refined_v0.7.4.md`
+- `docs\Programmers_Guide_Adding_Tools_v0.7.4.md`
+- `docs\Documentation_Addon_Handoff_v0.7.4.md`
+- `docs\README_DOC_PACKAGE_0.7.4.md`
+- `docs\CODEX_ADD_0.7.4_DOCS_TASK.md`
+- `documents\CleanupSuite_Human_Friendly_User_Manual_v0.7.4.docx`
+- `documents\CleanupSuite_Programmers_Guide_Adding_Tools_v0.7.4.docx`
+
+Documentation wording reviewed against locked 0.7.4:
+- Updated the user manual global settings wording to match the actual launcher:
+  - `Show completion review after apply`,
+  - `Return to main menu after completion review`,
+  - `Return to main menu after closing individual tool menus`,
+  - `Auto-save before running each tool`.
+- Updated the documentation basis notes to say the docs were reviewed against the local locked 0.7.4 project before commit.
+- Updated developer-guide launcher wiring from the old direct `Me.Hide` / `.Show` pattern to the locked 0.7.4 `OpenCleanupTool "frm..."` pattern, with a note about fresh `VBA.UserForms.Add(...)` instances preventing the MSForms "form already displayed" runtime error.
+- Updated tool headings to match actual 0.7.4 form titles:
+  - `Direct Formatting Stripper` -> `Formatting Stripper`,
+  - `Remove Objects & Elements` -> `Object Remover`.
+- Mirrored relevant wording updates in the DOCX files where those sections existed.
+
+Notes:
+- No screenshots were added.
+- No code behavior changes were made.
+
 ## Session: 2026-06-13 22:20
 Agent: Codex
 
