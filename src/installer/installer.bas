@@ -664,7 +664,7 @@ End Sub
 Private Sub LayoutPreviewActionsControls(comp As VBIDE.VBComponent, designer As Object)
     On Error Resume Next
     Const FORM_W As Single = 300
-    Const FORM_H As Single = 90
+    Const FORM_H As Single = 100
     Const CONTENT_W As Single = 262
     Const MARGIN As Single = 8
     Const BTN_W As Single = 84
@@ -679,7 +679,7 @@ Private Sub LayoutPreviewActionsControls(comp As VBIDE.VBComponent, designer As 
     PositionControl designer, "cmdPreview", MARGIN, 17, BTN_W, BTN_H
     PositionControl designer, "cmdClear", MARGIN + BTN_W + GAP, 17, BTN_W, BTN_H
     PositionControl designer, "cmdApply", MARGIN + (2 * (BTN_W + GAP)), 17, BTN_W, BTN_H
-    PositionControl designer, "lblSummary", MARGIN, 40, CONTENT_W, 16
+    PositionControl designer, "lblSummary", MARGIN, 40, CONTENT_W, 26
     designer.Controls("lblTitle").Caption = ""
     designer.Controls("lblTitle").Visible = False
     designer.Controls("lblSummary").WordWrap = True

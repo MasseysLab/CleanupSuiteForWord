@@ -61,7 +61,7 @@ vbaeval.py             ← validation library + CLI (used by assemble.py)
 
 ## Versioning
 
-The current documented release is `0.7.5`, based on the locked `0.7.4` programming-side checkpoint.
+The current release state is `0.7.4.5`, a bugfix bridge before the documentation-complete `0.7.5` release.
 
 See [`VERSIONING.md`](VERSIONING.md) for the `0.5.0` through `1.0.0` roadmap and the rule for when `SUITE_VERSION` should change.
 

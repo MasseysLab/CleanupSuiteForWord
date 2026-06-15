@@ -24,7 +24,7 @@ End Sub
 
 Private Sub LayoutPanel()
     Const FORM_W As Single = 300
-    Const FORM_H As Single = 90
+    Const FORM_H As Single = 100
     Const CONTENT_W As Single = 262
     Const M As Single = 8
     Const BH As Single = 18
@@ -40,7 +40,7 @@ Private Sub LayoutPanel()
     cmdPreview.Move M, 17, BTN_W, BH
     cmdClear.Move M + BTN_W + GAP, 17, BTN_W, BH
     cmdApply.Move M + (2 * (BTN_W + GAP)), 17, BTN_W, BH
-    lblSummary.Move M, 40, CONTENT_W, 16
+    lblSummary.Move M, 40, CONTENT_W, 26
     lblTitle.Visible = False
     lblTitle.WordWrap = False
     lblSummary.WordWrap = True

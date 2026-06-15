@@ -1937,3 +1937,42 @@ Tests/checks run:
   - Document Trim blank scope radio hidden,
   - Punctuation has exactly one visible title label.
 - Final full test discovery: bundled Python `-m unittest discover -s tests` -> 24 tests OK.
+
+## Session: 2026-06-15 06:00
+Agent: Codex
+
+Goal:
+- Create the `0.7.4.5` bugfix bridge before the documentation-complete `0.7.5` release.
+- Fix release-blocking issues without changing tool feature behavior:
+  - Preview Actions summary clipping for multi-line summaries.
+  - Spacing Fixer compile error.
+  - Table Cleaner compile error.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-15_06-02-12_v0.7.4.5_bugfix_pre_sync.zip`
+
+Summary of changes:
+- Bumped release metadata from `0.7.5` to `0.7.4.5` in source/tests/README/VERSIONING so Word reports the bridge bugfix version.
+- Increased the shared Preview Actions panel height from `90` to `100` and the summary label height from `16` to `26`, in both source and installer-generated layout.
+- Fixed Spacing Fixer duplicate local declaration by renaming the apply-path punctuation array to `applyPunctPatterns`.
+- Fixed Table Cleaner compile error by replacing invalid `tbl.Range.ClearFormatting` with Word-supported `tbl.Range.Font.Reset` and `tbl.Range.ParagraphFormat.Reset`.
+- Added regression tests for Preview Actions dimensions and the two compile-prone source patterns.
+- Rebuilt `VBA_Cleanup_tool.txt`, synced the practice copy, and synced both `.docm` files through Word COM before later smoke attempts.
+
+Tests/checks run:
+- Focused RED checks first failed against the old Preview Actions height, Spacing duplicate declaration, and Table Cleaner invalid range formatting call.
+- Focused tests after implementation: `python -m unittest tests.test_preview_action_panel tests.test_tool_compile_regressions tests.test_launcher_redesign` -> 19 tests OK.
+- Rebuilt generated bundle with `python assemble.py`; build-gate validators passed (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Full test discovery: `python -m unittest discover -s tests` -> 28 tests OK.
+- Validator: `python vbaeval.py validate` -> OK.
+- `git diff --check` -> OK.
+- Source/generated checks confirmed:
+  - `Const FORM_H As Single = 100`,
+  - `lblSummary.Move M, 40, CONTENT_W, 26`,
+  - generated bundles carry `SUITE_VERSION = "0.7.4.5"`,
+  - no remaining `tbl.Range.ClearFormatting`,
+  - no duplicate `punctPatterns` declaration pattern.
+
+Notes:
+- Word COM runtime smoke/readback attempts hung after hidden modal automation prompts. Headless `WINWORD` processes and Office lock stubs were cleaned up.
+- Because the earlier `.docm` sync command completed successfully before the smoke attempts, both `.docm` files should contain the updated code, but a later embedded readback could not be completed due to Word COM hanging.

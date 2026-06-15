@@ -169,7 +169,8 @@ Private Sub cmdRun_Click()
             tbl.RightPadding = InchesToPoints(0.08)
         End If
         If doDirectFmt Then
-            tbl.Range.ClearFormatting
+            tbl.Range.Font.Reset
+            tbl.Range.ParagraphFormat.Reset
         End If
         If doBorders Then
             tbl.Borders.Enable = True

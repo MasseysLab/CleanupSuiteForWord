@@ -664,7 +664,7 @@ End Sub
 Private Sub LayoutPreviewActionsControls(comp As VBIDE.VBComponent, designer As Object)
     On Error Resume Next
     Const FORM_W As Single = 300
-    Const FORM_H As Single = 90
+    Const FORM_H As Single = 100
     Const CONTENT_W As Single = 262
     Const MARGIN As Single = 8
     Const BTN_W As Single = 84
@@ -679,7 +679,7 @@ Private Sub LayoutPreviewActionsControls(comp As VBIDE.VBComponent, designer As 
     PositionControl designer, "cmdPreview", MARGIN, 17, BTN_W, BTN_H
     PositionControl designer, "cmdClear", MARGIN + BTN_W + GAP, 17, BTN_W, BTN_H
     PositionControl designer, "cmdApply", MARGIN + (2 * (BTN_W + GAP)), 17, BTN_W, BTN_H
-    PositionControl designer, "lblSummary", MARGIN, 40, CONTENT_W, 16
+    PositionControl designer, "lblSummary", MARGIN, 40, CONTENT_W, 26
     designer.Controls("lblTitle").Caption = ""
     designer.Controls("lblTitle").Visible = False
     designer.Controls("lblSummary").WordWrap = True
@@ -1367,6 +1367,7 @@ Private Function ControlTypeByName(ctrlName As String) As String
         ControlTypeByName = "Forms.TextBox.1"
     End If
 End Function
+
 
 
 
@@ -2286,7 +2287,7 @@ End Function
 Private Function modCleanupLauncher_Code() As String
     Dim s As String
     s = s & "Option Explicit" & vbCrLf
-    s = s & "Public Const SUITE_VERSION As String = ""0.7.5""" & vbCrLf
+    s = s & "Public Const SUITE_VERSION As String = ""0.7.4.5""" & vbCrLf
     s = s & "Public gRibbon As Object   ' IRibbonUI -- stored for optional Invalidate calls" & vbCrLf
     s = s & "Sub ShowCleanupSuiteLauncher()" & vbCrLf
     s = s & "    frmCleanupSuiteLauncher.Show" & vbCrLf
@@ -2946,8 +2947,8 @@ Private Function frmSpacingCleanup_Code() As String
     s = s & "        With targetRange.Find: .ClearFormatting: .Replacement.ClearFormatting: .Text = "" ([.,;:!?])"": .Replacement.Text = ""\1"": .MatchWildcards = True: Do While .Execute(Replace:=wdReplaceOne): cntBefore = cntBefore + 1: Loop: .MatchWildcards = False: End With" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    If doAfterPunct Then" & vbCrLf
-    s = s & "        Dim punctPatterns: punctPatterns = Array("".  "",""?  "",""!  "","",  "","";  "","":  "")" & vbCrLf
-    s = s & "        Dim pattern: For Each pattern In punctPatterns: With targetRange.Find: .ClearFormatting: .Replacement.ClearFormatting: .Text = pattern: .Replacement.Text = Left$(pattern, 1) & "" "": .MatchWildcards = False: Do While .Execute(Replace:=wdReplaceOne): cntAfter = cntAfter + 1: Loop: End With: Next pattern" & vbCrLf
+    s = s & "        Dim applyPunctPatterns: applyPunctPatterns = Array("".  "",""?  "",""!  "","",  "","";  "","":  "")" & vbCrLf
+    s = s & "        Dim pattern: For Each pattern In applyPunctPatterns: With targetRange.Find: .ClearFormatting: .Replacement.ClearFormatting: .Text = pattern: .Replacement.Text = Left$(pattern, 1) & "" "": .MatchWildcards = False: Do While .Execute(Replace:=wdReplaceOne): cntAfter = cntAfter + 1: Loop: End With: Next pattern" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    If doBlank Then" & vbCrLf
     s = s & "        With targetRange.Find: .ClearFormatting: .Replacement.ClearFormatting: .Text = ""^p^p^p"": .Replacement.Text = ""^p^p"": Do While .Execute(Replace:=wdReplaceOne): cntBlank = cntBlank + 1: Loop: End With" & vbCrLf
@@ -4378,7 +4379,8 @@ Private Function frmTableCleaner_Code() As String
     s = s & "            tbl.RightPadding = InchesToPoints(0.08)" & vbCrLf
     s = s & "        End If" & vbCrLf
     s = s & "        If doDirectFmt Then" & vbCrLf
-    s = s & "            tbl.Range.ClearFormatting" & vbCrLf
+    s = s & "            tbl.Range.Font.Reset" & vbCrLf
+    s = s & "            tbl.Range.ParagraphFormat.Reset" & vbCrLf
     s = s & "        End If" & vbCrLf
     s = s & "        If doBorders Then" & vbCrLf
     s = s & "            tbl.Borders.Enable = True" & vbCrLf
@@ -6271,7 +6273,7 @@ Private Function frmPreviewActions_Code() As String
     s = s & "" & vbCrLf
     s = s & "Private Sub LayoutPanel()" & vbCrLf
     s = s & "    Const FORM_W As Single = 300" & vbCrLf
-    s = s & "    Const FORM_H As Single = 90" & vbCrLf
+    s = s & "    Const FORM_H As Single = 100" & vbCrLf
     s = s & "    Const CONTENT_W As Single = 262" & vbCrLf
     s = s & "    Const M As Single = 8" & vbCrLf
     s = s & "    Const BH As Single = 18" & vbCrLf
@@ -6287,7 +6289,7 @@ Private Function frmPreviewActions_Code() As String
     s = s & "    cmdPreview.Move M, 17, BTN_W, BH" & vbCrLf
     s = s & "    cmdClear.Move M + BTN_W + GAP, 17, BTN_W, BH" & vbCrLf
     s = s & "    cmdApply.Move M + (2 * (BTN_W + GAP)), 17, BTN_W, BH" & vbCrLf
-    s = s & "    lblSummary.Move M, 40, CONTENT_W, 16" & vbCrLf
+    s = s & "    lblSummary.Move M, 40, CONTENT_W, 26" & vbCrLf
     s = s & "    lblTitle.Visible = False" & vbCrLf
     s = s & "    lblTitle.WordWrap = False" & vbCrLf
     s = s & "    lblSummary.WordWrap = True" & vbCrLf

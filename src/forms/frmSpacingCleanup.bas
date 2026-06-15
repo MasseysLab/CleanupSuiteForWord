@@ -212,8 +212,8 @@ Private Sub cmdRun_Click()
         With targetRange.Find: .ClearFormatting: .Replacement.ClearFormatting: .Text = " ([.,;:!?])": .Replacement.Text = "\1": .MatchWildcards = True: Do While .Execute(Replace:=wdReplaceOne): cntBefore = cntBefore + 1: Loop: .MatchWildcards = False: End With
     End If
     If doAfterPunct Then
-        Dim punctPatterns: punctPatterns = Array(".  ","?  ","!  ",",  ",";  ",":  ")
-        Dim pattern: For Each pattern In punctPatterns: With targetRange.Find: .ClearFormatting: .Replacement.ClearFormatting: .Text = pattern: .Replacement.Text = Left$(pattern, 1) & " ": .MatchWildcards = False: Do While .Execute(Replace:=wdReplaceOne): cntAfter = cntAfter + 1: Loop: End With: Next pattern
+        Dim applyPunctPatterns: applyPunctPatterns = Array(".  ","?  ","!  ",",  ",";  ",":  ")
+        Dim pattern: For Each pattern In applyPunctPatterns: With targetRange.Find: .ClearFormatting: .Replacement.ClearFormatting: .Text = pattern: .Replacement.Text = Left$(pattern, 1) & " ": .MatchWildcards = False: Do While .Execute(Replace:=wdReplaceOne): cntAfter = cntAfter + 1: Loop: End With: Next pattern
     End If
     If doBlank Then
         With targetRange.Find: .ClearFormatting: .Replacement.ClearFormatting: .Text = "^p^p^p": .Replacement.Text = "^p^p": Do While .Execute(Replace:=wdReplaceOne): cntBlank = cntBlank + 1: Loop: End With

@@ -6,9 +6,9 @@ The project uses a simple SemVer-style ladder, but with `0.x.0` milestones until
 
 ## Current Version
 
-`0.7.5`
+`0.7.4.5`
 
-This is the documentation-complete release for the `0.7.x` line, using the same tool behavior as the locked `0.7.4` code checkpoint.
+This is a bugfix bridge release after the locked `0.7.4` code checkpoint and before the documentation-complete `0.7.5` release.
 
 ## Roadmap
 
@@ -20,6 +20,7 @@ This is the documentation-complete release for the `0.7.x` line, using the same 
 | `0.6.5` | Documentation-complete release using the same codebase as `0.6.4`, except for documentation-blocking bug fixes if required. |
 | `0.7.0` | Next programming milestone begins. |
 | `0.7.4` | Code freeze / final programming-side release candidate for the `0.7.x` line. |
+| `0.7.4.5` | Small bugfix bridge for release-blocking Preview Actions and compile issues before `0.7.5`. |
 | `0.7.5` | Documentation-complete release using the same codebase as `0.7.4`, except for documentation-blocking bug fixes if required. |
 | `0.8.0` | Complex tool form redesigns using the approved modern panel style. |
 | `0.9.0` | Simple tool form polish, consistency pass, help/caption cleanup, and release-candidate testing. |
