@@ -35,33 +35,7 @@ Private Sub UserForm_Initialize()
     LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
-    Dim h As String
-    h = "Remove Objects & Elements" & vbCrLf & vbCrLf
-    h = h & "Deletes embedded objects and elements that often arrive as clutter from " & _
-            "web pages, PDFs, or email -- so you can reduce a document to clean text." & vbCrLf
-    h = h & vbCrLf
-    h = h & "WHAT EACH OPTION REMOVES" & vbCrLf
-    h = h & "  Pictures         --  inline and floating images." & vbCrLf
-    h = h & "  Text boxes       --  floating text boxes AND the text inside them." & vbCrLf
-    h = h & "  Frames           --  the frame container; the text inside is kept." & vbCrLf
-    h = h & "  Horizontal lines --  the inserted horizontal-line graphic." & vbCrLf
-    h = h & "  HTML/ActiveX     --  form controls (buttons, input boxes) from web paste." & vbCrLf
-    h = h & "  Hidden text      --  text formatted as hidden." & vbCrLf
-    h = h & "  Tables           --  DELETES whole tables and all their contents." & vbCrLf
-    h = h & vbCrLf
-    h = h & "IMPORTANT CAUTIONS" & vbCrLf
-    h = h & "  - Every option is OFF by default; tick only what you want removed." & vbCrLf
-    h = h & "  - Removing tables is destructive and is NOT the same as Table Cleaner's" & vbCrLf
-    h = h & "    'Convert table to text', which keeps the content.  You will be asked" & vbCrLf
-    h = h & "    to confirm before any tables are deleted." & vbCrLf
-    h = h & "  - Deleting pictures and shapes may not always be fully reversible by" & vbCrLf
-    h = h & "    Undo, depending on your Word version.  Work on a copy if unsure." & vbCrLf
-    h = h & "  - Works on the main document body only; objects in headers and footers" & vbCrLf
-    h = h & "    (such as logos) are left untouched." & vbCrLf
-    h = h & vbCrLf
-    h = h & "Preview mode reports a count of what would be removed (it cannot " & _
-            "highlight an object that is about to be deleted)." & vbCrLf
-    MsgBox h, vbInformation, "Help  --  Remove Objects & Elements"
+    ShowCleanupToolHelp "Object"
 End Sub
 Private Function ProcessPictures(doDelete As Boolean) As Long
     On Error Resume Next

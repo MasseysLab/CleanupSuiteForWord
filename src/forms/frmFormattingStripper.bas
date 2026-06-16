@@ -51,37 +51,7 @@ Private Sub optEmphStrip_Click()
     lblSpeedWarning.Caption = "Strip mode removes all direct formatting, including bold and italic emphasis."
 End Sub
 Private Sub cmdHelp_Click()
-    Dim h As String
-    h = "Direct Formatting Stripper" & vbCrLf & vbCrLf
-    h = h & "Removes manual formatting overrides and returns text to what its " & _
-            "paragraph style defines.  Unlike Word Clear Formatting (which resets" & vbCrLf
-    h = h & "text to the Normal style), this tool keeps your styles intact and strips " & _
-            "only the direct formatting layered on top." & vbCrLf
-    h = h & vbCrLf
-    h = h & "WHAT TO RESET" & vbCrLf
-    h = h & "  Reset character formatting  --  font face, size, colour, spacing." & vbCrLf
-    h = h & "  Reset paragraph formatting  --  indents, line spacing, alignment." & vbCrLf
-    h = h & vbCrLf
-    h = h & "EMPHASIS HANDLING" & vbCrLf
-    h = h & "  Quick clean      --  Fast.  Preserves bold/italic that applies to a" & vbCrLf
-    h = h & "                       whole paragraph.  Best for most documents." & vbCrLf
-    h = h & "  Thorough clean   --  Preserves bold/italic on individual words." & vbCrLf
-    h = h & "                       Slower on large documents (examines every run)." & vbCrLf
-    h = h & "  Strip everything --  Removes all emphasis too, for a full reset." & vbCrLf
-    h = h & vbCrLf
-    h = h & "  Preserve highlighting keeps text highlight colours through the reset." & vbCrLf
-    h = h & "  Preserve drop caps keeps decorative dropped capitals; untick to reset " & _
-            "  them to normal body text as part of the strip." & vbCrLf
-    h = h & vbCrLf
-    h = h & "NOTE: Quick mode restores emphasis only when it is uniform across the " & _
-            "whole paragraph.  For a paragraph with one bold word among normal text," & vbCrLf
-    h = h & "use Thorough mode to preserve that word precisely." & vbCrLf
-    h = h & vbCrLf
-    h = h & "SCOPE" & vbCrLf
-    h = h & "  Select text before opening to limit changes to the selection." & vbCrLf
-    h = h & vbCrLf
-    h = h & "Preview mode highlights paragraphs carrying direct formatting." & vbCrLf
-    MsgBox h, vbInformation, "Help  --  Direct Formatting Stripper"
+    ShowCleanupToolHelp "Formatting"
 End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel

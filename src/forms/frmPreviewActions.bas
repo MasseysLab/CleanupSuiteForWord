@@ -5,6 +5,16 @@ Private mToolName As String
 Private mPreviewOn As Boolean
 Private mSummaryText As String
 
+Private Const FORM_W As Single = 283
+Private Const MIN_FORM_H As Single = 90
+Private Const CONTENT_W As Single = 257
+Private Const M As Single = 8
+Private Const BH As Single = 18
+Private Const GAP As Single = 5
+Private Const BTN_W As Single = (CONTENT_W - (2 * GAP)) / 3
+Private Const SUMMARY_LINE_H As Single = 11
+Private Const MAX_SUMMARY_H As Single = 88
+
 Public Sub Configure(sourceForm As Object, toolName As String, summaryText As String)
     Set mSourceForm = sourceForm
     mToolName = toolName
@@ -23,15 +33,10 @@ Public Sub Configure(sourceForm As Object, toolName As String, summaryText As St
 End Sub
 
 Private Sub LayoutPanel()
-    Const FORM_W As Single = 300
-    Const FORM_H As Single = 100
-    Const CONTENT_W As Single = 262
-    Const M As Single = 8
-    Const BH As Single = 18
-    Const GAP As Single = 5
-    Const BTN_W As Single = 84
+    Dim summaryH As Single
+    summaryH = RequiredSummaryHeight(mSummaryText, CONTENT_W)
     Me.Width = FORM_W
-    Me.Height = FORM_H
+    Me.Height = MaxSingle(MIN_FORM_H, 74 + summaryH)
     lblTitle.Caption = ""
     lblTitle.Visible = False
     StyleActionBar
@@ -40,13 +45,50 @@ Private Sub LayoutPanel()
     cmdPreview.Move M, 17, BTN_W, BH
     cmdClear.Move M + BTN_W + GAP, 17, BTN_W, BH
     cmdApply.Move M + (2 * (BTN_W + GAP)), 17, BTN_W, BH
-    lblSummary.Move M, 40, CONTENT_W, 26
+    lblSummary.Move M, 40, CONTENT_W, summaryH
     lblTitle.Visible = False
     lblTitle.WordWrap = False
     lblSummary.WordWrap = True
     lblHint.WordWrap = False
     lblHint.TextAlign = 2
 End Sub
+
+Private Function RequiredSummaryHeight(textValue As String, contentWidth As Single) As Single
+    RequiredSummaryHeight = MinSingle(MAX_SUMMARY_H, CountSummaryRows(textValue, contentWidth) * SUMMARY_LINE_H)
+    If RequiredSummaryHeight < 16 Then RequiredSummaryHeight = 16
+End Function
+
+Private Function CountSummaryRows(textValue As String, contentWidth As Single) As Long
+    Dim charsPerLine As Long
+    charsPerLine = CLng(contentWidth / 4)
+    If charsPerLine < 20 Then charsPerLine = 20
+
+    Dim rows As Long
+    Dim parts As Variant
+    Dim part As Variant
+    parts = Split(textValue, vbCrLf)
+    For Each part In parts
+        rows = rows + 1 + (Len(part) \ charsPerLine)
+    Next part
+    If rows < 1 Then rows = 1
+    CountSummaryRows = rows
+End Function
+
+Private Function MinSingle(a As Single, b As Single) As Single
+    If a < b Then
+        MinSingle = a
+    Else
+        MinSingle = b
+    End If
+End Function
+
+Private Function MaxSingle(a As Single, b As Single) As Single
+    If a > b Then
+        MaxSingle = a
+    Else
+        MaxSingle = b
+    End If
+End Function
 
 Private Sub StyleActionBar()
     On Error Resume Next
@@ -121,7 +163,8 @@ Private Sub cmdPreview_Click()
         cmdPreview.Caption = "Preview is OFF"
         cmdPreview.Enabled = True
         cmdPreview.Visible = True
-        lblSummary.Caption = "You may now edit your document if you wish."
+        mSummaryText = "You may now edit your document if you wish."
+        lblSummary.Caption = mSummaryText
         LayoutPanel
         ShowModelessAtCurrentPosition
     Else

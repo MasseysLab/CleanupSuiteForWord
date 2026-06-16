@@ -19,24 +19,7 @@ Private Sub UserForm_Initialize()
     LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
-    Dim h As String
-    h = "Document Trim" & vbCrLf & vbCrLf
-    h = h & "Removes trailing empty paragraphs from the end of the document, " & _
-            "leaving exactly one final empty paragraph (which Word requires to exist)." & vbCrLf
-    h = h & vbCrLf
-    h = h & "WHY THIS MATTERS" & vbCrLf
-    h = h & "  Documents assembled from multiple files, or saved from templates, " & _
-            "  often end with many blank paragraphs.  These appear as unwanted blank" & vbCrLf
-    h = h & "  space at the end of the printed document and can cause unexpected " & _
-            "  behaviour with headers, footers, and page numbering in some layouts." & vbCrLf
-    h = h & vbCrLf
-    h = h & "NOTE: This tool always operates on the full document.  Scope selection " & _
-            "is disabled because 'end of document' is inherently document-level --" & vbCrLf
-    h = h & "trimming to the end of a selection would not be meaningful." & vbCrLf
-    h = h & vbCrLf
-    h = h & "Preview mode highlights the trailing paragraphs that would be removed." & vbCrLf
-    h = h & "Run again without Preview to apply." & vbCrLf
-    MsgBox h, vbInformation, "Help  --  Document Trim"
+    ShowCleanupToolHelp "DocumentTrim"
 End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel

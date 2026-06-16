@@ -456,12 +456,18 @@ Private Sub LayoutGenericToolControls(comp As VBIDE.VBComponent, designer As Obj
     Dim contentW As Single: contentW = FORM_W - (2 * MARGIN)
     Dim halfW As Single: halfW = (contentW - GAP) / 2
     Dim thirdW As Single: thirdW = (contentW - (2 * GAP)) / 3
-    Dim y As Single: y = 64
+    Dim y As Single: y = 36
     Dim pend As String: pend = ""
     Dim pendingChoice As String: pendingChoice = ""
     Dim ctrlNames As Variant: ctrlNames = ControlsForForm(comp.Name)
     Dim cn As Variant, pfx As String
     Dim h As Single, lft As Single, w As Single
+
+    PositionControl designer, "lblTitle", 0, 0, 0, 0
+    designer.Controls("lblTitle").Caption = ""
+    designer.Controls("lblTitle").Visible = False
+    HideGenericTitleLabels designer
+
     For Each cn In ctrlNames
         If CStr(cn) = "chkPreviewOnly" Or CStr(cn) = "fraScopeSelection" Then
             FlushGenericPendingChoice designer, pendingChoice, MARGIN, y, contentW, GAP
@@ -525,11 +531,20 @@ NextControl:
     FlushGenericPendingChoice designer, pendingChoice, MARGIN, y, contentW, GAP
     FlushGenericPendingButton designer, pend, MARGIN, y, contentW, BTN_H, GAP
     y = y + 2
-    PositionControl designer, "optScopeDocument", MARGIN, y, halfW, 18
-    PositionControl designer, "optScopeSelection", MARGIN + halfW + GAP, y, halfW, 18
-    y = y + 28
     PositionControl designer, "cmdPreview", MARGIN, y, contentW, BTN_H
     y = y + BTN_H + GAP
+    If DesignerScopeSelectionAvailable(designer) Then
+        PositionControl designer, "optScopeDocument", MARGIN + 8, y, halfW - 8, 18
+        PositionControl designer, "optScopeSelection", MARGIN + halfW + GAP + 8, y, halfW - 8, 18
+        designer.Controls("optScopeDocument").Visible = True
+        designer.Controls("optScopeSelection").Visible = True
+        y = y + 28
+    Else
+        PositionControl designer, "optScopeDocument", 0, 0, 0, 0
+        PositionControl designer, "optScopeSelection", 0, 0, 0, 0
+        designer.Controls("optScopeDocument").Visible = False
+        designer.Controls("optScopeSelection").Visible = False
+    End If
     PositionControl designer, "cmdRun", MARGIN, y, thirdW, BTN_H
     PositionControl designer, "cmdReset", MARGIN + thirdW + GAP, y, thirdW, BTN_H
     PositionControl designer, "cmdHelp", MARGIN + (2 * (thirdW + GAP)), y, thirdW, BTN_H
@@ -551,11 +566,11 @@ End Sub
 Private Sub FlushGenericPendingChoice(designer As Object, ByRef pendingChoice As String, ByVal MARGIN As Single, ByRef y As Single, ByVal contentW As Single, ByVal GAP As Single)
     On Error Resume Next
     If Len(pendingChoice) = 0 Then Exit Sub
-    Dim choiceW As Single
-    choiceW = (contentW - GAP) / 2
+    Dim singleChoiceW As Single
+    singleChoiceW = GenericSingleChoiceWidth(designer, pendingChoice, contentW)
     Dim rowH As Single
     rowH = GenericChoiceHeight(designer, pendingChoice)
-    PositionControl designer, pendingChoice, MARGIN + 8, y, choiceW - 8, rowH
+    PositionControl designer, pendingChoice, MARGIN + ((contentW - singleChoiceW) / 2), y, singleChoiceW, rowH
     designer.Controls(pendingChoice).WordWrap = True
     designer.Controls(pendingChoice).AutoSize = False
     y = y + rowH + GAP
@@ -596,6 +611,35 @@ Private Function GenericChoiceHeight(designer As Object, ByVal controlName As St
         GenericChoiceHeight = 18
     End If
 End Function
+Private Function GenericSingleChoiceWidth(designer As Object, ByVal controlName As String, ByVal contentW As Single) As Single
+    On Error Resume Next
+    Dim pairW As Single
+    pairW = ((contentW - 6) / 2) - 8
+    GenericSingleChoiceWidth = pairW + 32
+    If GenericChoiceHeight(designer, controlName) > 18 Then GenericSingleChoiceWidth = contentW - 40
+    If GenericSingleChoiceWidth < pairW Then GenericSingleChoiceWidth = pairW
+    If GenericSingleChoiceWidth > contentW Then GenericSingleChoiceWidth = contentW
+End Function
+Private Function DesignerScopeSelectionAvailable(designer As Object) As Boolean
+    On Error Resume Next
+    DesignerScopeSelectionAvailable = _
+        InStr(1, CStr(designer.Controls("optScopeDocument").Caption), "(always)", vbTextCompare) = 0 _
+        And Len(Trim$(CStr(designer.Controls("optScopeSelection").Caption))) > 0
+End Function
+Private Sub HideGenericTitleLabels(designer As Object)
+    On Error Resume Next
+    Dim ctl As Object
+    For Each ctl In designer.Controls
+        If Left$(LCase$(ctl.Name), 3) <> "lbl" Then GoTo NextGenericTitleControl
+        If ctl.Name = "lblIntro" Or ctl.Name = "lblModeSummary" Or ctl.Name = "lblSpeedWarning" Or ctl.Name = "lblFuzzyWarning" Then GoTo NextGenericTitleControl
+        If Len(Trim$(CStr(ctl.Caption))) = 0 Then GoTo NextGenericTitleControl
+        If ctl.Top <= 24 And ctl.Height <= 24 Then
+            PositionControl designer, ctl.Name, 0, 0, 0, 0
+            ctl.Visible = False
+        End If
+NextGenericTitleControl:
+    Next ctl
+End Sub
 
 Private Sub LayoutCapitalizationControls(comp As VBIDE.VBComponent, designer As Object)
     On Error Resume Next
@@ -663,11 +707,11 @@ End Sub
 
 Private Sub LayoutPreviewActionsControls(comp As VBIDE.VBComponent, designer As Object)
     On Error Resume Next
-    Const FORM_W As Single = 300
-    Const FORM_H As Single = 100
-    Const CONTENT_W As Single = 262
+    Const FORM_W As Single = 283
+    Const FORM_H As Single = 90
+    Const CONTENT_W As Single = 257
     Const MARGIN As Single = 8
-    Const BTN_W As Single = 84
+    Const BTN_W As Single = (CONTENT_W - (2 * GAP)) / 3
     Const BTN_H As Single = 18
     Const GAP As Single = 5
 
@@ -753,6 +797,7 @@ Private Sub LayoutLauncherControls(comp As VBIDE.VBComponent, designer As Object
     PositionControl designer, "chkAutoSave", MARGIN + 2, y, COL_W, 18
     y = y + 24
     PositionControl designer, "cmdResetAll", MARGIN + 2, y, 110, 24
+    PositionControl designer, "cmdUserManual", MARGIN + 118, y, 110, 24
 
     comp.Properties("Width") = FORM_W + 8
     comp.Properties("Height") = y + 58
@@ -1037,7 +1082,7 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmHeaderFooterStandardizer.optScopeDocument": ControlCaptionText = "Entire document (always)"
         Case "frmHeaderFooterStandardizer.optStandardize": ControlCaptionText = "Standardize formatting"
         Case "frmHyperlinkRemover.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
-        Case "frmHyperlinkRemover.chkRemoveFormat": ControlCaptionText = "Remove hyperlink character style (blue underline)"
+        Case "frmHyperlinkRemover.chkRemoveFormat": ControlCaptionText = "Also, remove hyperlink character style (blue underline)"
         Case "frmHyperlinkRemover.optScopeDocument": ControlCaptionText = "Entire document"
         Case "frmHyperlinkRemover.optScopeSelection": ControlCaptionText = "Selected text only"
         Case "frmListCleanup.chkFixIndent": ControlCaptionText = "Fix list indentation"
@@ -1152,6 +1197,7 @@ Private Sub SetButtonCaption(designer As Object, nm As String)
         Case "cmdClear": cap = "Reconfigure"
         Case "cmdReset": cap = "Reset"
         Case "cmdResetAll": cap = "Reset All"
+        Case "cmdUserManual": cap = "User Manual"
         Case "cmdSelectAll": cap = "Select All"
         Case "cmdDeselectAll": cap = "Deselect All"
         Case "cmdHelp": cap = "Help"
@@ -1171,8 +1217,8 @@ Private Sub SetButtonCaption(designer As Object, nm As String)
         Case "cmdSoftReturn": cap = "Soft Returns"
         Case "cmdMetadata": cap = "Metadata"
         Case "cmdStyleClean": cap = "Styles"
-        Case "cmdFootnote": cap = "Footnotes"
-        Case "cmdHeaderFooter": cap = "Headers / Footers"
+        Case "cmdFootnote": cap = "Footnote / Endnote"
+        Case "cmdHeaderFooter": cap = "Header / Footer"
         Case "cmdObjectRemover": cap = "Objects"
         Case Else: cap = Replace(nm, "cmd", "")
     End Select
@@ -1228,6 +1274,7 @@ Private Function ButtonTipText(nm As String) As String
         Case "cmdClear": ButtonTipText = "Return to this tool without resetting its controls"
         Case "cmdReset": ButtonTipText = "Reset this tool to its defaults"
         Case "cmdResetAll": ButtonTipText = "Reset all tools and global settings to defaults"
+        Case "cmdUserManual": ButtonTipText = "Open the PDF User Manual"
         Case "cmdSelectAll": ButtonTipText = "Select all custom options"
         Case "cmdDeselectAll": ButtonTipText = "Clear all custom options"
         Case "cmdUnicode": ButtonTipText = "Remove invisible Unicode characters"
@@ -1265,7 +1312,7 @@ Private Function ControlsForForm(formName As String) As Variant
                                     "lblCatPara", "cmdHelpList", "cmdList", "lblDescList", "cmdHelpPara", "cmdParagraph", "lblDescParagraph", "cmdHelpSoftReturn", "cmdSoftReturn", "lblDescSoftReturn", "cmdHelpDuplicate", "cmdDuplicate", "lblDescDuplicate", _
                                     "lblCatLayout", "cmdHelpTable", "cmdTableClean", "lblDescTableClean", "cmdHelpBreak", "cmdBreakNorm", "lblDescBreakNorm", "cmdHelpHeaderFooter", "cmdHeaderFooter", "lblDescHeaderFooter", "cmdHelpTrim", "cmdDocTrim", "lblDescDocTrim", _
                                     "lblCatFormat", "cmdHelpFont", "cmdFontNorm", "lblDescFontNorm", "cmdHelpFormat", "cmdFormatStrip", "lblDescFormatStrip", "cmdHelpStyle", "cmdStyleClean", "lblDescStyleClean", "cmdHelpHyperlink", "cmdHyperlink", "lblDescHyperlink", _
-                                    "lblCatReview", "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", "chkShowCompletionReviewAfterApply", "chkReturnToMainAfterApply", "chkReturnToMainAfterClose", "chkAutoSave", "cmdResetAll")
+                                    "lblCatReview", "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", "chkShowCompletionReviewAfterApply", "chkReturnToMainAfterApply", "chkReturnToMainAfterClose", "chkAutoSave", "cmdResetAll", "cmdUserManual")
         Case "frmPreviewActions"
             ControlsForForm = Array("lblTitle", "lblSummary", "lblHint", "cmdApply", "cmdPreview", "cmdClear")
         Case "frmPunctuationCleanup"
@@ -1335,8 +1382,8 @@ Private Function ControlsForForm(formName As String) As Variant
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmHeaderFooterStandardizer"
             ControlsForForm = Array("optStandardize", "optClearAll", "fraOptions", _
-                                    "chkHeaders", "chkFooters", "chkFont", "chkSpacing", "chkAlignment", _
-                                    "fraAlign", "optAlignLeft", "optAlignCenter", "optAlignRight", "chkBreakLinks", _
+                                    "chkHeaders", "chkFooters", "chkFont", "chkSpacing", "chkAlignment", "chkBreakLinks", _
+                                    "fraAlign", "optAlignLeft", "optAlignCenter", "optAlignRight", _
                                     "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmObjectRemover"

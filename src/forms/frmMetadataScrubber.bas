@@ -26,26 +26,7 @@ Private Sub UserForm_Initialize()
     LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
-    Dim h As String
-    h = "Metadata Scrubber" & vbCrLf & vbCrLf
-    h = h & "Strips identifying information from the document before you share it " & _
-            "externally -- a one-click version of Word built-in Document Inspector." & vbCrLf
-    h = h & vbCrLf
-    h = h & "OPTIONS" & vbCrLf
-    h = h & "  Document properties  --  author, company, manager, title, and other" & vbCrLf
-    h = h & "                           built-in properties." & vbCrLf
-    h = h & "  Personal information --  author names attached to comments and tracked" & vbCrLf
-    h = h & "                           changes (anonymises them)." & vbCrLf
-    h = h & "  Delete all comments  --  removes every comment from the document." & vbCrLf
-    h = h & "  Accept all tracked changes  --  finalises the document and removes the" & vbCrLf
-    h = h & "                                  revision history." & vbCrLf
-    h = h & vbCrLf
-    h = h & "NOTE: This tool always works on the whole document.  Metadata removal " & _
-            "may not be reversible with Ctrl+Z, so a copy is saved first if auto-save" & vbCrLf
-    h = h & "is on.  Review the result before sharing." & vbCrLf
-    h = h & vbCrLf
-    h = h & "Preview mode shows the metadata currently in the document." & vbCrLf
-    MsgBox h, vbInformation, "Help  --  Metadata Scrubber"
+    ShowCleanupToolHelp "Metadata"
 End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
@@ -76,7 +57,7 @@ Private Sub cmdRun_Click()
     If Not (doProps Or doPersonal Or doComments Or doRevisions) Then MsgBox "Nothing selected to remove.", vbInformation: Exit Sub
     If previewOnly Then
         Dim info As String
-        info = "Current document metadata:" & vbCrLf & vbCrLf
+        info = "Current document metadata:" & vbCrLf
         On Error Resume Next
         info = info & "Author: " & ActiveDocument.BuiltInDocumentProperties("Author").Value & vbCrLf
         info = info & "Company: " & ActiveDocument.BuiltInDocumentProperties("Company").Value & vbCrLf

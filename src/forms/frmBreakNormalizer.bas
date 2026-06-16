@@ -40,32 +40,7 @@ Private Sub UserForm_Initialize()
     LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
-    Dim h As String
-    h = "Break Normalizer" & vbCrLf & vbCrLf
-    h = h & "Fixes problems with section and page breaks.  Most common in documents " & _
-            "assembled from multiple files, where each source file may have had its" & vbCrLf
-    h = h & "own trailing section break." & vbCrLf
-    h = h & vbCrLf
-    h = h & "OPTIONS" & vbCrLf
-    h = h & "  Collapse section breaks  --  Reduces consecutive section breaks to one." & vbCrLf
-    h = h & "  Collapse page breaks     --  Reduces consecutive manual page breaks to one." & vbCrLf
-    h = h & "  Convert section breaks   --  Changes all section break types in scope to" & vbCrLf
-    h = h & "                               the type you choose below." & vbCrLf
-    h = h & vbCrLf
-    h = h & "CONVERSION TYPES" & vbCrLf
-    h = h & "  Next Page   --  Section starts at the top of the next page." & vbCrLf
-    h = h & "  Continuous  --  Section continues on the same page (no forced break)." & vbCrLf
-    h = h & "  Even Page   --  Section starts on the next even-numbered page." & vbCrLf
-    h = h & "  Odd Page    --  Section starts on the next odd-numbered page." & vbCrLf
-    h = h & vbCrLf
-    h = h & "NOTE: The first section of a document is never converted -- it has no " & _
-            "preceding break to change." & vbCrLf
-    h = h & vbCrLf
-    h = h & "SCOPE" & vbCrLf
-    h = h & "  Select text before opening to limit changes to the selection." & vbCrLf
-    h = h & vbCrLf
-    h = h & "Preview mode highlights consecutive break sequences in yellow." & vbCrLf
-    MsgBox h, vbInformation, "Help  --  Break Normalizer"
+    ShowCleanupToolHelp "Break"
 End Sub
 Private Sub chkConvertSectionBreaks_Click()
     fraConvertTo.Enabled = chkConvertSectionBreaks.Value

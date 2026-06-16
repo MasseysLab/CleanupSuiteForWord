@@ -42,25 +42,7 @@ Private Sub UserForm_Initialize()
     LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
-    Dim h As String
-    h = "Punctuation Normalizer" & vbCrLf & vbCrLf
-    h = h & "Replaces typographic ('smart') punctuation with plain-text equivalents." & vbCrLf
-    h = h & "Use this before exporting to systems that do not support Unicode punctuation, " & _
-            "or before running text-comparison or diff tools." & vbCrLf
-    h = h & vbCrLf
-    h = h & "OPTIONS" & vbCrLf
-    h = h & "  All          --  Converts all punctuation types listed below." & vbCrLf
-    h = h & "  Quotes only  --  Curly double and single quotes become straight" & vbCrLf
-    h = h & "  Dashes only  --  Em dash and en dash  -->  hyphen (-)" & vbCrLf
-    h = h & "  Ellipses     --  Ellipsis character (...)  -->  three dots (...)" & vbCrLf
-    h = h & "  Custom       --  Tick individual characters below." & vbCrLf
-    h = h & vbCrLf
-    h = h & "SCOPE" & vbCrLf
-    h = h & "  Select text before opening to limit changes to the selection." & vbCrLf
-    h = h & vbCrLf
-    h = h & "Preview mode highlights matches in yellow without changing anything." & vbCrLf
-    h = h & "Run again without Preview to apply." & vbCrLf
-    MsgBox h, vbInformation, "Help  --  Punctuation Normalizer"
+    ShowCleanupToolHelp "Punctuation"
 End Sub
 Private Sub UpdateCustomVisibility()
     fraCustom.Visible = False

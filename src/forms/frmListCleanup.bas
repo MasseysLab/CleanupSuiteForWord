@@ -39,27 +39,7 @@ Private Sub UserForm_Initialize()
     LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
-    Dim h As String
-    h = "List Normalizer" & vbCrLf & vbCrLf
-    h = h & "Standardises list formatting throughout the document." & vbCrLf
-    h = h & vbCrLf
-    h = h & "OPTIONS" & vbCrLf
-    h = h & "  Normalise bullets    --  Resets all bullet-list paragraphs to the default" & vbCrLf
-    h = h & "                           Word bullet style, removing inconsistent characters." & vbCrLf
-    h = h & "  Normalise numbering  --  Converts manually typed numbered paragraphs" & vbCrLf
-    h = h & "                           (e.g.  1. Item) to proper Word auto-numbering." & vbCrLf
-    h = h & "  Fix list indentation --  Sets list paragraph indentation to 0.25 inch." & vbCrLf
-    h = h & "  Convert hyphens      --  Converts lines beginning with '- ' or '* ' to" & vbCrLf
-    h = h & "                           proper Word bullet-list paragraphs." & vbCrLf
-    h = h & vbCrLf
-    h = h & "TIP: Run 'Convert hyphens' first if you have many hyphen-lists, then " & _
-            "'Normalise bullets' to make them all consistent." & vbCrLf
-    h = h & vbCrLf
-    h = h & "SCOPE" & vbCrLf
-    h = h & "  Select text before opening to limit changes to the selection." & vbCrLf
-    h = h & vbCrLf
-    h = h & "Preview mode highlights list paragraphs that would be affected." & vbCrLf
-    MsgBox h, vbInformation, "Help  --  List Normalizer"
+    ShowCleanupToolHelp "List"
 End Sub
 Private Sub UpdateCustomVisibility(): fraCustom.Visible = False: End Sub
 Private Sub optAll_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub

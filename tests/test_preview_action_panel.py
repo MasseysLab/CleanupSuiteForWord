@@ -69,10 +69,12 @@ class PreviewActionPanelTests(unittest.TestCase):
         self.assertIn("StyleLabel lblHint, 8, True", panel)
         self.assertIn("StyleLabel lblSummary, 7.5, False", panel)
         self.assertIn("ctl.Font.Size = 7.5", panel)
-        self.assertIn("Const FORM_W As Single = 300", panel)
-        self.assertIn("Const FORM_H As Single = 100", panel)
-        self.assertIn("Const CONTENT_W As Single = 262", panel)
-        self.assertIn("Const BTN_W As Single = 84", panel)
+        self.assertIn("Const FORM_W As Single = 283", panel)
+        self.assertIn("Const MIN_FORM_H As Single = 90", panel)
+        self.assertIn("Const SUMMARY_LINE_H As Single = 11", panel)
+        self.assertIn("Const MAX_SUMMARY_H As Single = 88", panel)
+        self.assertIn("Const CONTENT_W As Single = 257", panel)
+        self.assertIn("Const BTN_W As Single = (CONTENT_W - (2 * GAP)) / 3", panel)
         self.assertIn("Const BH As Single = 18", panel)
         self.assertIn("Const GAP As Single = 5", panel)
         self.assertIn('lblTitle.Caption = ""', panel)
@@ -84,16 +86,20 @@ class PreviewActionPanelTests(unittest.TestCase):
         self.assertIn("cmdPreview.Move M, 17, BTN_W, BH", panel)
         self.assertIn("cmdClear.Move M + BTN_W + GAP, 17, BTN_W, BH", panel)
         self.assertIn("cmdApply.Move M + (2 * (BTN_W + GAP)), 17, BTN_W, BH", panel)
-        self.assertIn("lblSummary.Move M, 40, CONTENT_W, 26", panel)
+        self.assertIn("Dim summaryH As Single", panel)
+        self.assertIn("summaryH = RequiredSummaryHeight(mSummaryText, CONTENT_W)", panel)
+        self.assertIn("Me.Height = MaxSingle(MIN_FORM_H, 74 + summaryH)", panel)
+        self.assertIn("lblSummary.Move M, 40, CONTENT_W, summaryH", panel)
         self.assertIn("If Not DocumentHasVisibleContent() Then", panel)
         self.assertIn("This document appears to be blank. There is nothing to apply.", panel)
         self.assertIn('cmdPreview.Caption = "Preview is ON"', panel)
         self.assertIn("cmdPreview.Enabled = True", panel)
         self.assertIn('cmdPreview.Caption = "Preview is OFF"', panel)
-        self.assertIn('lblSummary.Caption = "You may now edit your document if you wish."', panel)
+        self.assertIn('mSummaryText = "You may now edit your document if you wish."', panel)
+        self.assertIn("lblSummary.Caption = mSummaryText", panel)
         self.assertLess(
             panel.index('cmdPreview.Caption = "Preview is OFF"'),
-            panel.index('lblSummary.Caption = "You may now edit your document if you wish."'),
+            panel.index('mSummaryText = "You may now edit your document if you wish."'),
         )
         self.assertIn("ShowModelessAtCurrentPosition", panel)
         self.assertIn('cmdClear.Caption = "Reconfigure"', panel)
@@ -149,10 +155,10 @@ class PreviewActionPanelTests(unittest.TestCase):
 
         self.assertIn('If CStr(cn) = "cmdPreview" Then', installer)
         self.assertIn('PositionControl designer, "cmdPreview", MARGIN, y, contentW, BTN_H', installer)
-        self.assertIn("Const FORM_W As Single = 300", installer)
-        self.assertIn("Const FORM_H As Single = 100", installer)
-        self.assertIn("Const CONTENT_W As Single = 262", installer)
-        self.assertIn("Const BTN_W As Single = 84", installer)
+        self.assertIn("Const FORM_W As Single = 283", installer)
+        self.assertIn("Const FORM_H As Single = 90", installer)
+        self.assertIn("Const CONTENT_W As Single = 257", installer)
+        self.assertIn("Const BTN_W As Single = (CONTENT_W - (2 * GAP)) / 3", installer)
         self.assertIn("Const BTN_H As Single = 18", installer)
         self.assertIn("Const GAP As Single = 5", installer)
         self.assertIn('Case "frmPreviewActions.lblTitle": ControlCaptionText = ""', installer)
@@ -171,6 +177,16 @@ class PreviewActionPanelTests(unittest.TestCase):
         self.assertIn('ControlTypeByName = "Forms.CommandButton.1"', installer)
         self.assertNotIn('"chkPreviewOnly", "cmdRun"', installer)
         self.assertNotIn('"cmdDeselectAll", "cmdRun"', installer)
+
+    def test_preview_panel_summary_height_is_dynamic(self):
+        panel = read("src/forms/frmPreviewActions.bas")
+
+        self.assertIn("Private Function RequiredSummaryHeight", panel)
+        self.assertIn("Private Function CountSummaryRows", panel)
+        self.assertIn("rows = rows + 1 + (Len(part) \\ charsPerLine)", panel)
+        self.assertIn("RequiredSummaryHeight = MinSingle(MAX_SUMMARY_H, CountSummaryRows(textValue, contentWidth) * SUMMARY_LINE_H)", panel)
+        self.assertIn("Private Function MinSingle", panel)
+        self.assertIn("Private Function MaxSingle", panel)
 
     def test_blank_document_apply_is_short_circuited_before_tool_runs(self):
         helpers = read("src/modules/modCleanupHelpers.bas")

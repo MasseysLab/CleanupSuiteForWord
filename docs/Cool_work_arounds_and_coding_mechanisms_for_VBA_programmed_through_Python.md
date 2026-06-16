@@ -141,7 +141,7 @@ This avoids depending on the frame as a visible container while preserving insta
 The non-Capitalization cleanup forms are intentionally not hand-tuned one by one. They all call `LayoutCleanupToolForm Me`, which now does the common modern submenu work:
 
 - blanks the native title with `ApplyMSFormTitleStrategy toolForm, True`
-- creates runtime labels named `lblGuidedToolName` and `lblGuidedIntro`
+- creates runtime guidance labels and uses an intro-first guided layout
 - maps form names to friendly titles and short instructions
 - hides old visible frame boxes while preserving their controls and grouping compatibility
 - styles labels, options, checkboxes, and command buttons consistently
@@ -150,7 +150,7 @@ The non-Capitalization cleanup forms are intentionally not hand-tuned one by one
 
 The matching installer routine is `LayoutGenericToolControls`. It reserves top space for the runtime title and intro, hides frame placeholders, and generates the same Preview / Apply / Reset / Help action pattern. This prevents generated installs from drifting away from the live runtime layout.
 
-The generic layout is now a **two-column guided layout**. Normal `opt` and `chk` choices are paired left/right as they appear in `ControlsForForm`, and the same rule applies after a `Custom` choice reveals its detail controls. This is important because the approved Capitalization form established a compact two-column reading pattern; future tools should follow that pattern unless they have a deliberately custom layout helper.
+The generic layout is now a **two-column guided layout**. Normal `opt` and `chk` choices are paired left/right as they appear in `ControlsForForm`, and the same rule applies after a `Custom` choice reveals its detail controls. If a row ends with only one remaining choice, single leftover choices are centered instead of being left-anchored. This is important because the approved Capitalization form established a compact two-column reading pattern; future tools should follow that pattern unless they have a deliberately custom layout helper.
 
 The key design decision is centralization: the individual tools keep their existing cleanup behavior, while shared form structure lives in one helper. That gives the suite a consistent interface without rewriting every cleanup algorithm.
 

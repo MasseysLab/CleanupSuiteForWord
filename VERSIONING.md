@@ -6,9 +6,9 @@ The project uses a simple SemVer-style ladder, but with `0.x.0` milestones until
 
 ## Current Version
 
-`0.7.5`
+`0.8.0`
 
-This is the documentation-complete release for the `0.7.x` line, based on the locked `0.7.4` code checkpoint plus the `0.7.4.5` bridge fixes.
+This is the current programming milestone, carrying forward the locked `0.7.5` release with the shared Preview Actions polish and release-ready UI cleanup as the starting point for the `0.8.x` line.
 
 ## Roadmap
 
@@ -23,7 +23,9 @@ This is the documentation-complete release for the `0.7.x` line, based on the lo
 | `0.7.4.5` | Small bugfix bridge for release-blocking Preview Actions and compile issues before `0.7.5`. |
 | `0.7.5` | Documentation-complete release using the same codebase as `0.7.4`, except for documentation-blocking bug fixes if required. |
 | `0.8.0` | Complex tool form redesigns using the approved modern panel style. |
+| `0.8.5` | Official Alpha release. |
 | `0.9.0` | Simple tool form polish, consistency pass, help/caption cleanup, and release-candidate testing. |
+| `0.9.5` | Official Beta release. |
 | `1.0.0` | Global `.dotm` Word add-in/template release suitable for normal use on any document. |
 
 ## Version Rules

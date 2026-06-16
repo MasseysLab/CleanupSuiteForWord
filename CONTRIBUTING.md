@@ -52,9 +52,19 @@ doubled). Do this instead:
 3. **Wire it into the eight integration points** (see §3), and add the new
    `SEP` + `BUILDER` entry to `src/manifest.txt` (copy the pattern of an
    adjacent form entry).
-4. **Run `python assemble.py`** — it rebuilds `VBA_Cleanup_tool.txt` and runs
-   all five build-gate validators.  Fix any failures before proceeding.
+4. **Run `python assemble.py`** — it rebuilds `VBA_Cleanup_tool.txt`, refreshes
+   `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`, and runs all five
+   build-gate validators.  Fix any failures before proceeding.
 5. **Run the full test checklist** (see §8) on a throwaway copy.
+
+Practice-sync rule:
+
+- When a repo file has a matching practice copy, update them in the same pass.
+- For the generated distributable, the build is the enforcement point:
+  rebuilding `VBA_Cleanup_tool.txt` must also refresh
+  `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`.
+- For embedded practice `.docm` files, keep the practice document in sync during
+  the same release or verification pass where the root `.docm` is updated.
 
 ---
 
@@ -93,9 +103,11 @@ never created.
    `LayoutCleanupToolForm Me` at runtime and by `LayoutGenericToolControls` at
    install time. Custom choices are still two-column choices: list the `optCustom`
    trigger, the hidden compatibility frame such as `fraCustom`, then the custom
-   `chk`/`opt` controls in the order they should read. Do not hand-stack generic
-   choices in a single column unless the tool has a special hand-authored layout
-   like Capitalization.
+   `chk`/`opt` controls in the order they should read. If a row ends with only
+   one remaining choice, that single leftover choice is centered instead of being
+   left-anchored. These generic forms also use an intro-first guided layout, so
+   avoid adding a second visible body title unless the tool has a special
+   hand-authored layout like Capitalization.
 
 5. **Launcher — open handler.** In `frmCleanupSuiteLauncher_Code`, add:
    ```vba
@@ -341,10 +353,12 @@ expected behavior, not a bug — don't "fix" it by removing the guard.
 `LayoutFormControls` positions controls in the **exact order of the
 `ControlsForForm` array**, top to bottom. Generic sub-tool menus use a
 **two-column guided layout**: normal `opt`/`chk` choices are paired into two
-columns, Custom choices are still two-column choices when they are revealed, and
-command buttons are paired or placed in the standard Preview / Apply / Reset /
-Help action area. So order the array the way you want the form to read from left
-to right, then top to bottom.
+columns, Custom choices are still two-column choices when they are revealed,
+single leftover choices are centered, and command buttons are paired or placed
+in the standard Preview / Apply / Reset / Help action area. Generic tools also
+follow an intro-first guided layout so the body does not repeat the tool title
+above the choices. So order the array the way you want the form to read from
+left to right, then top to bottom.
 
 ---
 

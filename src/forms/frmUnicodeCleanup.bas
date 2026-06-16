@@ -43,27 +43,7 @@ Private Sub UserForm_Initialize()
     LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
-    Dim h As String
-    h = "Invisible Unicode Cleaner" & vbCrLf & vbCrLf
-    h = h & "Removes Unicode characters that are invisible on screen but cause problems " & _
-            "for search, sorting, comparison, and automated text processing." & vbCrLf
-    h = h & "These characters accumulate from web copy-paste, PDF export, and " & _
-            "cross-platform file exchange." & vbCrLf
-    h = h & vbCrLf
-    h = h & "CHARACTER TYPES" & vbCrLf
-    h = h & "  NBSP  (U+00A0)  Non-Breaking Space: a space that prevents line breaks." & vbCrLf
-    h = h & "  ZWSP  (U+200B)  Zero-Width Space: completely invisible; affects word break." & vbCrLf
-    h = h & "  ZWNJ  (U+200C)  Zero-Width Non-Joiner: controls ligature/joining behaviour." & vbCrLf
-    h = h & "  ZWJ   (U+200D)  Zero-Width Joiner: forces joined rendering." & vbCrLf
-    h = h & "  BOM   (U+FEFF)  Byte Order Mark: encoding marker; never belongs in text." & vbCrLf
-    h = h & "  SHY   (U+00AD)  Soft Hyphen: invisible optional hyphen." & vbCrLf
-    h = h & "  NBHY  (U+2011)  Non-Breaking Hyphen: a hyphen that prevents line breaks." & vbCrLf
-    h = h & vbCrLf
-    h = h & "SCOPE" & vbCrLf
-    h = h & "  Select text before opening to limit changes to the selection." & vbCrLf
-    h = h & vbCrLf
-    h = h & "Preview mode highlights matches in yellow without changing anything." & vbCrLf
-    MsgBox h, vbInformation, "Help  --  Invisible Unicode Cleaner"
+    ShowCleanupToolHelp "Unicode"
 End Sub
 Private Sub UpdateCustomVisibility()
     fraCustom.Visible = False

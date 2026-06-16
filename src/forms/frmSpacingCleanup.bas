@@ -38,26 +38,7 @@ Private Sub UserForm_Initialize()
     LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
-    Dim h As String
-    h = "Spacing Fixer" & vbCrLf & vbCrLf
-    h = h & "Corrects the most common spacing inconsistencies in assembled documents." & vbCrLf
-    h = h & vbCrLf
-    h = h & "OPTIONS" & vbCrLf
-    h = h & "  Double spaces       --  Collapses two or more consecutive spaces to one." & vbCrLf
-    h = h & "  Trim paragraphs     --  Removes leading and trailing spaces from each" & vbCrLf
-    h = h & "                          paragraph." & vbCrLf
-    h = h & "  Space before punct  --  Removes any space immediately before . , ; : ! ?" & vbCrLf
-    h = h & "  Space after punct   --  Ensures exactly one space follows  . ? ! , ; :" & vbCrLf
-    h = h & "  Extra blank lines   --  Collapses three or more consecutive blank" & vbCrLf
-    h = h & "                          paragraphs down to two." & vbCrLf
-    h = h & vbCrLf
-    h = h & "Each option counts how many changes it makes and reports them at the end." & vbCrLf
-    h = h & vbCrLf
-    h = h & "SCOPE" & vbCrLf
-    h = h & "  Select text before opening to limit changes to the selection." & vbCrLf
-    h = h & vbCrLf
-    h = h & "Preview mode highlights problem areas without making changes." & vbCrLf
-    MsgBox h, vbInformation, "Help  --  Spacing Fixer"
+    ShowCleanupToolHelp "Spacing"
 End Sub
 Private Sub UpdateCustomVisibility(): fraCustom.Visible = False: End Sub
 Private Sub optAll_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
@@ -131,16 +112,19 @@ Private Sub cmdRun_Click()
         End With
     End If
     If doBeforePunct Then
-        With targetRange.Find
-            .ClearFormatting
-            .Replacement.ClearFormatting
-            .Text = " ([.,;:!?])"
-            .MatchWildcards = True
-            .Replacement.Text = "^&"
-            .Replacement.Highlight = True
-            .Execute Replace:=wdReplaceAll
-            .MatchWildcards = False
-        End With
+        Dim previewBeforePunctPatterns: previewBeforePunctPatterns = Array(" .", " ,", " ;", " :", " !", " ?")
+        Dim previewBeforePunct
+        For Each previewBeforePunct In previewBeforePunctPatterns
+            With targetRange.Find
+                .ClearFormatting
+                .Replacement.ClearFormatting
+                .Text = previewBeforePunct
+                .MatchWildcards = False
+                .Replacement.Text = "^&"
+                .Replacement.Highlight = True
+                .Execute Replace:=wdReplaceAll
+            End With
+        Next previewBeforePunct
     End If
     If doAfterPunct Then
         Dim punctPatterns: punctPatterns = Array(".  ","?  ","!  ",",  ",";  ",":  ")
@@ -209,7 +193,20 @@ Private Sub cmdRun_Click()
         Next para
     End If
     If doBeforePunct Then
-        With targetRange.Find: .ClearFormatting: .Replacement.ClearFormatting: .Text = " ([.,;:!?])": .Replacement.Text = "\1": .MatchWildcards = True: Do While .Execute(Replace:=wdReplaceOne): cntBefore = cntBefore + 1: Loop: .MatchWildcards = False: End With
+        Dim beforePunctPatterns: beforePunctPatterns = Array(" .", " ,", " ;", " :", " !", " ?")
+        Dim beforePunct
+        For Each beforePunct In beforePunctPatterns
+            With targetRange.Find
+                .ClearFormatting
+                .Replacement.ClearFormatting
+                .Text = beforePunct
+                .Replacement.Text = Right$(beforePunct, 1)
+                .MatchWildcards = False
+                Do While .Execute(Replace:=wdReplaceOne)
+                    cntBefore = cntBefore + 1
+                Loop
+            End With
+        Next beforePunct
     End If
     If doAfterPunct Then
         Dim applyPunctPatterns: applyPunctPatterns = Array(".  ","?  ","!  ",",  ",";  ",":  ")

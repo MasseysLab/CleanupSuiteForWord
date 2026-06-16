@@ -37,31 +37,7 @@ Private Sub UserForm_Initialize()
     LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
-    Dim h As String
-    h = "Table Cleaner" & vbCrLf & vbCrLf
-    h = h & "Removes structural clutter from tables and normalises their formatting." & vbCrLf
-    h = h & "Operates on all tables within the target scope." & vbCrLf
-    h = h & vbCrLf
-    h = h & "OPTIONS" & vbCrLf
-    h = h & "  Remove empty rows     --  Deletes any row where every cell contains" & vbCrLf
-    h = h & "                            no text (a lone paragraph mark is not text)." & vbCrLf
-    h = h & "  Remove empty columns  --  Deletes any column where every cell is empty." & vbCrLf
-    h = h & "  Normalise padding     --  Sets all cell padding to Word defaults:" & vbCrLf
-    h = h & "                            0.04 inch top/bottom,  0.08 inch left/right." & vbCrLf
-    h = h & "  Strip direct format   --  Clears direct formatting overrides from the" & vbCrLf
-    h = h & "                            table, restoring the table's applied style." & vbCrLf
-    h = h & "  Normalise borders     --  Enables borders on the table using the" & vbCrLf
-    h = h & "                            current table style." & vbCrLf
-    h = h & "  Remove all borders    --  Turns off every border on the table." & vbCrLf
-    h = h & "  Convert table to text --  Replaces the table with tab-separated text" & vbCrLf
-    h = h & "                            (done last; other table options run first)." & vbCrLf
-    h = h & vbCrLf
-    h = h & "TIP: Run 'Remove empty rows/columns' before 'Strip direct format' for " & _
-            "the cleanest results.  Use Preview first to see which rows are empty." & vbCrLf
-    h = h & vbCrLf
-    h = h & "SCOPE" & vbCrLf
-    h = h & "  Select text before opening to limit changes to tables in the selection." & vbCrLf
-    MsgBox h, vbInformation, "Help  --  Table Cleaner"
+    ShowCleanupToolHelp "Table"
 End Sub
 Private Function IsRowEmpty(rw As Row) As Boolean
     Dim cel As Cell

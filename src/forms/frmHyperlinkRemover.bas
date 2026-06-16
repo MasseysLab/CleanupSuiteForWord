@@ -20,27 +20,12 @@ Private Sub UserForm_Initialize()
     Else
         optScopeSelection.Enabled = False
     End If
-    chkRemoveFormat.Caption = "Remove hyperlink character style (blue underline)"
+    chkRemoveFormat.Caption = "Also, remove hyperlink character style (blue underline)"
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
     LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
-    Dim h As String
-    h = "Hyperlink Remover" & vbCrLf & vbCrLf
-    h = h & "Removes hyperlinks while keeping the visible text.  Pasting from web " & _
-            "pages embeds links throughout a document; this strips the links but" & vbCrLf
-    h = h & "leaves the words exactly as they are." & vbCrLf
-    h = h & vbCrLf
-    h = h & "OPTIONS" & vbCrLf
-    h = h & "  Clear hyperlink formatting  --  also removes the blue underlined look" & vbCrLf
-    h = h & "                                  (resets to the default character font)." & vbCrLf
-    h = h & "                                  Turn off to keep the blue/underline." & vbCrLf
-    h = h & vbCrLf
-    h = h & "SCOPE" & vbCrLf
-    h = h & "  Select text before opening to limit changes to the selection." & vbCrLf
-    h = h & vbCrLf
-    h = h & "Preview mode highlights every hyperlink that would be removed." & vbCrLf
-    MsgBox h, vbInformation, "Help  --  Hyperlink Remover"
+    ShowCleanupToolHelp "Hyperlink"
 End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel

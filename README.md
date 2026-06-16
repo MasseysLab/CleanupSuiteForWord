@@ -41,7 +41,8 @@ vbaeval.py             ← validation library + CLI (used by assemble.py)
 **Edit a form or module:**
 
 1. Open its `.bas` file in `src/forms/` or `src/modules/` and edit.
-2. Run `python assemble.py`.  If validation passes, `VBA_Cleanup_tool.txt` is updated.
+2. Run `python assemble.py`.  If validation passes, `VBA_Cleanup_tool.txt` is updated and
+   `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt` is refreshed to match.
 3. Paste the updated `.txt` into Word and test.
 
 **Edit the installer (wiring, control layout, etc.):**
@@ -54,14 +55,15 @@ vbaeval.py             ← validation library + CLI (used by assemble.py)
 1. Create `src/forms/frmMyTool.bas` with the form's VBA.
 2. Wire the remaining touch-points in `installer.bas` and `frmCleanupSuiteLauncher.bas`.
 3. Add the new builder entry to `manifest.txt` (copy the pattern of an adjacent form).
-4. Follow the shared two-column guided layout rule for generic tool choices and Custom choices.
+4. Follow the shared two-column guided layout rule for generic tool choices and Custom choices, keep the forms intro-first, and make sure single leftover choices are centered.
 5. Run `python assemble.py`.
+6. If a repo artifact has a matching practice copy, sync that practice file in the same pass.
 
 ---
 
 ## Versioning
 
-The current documented release is `0.7.5`, based on the locked `0.7.4` checkpoint plus the `0.7.4.5` bridge fixes.
+The current release is `0.8.0`, which carries forward the locked `0.7.5` baseline and the final pre-`0.8` polish pass into the next programming milestone.
 
 See [`VERSIONING.md`](VERSIONING.md) for the `0.5.0` through `1.0.0` roadmap and the rule for when `SUITE_VERSION` should change.
 

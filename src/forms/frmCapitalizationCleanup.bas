@@ -45,35 +45,7 @@ Private Sub UserForm_Initialize()
     LayoutCapitalizationCleanupForm Me
 End Sub
 Private Sub cmdHelp_Click()
-    Dim h As String
-    h = "Capitalization Fixer" & vbCrLf & vbCrLf
-    h = h & "Applies consistent capitalization to every paragraph in the target scope." & vbCrLf
-    h = h & vbCrLf
-    h = h & "MODES" & vbCrLf
-    h = h & "Fix sentence starts" & vbCrLf
-    h = h & "  Recommended. Capitalizes likely sentence starts after . ? !." & vbCrLf
-    h = h & vbCrLf
-    h = h & "Sentence case" & vbCrLf
-    h = h & "  Capitalizes the first character and lowercases the rest." & vbCrLf
-    h = h & vbCrLf
-    h = h & "Title case" & vbCrLf
-    h = h & "  Capitalizes the first letter of every word." & vbCrLf
-    h = h & vbCrLf
-    h = h & "UPPERCASE / lowercase" & vbCrLf
-    h = h & "  Converts affected paragraph text to that case." & vbCrLf
-    h = h & vbCrLf
-    h = h & "Custom" & vbCrLf
-    h = h & "  Runs the selected choices from top to bottom." & vbCrLf
-    h = h & "  Later choices can override earlier choices." & vbCrLf
-    h = h & vbCrLf
-    h = h & "NOTE" & vbCrLf
-    h = h & "Capitalization is applied to the full text content of each paragraph." & vbCrLf
-    h = h & vbCrLf
-    h = h & "SCOPE" & vbCrLf
-    h = h & "Select text before opening this tool to enable Selected text only." & vbCrLf
-    h = h & vbCrLf
-    h = h & "Preview mode highlights paragraphs that would change." & vbCrLf
-    MsgBox h, vbInformation, "Capitalization Fixer Help"
+    ShowCleanupToolHelp "Capitalization"
 End Sub
 Private Sub UpdateCustomVisibility()
     fraCustom.Visible = False

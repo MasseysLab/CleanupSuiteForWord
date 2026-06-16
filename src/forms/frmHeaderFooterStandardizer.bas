@@ -43,33 +43,7 @@ Private Sub UserForm_Initialize()
     LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
-    Dim h As String
-    h = "Header / Footer Standardizer" & vbCrLf & vbCrLf
-    h = h & "Makes header and footer formatting consistent across the whole document, " & _
-            "or clears all header/footer content entirely." & vbCrLf
-    h = h & vbCrLf
-    h = h & "MODE" & vbCrLf
-    h = h & "  Standardize formatting  --  applies the options below to every header " & _
-            "and footer area in every section." & vbCrLf
-    h = h & "  Clear all content       --  removes all text from headers/footers." & vbCrLf
-    h = h & vbCrLf
-    h = h & "STANDARDIZE OPTIONS" & vbCrLf
-    h = h & "  Reset font     --  sets header/footer text to the document's default" & vbCrLf
-    h = h & "                     (Normal style) font and size." & vbCrLf
-    h = h & "  Remove spacing --  sets paragraph space-before and space-after to zero." & vbCrLf
-    h = h & "  Set alignment  --  left, center, or right." & vbCrLf
-    h = h & vbCrLf
-    h = h & "AREAS" & vbCrLf
-    h = h & "  Include headers / Include footers choose which to process." & vbCrLf
-    h = h & "  Each section has up to three slots: primary, first-page, even-page." & vbCrLf
-    h = h & vbCrLf
-    h = h & "LINKED SECTIONS" & vbCrLf
-    h = h & "  Sections linked to the previous one share its header/footer.  Tick" & vbCrLf
-    h = h & "  'Unlink sections' to break those links so each is set on its own." & vbCrLf
-    h = h & vbCrLf
-    h = h & "NOTE: Page numbers, dates, and other fields are not altered.  Always " & _
-            "works on the whole document." & vbCrLf
-    MsgBox h, vbInformation, "Help  --  Header / Footer Standardizer"
+    ShowCleanupToolHelp "HeaderFooter"
 End Sub
 Private Sub optStandardize_Click()
     LayoutCleanupToolForm Me

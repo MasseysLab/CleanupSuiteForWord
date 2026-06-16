@@ -28,24 +28,7 @@ Private Sub UserForm_Initialize()
     LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
-    Dim h As String
-    h = "Footnote / Endnote Remover" & vbCrLf & vbCrLf
-    h = h & "Deletes footnotes and/or endnotes -- both the reference mark in the body " & _
-            "and the note text -- to produce a clean text extract." & vbCrLf
-    h = h & vbCrLf
-    h = h & "OPTIONS" & vbCrLf
-    h = h & "  Remove footnotes  --  deletes footnotes in the target scope." & vbCrLf
-    h = h & "  Remove endnotes   --  deletes endnotes in the target scope." & vbCrLf
-    h = h & "  Keep note text inline  --  inserts each note's text at the reference" & vbCrLf
-    h = h & "                            point in [square brackets] before deleting it." & vbCrLf
-    h = h & vbCrLf
-    h = h & "Word renumbers any remaining notes automatically." & vbCrLf
-    h = h & vbCrLf
-    h = h & "SCOPE" & vbCrLf
-    h = h & "  Select text first to remove only the notes referenced in the selection." & vbCrLf
-    h = h & vbCrLf
-    h = h & "Preview mode highlights the reference marks that would be removed." & vbCrLf
-    MsgBox h, vbInformation, "Help  --  Footnote / Endnote Remover"
+    ShowCleanupToolHelp "Footnote"
 End Sub
 Private Function InScope(r As Range, targetRange As Range) As Boolean
     InScope = (r.Start >= targetRange.Start And r.Start <= targetRange.End)

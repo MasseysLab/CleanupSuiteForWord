@@ -13,12 +13,18 @@ class GuidedToolDynamicLayoutTests(unittest.TestCase):
     def test_shared_layout_hides_stale_titles_and_inactive_controls(self):
         helpers = read("src/modules/modCleanupHelpers.bas")
 
+        self.assertIn("ApplyMSFormTitleStrategy toolForm, True", helpers)
+        self.assertLess(
+            helpers.index("ApplyMSFormTitleStrategy toolForm, True"),
+            helpers.index('Set titleLabel = EnsureGuidedLabel(toolForm, "lblGuidedToolName")'),
+        )
         self.assertIn("Private Function ShouldHideGuidedControl(ByVal toolForm As Object, ByVal controlName As String) As Boolean", helpers)
         self.assertIn("If GuidedControlMatchesToolTitle(toolForm, ctl) Then", helpers)
         self.assertIn("Private Function GuidedControlMatchesToolTitle(ByVal toolForm As Object, ByVal ctl As Object) As Boolean", helpers)
         self.assertIn("If ShouldHideGuidedControl(toolForm, ctl.Name) Then", helpers)
         self.assertIn('HideGuidedControl toolForm.Controls("optScopeSelection")', helpers)
-        self.assertIn('If Len(Trim$(toolForm.Controls("optScopeSelection").Caption)) = 0 Then', helpers)
+        self.assertIn('InStr(1, toolForm.Controls("optScopeDocument").Caption, "(always)", vbTextCompare) = 0', helpers)
+        self.assertIn('And Len(Trim$(toolForm.Controls("optScopeSelection").Caption)) > 0', helpers)
 
         conditional_names = [
             "chkNBSP", "chkZWSP", "chkZWNJ", "chkZWJ", "chkBOM", "chkSoftHyphen", "chkNBHyphen",
@@ -41,19 +47,53 @@ class GuidedToolDynamicLayoutTests(unittest.TestCase):
         self.assertIn("Dim pendingChoice As String", helpers)
         self.assertIn("FlushGuidedPendingChoice toolForm, pendingChoice, M, y, contentW, GAP", helpers)
         self.assertIn("Private Sub FlushGuidedPendingChoice(ByVal toolForm As Object, ByRef pendingChoice As String", helpers)
+        self.assertIn("Private Function GuidedSingleChoiceWidth(ByVal ctl As Object, ByVal contentW As Single) As Single", helpers)
         self.assertIn("Private Function GuidedChoiceRowHeight(ByVal firstControl As Object, Optional ByVal secondControl As Object = Nothing) As Single", helpers)
         self.assertIn("choiceW = (contentW - GAP) / 2", helpers)
-        self.assertIn("toolForm.Controls(pendingChoice).Move M + 8, y, choiceW - 8, rowH", helpers)
+        self.assertIn("toolForm.Controls(pendingChoice).Move M + ((contentW - singleChoiceW) / 2), y, singleChoiceW, rowH", helpers)
         self.assertIn("choiceCtl.Move M + choiceW + GAP + 8, y, choiceW - 8, rowH", helpers)
         self.assertNotIn("ctl.Move M + 8, y, contentW - 8, GuidedOptionHeight(ctl)", helpers)
 
         self.assertIn("Dim pendingChoice As String: pendingChoice = \"\"", installer)
         self.assertIn("FlushGenericPendingChoice designer, pendingChoice, MARGIN, y, contentW, GAP", installer)
         self.assertIn("Private Sub FlushGenericPendingChoice(designer As Object, ByRef pendingChoice As String", installer)
+        self.assertIn("Private Function GenericSingleChoiceWidth(designer As Object, ByVal controlName As String, ByVal contentW As Single) As Single", installer)
         self.assertIn("choiceW = (contentW - GAP) / 2", installer)
-        self.assertIn("PositionControl designer, pendingChoice, MARGIN + 8, y, choiceW - 8, rowH", installer)
+        self.assertIn("PositionControl designer, pendingChoice, MARGIN + ((contentW - singleChoiceW) / 2), y, singleChoiceW, rowH", installer)
         self.assertIn("PositionControl designer, controlName, MARGIN + choiceW + GAP + 8, y, choiceW - 8, rowH", installer)
         self.assertNotIn("h = 18: lft = MARGIN + 8: w = contentW - 8", installer)
+
+    def test_scope_rows_move_below_preview_and_hide_for_whole_document_only_tools(self):
+        helpers = read("src/modules/modCleanupHelpers.bas")
+        installer = read("src/installer/installer.bas")
+
+        self.assertIn('titleLabel.Caption = ""', helpers)
+        self.assertIn("titleLabel.Visible = False", helpers)
+        self.assertIn("Private Function ScopeSelectionIsAvailable(ByVal toolForm As Object) As Boolean", helpers)
+        self.assertIn('InStr(1, toolForm.Controls("optScopeDocument").Caption, "(always)", vbTextCompare) = 0', helpers)
+        self.assertIn('And Len(Trim$(toolForm.Controls("optScopeSelection").Caption)) > 0', helpers)
+        self.assertIn('LayoutGuidedPreviewButton toolForm, M, y, contentW', helpers)
+        self.assertIn('LayoutGuidedScopeRow toolForm, M, y, contentW', helpers)
+        self.assertLess(
+            helpers.index("LayoutGuidedPreviewButton toolForm, M, y, contentW"),
+            helpers.index("LayoutGuidedScopeRow toolForm, M, y, contentW"),
+        )
+        self.assertIn('HideGuidedControl toolForm.Controls("optScopeDocument")', helpers)
+        self.assertIn('toolForm.Controls("optScopeDocument").Move M + 8, y, choiceW - 8, 18', helpers)
+        self.assertIn('toolForm.Controls("optScopeSelection").Move M + choiceW + GAP + 8, y, choiceW - 8, 18', helpers)
+
+        self.assertIn('PositionControl designer, "cmdPreview", MARGIN, y, contentW, BTN_H', installer)
+        self.assertLess(
+            installer.index('PositionControl designer, "cmdPreview", MARGIN, y, contentW, BTN_H'),
+            installer.index('If DesignerScopeSelectionAvailable(designer) Then'),
+        )
+        self.assertIn('InStr(1, CStr(designer.Controls("optScopeDocument").Caption), "(always)", vbTextCompare) = 0', installer)
+        self.assertIn('And Len(Trim$(CStr(designer.Controls("optScopeSelection").Caption))) > 0', installer)
+        self.assertIn('PositionControl designer, "optScopeDocument", MARGIN + 8, y, halfW - 8, 18', installer)
+        self.assertIn('PositionControl designer, "optScopeSelection", MARGIN + halfW + GAP + 8, y, halfW - 8, 18', installer)
+        self.assertIn('PositionControl designer, "optScopeDocument", 0, 0, 0, 0', installer)
+        self.assertIn('designer.Controls("lblTitle").Caption = ""', installer)
+        self.assertIn('designer.Controls("lblTitle").Visible = False', installer)
 
     def test_new_tool_guidance_records_two_column_rule(self):
         contributing = read("CONTRIBUTING.md")
@@ -64,6 +104,8 @@ class GuidedToolDynamicLayoutTests(unittest.TestCase):
             "two-column guided layout",
             "normal opt/chk choices are paired into two columns",
             "Custom choices are still two-column choices",
+            "single leftover choices are centered",
+            "intro-first guided layout",
             "LayoutCleanupToolForm Me",
             "LayoutGenericToolControls",
         ]
@@ -72,7 +114,9 @@ class GuidedToolDynamicLayoutTests(unittest.TestCase):
                 self.assertIn(phrase, contributing)
 
         self.assertIn("two-column guided layout", readme)
+        self.assertIn("single leftover choices are centered", readme)
         self.assertIn("two-column guided layout", mechanisms)
+        self.assertIn("single leftover choices are centered", mechanisms)
 
     def test_custom_forms_relayout_when_mode_changes(self):
         expected_modes = {
@@ -116,6 +160,21 @@ class GuidedToolDynamicLayoutTests(unittest.TestCase):
             installer.index('PositionControl designer, "chkShowCompletionReviewAfterApply"'),
             installer.index('PositionControl designer, "chkReturnToMainAfterApply"'),
         )
+
+    def test_hyperlink_caption_uses_also_prefix(self):
+        form = read("src/forms/frmHyperlinkRemover.bas")
+        installer = read("src/installer/installer.bas")
+
+        self.assertIn('chkRemoveFormat.Caption = "Also, remove hyperlink character style (blue underline)"', form)
+        self.assertIn('Case "frmHyperlinkRemover.chkRemoveFormat": ControlCaptionText = "Also, remove hyperlink character style (blue underline)"', installer)
+
+    def test_header_footer_uses_two_column_order_and_main_menu_caption_is_singular(self):
+        installer = read("src/installer/installer.bas")
+
+        self.assertIn('Case "frmHeaderFooterStandardizer"', installer)
+        self.assertIn('"chkHeaders", "chkFooters", "chkFont", "chkSpacing", "chkAlignment", "chkBreakLinks"', installer)
+        self.assertLess(installer.index('"chkAlignment", "chkBreakLinks"'), installer.index('"fraAlign", "optAlignLeft"'))
+        self.assertIn('Case "cmdHeaderFooter": cap = "Header / Footer"', installer)
 
 
 if __name__ == "__main__":

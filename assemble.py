@@ -42,9 +42,11 @@ The output file is only written if validation passes (or --no-validate is set).
 import sys
 import os
 import base64
+import shutil
 
 DEFAULT_SRC  = "src"
 DEFAULT_OUT  = "VBA_Cleanup_tool.txt"
+PRACTICE_DIR = "Practice - Try CleanupSuite Here"
 
 # ---------------------------------------------------------------- vba_to_builder
 # (inline copy so assemble.py has no runtime dependency on vbaeval.py being
@@ -81,8 +83,23 @@ def parse_manifest(manifest_path):
             parts = line.split(None, 2)   # max 3 parts: TYPE path [func]
             yield parts[0], parts[1:]
 
+
+def sync_practice_copy(out_file, repo_root=None):
+    """Refresh the practice distributable when the root bundle is rebuilt."""
+    repo_root = repo_root or os.path.dirname(os.path.abspath(__file__))
+    if os.path.basename(out_file) != DEFAULT_OUT:
+        return None
+    practice_dir = os.path.join(repo_root, PRACTICE_DIR)
+    if not os.path.isdir(practice_dir):
+        return None
+    practice_out = os.path.join(practice_dir, DEFAULT_OUT)
+    if os.path.abspath(out_file) == os.path.abspath(practice_out):
+        return None
+    shutil.copyfile(out_file, practice_out)
+    return practice_out
+
 # ---------------------------------------------------------------- assemble
-def assemble(src_dir, out_file, validate=True):
+def assemble(src_dir, out_file, validate=True, repo_root=None):
     manifest_path = os.path.join(src_dir, "manifest.txt")
     if not os.path.exists(manifest_path):
         sys.exit(f"ERROR: manifest not found: {manifest_path}")
@@ -161,6 +178,9 @@ def assemble(src_dir, out_file, validate=True):
 
     lines_n = content.count("\r\n")
     print(f"Assembled -> {out_file}  ({lines_n} lines, {len(content)} bytes)")
+    practice_out = sync_practice_copy(out_file, repo_root=repo_root)
+    if practice_out:
+        print(f"Synced practice bundle -> {practice_out}")
     return content
 
 # ---------------------------------------------------------------- CLI

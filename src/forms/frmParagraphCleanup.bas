@@ -37,28 +37,7 @@ Private Sub UserForm_Initialize()
     LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
-    Dim h As String
-    h = "Paragraph Structure Fixer" & vbCrLf & vbCrLf
-    h = h & "Cleans up paragraph structure and direct spacing overrides." & vbCrLf
-    h = h & vbCrLf
-    h = h & "OPTIONS" & vbCrLf
-    h = h & "  Remove empty paragraphs  --  Deletes completely empty paragraphs." & vbCrLf
-    h = h & "  Collapse extra breaks    --  Reduces runs of 3+ consecutive paragraph breaks" & vbCrLf
-    h = h & "                               to exactly 2 (a standard visual separator)." & vbCrLf
-    h = h & "  Normalise para spacing   --  Resets SpaceBefore and SpaceAfter to zero for" & vbCrLf
-    h = h & "                               paragraphs that have direct spacing overrides." & vbCrLf
-    h = h & "                               Does not affect spacing set by the style itself." & vbCrLf
-    h = h & "  Fix indent               --  Resets left indent to zero for paragraphs with" & vbCrLf
-    h = h & "                               direct indent overrides." & vbCrLf
-    h = h & vbCrLf
-    h = h & "TIP: Run after assembling a document from multiple sources or templates, " & _
-            "where inconsistent spacing between paragraphs is most common." & vbCrLf
-    h = h & vbCrLf
-    h = h & "SCOPE" & vbCrLf
-    h = h & "  Select text before opening to limit changes to the selection." & vbCrLf
-    h = h & vbCrLf
-    h = h & "Preview mode highlights empty paragraphs before any changes are made." & vbCrLf
-    MsgBox h, vbInformation, "Help  --  Paragraph Structure Fixer"
+    ShowCleanupToolHelp "Paragraph"
 End Sub
 Private Sub UpdateCustomVisibility(): fraCustom.Visible = False: End Sub
 Private Sub optAll_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub

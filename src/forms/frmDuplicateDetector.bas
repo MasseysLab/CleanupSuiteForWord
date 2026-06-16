@@ -58,35 +58,7 @@ Private Sub optMatchFuzzy_Click()
     LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
-    Dim h As String
-    h = "Duplicate Paragraph Detector" & vbCrLf & vbCrLf
-    h = h & "Finds paragraphs that repeat in the document and highlights them, or " & _
-            "removes every occurrence except the first.  Blank paragraphs are ignored." & vbCrLf
-    h = h & vbCrLf
-    h = h & "MATCHING METHOD" & vbCrLf
-    h = h & "  Exact            --  identical apart from letter case." & vbCrLf
-    h = h & "  Ignore punctuation & spacing  --  duplicates even if they differ only" & vbCrLf
-    h = h & "                       in punctuation, extra spaces, or letter case." & vbCrLf
-    h = h & "  Fuzzy (similar wording)  --  flags paragraphs that share a chosen" & vbCrLf
-    h = h & "                       percentage of their words; catches near-duplicates " & _
-            "                       that were lightly edited.  Slower on large documents." & vbCrLf
-    h = h & vbCrLf
-    h = h & "FUZZY SENSITIVITY (used only by fuzzy matching)" & vbCrLf
-    h = h & "  Loose (60%)   --  more matches, including loosely similar paragraphs." & vbCrLf
-    h = h & "  Medium (80%)  --  a balanced default." & vbCrLf
-    h = h & "  Strict (90%)  --  fewer matches; only very close paragraphs." & vbCrLf
-    h = h & vbCrLf
-    h = h & "ACTION" & vbCrLf
-    h = h & "  Highlight only     --  marks duplicates in yellow for review." & vbCrLf
-    h = h & "  Remove duplicates  --  deletes every occurrence except the first." & vbCrLf
-    h = h & vbCrLf
-    h = h & "SCOPE" & vbCrLf
-    h = h & "  Select text before opening to search within the selection only." & vbCrLf
-    h = h & vbCrLf
-    h = h & "Similar paragraphs are grouped together (a paragraph linked to a match, " & _
-            "which is linked to another, joins the same group), and the first in each" & vbCrLf
-    h = h & "group is kept.  Run with Preview first to see what would be affected." & vbCrLf
-    MsgBox h, vbInformation, "Help  --  Duplicate Paragraph Detector"
+    ShowCleanupToolHelp "Duplicate"
 End Sub
 Private Function NormalizeText(ByVal t As String, ByVal stripPunct As Boolean) As String
     Dim r As String

@@ -2008,3 +2008,238 @@ Tests/checks run:
 - `python vbaeval.py validate` -> OK.
 - `git diff --check` -> OK.
 - No lingering `WINWORD` process, temp sync file, or Office lock stub remained after sync/readback.
+
+## Session: 2026-06-15 17:20
+Agent: Codex
+
+Goal:
+- Clean up two release-polish issues before starting `0.8.0` work:
+  - Preview Actions bars clipped multi-line summaries for Object Remover, Footnote / Endnote Remover, and Header / Footer Standardizer.
+  - Spacing Fixer preview could throw Word runtime error `5560` because Word rejected the spaces-before-punctuation wildcard pattern.
+
+Summary of changes:
+- Made `frmPreviewActions` dynamically calculate summary label height from the current summary text.
+- Kept the Preview Actions form compact with a `100` point minimum height and a capped summary area so short messages still render as a small action bar.
+- Updated Preview OFF handling to store the edit message in `mSummaryText` before relayout, so the dynamic layout uses the current displayed text.
+- Replaced Spacing Fixer spaces-before-punctuation wildcard matching with literal punctuation passes for `.`, `,`, `;`, `:`, `!`, and `?`.
+- Added regression tests for the dynamic Preview Actions sizing helpers and for avoiding the invalid Word wildcard punctuation pattern.
+- Rebuilt generated bundles, synced the practice text bundle, and synced both `.docm` files through Word COM.
+
+Tests/checks run:
+- Focused RED tests failed against the old fixed-height panel and invalid Spacing wildcard pattern.
+- Focused tests after implementation: `python -m unittest tests.test_preview_action_panel tests.test_tool_compile_regressions` -> 14 tests OK.
+- `python assemble.py` -> OK (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- `python -m unittest discover -s tests` -> 30 tests OK.
+- `python vbaeval.py validate` -> OK.
+- `git diff --check` -> OK.
+- Embedded `.docm` readback on temp copies -> OK for both workspace documents; verified dynamic Preview Actions helper code and the literal Spacing punctuation loop are embedded.
+
+Addendum:
+- Tightened the shared Preview Actions bar after review:
+  - minimum dynamic height changed from `100` to `90`,
+  - width changed from `300` to `295`, then to `273`, then to `283` after visual review showed the third button needed more right-edge clearance,
+  - content width changed from `262` to `257`,
+  - button width now derives from content width so the three action buttons remain aligned.
+- Removed the extra blank line between `Current document metadata:` and the first metadata field in Metadata Scrubber preview.
+- Rebuilt bundles, synced the practice bundle, and synced both `.docm` files again.
+- Re-ran `python -m unittest discover -s tests`, `python vbaeval.py validate`, `git diff --check`, and embedded `.docm` readback; all passed.
+- Expanded the shared Preview Actions summary cap again so the current longest preview summaries can show all 8 lines:
+  - `SUMMARY_LINE_H` changed from `10` to `11`,
+  - `MAX_SUMMARY_H` changed from `56` to `88`.
+- Rebuilt bundles, synced the practice bundle, re-synced both `.docm` files, and confirmed the embedded forms carry the new 8-line cap.
+
+## Session: 2026-06-15 18:05
+Agent: Codex
+
+Goal:
+- Give the current release state a final one-over and cut `0.8.0`.
+
+Summary of changes:
+- Promoted project version metadata from `0.7.5` to `0.8.0`.
+- Updated the main menu Footnote launcher button caption to `Footnote / Endnote` in both source and installer generation.
+- Kept the already-finished Preview Actions, Metadata Scrubber, and Spacing Fixer polish work as the final starting state for `0.8.0`.
+
+Planned verification for this release pass:
+- Rebuild generated bundles with `python assemble.py`.
+- Sync the practice text bundle and both `.docm` files.
+- Run the full unit test suite and validator checks.
+- Re-read the embedded `.docm` modules to confirm `0.8.0` and the shared Preview Actions sizing constants are actually present.
+
+Results:
+- `python assemble.py` -> OK (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- Synced `VBA_Cleanup_tool.txt` to `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`.
+- Synced both `.docm` files through the temp-copy Word COM method:
+  - `CleanupSuite_Workspace.docm`
+  - `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+- `python -m unittest discover -s tests` -> 31 tests OK.
+- `python vbaeval.py validate` -> OK.
+- `git diff --check` -> OK.
+- Embedded `.docm` readback on temp copies -> OK for both workspace documents; verified:
+  - `SUITE_VERSION = "0.8.0"`,
+  - Preview Actions constants `FORM_W = 283`, `MIN_FORM_H = 90`, `SUMMARY_LINE_H = 11`, `MAX_SUMMARY_H = 88`,
+  - the literal Spacing punctuation pattern loop is embedded,
+  - Metadata preview heading no longer inserts the extra blank line,
+  - launcher code sets `cmdFootnote.Caption = "Footnote / Endnote"`.
+
+## Session: 2026-06-17
+Agent: Codex
+
+Goal:
+- Enforce Practice-file sync when corresponding repo artifacts are updated, and bring the current Practice generated bundle back into sync.
+
+Summary of changes:
+- Updated `assemble.py` so rebuilding the root `VBA_Cleanup_tool.txt` now automatically refreshes `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`.
+- Added a regression test covering that automatic Practice-bundle sync.
+- Added contributor/build documentation that practice copies must be updated in the same pass as their corresponding repo artifacts.
+- Rebuilt the distributable so the current Practice text bundle is synced again.
+
+Tests/checks run:
+- `python -m unittest tests.test_assemble_sync` -> OK.
+- `python assemble.py` -> OK (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- `python -m unittest discover -s tests` -> 35 tests OK.
+- Root/practice `VBA_Cleanup_tool.txt` SHA-256 hashes match after rebuild.
+- `git diff --check` -> OK.
+
+## Session: 2026-06-17 15:24
+Agent: Codex
+
+Goal:
+- Fix the remaining Guided Choice form mismatch where only Capitalization appeared correct in Word.
+
+Summary of changes:
+- Confirmed source and generated bundles already contained the shared title-hiding strategy for generic guided tool forms.
+- Tightened shared scope-row logic so whole-document-only tools hide both scope controls even if an older embedded designer still has stale scope captions.
+- Applied the same whole-document-only scope rule to the installer layout path.
+- Rebuilt `VBA_Cleanup_tool.txt`, which also synced `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt` through the enforced assemble step.
+- Synced both `.docm` files with a code-only Word COM pass:
+  - `CleanupSuite_Workspace.docm`
+  - `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+
+Notes:
+- Backup created before document sync: `backups\pre_docm_resync_20260617_152404`.
+- Running the full installer macro through hidden Word hit an installer-error modal, so the successful sync used direct VBProject code replacement while preserving the existing embedded UserForm designers.
+
+Tests/checks run:
+- `python -m unittest tests.test_guided_tool_dynamic_layout tests.test_capitalization_guided_form` -> OK.
+- `python assemble.py` -> OK (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- `python -m unittest discover -s tests` -> 35 tests OK.
+- Embedded `.docm` smoke test on a temp copy -> OK:
+  - Object Remover, Style Cleanup, Document Trim, and Header / Footer Standardizer have blank native captions and hidden scope controls.
+  - Invisible Unicode Cleaner still shows both scope controls.
+
+## Session: 2026-06-17 16:55
+Agent: Codex
+
+Goal:
+- Professionalize all submenu/main-menu help files, make Capitalization use one shared help source, and add a launcher shortcut to the PDF User Manual URL.
+
+Backup created:
+- `backups\CleanupSuite_backup_2026-06-17_16-41-57.zip`
+
+Git/repo state:
+- Remote: `origin https://github.com/MasseysLab/CleanupSuiteForWord.git`
+- Branch: `codex-0.7.0-start`
+- Status before: dirty working tree with prior 0.8-era source/generated/docm/doc/test changes.
+- Status after: same broader dirty working tree, plus shared-help/manual-button changes and the new PDF artifact.
+- GitHub/local/generated/.docm sync checked: yes for local source, root generated bundle, practice generated bundle, main `.docm`, and practice `.docm`. The PDF URL points at the current branch path and will resolve from GitHub after the PDF is committed and pushed there.
+
+Files changed in this pass:
+- `src/modules/modCleanupHelpers.bas`
+- `src/forms/frmCleanupSuiteLauncher.bas`
+- `src/forms/frmBreakNormalizer.bas`
+- `src/forms/frmCapitalizationCleanup.bas`
+- `src/forms/frmDocumentTrim.bas`
+- `src/forms/frmDuplicateDetector.bas`
+- `src/forms/frmFontNormalizer.bas`
+- `src/forms/frmFootnoteRemover.bas`
+- `src/forms/frmFormattingStripper.bas`
+- `src/forms/frmHeaderFooterStandardizer.bas`
+- `src/forms/frmHyperlinkRemover.bas`
+- `src/forms/frmListCleanup.bas`
+- `src/forms/frmMetadataScrubber.bas`
+- `src/forms/frmObjectRemover.bas`
+- `src/forms/frmParagraphCleanup.bas`
+- `src/forms/frmPunctuationCleanup.bas`
+- `src/forms/frmSoftReturnConverter.bas`
+- `src/forms/frmSpacingCleanup.bas`
+- `src/forms/frmStyleCleanup.bas`
+- `src/forms/frmTableCleaner.bas`
+- `src/forms/frmUnicodeCleanup.bas`
+- `src/installer/installer.bas`
+- `tests/test_capitalization_guided_form.py`
+- `tests/test_shared_help_and_manual.py`
+- `documents/CleanupSuite_Human_Friendly_User_Manual_v0.7.5.pdf`
+- `VBA_Cleanup_tool.txt`
+- `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt`
+- `CleanupSuite_Workspace.docm`
+- `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+- `AI_HANDOFF.md`
+
+Summary of changes:
+- Replaced one-off help message bodies in all tool forms and main-menu help buttons with shared `ShowCleanupToolHelp "<toolKey>"` calls.
+- Added `CleanupHelpTitle` and `CleanupHelpText` in `modCleanupHelpers` as the single source for all tool help copy.
+- Unified Capitalization help so both the tool Help button and the main-menu `?` button use the same shared text.
+- Added `OpenCleanupUserManualPdf` and `CLEANUP_SUITE_USER_MANUAL_PDF_URL`, pointing to the PDF manual path on the current GitHub branch.
+- Added `cmdUserManual_Click` to the launcher and added the installer/designer wiring for a `User Manual` button beside `Reset All`.
+- Generated `documents\CleanupSuite_Human_Friendly_User_Manual_v0.7.5.pdf` from the current human-friendly user manual Markdown.
+- Rebuilt generated bundles and synced both embedded `.docm` files through the short-temp-copy Word COM method.
+
+Important observations:
+- `win32com` is not installed in either Python runtime, so this sync used native PowerShell COM automation.
+- The first `.docm` sync attempt stopped safely before replacement because copying the reset button font object into the new button failed. The successful rerun skipped font-copying and replaced both `.docm` files only after saving synced temp copies.
+- The new PDF rendered to 7 letter-sized pages; representative pages were visually inspected from PNG renders generated with `pypdfium2`.
+- No Word process remained after the final verification.
+
+Tests/checks run:
+- `python -m unittest tests.test_shared_help_and_manual` -> OK.
+- `python -m unittest discover -s tests` -> 41 tests OK.
+- `python assemble.py` -> OK (`24 builders | balance, if-traps, wiring, strings, round-trip all clean`).
+- `python vbaeval.py validate` -> OK.
+- `git diff --check` -> OK.
+- Root/practice `VBA_Cleanup_tool.txt` SHA-256 hashes match: `52D7C7246F407930F341F33BF46260A903F311A45E9EE7DA62F20F2009966DA3`.
+- Embedded `.docm` read-back on temp copies -> OK for both workspace documents:
+  - `cmdUserManual` exists with caption `User Manual`.
+  - `cmdUserManual` control tip is `Open the PDF User Manual`.
+  - launcher smoke returned `User Manual|Footnote / Endnote`.
+  - embedded helpers contain shared help and the PDF URL constant.
+
+Known remaining issues:
+- The PDF URL will not open from GitHub until the new PDF and code changes are committed and pushed to the branch that the URL references.
+- No visual Word click-through of the new main-menu button was performed; embedded read-back and smoke compile verified the button/control wiring.
+
+Next recommended step:
+- Review the main menu in Word, then commit/push the combined 0.8-era local state when Chris is happy with this help/manual-button pass.
+
+## 2026-06-17 17:32 - 0.8.0 version cleanup before amended push
+
+Goal:
+- Keep the release as `0.8.0`, but replace the temporary `0.7.5` PDF/manual-button references with current `0.8.0` release artifacts before overwriting the already-pushed `0.8.0` branch/tag.
+
+Files/artifacts added or updated:
+- Added `docs\Human_Friendly_User_Manual_v0.8.0.md`.
+- Added `documents\CleanupSuite_Human_Friendly_User_Manual_v0.8.0.pdf`.
+- Updated `CLEANUP_SUITE_USER_MANUAL_PDF_URL` to point at the `v0.8.0` tag URL:
+  `https://raw.githubusercontent.com/MasseysLab/CleanupSuiteForWord/v0.8.0/documents/CleanupSuite_Human_Friendly_User_Manual_v0.8.0.pdf`
+- Updated the shared-help/manual-button test to expect the `v0.8.0` PDF artifact.
+- Removed the untracked temporary `documents\CleanupSuite_Human_Friendly_User_Manual_v0.7.5.pdf` artifact from the release set.
+
+Sync status:
+- Ran `python assemble.py`; root and practice `VBA_Cleanup_tool.txt` were regenerated and synced.
+- Root and practice installer bundle SHA-256 hashes matched after rebuild.
+- Synced both embedded `.docm` files through PowerShell Word COM:
+  - `CleanupSuite_Workspace.docm`
+  - `Practice - Try CleanupSuite Here\CleanupSuite_Workspace.docm`
+- Embedded read-back confirmed both `.docm` files contain:
+  - `SUITE_VERSION = "0.8.0"`
+  - `cmdUserManual_Click`
+  - the `v0.8.0` PDF URL.
+
+Verification:
+- Rendered the new PDF with bundled Python `pypdfium2`; result was 10 pages and representative pages were visually inspected.
+- `python -m unittest discover -s tests` -> 41 tests OK.
+- `python vbaeval.py validate` -> OK.
+- Practice-file update rule enforced for this pass: matching source/generated changes were applied to the practice installer bundle and practice `.docm`.
+
+Notes:
+- The URL intentionally uses the `v0.8.0` tag as the stable GitHub raw ref; it will resolve after the amended `v0.8.0` tag is pushed.
+- No behavior change was made for the PDF version cleanup beyond updating the manual link/versioned artifact and syncing generated/embedded copies.

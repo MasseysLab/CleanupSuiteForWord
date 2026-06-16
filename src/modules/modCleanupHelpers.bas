@@ -7,6 +7,390 @@ Private gPreviewActionPanelTop As Single
 Private gCleanupToolExitReason As String
 Private Const CLEANUP_TOOL_EXIT_APPLY As String = "apply"
 Private Const CLEANUP_TOOL_EXIT_CLOSE As String = "close"
+Public Const CLEANUP_SUITE_USER_MANUAL_PDF_URL As String = "https://raw.githubusercontent.com/MasseysLab/CleanupSuiteForWord/v0.8.0/documents/CleanupSuite_Human_Friendly_User_Manual_v0.8.0.pdf"
+
+Public Sub OpenCleanupUserManualPdf()
+    On Error GoTo OpenErr
+    ActiveDocument.FollowHyperlink Address:=CLEANUP_SUITE_USER_MANUAL_PDF_URL, NewWindow:=True
+    Exit Sub
+OpenErr:
+    MsgBox "Could not open the PDF User Manual." & vbCrLf & vbCrLf & _
+           "You can open it manually at:" & vbCrLf & _
+           CLEANUP_SUITE_USER_MANUAL_PDF_URL, vbExclamation, "Cleanup Suite User Manual"
+End Sub
+
+Public Sub ShowCleanupToolHelp(ByVal toolKey As String)
+    MsgBox CleanupHelpText(toolKey), vbInformation, CleanupHelpTitle(toolKey) & " Help"
+End Sub
+
+Public Function CleanupHelpTitle(ByVal toolKey As String) As String
+    Select Case toolKey
+        Case "Unicode": CleanupHelpTitle = "Invisible Unicode Cleaner"
+        Case "Punctuation": CleanupHelpTitle = "Punctuation Normalizer"
+        Case "Spacing": CleanupHelpTitle = "Spacing Fixer"
+        Case "Capitalization": CleanupHelpTitle = "Capitalization Fixer"
+        Case "List": CleanupHelpTitle = "List Normalizer"
+        Case "Paragraph": CleanupHelpTitle = "Paragraph Structure Fixer"
+        Case "Duplicate": CleanupHelpTitle = "Duplicate Paragraph Detector"
+        Case "Font": CleanupHelpTitle = "Font Normalizer"
+        Case "Table": CleanupHelpTitle = "Table Cleaner"
+        Case "Break": CleanupHelpTitle = "Break Normalizer"
+        Case "DocumentTrim": CleanupHelpTitle = "Document Trim"
+        Case "Formatting": CleanupHelpTitle = "Formatting Stripper"
+        Case "Hyperlink": CleanupHelpTitle = "Hyperlink Remover"
+        Case "SoftReturn": CleanupHelpTitle = "Soft Return Converter"
+        Case "Metadata": CleanupHelpTitle = "Metadata Scrubber"
+        Case "Style": CleanupHelpTitle = "Style Cleanup"
+        Case "Footnote": CleanupHelpTitle = "Footnote / Endnote Remover"
+        Case "HeaderFooter": CleanupHelpTitle = "Header / Footer Standardizer"
+        Case "Object": CleanupHelpTitle = "Object Remover"
+        Case Else: CleanupHelpTitle = "Cleanup Suite"
+    End Select
+End Function
+
+Public Function CleanupHelpText(ByVal toolKey As String) As String
+    Dim h As String
+
+    Select Case toolKey
+        Case "Unicode"
+            AddHelpLine h, "Invisible Unicode Cleaner"
+            AddHelpLine h, ""
+            AddHelpLine h, "Removes invisible or problem characters that can break search, sorting, comparison, exports, and automated text processing."
+            AddHelpLine h, ""
+            AddHelpLine h, "Options:"
+            AddHelpLine h, "- Non-breaking spaces: regular-looking spaces that prevent line breaks."
+            AddHelpLine h, "- Zero-width characters: invisible characters that can split words or affect searching."
+            AddHelpLine h, "- Byte order marks, soft hyphens, and non-breaking hyphens: hidden or special characters that often arrive from web, PDF, or cross-platform text."
+            AddHelpLine h, ""
+            AddHelpLine h, "Scope:"
+            AddHelpLine h, "Select text before opening the tool to limit cleanup to the selection."
+            AddHelpLine h, ""
+            AddHelpLine h, "Preview:"
+            AddHelpLine h, "Preview highlights matches in yellow without changing the document."
+
+        Case "Punctuation"
+            AddHelpLine h, "Punctuation Normalizer"
+            AddHelpLine h, ""
+            AddHelpLine h, "Replaces typographic punctuation with plain-text equivalents for cleaner export, comparison, and reuse."
+            AddHelpLine h, ""
+            AddHelpLine h, "Options:"
+            AddHelpLine h, "- All punctuation types: quotes, dashes, and ellipses."
+            AddHelpLine h, "- Quotes only: curly double and single quotes become straight quotes."
+            AddHelpLine h, "- Dashes only: em dashes and en dashes become hyphens."
+            AddHelpLine h, "- Ellipses only: ellipsis characters become three dots."
+            AddHelpLine h, "- Custom: choose individual punctuation types."
+            AddHelpLine h, ""
+            AddHelpLine h, "Scope:"
+            AddHelpLine h, "Select text before opening the tool to limit cleanup to the selection."
+            AddHelpLine h, ""
+            AddHelpLine h, "Preview:"
+            AddHelpLine h, "Preview highlights matches without changing the document."
+
+        Case "Spacing"
+            AddHelpLine h, "Spacing Fixer"
+            AddHelpLine h, ""
+            AddHelpLine h, "Corrects common spacing problems in documents assembled from copied text, templates, OCR, PDFs, and multiple files."
+            AddHelpLine h, ""
+            AddHelpLine h, "Options:"
+            AddHelpLine h, "- All spacing fixes: runs the full spacing cleanup set."
+            AddHelpLine h, "- Double spaces only: collapses repeated spaces."
+            AddHelpLine h, "- Trim leading / trailing spaces: removes extra spaces at paragraph edges."
+            AddHelpLine h, "- Custom: choose double spaces, paragraph trimming, punctuation spacing, and extra blank-line cleanup."
+            AddHelpLine h, ""
+            AddHelpLine h, "Scope:"
+            AddHelpLine h, "Select text before opening the tool to limit cleanup to the selection."
+            AddHelpLine h, ""
+            AddHelpLine h, "Preview:"
+            AddHelpLine h, "Preview highlights problem areas without changing the document."
+
+        Case "Capitalization"
+            AddHelpLine h, "Capitalization Fixer"
+            AddHelpLine h, ""
+            AddHelpLine h, "Applies consistent capitalization to paragraph text in the selected scope."
+            AddHelpLine h, ""
+            AddHelpLine h, "Modes:"
+            AddHelpLine h, "- Fix sentence starts: recommended for general text. It capitalizes likely sentence starts after . ? ! while leaving existing casing alone where possible."
+            AddHelpLine h, "- Sentence case: capitalizes the first character and lowercases the rest."
+            AddHelpLine h, "- Title case: capitalizes the first letter of every word."
+            AddHelpLine h, "- UPPERCASE / lowercase: converts affected paragraph text to that case."
+            AddHelpLine h, "- Custom: runs selected choices from top to bottom. Later choices can override earlier choices."
+            AddHelpLine h, ""
+            AddHelpLine h, "Scope:"
+            AddHelpLine h, "Select text before opening this tool to enable Selected text only."
+            AddHelpLine h, ""
+            AddHelpLine h, "Preview:"
+            AddHelpLine h, "Preview highlights paragraphs that would change."
+
+        Case "List"
+            AddHelpLine h, "List Normalizer"
+            AddHelpLine h, ""
+            AddHelpLine h, "Cleans manual bullets, numbering, and list indentation so list paragraphs behave like Word lists."
+            AddHelpLine h, ""
+            AddHelpLine h, "Options:"
+            AddHelpLine h, "- All list fixes: runs the full list cleanup set."
+            AddHelpLine h, "- Convert manual bullet lists: changes typed bullet markers into list formatting."
+            AddHelpLine h, "- Convert manual numbered lists: changes typed numbers into list formatting."
+            AddHelpLine h, "- Fix list indentation: standardizes list paragraph indents."
+            AddHelpLine h, "- Custom: choose the list fixes individually."
+            AddHelpLine h, ""
+            AddHelpLine h, "Scope:"
+            AddHelpLine h, "Select text before opening the tool to limit cleanup to the selection."
+            AddHelpLine h, ""
+            AddHelpLine h, "Preview:"
+            AddHelpLine h, "Preview highlights list paragraphs that would be affected."
+
+        Case "Paragraph"
+            AddHelpLine h, "Paragraph Structure Fixer"
+            AddHelpLine h, ""
+            AddHelpLine h, "Cleans empty paragraphs, paragraph spacing, soft returns, and manual indentation."
+            AddHelpLine h, ""
+            AddHelpLine h, "Options:"
+            AddHelpLine h, "- All paragraph fixes: runs the full paragraph cleanup set."
+            AddHelpLine h, "- Remove empty paragraphs: deletes paragraphs that contain no visible text."
+            AddHelpLine h, "- Normalize paragraph spacing: resets direct spacing overrides."
+            AddHelpLine h, "- Custom: choose empty paragraph cleanup, soft-return conversion, spacing cleanup, and indent cleanup."
+            AddHelpLine h, ""
+            AddHelpLine h, "Scope:"
+            AddHelpLine h, "Select text before opening the tool to limit cleanup to the selection."
+            AddHelpLine h, ""
+            AddHelpLine h, "Preview:"
+            AddHelpLine h, "Preview highlights affected paragraphs before changes are made."
+
+        Case "Duplicate"
+            AddHelpLine h, "Duplicate Paragraph Detector"
+            AddHelpLine h, ""
+            AddHelpLine h, "Finds repeated or near-repeated paragraphs before you decide whether to keep or remove them."
+            AddHelpLine h, ""
+            AddHelpLine h, "Choices:"
+            AddHelpLine h, "- Highlight duplicates: marks repeated paragraphs for review."
+            AddHelpLine h, "- Remove duplicate paragraphs: keeps the first occurrence and removes later matches."
+            AddHelpLine h, "- Exact match: fastest and strictest."
+            AddHelpLine h, "- Normalized match: ignores punctuation and spacing differences."
+            AddHelpLine h, "- Fuzzy match: compares word overlap and is slower on large documents."
+            AddHelpLine h, ""
+            AddHelpLine h, "Scope:"
+            AddHelpLine h, "Select text before opening the tool to search only within the selection."
+            AddHelpLine h, ""
+            AddHelpLine h, "Preview:"
+            AddHelpLine h, "Preview first is strongly recommended before removing duplicate paragraphs."
+
+        Case "Font"
+            AddHelpLine h, "Font Normalizer"
+            AddHelpLine h, ""
+            AddHelpLine h, "Resets direct font overrides so text follows the font settings defined by its paragraph style."
+            AddHelpLine h, ""
+            AddHelpLine h, "Options:"
+            AddHelpLine h, "- Normalize font face: returns text to the document default."
+            AddHelpLine h, "- Normalize font size: returns text to the style-defined size."
+            AddHelpLine h, "- Normalize bold / italic overrides: clears direct emphasis settings."
+            AddHelpLine h, "- Remove direct font color overrides: returns text color to the style."
+            AddHelpLine h, ""
+            AddHelpLine h, "Scope:"
+            AddHelpLine h, "Select text before opening the tool to limit cleanup to the selection."
+            AddHelpLine h, ""
+            AddHelpLine h, "Preview:"
+            AddHelpLine h, "Preview highlights paragraphs with direct font overrides."
+
+        Case "Table"
+            AddHelpLine h, "Table Cleaner"
+            AddHelpLine h, ""
+            AddHelpLine h, "Cleans table structure and formatting while keeping table content unless you explicitly convert a table to text."
+            AddHelpLine h, ""
+            AddHelpLine h, "Options:"
+            AddHelpLine h, "- Remove empty rows or columns: deletes table rows or columns with no visible content."
+            AddHelpLine h, "- Normalize cell padding: standardizes table cell margins."
+            AddHelpLine h, "- Strip direct formatting from cells: clears manual formatting overrides."
+            AddHelpLine h, "- Normalize or remove borders: standardizes table borders."
+            AddHelpLine h, "- Convert single-column tables to plain text: replaces simple one-column tables with text."
+            AddHelpLine h, ""
+            AddHelpLine h, "Scope:"
+            AddHelpLine h, "Select text before opening the tool to limit cleanup to tables in the selection."
+            AddHelpLine h, ""
+            AddHelpLine h, "Preview:"
+            AddHelpLine h, "Preview reports the table cleanup that would run."
+
+        Case "Break"
+            AddHelpLine h, "Break Normalizer"
+            AddHelpLine h, ""
+            AddHelpLine h, "Fixes consecutive page and section breaks, most often found in documents assembled from several source files."
+            AddHelpLine h, ""
+            AddHelpLine h, "Options:"
+            AddHelpLine h, "- Collapse consecutive section breaks: reduces repeated section breaks to one."
+            AddHelpLine h, "- Collapse consecutive page breaks: reduces repeated manual page breaks to one."
+            AddHelpLine h, "- Convert section breaks to page breaks: changes section breaks to the selected break type."
+            AddHelpLine h, ""
+            AddHelpLine h, "Conversion types:"
+            AddHelpLine h, "- Next Page, Continuous, Even Page, or Odd Page."
+            AddHelpLine h, "- The first section of a document is never converted because it has no preceding break."
+            AddHelpLine h, ""
+            AddHelpLine h, "Scope:"
+            AddHelpLine h, "Select text before opening the tool to limit cleanup to the selection."
+            AddHelpLine h, ""
+            AddHelpLine h, "Preview:"
+            AddHelpLine h, "Preview highlights consecutive break sequences."
+
+        Case "DocumentTrim"
+            AddHelpLine h, "Document Trim"
+            AddHelpLine h, ""
+            AddHelpLine h, "Removes extra empty paragraphs from the end of the document while leaving Word's required final paragraph mark."
+            AddHelpLine h, ""
+            AddHelpLine h, "Why this matters:"
+            AddHelpLine h, "Documents assembled from multiple files or templates often end with blank paragraphs. Those blanks can create unwanted printed space and may affect headers, footers, and page numbering in some layouts."
+            AddHelpLine h, ""
+            AddHelpLine h, "Scope:"
+            AddHelpLine h, "This tool always works on the full document because the end of the document is a document-level location."
+            AddHelpLine h, ""
+            AddHelpLine h, "Preview:"
+            AddHelpLine h, "Preview highlights the trailing paragraphs that would be removed."
+
+        Case "Formatting"
+            AddHelpLine h, "Formatting Stripper"
+            AddHelpLine h, ""
+            AddHelpLine h, "Removes direct formatting while preserving the document's style structure."
+            AddHelpLine h, ""
+            AddHelpLine h, "Choices:"
+            AddHelpLine h, "- Strip direct character formatting: resets manual font-level overrides."
+            AddHelpLine h, "- Strip direct paragraph formatting: resets manual paragraph-level overrides."
+            AddHelpLine h, "- Quick: preserves emphasis that applies to whole paragraphs."
+            AddHelpLine h, "- Thorough: preserves emphasis on individual words, but takes longer."
+            AddHelpLine h, "- Strip: removes all direct formatting."
+            AddHelpLine h, "- Preserve highlighting and drop caps: keep those visual elements during cleanup."
+            AddHelpLine h, ""
+            AddHelpLine h, "Scope:"
+            AddHelpLine h, "Select text before opening the tool to limit cleanup to the selection."
+            AddHelpLine h, ""
+            AddHelpLine h, "Preview:"
+            AddHelpLine h, "Preview highlights paragraphs carrying direct formatting."
+
+        Case "Hyperlink"
+            AddHelpLine h, "Hyperlink Remover"
+            AddHelpLine h, ""
+            AddHelpLine h, "Removes hyperlink targets while keeping the visible text."
+            AddHelpLine h, ""
+            AddHelpLine h, "Option:"
+            AddHelpLine h, "- Also remove hyperlink character style: clears the blue underline after the link is removed."
+            AddHelpLine h, ""
+            AddHelpLine h, "Scope:"
+            AddHelpLine h, "Select text before opening the tool to limit cleanup to the selection."
+            AddHelpLine h, ""
+            AddHelpLine h, "Preview:"
+            AddHelpLine h, "Preview highlights hyperlinks that would be removed."
+
+        Case "SoftReturn"
+            AddHelpLine h, "Soft Return Converter"
+            AddHelpLine h, ""
+            AddHelpLine h, "Converts soft returns made with Shift+Enter to paragraph marks, or converts paragraph marks back to soft returns."
+            AddHelpLine h, ""
+            AddHelpLine h, "Choices:"
+            AddHelpLine h, "- Convert soft returns to paragraph marks: the usual fix for PDF or web text imports."
+            AddHelpLine h, "- Convert paragraph marks to soft returns: useful only when you intentionally want one paragraph split across lines."
+            AddHelpLine h, ""
+            AddHelpLine h, "Scope:"
+            AddHelpLine h, "Select text before opening the tool to limit cleanup to the selection."
+            AddHelpLine h, ""
+            AddHelpLine h, "Preview:"
+            AddHelpLine h, "Preview highlights breaks that would be converted."
+
+        Case "Metadata"
+            AddHelpLine h, "Metadata Scrubber"
+            AddHelpLine h, ""
+            AddHelpLine h, "Removes document metadata and review artifacts before a document is shared."
+            AddHelpLine h, ""
+            AddHelpLine h, "Options:"
+            AddHelpLine h, "- Clear document properties: removes built-in properties such as title, author, company, and manager."
+            AddHelpLine h, "- Clear personal information: removes or anonymizes revision author information where Word allows it."
+            AddHelpLine h, "- Remove all comments: deletes comments from the document."
+            AddHelpLine h, "- Accept tracked changes and clear revision marks: finalizes the current revision state."
+            AddHelpLine h, ""
+            AddHelpLine h, "Scope:"
+            AddHelpLine h, "This tool always works on the full document because metadata is document-level information."
+            AddHelpLine h, ""
+            AddHelpLine h, "Preview:"
+            AddHelpLine h, "Preview shows current document metadata and review counts."
+
+        Case "Style"
+            AddHelpLine h, "Style Cleanup"
+            AddHelpLine h, ""
+            AddHelpLine h, "Removes unused custom styles and can remap common style variants to cleaner equivalents."
+            AddHelpLine h, ""
+            AddHelpLine h, "Options:"
+            AddHelpLine h, "- Remove unused styles: deletes custom styles that are not used in the main document body."
+            AddHelpLine h, "- Remap style variants: moves common duplicate style variants back to canonical styles."
+            AddHelpLine h, ""
+            AddHelpLine h, "Scope:"
+            AddHelpLine h, "This tool always works on the full document because style definitions belong to the document."
+            AddHelpLine h, ""
+            AddHelpLine h, "Preview:"
+            AddHelpLine h, "Preview reports how many unused styles or remappable variants were found."
+
+        Case "Footnote"
+            AddHelpLine h, "Footnote / Endnote Remover"
+            AddHelpLine h, ""
+            AddHelpLine h, "Removes footnotes, endnotes, or both. It can optionally keep note text inline in brackets."
+            AddHelpLine h, ""
+            AddHelpLine h, "Options:"
+            AddHelpLine h, "- Remove footnotes: deletes footnote references and note text."
+            AddHelpLine h, "- Remove endnotes: deletes endnote references and note text."
+            AddHelpLine h, "- Keep note text inline: inserts note text at the reference point before removing the note."
+            AddHelpLine h, ""
+            AddHelpLine h, "Scope:"
+            AddHelpLine h, "Select text before opening the tool to remove only notes referenced in the selection."
+            AddHelpLine h, ""
+            AddHelpLine h, "Preview:"
+            AddHelpLine h, "Preview reports how many notes would be removed."
+
+        Case "HeaderFooter"
+            AddHelpLine h, "Header / Footer Standardizer"
+            AddHelpLine h, ""
+            AddHelpLine h, "Standardizes header and footer formatting across the full document, or clears header and footer content."
+            AddHelpLine h, ""
+            AddHelpLine h, "Modes:"
+            AddHelpLine h, "- Standardize formatting: applies selected formatting cleanup to header and footer areas."
+            AddHelpLine h, "- Clear all header/footer content: removes header and footer text."
+            AddHelpLine h, ""
+            AddHelpLine h, "Options:"
+            AddHelpLine h, "- Include headers / Include footers: choose which areas to process."
+            AddHelpLine h, "- Reset font: uses the document default font and size."
+            AddHelpLine h, "- Remove paragraph spacing: sets space before and after to zero."
+            AddHelpLine h, "- Set alignment: applies left, center, or right alignment."
+            AddHelpLine h, "- Unlink sections: breaks Link to Previous so each section can be processed independently."
+            AddHelpLine h, ""
+            AddHelpLine h, "Scope:"
+            AddHelpLine h, "This tool always works on the full document. Page numbers, dates, and other fields are not intentionally changed."
+
+        Case "Object"
+            AddHelpLine h, "Object Remover"
+            AddHelpLine h, ""
+            AddHelpLine h, "Removes embedded objects and hidden content that often arrive from web pages, PDFs, email, or copied documents."
+            AddHelpLine h, ""
+            AddHelpLine h, "Options:"
+            AddHelpLine h, "- Pictures: removes inline and floating images."
+            AddHelpLine h, "- Text boxes: removes text boxes and their contents."
+            AddHelpLine h, "- Frames: removes frame containers while keeping the text."
+            AddHelpLine h, "- Horizontal lines: removes inserted horizontal-line graphics."
+            AddHelpLine h, "- HTML / ActiveX form controls: removes form controls from pasted web content."
+            AddHelpLine h, "- Hidden text: removes text formatted as hidden."
+            AddHelpLine h, "- Tables: deletes whole tables and all their contents after confirmation."
+            AddHelpLine h, ""
+            AddHelpLine h, "Scope:"
+            AddHelpLine h, "This tool always works on the full document body. Header and footer objects are left alone."
+            AddHelpLine h, ""
+            AddHelpLine h, "Preview:"
+            AddHelpLine h, "Preview reports counts for objects that would be removed."
+
+        Case Else
+            AddHelpLine h, "Cleanup Suite"
+            AddHelpLine h, ""
+            AddHelpLine h, "No help text is available for this tool yet."
+    End Select
+
+    CleanupHelpText = h
+End Function
+
+Private Sub AddHelpLine(ByRef textValue As String, ByVal lineValue As String)
+    If Len(textValue) > 0 Then textValue = textValue & vbCrLf
+    textValue = textValue & lineValue
+End Sub
 
 Public Sub RememberPreviewActionPanelPosition(panelLeft As Single, panelTop As Single)
     gPreviewActionPanelLeft = panelLeft
@@ -92,7 +476,7 @@ End Function
 Public Function GuardBeforeCleanup(toolName As String) As Boolean
     GuardBeforeCleanup = False
     If ActiveDocument.Path = "" Then
-        ' Document has never been saved -- Word has nothing to recover
+        ' Document has never been saved, so Word has nothing to recover.
         Dim msg As String
         msg = "This document has not been saved yet." & vbCrLf & vbCrLf & _
               "Saving first lets Word's built-in recovery protect you if anything goes wrong." & vbCrLf & vbCrLf & _
@@ -110,7 +494,7 @@ Public Function GuardBeforeCleanup(toolName As String) As Boolean
             On Error GoTo 0
         End If
     ElseIf GetAutoSaveSetting() And Not IsRunningInMacroHostDocument() Then
-        ' Document is saved and auto-save is ON -- save silently before proceeding
+        ' Document is saved and auto-save is ON, so save silently before proceeding.
         On Error Resume Next
         ActiveDocument.Save
         On Error GoTo 0
@@ -302,25 +686,29 @@ Public Sub LayoutCleanupToolForm(ByVal toolForm As Object)
     Set titleLabel = EnsureGuidedLabel(toolForm, "lblGuidedToolName")
     Set introLabel = EnsureGuidedLabel(toolForm, "lblGuidedIntro")
 
+    HideGuidedTitleChrome toolForm
+
+    titleLabel.Caption = ""
+    titleLabel.Visible = False
     With titleLabel
-        .Caption = GuidedToolName(toolForm.Name)
-        .Move M, 8, contentW, 18
+        .Move 0, 0, 0, 0
         .Font.Name = "Segoe UI"
         .Font.Size = 10
-        .Font.Bold = True
+        .Font.Bold = False
         .ForeColor = RGB(32, 37, 45)
         .BackColor = RGB(248, 249, 251)
-        .TextAlign = 2
+        .TextAlign = 0
         .WordWrap = False
-        .Visible = True
-        .ZOrder 0
+        .Visible = False
     End With
 
+    Dim introH As Single
+    introH = GuidedIntroHeight(GuidedToolIntro(toolForm.Name))
     With introLabel
         .Caption = GuidedToolIntro(toolForm.Name)
-        .Move M, 28, contentW, 30
+        .Move M, 10, contentW, introH
         .Font.Name = "Segoe UI"
-        .Font.Size = 8.5
+        .Font.Size = 9
         .Font.Bold = False
         .ForeColor = RGB(88, 101, 116)
         .BackColor = RGB(248, 249, 251)
@@ -331,7 +719,7 @@ Public Sub LayoutCleanupToolForm(ByVal toolForm As Object)
     End With
 
     Dim y As Single
-    y = 66
+    y = 10 + introH + 8
     Dim pendingButton As String
     pendingButton = ""
     Dim pendingChoice As String
@@ -358,7 +746,7 @@ Public Sub LayoutCleanupToolForm(ByVal toolForm As Object)
 
         Select Case ctl.Name
             Case "cmdPreview", "cmdRun", "cmdReset", "cmdHelp"
-                ' action buttons are laid out after scope
+                ' preview and footer actions are laid out after the choices
             Case Else
                 Select Case Left$(ctl.Name, 3)
                     Case "cmd"
@@ -400,6 +788,7 @@ NextGuidedControl:
     FlushGuidedPendingButton toolForm, pendingButton, M, y, contentW, BH, GAP
     y = y + 2
 
+    LayoutGuidedPreviewButton toolForm, M, y, contentW
     LayoutGuidedScopeRow toolForm, M, y, contentW
     LayoutGuidedActionButtons toolForm, M, y, contentW
     toolForm.Height = y + 34
@@ -427,6 +816,24 @@ Private Sub HideGuidedControl(ByVal ctl As Object)
     ctl.Visible = False
     ctl.Move 0, 0, 0, 0
 End Sub
+Private Sub HideGuidedTitleChrome(ByVal toolForm As Object)
+    On Error Resume Next
+    Dim ctl As Object
+    For Each ctl In toolForm.Controls
+        If Left$(LCase$(ctl.Name), 3) <> "lbl" Then GoTo NextGuidedTitleControl
+        If ctl.Name = "lblGuidedToolName" Or ctl.Name = "lblGuidedIntro" Then GoTo NextGuidedTitleControl
+        If ctl.Name = "lblSpeedWarning" Or ctl.Name = "lblFuzzyWarning" Then GoTo NextGuidedTitleControl
+        If IsLegacyTitleControlName(ctl.Name) Or GuidedControlMatchesToolTitle(toolForm, ctl) Or IsLikelyGuidedTitleLabel(ctl) Then
+            HideGuidedControl ctl
+        End If
+NextGuidedTitleControl:
+    Next ctl
+End Sub
+Private Function IsLikelyGuidedTitleLabel(ByVal ctl As Object) As Boolean
+    On Error Resume Next
+    If Len(Trim$(CStr(ctl.Caption))) = 0 Then Exit Function
+    If ctl.Top <= 24 And ctl.Height <= 24 Then IsLikelyGuidedTitleLabel = True
+End Function
 Private Function GuidedControlMatchesToolTitle(ByVal toolForm As Object, ByVal ctl As Object) As Boolean
     On Error Resume Next
     If ctl.Name = "lblGuidedToolName" Then Exit Function
@@ -484,12 +891,12 @@ End Function
 Private Sub FlushGuidedPendingChoice(ByVal toolForm As Object, ByRef pendingChoice As String, ByVal M As Single, ByRef y As Single, ByVal contentW As Single, ByVal GAP As Single)
     On Error Resume Next
     If Len(pendingChoice) = 0 Then Exit Sub
-    Dim choiceW As Single
-    choiceW = (contentW - GAP) / 2
+    Dim singleChoiceW As Single
+    singleChoiceW = GuidedSingleChoiceWidth(toolForm.Controls(pendingChoice), contentW)
     Dim rowH As Single
     rowH = GuidedChoiceRowHeight(toolForm.Controls(pendingChoice))
     StyleGuidedOption toolForm.Controls(pendingChoice)
-    toolForm.Controls(pendingChoice).Move M + 8, y, choiceW - 8, rowH
+    toolForm.Controls(pendingChoice).Move M + ((contentW - singleChoiceW) / 2), y, singleChoiceW, rowH
     toolForm.Controls(pendingChoice).Visible = True
     y = y + rowH + GAP
     pendingChoice = ""
@@ -515,6 +922,15 @@ Private Function GuidedChoiceRowHeight(ByVal firstControl As Object, Optional By
     If Not secondControl Is Nothing Then
         If GuidedOptionHeight(secondControl) > GuidedChoiceRowHeight Then GuidedChoiceRowHeight = GuidedOptionHeight(secondControl)
     End If
+End Function
+Private Function GuidedSingleChoiceWidth(ByVal ctl As Object, ByVal contentW As Single) As Single
+    On Error Resume Next
+    Dim pairW As Single
+    pairW = ((contentW - 6) / 2) - 8
+    GuidedSingleChoiceWidth = pairW + 32
+    If GuidedOptionHeight(ctl) > 18 Then GuidedSingleChoiceWidth = contentW - 40
+    If GuidedSingleChoiceWidth < pairW Then GuidedSingleChoiceWidth = pairW
+    If GuidedSingleChoiceWidth > contentW Then GuidedSingleChoiceWidth = contentW
 End Function
 Private Sub FlushGuidedPendingButton(ByVal toolForm As Object, ByRef pendingButton As String, ByVal M As Single, ByRef y As Single, ByVal contentW As Single, ByVal BH As Single, ByVal GAP As Single)
     On Error Resume Next
@@ -567,6 +983,13 @@ Private Function GuidedLabelHeight(ByVal ctl As Object) As Single
         GuidedLabelHeight = 32
     End If
 End Function
+Private Function GuidedIntroHeight(ByVal captionText As String) As Single
+    If Len(captionText) > 72 Then
+        GuidedIntroHeight = 30
+    Else
+        GuidedIntroHeight = 18
+    End If
+End Function
 Private Function GuidedOptionHeight(ByVal ctl As Object) As Single
     On Error Resume Next
     If Len(ctl.Caption) > 72 Then
@@ -580,21 +1003,29 @@ End Function
 Private Sub LayoutGuidedScopeRow(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single)
     On Error Resume Next
     Const GAP As Single = 6
-    Dim halfW As Single
-    halfW = (contentW - GAP) / 2
+    Dim choiceW As Single
+    choiceW = (contentW - GAP) / 2
     StyleGuidedOption toolForm.Controls("optScopeDocument")
     StyleGuidedOption toolForm.Controls("optScopeSelection")
-    toolForm.Controls("optScopeDocument").Move M, y, halfW, 18
-    toolForm.Controls("optScopeSelection").Move M + halfW + GAP, y, halfW, 18
-    toolForm.Controls("optScopeDocument").Visible = True
-    If Len(Trim$(toolForm.Controls("optScopeSelection").Caption)) = 0 Then
+    If Not ScopeSelectionIsAvailable(toolForm) Then
+        HideGuidedControl toolForm.Controls("optScopeDocument")
         HideGuidedControl toolForm.Controls("optScopeSelection")
-    Else
-        toolForm.Controls("optScopeSelection").Visible = True
+        Exit Sub
     End If
+
+    toolForm.Controls("optScopeDocument").Move M + 8, y, choiceW - 8, 18
+    toolForm.Controls("optScopeSelection").Move M + choiceW + GAP + 8, y, choiceW - 8, 18
+    toolForm.Controls("optScopeDocument").Visible = True
+    toolForm.Controls("optScopeSelection").Visible = True
     y = y + 28
 End Sub
-Private Sub LayoutGuidedActionButtons(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single)
+Private Function ScopeSelectionIsAvailable(ByVal toolForm As Object) As Boolean
+    On Error Resume Next
+    ScopeSelectionIsAvailable = _
+        InStr(1, toolForm.Controls("optScopeDocument").Caption, "(always)", vbTextCompare) = 0 _
+        And Len(Trim$(toolForm.Controls("optScopeSelection").Caption)) > 0
+End Function
+Private Sub LayoutGuidedPreviewButton(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single)
     On Error Resume Next
     Const GAP As Single = 6
     Const BH As Single = 24
@@ -603,7 +1034,11 @@ Private Sub LayoutGuidedActionButtons(ByVal toolForm As Object, ByVal M As Singl
     toolForm.Controls("cmdPreview").Move M, y, contentW, BH
     toolForm.Controls("cmdPreview").Visible = True
     y = y + BH + GAP
-
+End Sub
+Private Sub LayoutGuidedActionButtons(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single)
+    On Error Resume Next
+    Const GAP As Single = 6
+    Const BH As Single = 24
     Dim thirdW As Single
     thirdW = (contentW - (2 * GAP)) / 3
     StyleGuidedButton toolForm.Controls("cmdRun"), False

@@ -456,12 +456,18 @@ Private Sub LayoutGenericToolControls(comp As VBIDE.VBComponent, designer As Obj
     Dim contentW As Single: contentW = FORM_W - (2 * MARGIN)
     Dim halfW As Single: halfW = (contentW - GAP) / 2
     Dim thirdW As Single: thirdW = (contentW - (2 * GAP)) / 3
-    Dim y As Single: y = 64
+    Dim y As Single: y = 36
     Dim pend As String: pend = ""
     Dim pendingChoice As String: pendingChoice = ""
     Dim ctrlNames As Variant: ctrlNames = ControlsForForm(comp.Name)
     Dim cn As Variant, pfx As String
     Dim h As Single, lft As Single, w As Single
+
+    PositionControl designer, "lblTitle", 0, 0, 0, 0
+    designer.Controls("lblTitle").Caption = ""
+    designer.Controls("lblTitle").Visible = False
+    HideGenericTitleLabels designer
+
     For Each cn In ctrlNames
         If CStr(cn) = "chkPreviewOnly" Or CStr(cn) = "fraScopeSelection" Then
             FlushGenericPendingChoice designer, pendingChoice, MARGIN, y, contentW, GAP
@@ -525,11 +531,20 @@ NextControl:
     FlushGenericPendingChoice designer, pendingChoice, MARGIN, y, contentW, GAP
     FlushGenericPendingButton designer, pend, MARGIN, y, contentW, BTN_H, GAP
     y = y + 2
-    PositionControl designer, "optScopeDocument", MARGIN, y, halfW, 18
-    PositionControl designer, "optScopeSelection", MARGIN + halfW + GAP, y, halfW, 18
-    y = y + 28
     PositionControl designer, "cmdPreview", MARGIN, y, contentW, BTN_H
     y = y + BTN_H + GAP
+    If DesignerScopeSelectionAvailable(designer) Then
+        PositionControl designer, "optScopeDocument", MARGIN + 8, y, halfW - 8, 18
+        PositionControl designer, "optScopeSelection", MARGIN + halfW + GAP + 8, y, halfW - 8, 18
+        designer.Controls("optScopeDocument").Visible = True
+        designer.Controls("optScopeSelection").Visible = True
+        y = y + 28
+    Else
+        PositionControl designer, "optScopeDocument", 0, 0, 0, 0
+        PositionControl designer, "optScopeSelection", 0, 0, 0, 0
+        designer.Controls("optScopeDocument").Visible = False
+        designer.Controls("optScopeSelection").Visible = False
+    End If
     PositionControl designer, "cmdRun", MARGIN, y, thirdW, BTN_H
     PositionControl designer, "cmdReset", MARGIN + thirdW + GAP, y, thirdW, BTN_H
     PositionControl designer, "cmdHelp", MARGIN + (2 * (thirdW + GAP)), y, thirdW, BTN_H
@@ -551,11 +566,11 @@ End Sub
 Private Sub FlushGenericPendingChoice(designer As Object, ByRef pendingChoice As String, ByVal MARGIN As Single, ByRef y As Single, ByVal contentW As Single, ByVal GAP As Single)
     On Error Resume Next
     If Len(pendingChoice) = 0 Then Exit Sub
-    Dim choiceW As Single
-    choiceW = (contentW - GAP) / 2
+    Dim singleChoiceW As Single
+    singleChoiceW = GenericSingleChoiceWidth(designer, pendingChoice, contentW)
     Dim rowH As Single
     rowH = GenericChoiceHeight(designer, pendingChoice)
-    PositionControl designer, pendingChoice, MARGIN + 8, y, choiceW - 8, rowH
+    PositionControl designer, pendingChoice, MARGIN + ((contentW - singleChoiceW) / 2), y, singleChoiceW, rowH
     designer.Controls(pendingChoice).WordWrap = True
     designer.Controls(pendingChoice).AutoSize = False
     y = y + rowH + GAP
@@ -596,6 +611,35 @@ Private Function GenericChoiceHeight(designer As Object, ByVal controlName As St
         GenericChoiceHeight = 18
     End If
 End Function
+Private Function GenericSingleChoiceWidth(designer As Object, ByVal controlName As String, ByVal contentW As Single) As Single
+    On Error Resume Next
+    Dim pairW As Single
+    pairW = ((contentW - 6) / 2) - 8
+    GenericSingleChoiceWidth = pairW + 32
+    If GenericChoiceHeight(designer, controlName) > 18 Then GenericSingleChoiceWidth = contentW - 40
+    If GenericSingleChoiceWidth < pairW Then GenericSingleChoiceWidth = pairW
+    If GenericSingleChoiceWidth > contentW Then GenericSingleChoiceWidth = contentW
+End Function
+Private Function DesignerScopeSelectionAvailable(designer As Object) As Boolean
+    On Error Resume Next
+    DesignerScopeSelectionAvailable = _
+        InStr(1, CStr(designer.Controls("optScopeDocument").Caption), "(always)", vbTextCompare) = 0 _
+        And Len(Trim$(CStr(designer.Controls("optScopeSelection").Caption))) > 0
+End Function
+Private Sub HideGenericTitleLabels(designer As Object)
+    On Error Resume Next
+    Dim ctl As Object
+    For Each ctl In designer.Controls
+        If Left$(LCase$(ctl.Name), 3) <> "lbl" Then GoTo NextGenericTitleControl
+        If ctl.Name = "lblIntro" Or ctl.Name = "lblModeSummary" Or ctl.Name = "lblSpeedWarning" Or ctl.Name = "lblFuzzyWarning" Then GoTo NextGenericTitleControl
+        If Len(Trim$(CStr(ctl.Caption))) = 0 Then GoTo NextGenericTitleControl
+        If ctl.Top <= 24 And ctl.Height <= 24 Then
+            PositionControl designer, ctl.Name, 0, 0, 0, 0
+            ctl.Visible = False
+        End If
+NextGenericTitleControl:
+    Next ctl
+End Sub
 
 Private Sub LayoutCapitalizationControls(comp As VBIDE.VBComponent, designer As Object)
     On Error Resume Next
@@ -663,11 +707,11 @@ End Sub
 
 Private Sub LayoutPreviewActionsControls(comp As VBIDE.VBComponent, designer As Object)
     On Error Resume Next
-    Const FORM_W As Single = 300
-    Const FORM_H As Single = 100
-    Const CONTENT_W As Single = 262
+    Const FORM_W As Single = 283
+    Const FORM_H As Single = 90
+    Const CONTENT_W As Single = 257
     Const MARGIN As Single = 8
-    Const BTN_W As Single = 84
+    Const BTN_W As Single = (CONTENT_W - (2 * GAP)) / 3
     Const BTN_H As Single = 18
     Const GAP As Single = 5
 
@@ -753,6 +797,7 @@ Private Sub LayoutLauncherControls(comp As VBIDE.VBComponent, designer As Object
     PositionControl designer, "chkAutoSave", MARGIN + 2, y, COL_W, 18
     y = y + 24
     PositionControl designer, "cmdResetAll", MARGIN + 2, y, 110, 24
+    PositionControl designer, "cmdUserManual", MARGIN + 118, y, 110, 24
 
     comp.Properties("Width") = FORM_W + 8
     comp.Properties("Height") = y + 58
@@ -1037,7 +1082,7 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmHeaderFooterStandardizer.optScopeDocument": ControlCaptionText = "Entire document (always)"
         Case "frmHeaderFooterStandardizer.optStandardize": ControlCaptionText = "Standardize formatting"
         Case "frmHyperlinkRemover.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
-        Case "frmHyperlinkRemover.chkRemoveFormat": ControlCaptionText = "Remove hyperlink character style (blue underline)"
+        Case "frmHyperlinkRemover.chkRemoveFormat": ControlCaptionText = "Also, remove hyperlink character style (blue underline)"
         Case "frmHyperlinkRemover.optScopeDocument": ControlCaptionText = "Entire document"
         Case "frmHyperlinkRemover.optScopeSelection": ControlCaptionText = "Selected text only"
         Case "frmListCleanup.chkFixIndent": ControlCaptionText = "Fix list indentation"
@@ -1152,6 +1197,7 @@ Private Sub SetButtonCaption(designer As Object, nm As String)
         Case "cmdClear": cap = "Reconfigure"
         Case "cmdReset": cap = "Reset"
         Case "cmdResetAll": cap = "Reset All"
+        Case "cmdUserManual": cap = "User Manual"
         Case "cmdSelectAll": cap = "Select All"
         Case "cmdDeselectAll": cap = "Deselect All"
         Case "cmdHelp": cap = "Help"
@@ -1171,8 +1217,8 @@ Private Sub SetButtonCaption(designer As Object, nm As String)
         Case "cmdSoftReturn": cap = "Soft Returns"
         Case "cmdMetadata": cap = "Metadata"
         Case "cmdStyleClean": cap = "Styles"
-        Case "cmdFootnote": cap = "Footnotes"
-        Case "cmdHeaderFooter": cap = "Headers / Footers"
+        Case "cmdFootnote": cap = "Footnote / Endnote"
+        Case "cmdHeaderFooter": cap = "Header / Footer"
         Case "cmdObjectRemover": cap = "Objects"
         Case Else: cap = Replace(nm, "cmd", "")
     End Select
@@ -1228,6 +1274,7 @@ Private Function ButtonTipText(nm As String) As String
         Case "cmdClear": ButtonTipText = "Return to this tool without resetting its controls"
         Case "cmdReset": ButtonTipText = "Reset this tool to its defaults"
         Case "cmdResetAll": ButtonTipText = "Reset all tools and global settings to defaults"
+        Case "cmdUserManual": ButtonTipText = "Open the PDF User Manual"
         Case "cmdSelectAll": ButtonTipText = "Select all custom options"
         Case "cmdDeselectAll": ButtonTipText = "Clear all custom options"
         Case "cmdUnicode": ButtonTipText = "Remove invisible Unicode characters"
@@ -1265,7 +1312,7 @@ Private Function ControlsForForm(formName As String) As Variant
                                     "lblCatPara", "cmdHelpList", "cmdList", "lblDescList", "cmdHelpPara", "cmdParagraph", "lblDescParagraph", "cmdHelpSoftReturn", "cmdSoftReturn", "lblDescSoftReturn", "cmdHelpDuplicate", "cmdDuplicate", "lblDescDuplicate", _
                                     "lblCatLayout", "cmdHelpTable", "cmdTableClean", "lblDescTableClean", "cmdHelpBreak", "cmdBreakNorm", "lblDescBreakNorm", "cmdHelpHeaderFooter", "cmdHeaderFooter", "lblDescHeaderFooter", "cmdHelpTrim", "cmdDocTrim", "lblDescDocTrim", _
                                     "lblCatFormat", "cmdHelpFont", "cmdFontNorm", "lblDescFontNorm", "cmdHelpFormat", "cmdFormatStrip", "lblDescFormatStrip", "cmdHelpStyle", "cmdStyleClean", "lblDescStyleClean", "cmdHelpHyperlink", "cmdHyperlink", "lblDescHyperlink", _
-                                    "lblCatReview", "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", "chkShowCompletionReviewAfterApply", "chkReturnToMainAfterApply", "chkReturnToMainAfterClose", "chkAutoSave", "cmdResetAll")
+                                    "lblCatReview", "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", "chkShowCompletionReviewAfterApply", "chkReturnToMainAfterApply", "chkReturnToMainAfterClose", "chkAutoSave", "cmdResetAll", "cmdUserManual")
         Case "frmPreviewActions"
             ControlsForForm = Array("lblTitle", "lblSummary", "lblHint", "cmdApply", "cmdPreview", "cmdClear")
         Case "frmPunctuationCleanup"
@@ -1335,8 +1382,8 @@ Private Function ControlsForForm(formName As String) As Variant
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmHeaderFooterStandardizer"
             ControlsForForm = Array("optStandardize", "optClearAll", "fraOptions", _
-                                    "chkHeaders", "chkFooters", "chkFont", "chkSpacing", "chkAlignment", _
-                                    "fraAlign", "optAlignLeft", "optAlignCenter", "optAlignRight", "chkBreakLinks", _
+                                    "chkHeaders", "chkFooters", "chkFont", "chkSpacing", "chkAlignment", "chkBreakLinks", _
+                                    "fraAlign", "optAlignLeft", "optAlignCenter", "optAlignRight", _
                                     "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmObjectRemover"
@@ -1410,6 +1457,390 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "Private gCleanupToolExitReason As String" & vbCrLf
     s = s & "Private Const CLEANUP_TOOL_EXIT_APPLY As String = ""apply""" & vbCrLf
     s = s & "Private Const CLEANUP_TOOL_EXIT_CLOSE As String = ""close""" & vbCrLf
+    s = s & "Public Const CLEANUP_SUITE_USER_MANUAL_PDF_URL As String = ""https://raw.githubusercontent.com/MasseysLab/CleanupSuiteForWord/v0.8.0/documents/CleanupSuite_Human_Friendly_User_Manual_v0.8.0.pdf""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Sub OpenCleanupUserManualPdf()" & vbCrLf
+    s = s & "    On Error GoTo OpenErr" & vbCrLf
+    s = s & "    ActiveDocument.FollowHyperlink Address:=CLEANUP_SUITE_USER_MANUAL_PDF_URL, NewWindow:=True" & vbCrLf
+    s = s & "    Exit Sub" & vbCrLf
+    s = s & "OpenErr:" & vbCrLf
+    s = s & "    MsgBox ""Could not open the PDF User Manual."" & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "           ""You can open it manually at:"" & vbCrLf & _" & vbCrLf
+    s = s & "           CLEANUP_SUITE_USER_MANUAL_PDF_URL, vbExclamation, ""Cleanup Suite User Manual""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Sub ShowCleanupToolHelp(ByVal toolKey As String)" & vbCrLf
+    s = s & "    MsgBox CleanupHelpText(toolKey), vbInformation, CleanupHelpTitle(toolKey) & "" Help""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Function CleanupHelpTitle(ByVal toolKey As String) As String" & vbCrLf
+    s = s & "    Select Case toolKey" & vbCrLf
+    s = s & "        Case ""Unicode"": CleanupHelpTitle = ""Invisible Unicode Cleaner""" & vbCrLf
+    s = s & "        Case ""Punctuation"": CleanupHelpTitle = ""Punctuation Normalizer""" & vbCrLf
+    s = s & "        Case ""Spacing"": CleanupHelpTitle = ""Spacing Fixer""" & vbCrLf
+    s = s & "        Case ""Capitalization"": CleanupHelpTitle = ""Capitalization Fixer""" & vbCrLf
+    s = s & "        Case ""List"": CleanupHelpTitle = ""List Normalizer""" & vbCrLf
+    s = s & "        Case ""Paragraph"": CleanupHelpTitle = ""Paragraph Structure Fixer""" & vbCrLf
+    s = s & "        Case ""Duplicate"": CleanupHelpTitle = ""Duplicate Paragraph Detector""" & vbCrLf
+    s = s & "        Case ""Font"": CleanupHelpTitle = ""Font Normalizer""" & vbCrLf
+    s = s & "        Case ""Table"": CleanupHelpTitle = ""Table Cleaner""" & vbCrLf
+    s = s & "        Case ""Break"": CleanupHelpTitle = ""Break Normalizer""" & vbCrLf
+    s = s & "        Case ""DocumentTrim"": CleanupHelpTitle = ""Document Trim""" & vbCrLf
+    s = s & "        Case ""Formatting"": CleanupHelpTitle = ""Formatting Stripper""" & vbCrLf
+    s = s & "        Case ""Hyperlink"": CleanupHelpTitle = ""Hyperlink Remover""" & vbCrLf
+    s = s & "        Case ""SoftReturn"": CleanupHelpTitle = ""Soft Return Converter""" & vbCrLf
+    s = s & "        Case ""Metadata"": CleanupHelpTitle = ""Metadata Scrubber""" & vbCrLf
+    s = s & "        Case ""Style"": CleanupHelpTitle = ""Style Cleanup""" & vbCrLf
+    s = s & "        Case ""Footnote"": CleanupHelpTitle = ""Footnote / Endnote Remover""" & vbCrLf
+    s = s & "        Case ""HeaderFooter"": CleanupHelpTitle = ""Header / Footer Standardizer""" & vbCrLf
+    s = s & "        Case ""Object"": CleanupHelpTitle = ""Object Remover""" & vbCrLf
+    s = s & "        Case Else: CleanupHelpTitle = ""Cleanup Suite""" & vbCrLf
+    s = s & "    End Select" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Function CleanupHelpText(ByVal toolKey As String) As String" & vbCrLf
+    s = s & "    Dim h As String" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Select Case toolKey" & vbCrLf
+    s = s & "        Case ""Unicode""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Invisible Unicode Cleaner""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Removes invisible or problem characters that can break search, sorting, comparison, exports, and automated text processing.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Options:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Non-breaking spaces: regular-looking spaces that prevent line breaks.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Zero-width characters: invisible characters that can split words or affect searching.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Byte order marks, soft hyphens, and non-breaking hyphens: hidden or special characters that often arrive from web, PDF, or cross-platform text.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Scope:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Select text before opening the tool to limit cleanup to the selection.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview highlights matches in yellow without changing the document.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Case ""Punctuation""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Punctuation Normalizer""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Replaces typographic punctuation with plain-text equivalents for cleaner export, comparison, and reuse.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Options:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- All punctuation types: quotes, dashes, and ellipses.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Quotes only: curly double and single quotes become straight quotes.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Dashes only: em dashes and en dashes become hyphens.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Ellipses only: ellipsis characters become three dots.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Custom: choose individual punctuation types.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Scope:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Select text before opening the tool to limit cleanup to the selection.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview highlights matches without changing the document.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Case ""Spacing""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Spacing Fixer""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Corrects common spacing problems in documents assembled from copied text, templates, OCR, PDFs, and multiple files.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Options:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- All spacing fixes: runs the full spacing cleanup set.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Double spaces only: collapses repeated spaces.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Trim leading / trailing spaces: removes extra spaces at paragraph edges.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Custom: choose double spaces, paragraph trimming, punctuation spacing, and extra blank-line cleanup.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Scope:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Select text before opening the tool to limit cleanup to the selection.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview highlights problem areas without changing the document.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Case ""Capitalization""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Capitalization Fixer""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Applies consistent capitalization to paragraph text in the selected scope.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Modes:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Fix sentence starts: recommended for general text. It capitalizes likely sentence starts after . ? ! while leaving existing casing alone where possible.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Sentence case: capitalizes the first character and lowercases the rest.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Title case: capitalizes the first letter of every word.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- UPPERCASE / lowercase: converts affected paragraph text to that case.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Custom: runs selected choices from top to bottom. Later choices can override earlier choices.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Scope:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Select text before opening this tool to enable Selected text only.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview highlights paragraphs that would change.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Case ""List""" & vbCrLf
+    s = s & "            AddHelpLine h, ""List Normalizer""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Cleans manual bullets, numbering, and list indentation so list paragraphs behave like Word lists.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Options:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- All list fixes: runs the full list cleanup set.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Convert manual bullet lists: changes typed bullet markers into list formatting.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Convert manual numbered lists: changes typed numbers into list formatting.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Fix list indentation: standardizes list paragraph indents.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Custom: choose the list fixes individually.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Scope:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Select text before opening the tool to limit cleanup to the selection.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview highlights list paragraphs that would be affected.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Case ""Paragraph""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Paragraph Structure Fixer""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Cleans empty paragraphs, paragraph spacing, soft returns, and manual indentation.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Options:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- All paragraph fixes: runs the full paragraph cleanup set.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Remove empty paragraphs: deletes paragraphs that contain no visible text.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Normalize paragraph spacing: resets direct spacing overrides.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Custom: choose empty paragraph cleanup, soft-return conversion, spacing cleanup, and indent cleanup.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Scope:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Select text before opening the tool to limit cleanup to the selection.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview highlights affected paragraphs before changes are made.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Case ""Duplicate""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Duplicate Paragraph Detector""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Finds repeated or near-repeated paragraphs before you decide whether to keep or remove them.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Choices:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Highlight duplicates: marks repeated paragraphs for review.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Remove duplicate paragraphs: keeps the first occurrence and removes later matches.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Exact match: fastest and strictest.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Normalized match: ignores punctuation and spacing differences.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Fuzzy match: compares word overlap and is slower on large documents.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Scope:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Select text before opening the tool to search only within the selection.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview first is strongly recommended before removing duplicate paragraphs.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Case ""Font""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Font Normalizer""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Resets direct font overrides so text follows the font settings defined by its paragraph style.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Options:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Normalize font face: returns text to the document default.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Normalize font size: returns text to the style-defined size.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Normalize bold / italic overrides: clears direct emphasis settings.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Remove direct font color overrides: returns text color to the style.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Scope:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Select text before opening the tool to limit cleanup to the selection.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview highlights paragraphs with direct font overrides.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Case ""Table""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Table Cleaner""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Cleans table structure and formatting while keeping table content unless you explicitly convert a table to text.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Options:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Remove empty rows or columns: deletes table rows or columns with no visible content.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Normalize cell padding: standardizes table cell margins.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Strip direct formatting from cells: clears manual formatting overrides.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Normalize or remove borders: standardizes table borders.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Convert single-column tables to plain text: replaces simple one-column tables with text.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Scope:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Select text before opening the tool to limit cleanup to tables in the selection.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview reports the table cleanup that would run.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Case ""Break""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Break Normalizer""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Fixes consecutive page and section breaks, most often found in documents assembled from several source files.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Options:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Collapse consecutive section breaks: reduces repeated section breaks to one.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Collapse consecutive page breaks: reduces repeated manual page breaks to one.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Convert section breaks to page breaks: changes section breaks to the selected break type.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Conversion types:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Next Page, Continuous, Even Page, or Odd Page.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- The first section of a document is never converted because it has no preceding break.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Scope:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Select text before opening the tool to limit cleanup to the selection.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview highlights consecutive break sequences.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Case ""DocumentTrim""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Document Trim""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Removes extra empty paragraphs from the end of the document while leaving Word's required final paragraph mark.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Why this matters:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Documents assembled from multiple files or templates often end with blank paragraphs. Those blanks can create unwanted printed space and may affect headers, footers, and page numbering in some layouts.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Scope:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""This tool always works on the full document because the end of the document is a document-level location.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview highlights the trailing paragraphs that would be removed.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Case ""Formatting""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Formatting Stripper""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Removes direct formatting while preserving the document's style structure.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Choices:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Strip direct character formatting: resets manual font-level overrides.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Strip direct paragraph formatting: resets manual paragraph-level overrides.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Quick: preserves emphasis that applies to whole paragraphs.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Thorough: preserves emphasis on individual words, but takes longer.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Strip: removes all direct formatting.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Preserve highlighting and drop caps: keep those visual elements during cleanup.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Scope:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Select text before opening the tool to limit cleanup to the selection.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview highlights paragraphs carrying direct formatting.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Case ""Hyperlink""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Hyperlink Remover""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Removes hyperlink targets while keeping the visible text.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Option:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Also remove hyperlink character style: clears the blue underline after the link is removed.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Scope:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Select text before opening the tool to limit cleanup to the selection.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview highlights hyperlinks that would be removed.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Case ""SoftReturn""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Soft Return Converter""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Converts soft returns made with Shift+Enter to paragraph marks, or converts paragraph marks back to soft returns.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Choices:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Convert soft returns to paragraph marks: the usual fix for PDF or web text imports.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Convert paragraph marks to soft returns: useful only when you intentionally want one paragraph split across lines.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Scope:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Select text before opening the tool to limit cleanup to the selection.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview highlights breaks that would be converted.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Case ""Metadata""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Metadata Scrubber""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Removes document metadata and review artifacts before a document is shared.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Options:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Clear document properties: removes built-in properties such as title, author, company, and manager.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Clear personal information: removes or anonymizes revision author information where Word allows it.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Remove all comments: deletes comments from the document.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Accept tracked changes and clear revision marks: finalizes the current revision state.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Scope:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""This tool always works on the full document because metadata is document-level information.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview shows current document metadata and review counts.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Case ""Style""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Style Cleanup""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Removes unused custom styles and can remap common style variants to cleaner equivalents.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Options:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Remove unused styles: deletes custom styles that are not used in the main document body.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Remap style variants: moves common duplicate style variants back to canonical styles.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Scope:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""This tool always works on the full document because style definitions belong to the document.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview reports how many unused styles or remappable variants were found.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Case ""Footnote""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Footnote / Endnote Remover""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Removes footnotes, endnotes, or both. It can optionally keep note text inline in brackets.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Options:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Remove footnotes: deletes footnote references and note text.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Remove endnotes: deletes endnote references and note text.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Keep note text inline: inserts note text at the reference point before removing the note.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Scope:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Select text before opening the tool to remove only notes referenced in the selection.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview reports how many notes would be removed.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Case ""HeaderFooter""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Header / Footer Standardizer""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Standardizes header and footer formatting across the full document, or clears header and footer content.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Modes:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Standardize formatting: applies selected formatting cleanup to header and footer areas.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Clear all header/footer content: removes header and footer text.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Options:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Include headers / Include footers: choose which areas to process.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Reset font: uses the document default font and size.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Remove paragraph spacing: sets space before and after to zero.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Set alignment: applies left, center, or right alignment.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Unlink sections: breaks Link to Previous so each section can be processed independently.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Scope:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""This tool always works on the full document. Page numbers, dates, and other fields are not intentionally changed.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Case ""Object""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Object Remover""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Removes embedded objects and hidden content that often arrive from web pages, PDFs, email, or copied documents.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Options:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Pictures: removes inline and floating images.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Text boxes: removes text boxes and their contents.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Frames: removes frame containers while keeping the text.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Horizontal lines: removes inserted horizontal-line graphics.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- HTML / ActiveX form controls: removes form controls from pasted web content.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Hidden text: removes text formatted as hidden.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Tables: deletes whole tables and all their contents after confirmation.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Scope:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""This tool always works on the full document body. Header and footer objects are left alone.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Preview reports counts for objects that would be removed.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Case Else" & vbCrLf
+    s = s & "            AddHelpLine h, ""Cleanup Suite""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""No help text is available for this tool yet.""" & vbCrLf
+    s = s & "    End Select" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    CleanupHelpText = h" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub AddHelpLine(ByRef textValue As String, ByVal lineValue As String)" & vbCrLf
+    s = s & "    If Len(textValue) > 0 Then textValue = textValue & vbCrLf" & vbCrLf
+    s = s & "    textValue = textValue & lineValue" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "Public Sub RememberPreviewActionPanelPosition(panelLeft As Single, panelTop As Single)" & vbCrLf
     s = s & "    gPreviewActionPanelLeft = panelLeft" & vbCrLf
@@ -1495,7 +1926,7 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "Public Function GuardBeforeCleanup(toolName As String) As Boolean" & vbCrLf
     s = s & "    GuardBeforeCleanup = False" & vbCrLf
     s = s & "    If ActiveDocument.Path = """" Then" & vbCrLf
-    s = s & "        ' Document has never been saved -- Word has nothing to recover" & vbCrLf
+    s = s & "        ' Document has never been saved, so Word has nothing to recover." & vbCrLf
     s = s & "        Dim msg As String" & vbCrLf
     s = s & "        msg = ""This document has not been saved yet."" & vbCrLf & vbCrLf & _" & vbCrLf
     s = s & "              ""Saving first lets Word's built-in recovery protect you if anything goes wrong."" & vbCrLf & vbCrLf & _" & vbCrLf
@@ -1513,7 +1944,7 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "            On Error GoTo 0" & vbCrLf
     s = s & "        End If" & vbCrLf
     s = s & "    ElseIf GetAutoSaveSetting() And Not IsRunningInMacroHostDocument() Then" & vbCrLf
-    s = s & "        ' Document is saved and auto-save is ON -- save silently before proceeding" & vbCrLf
+    s = s & "        ' Document is saved and auto-save is ON, so save silently before proceeding." & vbCrLf
     s = s & "        On Error Resume Next" & vbCrLf
     s = s & "        ActiveDocument.Save" & vbCrLf
     s = s & "        On Error GoTo 0" & vbCrLf
@@ -1705,25 +2136,29 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "    Set titleLabel = EnsureGuidedLabel(toolForm, ""lblGuidedToolName"")" & vbCrLf
     s = s & "    Set introLabel = EnsureGuidedLabel(toolForm, ""lblGuidedIntro"")" & vbCrLf
     s = s & "" & vbCrLf
+    s = s & "    HideGuidedTitleChrome toolForm" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    titleLabel.Caption = """"" & vbCrLf
+    s = s & "    titleLabel.Visible = False" & vbCrLf
     s = s & "    With titleLabel" & vbCrLf
-    s = s & "        .Caption = GuidedToolName(toolForm.Name)" & vbCrLf
-    s = s & "        .Move M, 8, contentW, 18" & vbCrLf
+    s = s & "        .Move 0, 0, 0, 0" & vbCrLf
     s = s & "        .Font.Name = ""Segoe UI""" & vbCrLf
     s = s & "        .Font.Size = 10" & vbCrLf
-    s = s & "        .Font.Bold = True" & vbCrLf
+    s = s & "        .Font.Bold = False" & vbCrLf
     s = s & "        .ForeColor = RGB(32, 37, 45)" & vbCrLf
     s = s & "        .BackColor = RGB(248, 249, 251)" & vbCrLf
-    s = s & "        .TextAlign = 2" & vbCrLf
+    s = s & "        .TextAlign = 0" & vbCrLf
     s = s & "        .WordWrap = False" & vbCrLf
-    s = s & "        .Visible = True" & vbCrLf
-    s = s & "        .ZOrder 0" & vbCrLf
+    s = s & "        .Visible = False" & vbCrLf
     s = s & "    End With" & vbCrLf
     s = s & "" & vbCrLf
+    s = s & "    Dim introH As Single" & vbCrLf
+    s = s & "    introH = GuidedIntroHeight(GuidedToolIntro(toolForm.Name))" & vbCrLf
     s = s & "    With introLabel" & vbCrLf
     s = s & "        .Caption = GuidedToolIntro(toolForm.Name)" & vbCrLf
-    s = s & "        .Move M, 28, contentW, 30" & vbCrLf
+    s = s & "        .Move M, 10, contentW, introH" & vbCrLf
     s = s & "        .Font.Name = ""Segoe UI""" & vbCrLf
-    s = s & "        .Font.Size = 8.5" & vbCrLf
+    s = s & "        .Font.Size = 9" & vbCrLf
     s = s & "        .Font.Bold = False" & vbCrLf
     s = s & "        .ForeColor = RGB(88, 101, 116)" & vbCrLf
     s = s & "        .BackColor = RGB(248, 249, 251)" & vbCrLf
@@ -1734,7 +2169,7 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "    End With" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "    Dim y As Single" & vbCrLf
-    s = s & "    y = 66" & vbCrLf
+    s = s & "    y = 10 + introH + 8" & vbCrLf
     s = s & "    Dim pendingButton As String" & vbCrLf
     s = s & "    pendingButton = """"" & vbCrLf
     s = s & "    Dim pendingChoice As String" & vbCrLf
@@ -1761,7 +2196,7 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "" & vbCrLf
     s = s & "        Select Case ctl.Name" & vbCrLf
     s = s & "            Case ""cmdPreview"", ""cmdRun"", ""cmdReset"", ""cmdHelp""" & vbCrLf
-    s = s & "                ' action buttons are laid out after scope" & vbCrLf
+    s = s & "                ' preview and footer actions are laid out after the choices" & vbCrLf
     s = s & "            Case Else" & vbCrLf
     s = s & "                Select Case Left$(ctl.Name, 3)" & vbCrLf
     s = s & "                    Case ""cmd""" & vbCrLf
@@ -1803,6 +2238,7 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "    FlushGuidedPendingButton toolForm, pendingButton, M, y, contentW, BH, GAP" & vbCrLf
     s = s & "    y = y + 2" & vbCrLf
     s = s & "" & vbCrLf
+    s = s & "    LayoutGuidedPreviewButton toolForm, M, y, contentW" & vbCrLf
     s = s & "    LayoutGuidedScopeRow toolForm, M, y, contentW" & vbCrLf
     s = s & "    LayoutGuidedActionButtons toolForm, M, y, contentW" & vbCrLf
     s = s & "    toolForm.Height = y + 34" & vbCrLf
@@ -1830,6 +2266,24 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "    ctl.Visible = False" & vbCrLf
     s = s & "    ctl.Move 0, 0, 0, 0" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub HideGuidedTitleChrome(ByVal toolForm As Object)" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    Dim ctl As Object" & vbCrLf
+    s = s & "    For Each ctl In toolForm.Controls" & vbCrLf
+    s = s & "        If Left$(LCase$(ctl.Name), 3) <> ""lbl"" Then GoTo NextGuidedTitleControl" & vbCrLf
+    s = s & "        If ctl.Name = ""lblGuidedToolName"" Or ctl.Name = ""lblGuidedIntro"" Then GoTo NextGuidedTitleControl" & vbCrLf
+    s = s & "        If ctl.Name = ""lblSpeedWarning"" Or ctl.Name = ""lblFuzzyWarning"" Then GoTo NextGuidedTitleControl" & vbCrLf
+    s = s & "        If IsLegacyTitleControlName(ctl.Name) Or GuidedControlMatchesToolTitle(toolForm, ctl) Or IsLikelyGuidedTitleLabel(ctl) Then" & vbCrLf
+    s = s & "            HideGuidedControl ctl" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "NextGuidedTitleControl:" & vbCrLf
+    s = s & "    Next ctl" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Function IsLikelyGuidedTitleLabel(ByVal ctl As Object) As Boolean" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    If Len(Trim$(CStr(ctl.Caption))) = 0 Then Exit Function" & vbCrLf
+    s = s & "    If ctl.Top <= 24 And ctl.Height <= 24 Then IsLikelyGuidedTitleLabel = True" & vbCrLf
+    s = s & "End Function" & vbCrLf
     s = s & "Private Function GuidedControlMatchesToolTitle(ByVal toolForm As Object, ByVal ctl As Object) As Boolean" & vbCrLf
     s = s & "    On Error Resume Next" & vbCrLf
     s = s & "    If ctl.Name = ""lblGuidedToolName"" Then Exit Function" & vbCrLf
@@ -1887,12 +2341,12 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "Private Sub FlushGuidedPendingChoice(ByVal toolForm As Object, ByRef pendingChoice As String, ByVal M As Single, ByRef y As Single, ByVal contentW As Single, ByVal GAP As Single)" & vbCrLf
     s = s & "    On Error Resume Next" & vbCrLf
     s = s & "    If Len(pendingChoice) = 0 Then Exit Sub" & vbCrLf
-    s = s & "    Dim choiceW As Single" & vbCrLf
-    s = s & "    choiceW = (contentW - GAP) / 2" & vbCrLf
+    s = s & "    Dim singleChoiceW As Single" & vbCrLf
+    s = s & "    singleChoiceW = GuidedSingleChoiceWidth(toolForm.Controls(pendingChoice), contentW)" & vbCrLf
     s = s & "    Dim rowH As Single" & vbCrLf
     s = s & "    rowH = GuidedChoiceRowHeight(toolForm.Controls(pendingChoice))" & vbCrLf
     s = s & "    StyleGuidedOption toolForm.Controls(pendingChoice)" & vbCrLf
-    s = s & "    toolForm.Controls(pendingChoice).Move M + 8, y, choiceW - 8, rowH" & vbCrLf
+    s = s & "    toolForm.Controls(pendingChoice).Move M + ((contentW - singleChoiceW) / 2), y, singleChoiceW, rowH" & vbCrLf
     s = s & "    toolForm.Controls(pendingChoice).Visible = True" & vbCrLf
     s = s & "    y = y + rowH + GAP" & vbCrLf
     s = s & "    pendingChoice = """"" & vbCrLf
@@ -1918,6 +2372,15 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "    If Not secondControl Is Nothing Then" & vbCrLf
     s = s & "        If GuidedOptionHeight(secondControl) > GuidedChoiceRowHeight Then GuidedChoiceRowHeight = GuidedOptionHeight(secondControl)" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "Private Function GuidedSingleChoiceWidth(ByVal ctl As Object, ByVal contentW As Single) As Single" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    Dim pairW As Single" & vbCrLf
+    s = s & "    pairW = ((contentW - 6) / 2) - 8" & vbCrLf
+    s = s & "    GuidedSingleChoiceWidth = pairW + 32" & vbCrLf
+    s = s & "    If GuidedOptionHeight(ctl) > 18 Then GuidedSingleChoiceWidth = contentW - 40" & vbCrLf
+    s = s & "    If GuidedSingleChoiceWidth < pairW Then GuidedSingleChoiceWidth = pairW" & vbCrLf
+    s = s & "    If GuidedSingleChoiceWidth > contentW Then GuidedSingleChoiceWidth = contentW" & vbCrLf
     s = s & "End Function" & vbCrLf
     s = s & "Private Sub FlushGuidedPendingButton(ByVal toolForm As Object, ByRef pendingButton As String, ByVal M As Single, ByRef y As Single, ByVal contentW As Single, ByVal BH As Single, ByVal GAP As Single)" & vbCrLf
     s = s & "    On Error Resume Next" & vbCrLf
@@ -1970,6 +2433,13 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "        GuidedLabelHeight = 32" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "End Function" & vbCrLf
+    s = s & "Private Function GuidedIntroHeight(ByVal captionText As String) As Single" & vbCrLf
+    s = s & "    If Len(captionText) > 72 Then" & vbCrLf
+    s = s & "        GuidedIntroHeight = 30" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        GuidedIntroHeight = 18" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "End Function" & vbCrLf
     s = s & "Private Function GuidedOptionHeight(ByVal ctl As Object) As Single" & vbCrLf
     s = s & "    On Error Resume Next" & vbCrLf
     s = s & "    If Len(ctl.Caption) > 72 Then" & vbCrLf
@@ -1983,21 +2453,29 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "Private Sub LayoutGuidedScopeRow(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single)" & vbCrLf
     s = s & "    On Error Resume Next" & vbCrLf
     s = s & "    Const GAP As Single = 6" & vbCrLf
-    s = s & "    Dim halfW As Single" & vbCrLf
-    s = s & "    halfW = (contentW - GAP) / 2" & vbCrLf
+    s = s & "    Dim choiceW As Single" & vbCrLf
+    s = s & "    choiceW = (contentW - GAP) / 2" & vbCrLf
     s = s & "    StyleGuidedOption toolForm.Controls(""optScopeDocument"")" & vbCrLf
     s = s & "    StyleGuidedOption toolForm.Controls(""optScopeSelection"")" & vbCrLf
-    s = s & "    toolForm.Controls(""optScopeDocument"").Move M, y, halfW, 18" & vbCrLf
-    s = s & "    toolForm.Controls(""optScopeSelection"").Move M + halfW + GAP, y, halfW, 18" & vbCrLf
-    s = s & "    toolForm.Controls(""optScopeDocument"").Visible = True" & vbCrLf
-    s = s & "    If Len(Trim$(toolForm.Controls(""optScopeSelection"").Caption)) = 0 Then" & vbCrLf
+    s = s & "    If Not ScopeSelectionIsAvailable(toolForm) Then" & vbCrLf
+    s = s & "        HideGuidedControl toolForm.Controls(""optScopeDocument"")" & vbCrLf
     s = s & "        HideGuidedControl toolForm.Controls(""optScopeSelection"")" & vbCrLf
-    s = s & "    Else" & vbCrLf
-    s = s & "        toolForm.Controls(""optScopeSelection"").Visible = True" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    toolForm.Controls(""optScopeDocument"").Move M + 8, y, choiceW - 8, 18" & vbCrLf
+    s = s & "    toolForm.Controls(""optScopeSelection"").Move M + choiceW + GAP + 8, y, choiceW - 8, 18" & vbCrLf
+    s = s & "    toolForm.Controls(""optScopeDocument"").Visible = True" & vbCrLf
+    s = s & "    toolForm.Controls(""optScopeSelection"").Visible = True" & vbCrLf
     s = s & "    y = y + 28" & vbCrLf
     s = s & "End Sub" & vbCrLf
-    s = s & "Private Sub LayoutGuidedActionButtons(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single)" & vbCrLf
+    s = s & "Private Function ScopeSelectionIsAvailable(ByVal toolForm As Object) As Boolean" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    ScopeSelectionIsAvailable = _" & vbCrLf
+    s = s & "        InStr(1, toolForm.Controls(""optScopeDocument"").Caption, ""(always)"", vbTextCompare) = 0 _" & vbCrLf
+    s = s & "        And Len(Trim$(toolForm.Controls(""optScopeSelection"").Caption)) > 0" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "Private Sub LayoutGuidedPreviewButton(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single)" & vbCrLf
     s = s & "    On Error Resume Next" & vbCrLf
     s = s & "    Const GAP As Single = 6" & vbCrLf
     s = s & "    Const BH As Single = 24" & vbCrLf
@@ -2006,7 +2484,11 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "    toolForm.Controls(""cmdPreview"").Move M, y, contentW, BH" & vbCrLf
     s = s & "    toolForm.Controls(""cmdPreview"").Visible = True" & vbCrLf
     s = s & "    y = y + BH + GAP" & vbCrLf
-    s = s & "" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub LayoutGuidedActionButtons(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single)" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    Const GAP As Single = 6" & vbCrLf
+    s = s & "    Const BH As Single = 24" & vbCrLf
     s = s & "    Dim thirdW As Single" & vbCrLf
     s = s & "    thirdW = (contentW - (2 * GAP)) / 3" & vbCrLf
     s = s & "    StyleGuidedButton toolForm.Controls(""cmdRun""), False" & vbCrLf
@@ -2287,7 +2769,7 @@ End Function
 Private Function modCleanupLauncher_Code() As String
     Dim s As String
     s = s & "Option Explicit" & vbCrLf
-    s = s & "Public Const SUITE_VERSION As String = ""0.7.5""" & vbCrLf
+    s = s & "Public Const SUITE_VERSION As String = ""0.8.0""" & vbCrLf
     s = s & "Public gRibbon As Object   ' IRibbonUI -- stored for optional Invalidate calls" & vbCrLf
     s = s & "Sub ShowCleanupSuiteLauncher()" & vbCrLf
     s = s & "    frmCleanupSuiteLauncher.Show" & vbCrLf
@@ -2370,25 +2852,7 @@ Private Function frmPunctuationCleanup_Code() As String
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Punctuation Normalizer"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Replaces typographic ('smart') punctuation with plain-text equivalents."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Use this before exporting to systems that do not support Unicode punctuation, "" & _" & vbCrLf
-    s = s & "            ""or before running text-comparison or diff tools."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  All          --  Converts all punctuation types listed below."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Quotes only  --  Curly double and single quotes become straight"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Dashes only  --  Em dash and en dash  -->  hyphen (-)"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Ellipses     --  Ellipsis character (...)  -->  three dots (...)"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Custom       --  Tick individual characters below."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights matches in yellow without changing anything."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Run again without Preview to apply."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Punctuation Normalizer""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Punctuation""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub UpdateCustomVisibility()" & vbCrLf
     s = s & "    fraCustom.Visible = False" & vbCrLf
@@ -2581,27 +3045,7 @@ Private Function frmUnicodeCleanup_Code() As String
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Invisible Unicode Cleaner"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Removes Unicode characters that are invisible on screen but cause problems "" & _" & vbCrLf
-    s = s & "            ""for search, sorting, comparison, and automated text processing."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""These characters accumulate from web copy-paste, PDF export, and "" & _" & vbCrLf
-    s = s & "            ""cross-platform file exchange."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""CHARACTER TYPES"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  NBSP  (U+00A0)  Non-Breaking Space: a space that prevents line breaks."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  ZWSP  (U+200B)  Zero-Width Space: completely invisible; affects word break."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  ZWNJ  (U+200C)  Zero-Width Non-Joiner: controls ligature/joining behaviour."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  ZWJ   (U+200D)  Zero-Width Joiner: forces joined rendering."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  BOM   (U+FEFF)  Byte Order Mark: encoding marker; never belongs in text."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  SHY   (U+00AD)  Soft Hyphen: invisible optional hyphen."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  NBHY  (U+2011)  Non-Breaking Hyphen: a hyphen that prevents line breaks."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights matches in yellow without changing anything."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Invisible Unicode Cleaner""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Unicode""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub UpdateCustomVisibility()" & vbCrLf
     s = s & "    fraCustom.Visible = False" & vbCrLf
@@ -2773,26 +3217,7 @@ Private Function frmSpacingCleanup_Code() As String
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Spacing Fixer"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Corrects the most common spacing inconsistencies in assembled documents."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Double spaces       --  Collapses two or more consecutive spaces to one."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Trim paragraphs     --  Removes leading and trailing spaces from each"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                          paragraph."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Space before punct  --  Removes any space immediately before . , ; : ! ?"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Space after punct   --  Ensures exactly one space follows  . ? ! , ; :"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Extra blank lines   --  Collapses three or more consecutive blank"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                          paragraphs down to two."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Each option counts how many changes it makes and reports them at the end."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights problem areas without making changes."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Spacing Fixer""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Spacing""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub UpdateCustomVisibility(): fraCustom.Visible = False: End Sub" & vbCrLf
     s = s & "Private Sub optAll_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub" & vbCrLf
@@ -2866,16 +3291,19 @@ Private Function frmSpacingCleanup_Code() As String
     s = s & "        End With" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    If doBeforePunct Then" & vbCrLf
-    s = s & "        With targetRange.Find" & vbCrLf
-    s = s & "            .ClearFormatting" & vbCrLf
-    s = s & "            .Replacement.ClearFormatting" & vbCrLf
-    s = s & "            .Text = "" ([.,;:!?])""" & vbCrLf
-    s = s & "            .MatchWildcards = True" & vbCrLf
-    s = s & "            .Replacement.Text = ""^&""" & vbCrLf
-    s = s & "            .Replacement.Highlight = True" & vbCrLf
-    s = s & "            .Execute Replace:=wdReplaceAll" & vbCrLf
-    s = s & "            .MatchWildcards = False" & vbCrLf
-    s = s & "        End With" & vbCrLf
+    s = s & "        Dim previewBeforePunctPatterns: previewBeforePunctPatterns = Array("" ."", "" ,"", "" ;"", "" :"", "" !"", "" ?"")" & vbCrLf
+    s = s & "        Dim previewBeforePunct" & vbCrLf
+    s = s & "        For Each previewBeforePunct In previewBeforePunctPatterns" & vbCrLf
+    s = s & "            With targetRange.Find" & vbCrLf
+    s = s & "                .ClearFormatting" & vbCrLf
+    s = s & "                .Replacement.ClearFormatting" & vbCrLf
+    s = s & "                .Text = previewBeforePunct" & vbCrLf
+    s = s & "                .MatchWildcards = False" & vbCrLf
+    s = s & "                .Replacement.Text = ""^&""" & vbCrLf
+    s = s & "                .Replacement.Highlight = True" & vbCrLf
+    s = s & "                .Execute Replace:=wdReplaceAll" & vbCrLf
+    s = s & "            End With" & vbCrLf
+    s = s & "        Next previewBeforePunct" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    If doAfterPunct Then" & vbCrLf
     s = s & "        Dim punctPatterns: punctPatterns = Array("".  "",""?  "",""!  "","",  "","";  "","":  "")" & vbCrLf
@@ -2944,7 +3372,20 @@ Private Function frmSpacingCleanup_Code() As String
     s = s & "        Next para" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    If doBeforePunct Then" & vbCrLf
-    s = s & "        With targetRange.Find: .ClearFormatting: .Replacement.ClearFormatting: .Text = "" ([.,;:!?])"": .Replacement.Text = ""\1"": .MatchWildcards = True: Do While .Execute(Replace:=wdReplaceOne): cntBefore = cntBefore + 1: Loop: .MatchWildcards = False: End With" & vbCrLf
+    s = s & "        Dim beforePunctPatterns: beforePunctPatterns = Array("" ."", "" ,"", "" ;"", "" :"", "" !"", "" ?"")" & vbCrLf
+    s = s & "        Dim beforePunct" & vbCrLf
+    s = s & "        For Each beforePunct In beforePunctPatterns" & vbCrLf
+    s = s & "            With targetRange.Find" & vbCrLf
+    s = s & "                .ClearFormatting" & vbCrLf
+    s = s & "                .Replacement.ClearFormatting" & vbCrLf
+    s = s & "                .Text = beforePunct" & vbCrLf
+    s = s & "                .Replacement.Text = Right$(beforePunct, 1)" & vbCrLf
+    s = s & "                .MatchWildcards = False" & vbCrLf
+    s = s & "                Do While .Execute(Replace:=wdReplaceOne)" & vbCrLf
+    s = s & "                    cntBefore = cntBefore + 1" & vbCrLf
+    s = s & "                Loop" & vbCrLf
+    s = s & "            End With" & vbCrLf
+    s = s & "        Next beforePunct" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    If doAfterPunct Then" & vbCrLf
     s = s & "        Dim applyPunctPatterns: applyPunctPatterns = Array("".  "",""?  "",""!  "","",  "","";  "","":  "")" & vbCrLf
@@ -3043,35 +3484,7 @@ Private Function frmCapitalizationCleanup_Code() As String
     s = s & "    LayoutCapitalizationCleanupForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Capitalization Fixer"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Applies consistent capitalization to every paragraph in the target scope."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""MODES"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Fix sentence starts"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Recommended. Capitalizes likely sentence starts after . ? !."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Sentence case"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Capitalizes the first character and lowercases the rest."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Title case"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Capitalizes the first letter of every word."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""UPPERCASE / lowercase"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Converts affected paragraph text to that case."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Custom"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Runs the selected choices from top to bottom."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Later choices can override earlier choices."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""NOTE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Capitalization is applied to the full text content of each paragraph."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Select text before opening this tool to enable Selected text only."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights paragraphs that would change."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Capitalization Fixer Help""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Capitalization""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub UpdateCustomVisibility()" & vbCrLf
     s = s & "    fraCustom.Visible = False" & vbCrLf
@@ -3297,27 +3710,7 @@ Private Function frmListCleanup_Code() As String
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""List Normalizer"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Standardises list formatting throughout the document."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Normalise bullets    --  Resets all bullet-list paragraphs to the default"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                           Word bullet style, removing inconsistent characters."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Normalise numbering  --  Converts manually typed numbered paragraphs"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                           (e.g.  1. Item) to proper Word auto-numbering."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Fix list indentation --  Sets list paragraph indentation to 0.25 inch."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Convert hyphens      --  Converts lines beginning with '- ' or '* ' to"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                           proper Word bullet-list paragraphs."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""TIP: Run 'Convert hyphens' first if you have many hyphen-lists, then "" & _" & vbCrLf
-    s = s & "            ""'Normalise bullets' to make them all consistent."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights list paragraphs that would be affected."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  List Normalizer""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""List""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub UpdateCustomVisibility(): fraCustom.Visible = False: End Sub" & vbCrLf
     s = s & "Private Sub optAll_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub" & vbCrLf
@@ -3526,28 +3919,7 @@ Private Function frmParagraphCleanup_Code() As String
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Paragraph Structure Fixer"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Cleans up paragraph structure and direct spacing overrides."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Remove empty paragraphs  --  Deletes completely empty paragraphs."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Collapse extra breaks    --  Reduces runs of 3+ consecutive paragraph breaks"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                               to exactly 2 (a standard visual separator)."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Normalise para spacing   --  Resets SpaceBefore and SpaceAfter to zero for"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                               paragraphs that have direct spacing overrides."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                               Does not affect spacing set by the style itself."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Fix indent               --  Resets left indent to zero for paragraphs with"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                               direct indent overrides."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""TIP: Run after assembling a document from multiple sources or templates, "" & _" & vbCrLf
-    s = s & "            ""where inconsistent spacing between paragraphs is most common."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights empty paragraphs before any changes are made."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Paragraph Structure Fixer""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Paragraph""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub UpdateCustomVisibility(): fraCustom.Visible = False: End Sub" & vbCrLf
     s = s & "Private Sub optAll_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub" & vbCrLf
@@ -3751,35 +4123,7 @@ Private Function frmDuplicateDetector_Code() As String
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Duplicate Paragraph Detector"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Finds paragraphs that repeat in the document and highlights them, or "" & _" & vbCrLf
-    s = s & "            ""removes every occurrence except the first.  Blank paragraphs are ignored."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""MATCHING METHOD"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Exact            --  identical apart from letter case."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Ignore punctuation & spacing  --  duplicates even if they differ only"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                       in punctuation, extra spaces, or letter case."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Fuzzy (similar wording)  --  flags paragraphs that share a chosen"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                       percentage of their words; catches near-duplicates "" & _" & vbCrLf
-    s = s & "            ""                       that were lightly edited.  Slower on large documents."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""FUZZY SENSITIVITY (used only by fuzzy matching)"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Loose (60%)   --  more matches, including loosely similar paragraphs."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Medium (80%)  --  a balanced default."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Strict (90%)  --  fewer matches; only very close paragraphs."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""ACTION"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Highlight only     --  marks duplicates in yellow for review."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Remove duplicates  --  deletes every occurrence except the first."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to search within the selection only."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Similar paragraphs are grouped together (a paragraph linked to a match, "" & _" & vbCrLf
-    s = s & "            ""which is linked to another, joins the same group), and the first in each"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""group is kept.  Run with Preview first to see what would be affected."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Duplicate Paragraph Detector""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Duplicate""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Function NormalizeText(ByVal t As String, ByVal stripPunct As Boolean) As String" & vbCrLf
     s = s & "    Dim r As String" & vbCrLf
@@ -4079,29 +4423,7 @@ Private Function frmFontNormalizer_Code() As String
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Font Normalizer"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Resets direct font overrides to match the style defined for each paragraph, "" & _" & vbCrLf
-    s = s & "            ""eliminating the font chaos that accumulates from copying and pasting text"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""between documents, emails, and web pages."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS  (choose which properties to reset)"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Font face   --  Resets the typeface (e.g. Arial, Times New Roman) to the"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                  style's defined font."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Font size   --  Resets the point size to the style's defined size."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Bold        --  Resets bold to the style's setting."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Italic      --  Resets italic to the style's setting."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Font colour --  Resets text colour to the style's defined colour."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""TIP: Start with Face and Size only.  Bold, Italic, and Colour are opt-in "" & _" & vbCrLf
-    s = s & "            ""because those properties are more likely to be intentional (e.g. a bolded"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""phrase or a deliberately coloured heading within a paragraph)."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights paragraphs with direct font overrides."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Font Normalizer""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Font""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdPreview_Click()" & vbCrLf
     s = s & "    PreviewFromPanel" & vbCrLf
@@ -4247,31 +4569,7 @@ Private Function frmTableCleaner_Code() As String
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Table Cleaner"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Removes structural clutter from tables and normalises their formatting."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Operates on all tables within the target scope."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Remove empty rows     --  Deletes any row where every cell contains"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                            no text (a lone paragraph mark is not text)."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Remove empty columns  --  Deletes any column where every cell is empty."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Normalise padding     --  Sets all cell padding to Word defaults:"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                            0.04 inch top/bottom,  0.08 inch left/right."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Strip direct format   --  Clears direct formatting overrides from the"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                            table, restoring the table's applied style."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Normalise borders     --  Enables borders on the table using the"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                            current table style."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Remove all borders    --  Turns off every border on the table."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Convert table to text --  Replaces the table with tab-separated text"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                            (done last; other table options run first)."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""TIP: Run 'Remove empty rows/columns' before 'Strip direct format' for "" & _" & vbCrLf
-    s = s & "            ""the cleanest results.  Use Preview first to see which rows are empty."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to tables in the selection."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Table Cleaner""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Table""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Function IsRowEmpty(rw As Row) As Boolean" & vbCrLf
     s = s & "    Dim cel As Cell" & vbCrLf
@@ -4468,32 +4766,7 @@ Private Function frmBreakNormalizer_Code() As String
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Break Normalizer"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Fixes problems with section and page breaks.  Most common in documents "" & _" & vbCrLf
-    s = s & "            ""assembled from multiple files, where each source file may have had its"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""own trailing section break."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Collapse section breaks  --  Reduces consecutive section breaks to one."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Collapse page breaks     --  Reduces consecutive manual page breaks to one."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Convert section breaks   --  Changes all section break types in scope to"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                               the type you choose below."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""CONVERSION TYPES"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Next Page   --  Section starts at the top of the next page."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Continuous  --  Section continues on the same page (no forced break)."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Even Page   --  Section starts on the next even-numbered page."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Odd Page    --  Section starts on the next odd-numbered page."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""NOTE: The first section of a document is never converted -- it has no "" & _" & vbCrLf
-    s = s & "            ""preceding break to change."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights consecutive break sequences in yellow."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Break Normalizer""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Break""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub chkConvertSectionBreaks_Click()" & vbCrLf
     s = s & "    fraConvertTo.Enabled = chkConvertSectionBreaks.Value" & vbCrLf
@@ -4630,24 +4903,7 @@ Private Function frmDocumentTrim_Code() As String
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Document Trim"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Removes trailing empty paragraphs from the end of the document, "" & _" & vbCrLf
-    s = s & "            ""leaving exactly one final empty paragraph (which Word requires to exist)."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""WHY THIS MATTERS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Documents assembled from multiple files, or saved from templates, "" & _" & vbCrLf
-    s = s & "            ""  often end with many blank paragraphs.  These appear as unwanted blank"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  space at the end of the printed document and can cause unexpected "" & _" & vbCrLf
-    s = s & "            ""  behaviour with headers, footers, and page numbering in some layouts."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""NOTE: This tool always operates on the full document.  Scope selection "" & _" & vbCrLf
-    s = s & "            ""is disabled because 'end of document' is inherently document-level --"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""trimming to the end of a selection would not be meaningful."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights the trailing paragraphs that would be removed."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Run again without Preview to apply."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Document Trim""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""DocumentTrim""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdPreview_Click()" & vbCrLf
     s = s & "    PreviewFromPanel" & vbCrLf
@@ -4787,37 +5043,7 @@ Private Function frmFormattingStripper_Code() As String
     s = s & "    lblSpeedWarning.Caption = ""Strip mode removes all direct formatting, including bold and italic emphasis.""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Direct Formatting Stripper"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Removes manual formatting overrides and returns text to what its "" & _" & vbCrLf
-    s = s & "            ""paragraph style defines.  Unlike Word Clear Formatting (which resets"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""text to the Normal style), this tool keeps your styles intact and strips "" & _" & vbCrLf
-    s = s & "            ""only the direct formatting layered on top."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""WHAT TO RESET"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Reset character formatting  --  font face, size, colour, spacing."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Reset paragraph formatting  --  indents, line spacing, alignment."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""EMPHASIS HANDLING"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Quick clean      --  Fast.  Preserves bold/italic that applies to a"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                       whole paragraph.  Best for most documents."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Thorough clean   --  Preserves bold/italic on individual words."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                       Slower on large documents (examines every run)."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Strip everything --  Removes all emphasis too, for a full reset."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Preserve highlighting keeps text highlight colours through the reset."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Preserve drop caps keeps decorative dropped capitals; untick to reset "" & _" & vbCrLf
-    s = s & "            ""  them to normal body text as part of the strip."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""NOTE: Quick mode restores emphasis only when it is uniform across the "" & _" & vbCrLf
-    s = s & "            ""whole paragraph.  For a paragraph with one bold word among normal text,"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""use Thorough mode to preserve that word precisely."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights paragraphs carrying direct formatting."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Direct Formatting Stripper""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Formatting""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdPreview_Click()" & vbCrLf
     s = s & "    PreviewFromPanel" & vbCrLf
@@ -5067,27 +5293,12 @@ Private Function frmHyperlinkRemover_Code() As String
     s = s & "    Else" & vbCrLf
     s = s & "        optScopeSelection.Enabled = False" & vbCrLf
     s = s & "    End If" & vbCrLf
-    s = s & "    chkRemoveFormat.Caption = ""Remove hyperlink character style (blue underline)""" & vbCrLf
+    s = s & "    chkRemoveFormat.Caption = ""Also, remove hyperlink character style (blue underline)""" & vbCrLf
     s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Hyperlink Remover"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Removes hyperlinks while keeping the visible text.  Pasting from web "" & _" & vbCrLf
-    s = s & "            ""pages embeds links throughout a document; this strips the links but"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""leaves the words exactly as they are."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Clear hyperlink formatting  --  also removes the blue underlined look"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                                  (resets to the default character font)."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                                  Turn off to keep the blue/underline."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights every hyperlink that would be removed."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Hyperlink Remover""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Hyperlink""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdPreview_Click()" & vbCrLf
     s = s & "    PreviewFromPanel" & vbCrLf
@@ -5208,25 +5419,7 @@ Private Function frmSoftReturnConverter_Code() As String
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Soft Return Converter"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Converts soft returns (line breaks made with Shift+Enter) to real "" & _" & vbCrLf
-    s = s & "            ""paragraph marks, or the reverse.  Documents imported from PDFs and web"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""pages are often full of soft returns that look like paragraph breaks but "" & _" & vbCrLf
-    s = s & "            ""are not -- which quietly breaks spell-check, styles, and spacing."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""DIRECTION"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Soft returns to paragraphs  --  the usual fix for imported text."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Paragraphs to soft returns  --  the reverse (less common)."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""CAUTION: Converting paragraphs to soft returns merges the affected text "" & _" & vbCrLf
-    s = s & "            ""into a single paragraph.  Use the reverse only on small selections."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights the breaks that would be converted."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Soft Return Converter""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""SoftReturn""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdPreview_Click()" & vbCrLf
     s = s & "    PreviewFromPanel" & vbCrLf
@@ -5349,26 +5542,7 @@ Private Function frmMetadataScrubber_Code() As String
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Metadata Scrubber"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Strips identifying information from the document before you share it "" & _" & vbCrLf
-    s = s & "            ""externally -- a one-click version of Word built-in Document Inspector."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Document properties  --  author, company, manager, title, and other"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                           built-in properties."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Personal information --  author names attached to comments and tracked"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                           changes (anonymises them)."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Delete all comments  --  removes every comment from the document."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Accept all tracked changes  --  finalises the document and removes the"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                                  revision history."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""NOTE: This tool always works on the whole document.  Metadata removal "" & _" & vbCrLf
-    s = s & "            ""may not be reversible with Ctrl+Z, so a copy is saved first if auto-save"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""is on.  Review the result before sharing."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode shows the metadata currently in the document."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Metadata Scrubber""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Metadata""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdPreview_Click()" & vbCrLf
     s = s & "    PreviewFromPanel" & vbCrLf
@@ -5399,7 +5573,7 @@ Private Function frmMetadataScrubber_Code() As String
     s = s & "    If Not (doProps Or doPersonal Or doComments Or doRevisions) Then MsgBox ""Nothing selected to remove."", vbInformation: Exit Sub" & vbCrLf
     s = s & "    If previewOnly Then" & vbCrLf
     s = s & "        Dim info As String" & vbCrLf
-    s = s & "        info = ""Current document metadata:"" & vbCrLf & vbCrLf" & vbCrLf
+    s = s & "        info = ""Current document metadata:"" & vbCrLf" & vbCrLf
     s = s & "        On Error Resume Next" & vbCrLf
     s = s & "        info = info & ""Author: "" & ActiveDocument.BuiltInDocumentProperties(""Author"").Value & vbCrLf" & vbCrLf
     s = s & "        info = info & ""Company: "" & ActiveDocument.BuiltInDocumentProperties(""Company"").Value & vbCrLf" & vbCrLf
@@ -5489,24 +5663,7 @@ Private Function frmStyleCleanup_Code() As String
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Style Cleanup"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Removes clutter from the document style list.  Documents assembled from "" & _" & vbCrLf
-    s = s & "            ""many sources accumulate dozens of unused or duplicate styles."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Remove unused styles    --  deletes custom styles that no text uses."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                              Built-in Word styles are never deleted."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Remap common variants   --  reassigns text in variant styles such as"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                              Normal (Web), Body Text 2, and Body Text 3 "" & _" & vbCrLf
-    s = s & "            ""                              to the Normal style, then removes them."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""NOTE: This tool always works on the whole document.  Usage is detected "" & _" & vbCrLf
-    s = s & "            ""in the main document body; a style used only inside a header, footer, or"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""text box may be treated as unused."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode reports how many unused custom styles were found."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Style Cleanup""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Style""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Function StyleInUse(st As Style) As Boolean" & vbCrLf
     s = s & "    Dim fr As Range: Set fr = ActiveDocument.Content" & vbCrLf
@@ -5659,24 +5816,7 @@ Private Function frmFootnoteRemover_Code() As String
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Footnote / Endnote Remover"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Deletes footnotes and/or endnotes -- both the reference mark in the body "" & _" & vbCrLf
-    s = s & "            ""and the note text -- to produce a clean text extract."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Remove footnotes  --  deletes footnotes in the target scope."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Remove endnotes   --  deletes endnotes in the target scope."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Keep note text inline  --  inserts each note's text at the reference"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                            point in [square brackets] before deleting it."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Word renumbers any remaining notes automatically."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text first to remove only the notes referenced in the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights the reference marks that would be removed."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Footnote / Endnote Remover""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Footnote""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Function InScope(r As Range, targetRange As Range) As Boolean" & vbCrLf
     s = s & "    InScope = (r.Start >= targetRange.Start And r.Start <= targetRange.End)" & vbCrLf
@@ -5830,33 +5970,7 @@ Private Function frmHeaderFooterStandardizer_Code() As String
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Header / Footer Standardizer"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Makes header and footer formatting consistent across the whole document, "" & _" & vbCrLf
-    s = s & "            ""or clears all header/footer content entirely."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""MODE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Standardize formatting  --  applies the options below to every header "" & _" & vbCrLf
-    s = s & "            ""and footer area in every section."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Clear all content       --  removes all text from headers/footers."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""STANDARDIZE OPTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Reset font     --  sets header/footer text to the document's default"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                     (Normal style) font and size."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Remove spacing --  sets paragraph space-before and space-after to zero."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Set alignment  --  left, center, or right."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""AREAS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Include headers / Include footers choose which to process."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Each section has up to three slots: primary, first-page, even-page."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""LINKED SECTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Sections linked to the previous one share its header/footer.  Tick"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  'Unlink sections' to break those links so each is set on its own."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""NOTE: Page numbers, dates, and other fields are not altered.  Always "" & _" & vbCrLf
-    s = s & "            ""works on the whole document."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Header / Footer Standardizer""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""HeaderFooter""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub optStandardize_Click()" & vbCrLf
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
@@ -6028,33 +6142,7 @@ Private Function frmObjectRemover_Code() As String
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelp_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Remove Objects & Elements"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Deletes embedded objects and elements that often arrive as clutter from "" & _" & vbCrLf
-    s = s & "            ""web pages, PDFs, or email -- so you can reduce a document to clean text."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""WHAT EACH OPTION REMOVES"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Pictures         --  inline and floating images."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Text boxes       --  floating text boxes AND the text inside them."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Frames           --  the frame container; the text inside is kept."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Horizontal lines --  the inserted horizontal-line graphic."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  HTML/ActiveX     --  form controls (buttons, input boxes) from web paste."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Hidden text      --  text formatted as hidden."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Tables           --  DELETES whole tables and all their contents."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""IMPORTANT CAUTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  - Every option is OFF by default; tick only what you want removed."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  - Removing tables is destructive and is NOT the same as Table Cleaner's"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""    'Convert table to text', which keeps the content.  You will be asked"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""    to confirm before any tables are deleted."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  - Deleting pictures and shapes may not always be fully reversible by"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""    Undo, depending on your Word version.  Work on a copy if unsure."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  - Works on the main document body only; objects in headers and footers"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""    (such as logos) are left untouched."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode reports a count of what would be removed (it cannot "" & _" & vbCrLf
-    s = s & "            ""highlight an object that is about to be deleted)."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Remove Objects & Elements""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Object""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Function ProcessPictures(doDelete As Boolean) As Long" & vbCrLf
     s = s & "    On Error Resume Next" & vbCrLf
@@ -6254,6 +6342,16 @@ Private Function frmPreviewActions_Code() As String
     s = s & "Private mPreviewOn As Boolean" & vbCrLf
     s = s & "Private mSummaryText As String" & vbCrLf
     s = s & "" & vbCrLf
+    s = s & "Private Const FORM_W As Single = 283" & vbCrLf
+    s = s & "Private Const MIN_FORM_H As Single = 90" & vbCrLf
+    s = s & "Private Const CONTENT_W As Single = 257" & vbCrLf
+    s = s & "Private Const M As Single = 8" & vbCrLf
+    s = s & "Private Const BH As Single = 18" & vbCrLf
+    s = s & "Private Const GAP As Single = 5" & vbCrLf
+    s = s & "Private Const BTN_W As Single = (CONTENT_W - (2 * GAP)) / 3" & vbCrLf
+    s = s & "Private Const SUMMARY_LINE_H As Single = 11" & vbCrLf
+    s = s & "Private Const MAX_SUMMARY_H As Single = 88" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "Public Sub Configure(sourceForm As Object, toolName As String, summaryText As String)" & vbCrLf
     s = s & "    Set mSourceForm = sourceForm" & vbCrLf
     s = s & "    mToolName = toolName" & vbCrLf
@@ -6272,15 +6370,10 @@ Private Function frmPreviewActions_Code() As String
     s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "Private Sub LayoutPanel()" & vbCrLf
-    s = s & "    Const FORM_W As Single = 300" & vbCrLf
-    s = s & "    Const FORM_H As Single = 100" & vbCrLf
-    s = s & "    Const CONTENT_W As Single = 262" & vbCrLf
-    s = s & "    Const M As Single = 8" & vbCrLf
-    s = s & "    Const BH As Single = 18" & vbCrLf
-    s = s & "    Const GAP As Single = 5" & vbCrLf
-    s = s & "    Const BTN_W As Single = 84" & vbCrLf
+    s = s & "    Dim summaryH As Single" & vbCrLf
+    s = s & "    summaryH = RequiredSummaryHeight(mSummaryText, CONTENT_W)" & vbCrLf
     s = s & "    Me.Width = FORM_W" & vbCrLf
-    s = s & "    Me.Height = FORM_H" & vbCrLf
+    s = s & "    Me.Height = MaxSingle(MIN_FORM_H, 74 + summaryH)" & vbCrLf
     s = s & "    lblTitle.Caption = """"" & vbCrLf
     s = s & "    lblTitle.Visible = False" & vbCrLf
     s = s & "    StyleActionBar" & vbCrLf
@@ -6289,13 +6382,50 @@ Private Function frmPreviewActions_Code() As String
     s = s & "    cmdPreview.Move M, 17, BTN_W, BH" & vbCrLf
     s = s & "    cmdClear.Move M + BTN_W + GAP, 17, BTN_W, BH" & vbCrLf
     s = s & "    cmdApply.Move M + (2 * (BTN_W + GAP)), 17, BTN_W, BH" & vbCrLf
-    s = s & "    lblSummary.Move M, 40, CONTENT_W, 26" & vbCrLf
+    s = s & "    lblSummary.Move M, 40, CONTENT_W, summaryH" & vbCrLf
     s = s & "    lblTitle.Visible = False" & vbCrLf
     s = s & "    lblTitle.WordWrap = False" & vbCrLf
     s = s & "    lblSummary.WordWrap = True" & vbCrLf
     s = s & "    lblHint.WordWrap = False" & vbCrLf
     s = s & "    lblHint.TextAlign = 2" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function RequiredSummaryHeight(textValue As String, contentWidth As Single) As Single" & vbCrLf
+    s = s & "    RequiredSummaryHeight = MinSingle(MAX_SUMMARY_H, CountSummaryRows(textValue, contentWidth) * SUMMARY_LINE_H)" & vbCrLf
+    s = s & "    If RequiredSummaryHeight < 16 Then RequiredSummaryHeight = 16" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function CountSummaryRows(textValue As String, contentWidth As Single) As Long" & vbCrLf
+    s = s & "    Dim charsPerLine As Long" & vbCrLf
+    s = s & "    charsPerLine = CLng(contentWidth / 4)" & vbCrLf
+    s = s & "    If charsPerLine < 20 Then charsPerLine = 20" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim rows As Long" & vbCrLf
+    s = s & "    Dim parts As Variant" & vbCrLf
+    s = s & "    Dim part As Variant" & vbCrLf
+    s = s & "    parts = Split(textValue, vbCrLf)" & vbCrLf
+    s = s & "    For Each part In parts" & vbCrLf
+    s = s & "        rows = rows + 1 + (Len(part) \ charsPerLine)" & vbCrLf
+    s = s & "    Next part" & vbCrLf
+    s = s & "    If rows < 1 Then rows = 1" & vbCrLf
+    s = s & "    CountSummaryRows = rows" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function MinSingle(a As Single, b As Single) As Single" & vbCrLf
+    s = s & "    If a < b Then" & vbCrLf
+    s = s & "        MinSingle = a" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        MinSingle = b" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function MaxSingle(a As Single, b As Single) As Single" & vbCrLf
+    s = s & "    If a > b Then" & vbCrLf
+    s = s & "        MaxSingle = a" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        MaxSingle = b" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "End Function" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "Private Sub StyleActionBar()" & vbCrLf
     s = s & "    On Error Resume Next" & vbCrLf
@@ -6370,7 +6500,8 @@ Private Function frmPreviewActions_Code() As String
     s = s & "        cmdPreview.Caption = ""Preview is OFF""" & vbCrLf
     s = s & "        cmdPreview.Enabled = True" & vbCrLf
     s = s & "        cmdPreview.Visible = True" & vbCrLf
-    s = s & "        lblSummary.Caption = ""You may now edit your document if you wish.""" & vbCrLf
+    s = s & "        mSummaryText = ""You may now edit your document if you wish.""" & vbCrLf
+    s = s & "        lblSummary.Caption = mSummaryText" & vbCrLf
     s = s & "        LayoutPanel" & vbCrLf
     s = s & "        ShowModelessAtCurrentPosition" & vbCrLf
     s = s & "    Else" & vbCrLf
@@ -6421,6 +6552,7 @@ Private Function frmCleanupSuiteLauncher_Code() As String
     s = s & "    lblLauncherTitle.TextAlign = 2" & vbCrLf
     s = s & "    lblLauncherSubtitle.Caption = ""Choose the kind of cleanup you need. Tools are grouped by what you are trying to fix.""" & vbCrLf
     s = s & "    lblLauncherSubtitle.TextAlign = 2" & vbCrLf
+    s = s & "    cmdFootnote.Caption = ""Footnote / Endnote""" & vbCrLf
     s = s & "    chkShowCompletionReviewAfterApply.Caption = ""Show completion review after apply""" & vbCrLf
     s = s & "    chkShowCompletionReviewAfterApply.Value = GetShowCompletionReviewAfterApplySetting()" & vbCrLf
     s = s & "    RefreshApplyReturnCaption" & vbCrLf
@@ -6470,6 +6602,9 @@ Private Function frmCleanupSuiteLauncher_Code() As String
     s = s & "    chkAutoSave.Value = GetAutoSaveSetting()" & vbCrLf
     s = s & "    MsgBox ""All Cleanup Suite tool settings have been reset to defaults."", vbInformation, ""Cleanup Suite""" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub cmdUserManual_Click()" & vbCrLf
+    s = s & "    OpenCleanupUserManualPdf" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "Private Sub OpenCleanupTool(ByVal formName As String)" & vbCrLf
     s = s & "    On Error GoTo OpenErr" & vbCrLf
     s = s & "    Me.Hide" & vbCrLf
@@ -6505,441 +6640,61 @@ Private Function frmCleanupSuiteLauncher_Code() As String
     s = s & "Private Sub cmdHeaderFooter_Click(): OpenCleanupTool ""frmHeaderFooterStandardizer"": End Sub" & vbCrLf
     s = s & "Private Sub cmdObjectRemover_Click(): OpenCleanupTool ""frmObjectRemover"": End Sub" & vbCrLf
     s = s & "Private Sub cmdHelpUnicode_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Invisible Unicode Cleaner"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Removes Unicode characters that are invisible on screen but cause problems "" & _" & vbCrLf
-    s = s & "            ""for search, sorting, comparison, and automated text processing."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""These characters accumulate from web copy-paste, PDF export, and "" & _" & vbCrLf
-    s = s & "            ""cross-platform file exchange."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""CHARACTER TYPES"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  NBSP  (U+00A0)  Non-Breaking Space: a space that prevents line breaks."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  ZWSP  (U+200B)  Zero-Width Space: completely invisible; affects word break."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  ZWNJ  (U+200C)  Zero-Width Non-Joiner: controls ligature/joining behaviour."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  ZWJ   (U+200D)  Zero-Width Joiner: forces joined rendering."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  BOM   (U+FEFF)  Byte Order Mark: encoding marker; never belongs in text."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  SHY   (U+00AD)  Soft Hyphen: invisible optional hyphen."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  NBHY  (U+2011)  Non-Breaking Hyphen: a hyphen that prevents line breaks."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights matches in yellow without changing anything."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Invisible Unicode Cleaner""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Unicode""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelpPunct_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Punctuation Normalizer"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Replaces typographic ('smart') punctuation with plain-text equivalents."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Use this before exporting to systems that do not support Unicode punctuation, "" & _" & vbCrLf
-    s = s & "            ""or before running text-comparison or diff tools."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  All          --  Converts all punctuation types listed below."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Quotes only  --  Curly double and single quotes become straight"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Dashes only  --  Em dash and en dash  -->  hyphen (-)"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Ellipses     --  Ellipsis character (...)  -->  three dots (...)"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Custom       --  Tick individual characters below."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights matches in yellow without changing anything."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Run again without Preview to apply."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Punctuation Normalizer""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Punctuation""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelpSpacing_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Spacing Fixer"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Corrects the most common spacing inconsistencies in assembled documents."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Double spaces       --  Collapses two or more consecutive spaces to one."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Trim paragraphs     --  Removes leading and trailing spaces from each"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                          paragraph."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Space before punct  --  Removes any space immediately before . , ; : ! ?"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Space after punct   --  Ensures exactly one space follows  . ? ! , ; :"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Extra blank lines   --  Collapses three or more consecutive blank"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                          paragraphs down to two."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Each option counts how many changes it makes and reports them at the end."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights problem areas without making changes."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Spacing Fixer""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Spacing""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelpCap_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Capitalization Fixer"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Applies consistent capitalisation to every paragraph in the target scope."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""MODES"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  All (Smart)   --  Default. Capitalises the first letter after sentence-ending"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                    punctuation (. ? !).  Best choice for general text."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Sentence case --  First letter of paragraph capitalised; rest lowercased."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Title Case    --  First letter of every word capitalised."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  UPPERCASE     --  Every letter uppercased."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  lowercase     --  Every letter lowercased."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Custom        --  Combine modes using the checkboxes.  If more than one "" & _" & vbCrLf
-    s = s & "            ""is selected, each is applied in sequence -- the last"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                    one applied wins."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""NOTE: Capitalisation is applied to the full text content of each paragraph, "" & _" & vbCrLf
-    s = s & "            ""including any directly formatted runs within it."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights paragraphs that would change."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Capitalization Fixer""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Capitalization""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelpList_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""List Normalizer"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Standardises list formatting throughout the document."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Normalise bullets    --  Resets all bullet-list paragraphs to the default"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                           Word bullet style, removing inconsistent characters."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Normalise numbering  --  Converts manually typed numbered paragraphs"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                           (e.g.  1. Item) to proper Word auto-numbering."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Fix list indentation --  Sets list paragraph indentation to 0.25 inch."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Convert hyphens      --  Converts lines beginning with '- ' or '* ' to"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                           proper Word bullet-list paragraphs."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""TIP: Run 'Convert hyphens' first if you have many hyphen-lists, then "" & _" & vbCrLf
-    s = s & "            ""'Normalise bullets' to make them all consistent."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights list paragraphs that would be affected."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  List Normalizer""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""List""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelpPara_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Paragraph Structure Fixer"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Cleans up paragraph structure and direct spacing overrides."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Remove empty paragraphs  --  Deletes completely empty paragraphs."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Collapse extra breaks    --  Reduces runs of 3+ consecutive paragraph breaks"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                               to exactly 2 (a standard visual separator)."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Normalise para spacing   --  Resets SpaceBefore and SpaceAfter to zero for"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                               paragraphs that have direct spacing overrides."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                               Does not affect spacing set by the style itself."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Fix indent               --  Resets left indent to zero for paragraphs with"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                               direct indent overrides."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""TIP: Run after assembling a document from multiple sources or templates, "" & _" & vbCrLf
-    s = s & "            ""where inconsistent spacing between paragraphs is most common."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights empty paragraphs before any changes are made."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Paragraph Structure Fixer""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Paragraph""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelpDuplicate_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Duplicate Paragraph Detector"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Finds paragraphs that repeat in the document and highlights them, or "" & _" & vbCrLf
-    s = s & "            ""removes every occurrence except the first.  Blank paragraphs are ignored."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""MATCHING METHOD"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Exact            --  identical apart from letter case."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Ignore punctuation & spacing  --  duplicates even if they differ only"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                       in punctuation, extra spaces, or letter case."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Fuzzy (similar wording)  --  flags paragraphs that share a chosen"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                       percentage of their words; catches near-duplicates "" & _" & vbCrLf
-    s = s & "            ""                       that were lightly edited.  Slower on large documents."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""FUZZY SENSITIVITY (used only by fuzzy matching)"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Loose (60%)   --  more matches, including loosely similar paragraphs."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Medium (80%)  --  a balanced default."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Strict (90%)  --  fewer matches; only very close paragraphs."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""ACTION"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Highlight only     --  marks duplicates in yellow for review."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Remove duplicates  --  deletes every occurrence except the first."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to search within the selection only."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Similar paragraphs are grouped together (a paragraph linked to a match, "" & _" & vbCrLf
-    s = s & "            ""which is linked to another, joins the same group), and the first in each"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""group is kept.  Run with Preview first to see what would be affected."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Duplicate Paragraph Detector""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Duplicate""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelpFont_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Font Normalizer"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Resets direct font overrides to match the style defined for each paragraph, "" & _" & vbCrLf
-    s = s & "            ""eliminating the font chaos that accumulates from copying and pasting text"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""between documents, emails, and web pages."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS  (choose which properties to reset)"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Font face   --  Resets the typeface (e.g. Arial, Times New Roman) to the"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                  style's defined font."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Font size   --  Resets the point size to the style's defined size."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Bold        --  Resets bold to the style's setting."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Italic      --  Resets italic to the style's setting."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Font colour --  Resets text colour to the style's defined colour."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""TIP: Start with Face and Size only.  Bold, Italic, and Colour are opt-in "" & _" & vbCrLf
-    s = s & "            ""because those properties are more likely to be intentional (e.g. a bolded"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""phrase or a deliberately coloured heading within a paragraph)."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights paragraphs with direct font overrides."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Font Normalizer""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Font""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelpTable_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Table Cleaner"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Removes structural clutter from tables and normalises their formatting."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Operates on all tables within the target scope."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Remove empty rows     --  Deletes any row where every cell contains"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                            no text (a lone paragraph mark is not text)."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Remove empty columns  --  Deletes any column where every cell is empty."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Normalise padding     --  Sets all cell padding to Word defaults:"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                            0.04 inch top/bottom,  0.08 inch left/right."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Strip direct format   --  Clears direct formatting overrides from the"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                            table, restoring the table's applied style."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Normalise borders     --  Enables borders on the table using the"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                            current table style."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Remove all borders    --  Turns off every border on the table."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Convert table to text --  Replaces the table with tab-separated text."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""TIP: Run 'Remove empty rows/columns' before 'Strip direct format' for "" & _" & vbCrLf
-    s = s & "            ""the cleanest results.  Use Preview first to see which rows are empty."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to tables in the selection."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Table Cleaner""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Table""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelpBreak_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Break Normalizer"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Fixes problems with section and page breaks.  Most common in documents "" & _" & vbCrLf
-    s = s & "            ""assembled from multiple files, where each source file may have had its"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""own trailing section break."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Collapse section breaks  --  Reduces consecutive section breaks to one."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Collapse page breaks     --  Reduces consecutive manual page breaks to one."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Convert section breaks   --  Changes all section break types in scope to"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                               the type you choose below."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""CONVERSION TYPES"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Next Page   --  Section starts at the top of the next page."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Continuous  --  Section continues on the same page (no forced break)."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Even Page   --  Section starts on the next even-numbered page."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Odd Page    --  Section starts on the next odd-numbered page."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""NOTE: The first section of a document is never converted -- it has no "" & _" & vbCrLf
-    s = s & "            ""preceding break to change."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights consecutive break sequences in yellow."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Break Normalizer""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Break""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelpTrim_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Document Trim"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Removes trailing empty paragraphs from the end of the document, "" & _" & vbCrLf
-    s = s & "            ""leaving exactly one final empty paragraph (which Word requires to exist)."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""WHY THIS MATTERS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Documents assembled from multiple files, or saved from templates, "" & _" & vbCrLf
-    s = s & "            ""  often end with many blank paragraphs.  These appear as unwanted blank"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  space at the end of the printed document and can cause unexpected "" & _" & vbCrLf
-    s = s & "            ""  behaviour with headers, footers, and page numbering in some layouts."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""NOTE: This tool always operates on the full document.  Scope selection "" & _" & vbCrLf
-    s = s & "            ""is disabled because 'end of document' is inherently document-level --"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""trimming to the end of a selection would not be meaningful."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights the trailing paragraphs that would be removed."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Run again without Preview to apply."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Document Trim""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""DocumentTrim""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelpFormat_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Direct Formatting Stripper"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Removes manual formatting overrides and returns text to what its "" & _" & vbCrLf
-    s = s & "            ""paragraph style defines.  Unlike Word Clear Formatting (which resets"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""text to the Normal style), this tool keeps your styles intact and strips "" & _" & vbCrLf
-    s = s & "            ""only the direct formatting layered on top."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""WHAT TO RESET"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Reset character formatting  --  font face, size, colour, spacing."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Reset paragraph formatting  --  indents, line spacing, alignment."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""EMPHASIS HANDLING"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Quick clean      --  Fast.  Preserves bold/italic that applies to a"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                       whole paragraph.  Best for most documents."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Thorough clean   --  Preserves bold/italic on individual words."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                       Slower on large documents (examines every run)."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Strip everything --  Removes all emphasis too, for a full reset."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Preserve highlighting keeps text highlight colours through the reset."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""NOTE: Quick mode restores emphasis only when it is uniform across the "" & _" & vbCrLf
-    s = s & "            ""whole paragraph.  For a paragraph with one bold word among normal text,"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""use Thorough mode to preserve that word precisely."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights paragraphs carrying direct formatting."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Preserve drop caps keeps dropped capitals; untick to reset them."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Direct Formatting Stripper""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Formatting""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelpHyperlink_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Hyperlink Remover"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Removes hyperlinks while keeping the visible text.  Pasting from web "" & _" & vbCrLf
-    s = s & "            ""pages embeds links throughout a document; this strips the links but"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""leaves the words exactly as they are."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Clear hyperlink formatting  --  also removes the blue underlined look"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                                  (resets to the default character font)."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                                  Turn off to keep the blue/underline."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights every hyperlink that would be removed."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Hyperlink Remover""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Hyperlink""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelpSoftReturn_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Soft Return Converter"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Converts soft returns (line breaks made with Shift+Enter) to real "" & _" & vbCrLf
-    s = s & "            ""paragraph marks, or the reverse.  Documents imported from PDFs and web"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""pages are often full of soft returns that look like paragraph breaks but "" & _" & vbCrLf
-    s = s & "            ""are not -- which quietly breaks spell-check, styles, and spacing."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""DIRECTION"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Soft returns to paragraphs  --  the usual fix for imported text."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Paragraphs to soft returns  --  the reverse (less common)."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""CAUTION: Converting paragraphs to soft returns merges the affected text "" & _" & vbCrLf
-    s = s & "            ""into a single paragraph.  Use the reverse only on small selections."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text before opening to limit changes to the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode highlights the breaks that would be converted."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Soft Return Converter""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""SoftReturn""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelpMetadata_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Metadata Scrubber"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Strips identifying information from the document before you share it "" & _" & vbCrLf
-    s = s & "            ""externally -- a one-click version of Word built-in Document Inspector."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Document properties  --  author, company, manager, title, and other"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                           built-in properties."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Personal information --  author names attached to comments and tracked"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                           changes (anonymises them)."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Delete all comments  --  removes every comment from the document."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Accept all tracked changes  --  finalises the document and removes the"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                                  revision history."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""NOTE: This tool always works on the whole document.  Metadata removal "" & _" & vbCrLf
-    s = s & "            ""may not be reversible with Ctrl+Z, so a copy is saved first if auto-save"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""is on.  Review the result before sharing."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode shows the metadata currently in the document."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Metadata Scrubber""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Metadata""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelpStyle_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Style Cleanup"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Removes clutter from the document style list.  Documents assembled from "" & _" & vbCrLf
-    s = s & "            ""many sources accumulate dozens of unused or duplicate styles."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Remove unused styles    --  deletes custom styles that no text uses."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                              Built-in Word styles are never deleted."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Remap common variants   --  reassigns text in variant styles such as"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                              Normal (Web), Body Text 2, and Body Text 3 "" & _" & vbCrLf
-    s = s & "            ""                              to the Normal style, then removes them."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""NOTE: This tool always works on the whole document.  Usage is detected "" & _" & vbCrLf
-    s = s & "            ""in the main document body; a style used only inside a header, footer, or"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""text box may be treated as unused."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview mode reports how many unused custom styles were found."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Style Cleanup""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Style""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelpFootnote_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Footnote / Endnote Remover"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Deletes footnotes and/or endnotes -- the reference mark and the note "" & _" & vbCrLf
-    s = s & "            ""text -- to produce a clean text extract."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""OPTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Remove footnotes / Remove endnotes  --  choose which to delete."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Keep note text inline  --  inserts each note's text at the reference"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""                            point in [brackets] before deleting the note."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Word renumbers any remaining notes automatically."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""SCOPE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Select text first to remove only the notes referenced in the selection."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview highlights the reference marks that would be removed."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Footnote / Endnote Remover""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Footnote""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelpHeaderFooter_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Header / Footer Standardizer"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Makes header/footer formatting consistent across the whole document, "" & _" & vbCrLf
-    s = s & "            ""or clears all header/footer content."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""MODE"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Standardize formatting  --  reset font to the document default, remove "" & _" & vbCrLf
-    s = s & "            ""paragraph spacing, and/or set alignment."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Clear all content       --  remove all header/footer text."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Include headers/footers selects which areas to process; each section "" & _" & vbCrLf
-    s = s & "            ""  has primary, first-page, and even-page slots."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  Unlink sections breaks 'Link to Previous' so each is set on its own."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""NOTE: page numbers and other fields are left untouched.  Works on the "" & _" & vbCrLf
-    s = s & "            ""whole document."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Header / Footer Standardizer""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""HeaderFooter""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdHelpObject_Click()" & vbCrLf
-    s = s & "    Dim h As String" & vbCrLf
-    s = s & "    h = ""Remove Objects & Elements"" & vbCrLf & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Deletes clutter from web/PDF/email paste so you can reduce a document "" & _" & vbCrLf
-    s = s & "            ""to clean text."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Removes (each OFF by default): pictures, text boxes (with contents), "" & _" & vbCrLf
-    s = s & "            ""frames (text kept), horizontal lines, HTML/ActiveX controls, hidden"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""text, and -- with a confirmation -- whole tables and their contents."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""CAUTIONS"" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  - Deleting tables is destructive (unlike Table Cleaner convert-to-text)."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  - Picture/shape deletion may not always be fully undoable."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""  - Body only; header/footer objects (e.g. logos) are left alone."" & vbCrLf" & vbCrLf
-    s = s & "    h = h & vbCrLf" & vbCrLf
-    s = s & "    h = h & ""Preview reports a count of what would be removed."" & vbCrLf" & vbCrLf
-    s = s & "    MsgBox h, vbInformation, ""Help  --  Remove Objects & Elements""" & vbCrLf
+    s = s & "    ShowCleanupToolHelp ""Object""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & ""
     frmCleanupSuiteLauncher_Code = s

@@ -196,6 +196,10 @@ Acceptance checks:
 - Existing cleanup logic still works.
 - `python assemble.py` passes after each small batch.
 
+Alpha checkpoint:
+
+`0.8.5` should serve as the official Alpha once the complex-form redesign direction is stable enough for broader hands-on use.
+
 ## P5 - Simple Tool Form Redesign
 
 Do after the complex tools prove the system.
@@ -228,6 +232,10 @@ Acceptance checks:
 - Simple forms remain quick.
 - The user can run common defaults without thinking too much.
 - Scope and preview behavior are consistent with the larger forms.
+
+Beta checkpoint:
+
+`0.9.5` should serve as the official Beta once the simple-form pass and consistency cleanup are stable enough for serious user testing before `1.0.0`.
 
 ## P6 - Sub-tool Reorganization
 

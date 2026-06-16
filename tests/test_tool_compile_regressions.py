@@ -50,3 +50,17 @@ class ToolCompileRegressionTests(unittest.TestCase):
         self.assertNotIn("tbl.Range.ClearFormatting", source)
         self.assertIn("tbl.Range.Font.Reset", source)
         self.assertIn("tbl.Range.ParagraphFormat.Reset", source)
+
+    def test_spacing_tool_does_not_use_invalid_word_wildcard_punctuation_pattern(self):
+        source = read("src/forms/frmSpacingCleanup.bas")
+
+        self.assertNotIn('" ([.,;:!?])"', source)
+        self.assertNotIn(".Replacement.Text = \"\\1\"", source)
+        self.assertIn("beforePunctPatterns = Array(\" .\", \" ,\", \" ;\", \" :\", \" !\", \" ?\")", source)
+        self.assertIn("previewBeforePunctPatterns = Array(\" .\", \" ,\", \" ;\", \" :\", \" !\", \" ?\")", source)
+
+    def test_metadata_preview_has_no_blank_line_after_heading(self):
+        source = read("src/forms/frmMetadataScrubber.bas")
+
+        self.assertIn('"Current document metadata:" & vbCrLf', source)
+        self.assertNotIn('"Current document metadata:" & vbCrLf & vbCrLf', source)

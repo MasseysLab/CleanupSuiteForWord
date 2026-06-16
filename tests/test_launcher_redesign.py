@@ -169,15 +169,18 @@ class LauncherRedesignTests(unittest.TestCase):
         self.assertIn('Private Sub cmdCapitalization_Click(): OpenCleanupTool "frmCapitalizationCleanup": End Sub', launcher)
         self.assertNotIn("Private Sub cmdCapitalization_Click(): Me.Hide: frmCapitalizationCleanup.Show: End Sub", launcher)
 
-    def test_launcher_milestone_version_is_075(self):
+    def test_launcher_milestone_version_is_080(self):
         launcher = read("src/modules/modCleanupLauncher.bas")
         versioning = read("VERSIONING.md")
+        launcher_form = read("src/forms/frmCleanupSuiteLauncher.bas")
 
-        self.assertIn('Public Const SUITE_VERSION As String = "0.7.5"', launcher)
-        self.assertIn("## Current Version\n\n`0.7.5`", versioning)
+        self.assertIn('Public Const SUITE_VERSION As String = "0.8.0"', launcher)
+        self.assertIn("## Current Version\n\n`0.8.0`", versioning)
         self.assertIn("0.7.4", versioning)
         self.assertIn("0.7.4.5", versioning)
         self.assertIn("0.7.5", versioning)
+        self.assertIn("0.8.0", versioning)
+        self.assertIn('cmdFootnote.Caption = "Footnote / Endnote"', launcher_form)
 
 
 if __name__ == "__main__":

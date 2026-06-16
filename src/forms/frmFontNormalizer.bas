@@ -32,29 +32,7 @@ Private Sub UserForm_Initialize()
     LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
-    Dim h As String
-    h = "Font Normalizer" & vbCrLf & vbCrLf
-    h = h & "Resets direct font overrides to match the style defined for each paragraph, " & _
-            "eliminating the font chaos that accumulates from copying and pasting text" & vbCrLf
-    h = h & "between documents, emails, and web pages." & vbCrLf
-    h = h & vbCrLf
-    h = h & "OPTIONS  (choose which properties to reset)" & vbCrLf
-    h = h & "  Font face   --  Resets the typeface (e.g. Arial, Times New Roman) to the" & vbCrLf
-    h = h & "                  style's defined font." & vbCrLf
-    h = h & "  Font size   --  Resets the point size to the style's defined size." & vbCrLf
-    h = h & "  Bold        --  Resets bold to the style's setting." & vbCrLf
-    h = h & "  Italic      --  Resets italic to the style's setting." & vbCrLf
-    h = h & "  Font colour --  Resets text colour to the style's defined colour." & vbCrLf
-    h = h & vbCrLf
-    h = h & "TIP: Start with Face and Size only.  Bold, Italic, and Colour are opt-in " & _
-            "because those properties are more likely to be intentional (e.g. a bolded" & vbCrLf
-    h = h & "phrase or a deliberately coloured heading within a paragraph)." & vbCrLf
-    h = h & vbCrLf
-    h = h & "SCOPE" & vbCrLf
-    h = h & "  Select text before opening to limit changes to the selection." & vbCrLf
-    h = h & vbCrLf
-    h = h & "Preview mode highlights paragraphs with direct font overrides." & vbCrLf
-    MsgBox h, vbInformation, "Help  --  Font Normalizer"
+    ShowCleanupToolHelp "Font"
 End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel

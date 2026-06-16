@@ -21,24 +21,7 @@ Private Sub UserForm_Initialize()
     LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdHelp_Click()
-    Dim h As String
-    h = "Style Cleanup" & vbCrLf & vbCrLf
-    h = h & "Removes clutter from the document style list.  Documents assembled from " & _
-            "many sources accumulate dozens of unused or duplicate styles." & vbCrLf
-    h = h & vbCrLf
-    h = h & "OPTIONS" & vbCrLf
-    h = h & "  Remove unused styles    --  deletes custom styles that no text uses." & vbCrLf
-    h = h & "                              Built-in Word styles are never deleted." & vbCrLf
-    h = h & "  Remap common variants   --  reassigns text in variant styles such as" & vbCrLf
-    h = h & "                              Normal (Web), Body Text 2, and Body Text 3 " & _
-            "                              to the Normal style, then removes them." & vbCrLf
-    h = h & vbCrLf
-    h = h & "NOTE: This tool always works on the whole document.  Usage is detected " & _
-            "in the main document body; a style used only inside a header, footer, or" & vbCrLf
-    h = h & "text box may be treated as unused." & vbCrLf
-    h = h & vbCrLf
-    h = h & "Preview mode reports how many unused custom styles were found." & vbCrLf
-    MsgBox h, vbInformation, "Help  --  Style Cleanup"
+    ShowCleanupToolHelp "Style"
 End Sub
 Private Function StyleInUse(st As Style) As Boolean
     Dim fr As Range: Set fr = ActiveDocument.Content
