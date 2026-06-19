@@ -71,6 +71,12 @@ Current `documents/` release artifacts:
 - Final closeout checks passed: `python assemble.py`, `python vbaeval.py validate`, `python -m unittest discover -s tests`, and `git diff --check`.
 - Roadmap clarified: `0.8.5` is Alpha, `0.9.0` is Alpha plus full documentation, and clean-house work waits until that `0.9.0` documentation state is complete unless Chris explicitly asks earlier.
 
+## Next milestone
+
+- Use `docs/Alpha_Readiness_Checklist_0.8.5.md` for the next focused milestone.
+- Keep `codex-0.8.0-release` as the preserved pushed release branch for now; do not merge to `main` casually because `main` is still far behind.
+- Do not clean house before `0.9.0` documentation is complete unless Chris explicitly asks.
+
 ## Archive note
 
 The previous long-form handoff history was preserved in:
