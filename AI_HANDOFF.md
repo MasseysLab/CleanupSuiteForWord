@@ -69,6 +69,7 @@ Current `documents/` release artifacts:
 - This handoff was trimmed to current state, and older long-form session history was moved to `AI_HANDOFF_ARCHIVE.md`.
 - `docs/Tool-Form Rules.md` and `AI_RULES.md` were updated to reflect the current `0.8.0` course, compact handoff pattern, release-doc package expectations, and current branch identity.
 - Final closeout checks passed: `python assemble.py`, `python vbaeval.py validate`, `python -m unittest discover -s tests`, and `git diff --check`.
+- Roadmap clarified: `0.8.5` is Alpha, `0.9.0` is Alpha plus full documentation, and clean-house work waits until that `0.9.0` documentation state is complete unless Chris explicitly asks earlier.
 
 ## Archive note
 

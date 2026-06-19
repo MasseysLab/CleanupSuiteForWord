@@ -24,7 +24,7 @@ This is the current working milestone for the `0.8.x` line.
 | `0.7.5` | Documentation-complete release using the same codebase as `0.7.4`, except for documentation-blocking bug fixes if required. |
 | `0.8.0` | Complex tool form redesigns using the approved modern panel style. |
 | `0.8.5` | Official Alpha release. |
-| `0.9.0` | Simple tool form polish, consistency pass, help/caption cleanup, and release-candidate testing. |
+| `0.9.0` | Alpha plus full documentation; clean house after this documentation state is complete. |
 | `0.9.5` | Official Beta release. |
 | `1.0.0` | Global `.dotm` Word add-in/template release suitable for normal use on any document. |
 
@@ -36,6 +36,8 @@ This is the current working milestone for the `0.8.x` line.
 - Keep Git commits small enough that each milestone can be understood later.
 - After `0.6.4` is pushed, no feature or code changes go into `0.6.5` unless required to correct documentation-blocking bugs.
 - After `0.7.4` is pushed, no feature or code changes go into `0.7.5` unless required to correct documentation-blocking bugs.
+- Treat `0.8.5` as Alpha and `0.9.0` as Alpha plus full documentation.
+- Do not clean house, remove old historical docs, or prune old release history until the `0.9.0` documentation state is complete unless Chris explicitly asks for earlier cleanup.
 - Do not call the project `1.0.0` until the global add-in/template workflow is stable.
 
 ## Naming Examples

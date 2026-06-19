@@ -101,10 +101,12 @@ The `backups/` folder should normally be ignored by Git.
 1. Prefer a branch or PR-style workflow for non-trivial changes.
 2. Keep `main` or the default branch stable unless Chris explicitly asks for direct commits.
 3. Treat `codex-0.8.0-release` as the current `0.8.0` working branch unless Chris explicitly changes the release target.
-4. Commit handoff/rules/docs changes separately from code behavior changes when practical.
-5. Use clear commit messages.
-6. Do not delete files unless the reason is clear and recorded in `AI_HANDOFF.md`.
-7. When possible, compare diffs before reporting success.
+4. Treat `0.8.5` as Alpha and `0.9.0` as Alpha plus full documentation.
+5. Do not clean house, prune historical docs, or remove old release history before `0.9.0` documentation is complete unless Chris explicitly asks.
+6. Commit handoff/rules/docs changes separately from code behavior changes when practical.
+7. Use clear commit messages.
+8. Do not delete files unless the reason is clear and recorded in `AI_HANDOFF.md`.
+9. When possible, compare diffs before reporting success.
 
 ## Editing rules
 

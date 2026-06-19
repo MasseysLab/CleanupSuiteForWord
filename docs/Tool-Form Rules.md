@@ -29,6 +29,9 @@ High reasoning.
 8. When changing release docs or export artifacts, update
    `docs/README_DOC_PACKAGE.md`, `docs/Documentation_Handoff_0.8.0.md`, and
    `docs/Release_Notes_0.7.5_to_0.8.0.md` if their file lists or claims change.
+9. `0.8.5` is the Alpha release. `0.9.0` is Alpha plus full documentation.
+   Clean-house work waits until the `0.9.0` documentation state is complete
+   unless Chris explicitly asks for earlier cleanup.
 
 **Tool Form Layout**
 
