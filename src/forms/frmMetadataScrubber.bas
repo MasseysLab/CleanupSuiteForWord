@@ -25,9 +25,10 @@ Private Sub UserForm_Initialize()
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
     LayoutCleanupToolForm Me
 End Sub
-Private Sub cmdHelp_Click()
-    ShowCleanupToolHelp "Metadata"
-End Sub
+Private Sub chkProperties_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkPersonalInfo_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkComments_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkRevisions_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub

@@ -36,9 +36,6 @@ Private Sub UserForm_Initialize()
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
     LayoutCleanupToolForm Me
 End Sub
-Private Sub cmdHelp_Click()
-    ShowCleanupToolHelp "Paragraph"
-End Sub
 Private Sub UpdateCustomVisibility(): fraCustom.Visible = False: End Sub
 Private Sub optAll_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
 Private Sub optRemoveEmpty_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
@@ -46,18 +43,24 @@ Private Sub optNormalizeSpacing_Click(): UpdateCustomVisibility: LayoutCleanupTo
 Private Sub optCustom_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
 Private Sub ClearCustomChecks(): chkRemoveEmpty.Value = False: chkCollapseBreaks.Value = False: chkNormalizeParaSpacing.Value = False: chkFixIndent.Value = False: End Sub
 Private Sub cmdSelectAll_Click()
-    If optCustom.Value Then
-        chkRemoveEmpty.Value = True
-        chkCollapseBreaks.Value = True
-        chkNormalizeParaSpacing.Value = True
-        chkFixIndent.Value = True
-    End If
+    optCustom.Value = True
+    UpdateCustomVisibility
+    chkRemoveEmpty.Value = True
+    chkCollapseBreaks.Value = True
+    chkNormalizeParaSpacing.Value = True
+    chkFixIndent.Value = True
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdDeselectAll_Click()
-    If optCustom.Value Then
-        ClearCustomChecks
-    End If
+    optCustom.Value = True
+    UpdateCustomVisibility
+    ClearCustomChecks
+    LayoutCleanupToolForm Me
 End Sub
+Private Sub chkRemoveEmpty_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkCollapseBreaks_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkNormalizeParaSpacing_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkFixIndent_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub

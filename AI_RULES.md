@@ -23,11 +23,12 @@ Local project folder: C:\Users\Chris\PROGRAMMING\VBA\CleanupSuite for MS Word
 
 1. Read `AI_HANDOFF.md`.
 2. Read this file, `AI_RULES.md`.
-3. Create a timestamped backup zip before editing anything locally.
-4. Inspect the current project state before changing files.
-5. Check Git remote, current branch, and status before editing when working locally.
-6. If working on Preview Actions or a `.docm`/runtime bug, read `REPO_FINDINGS_AND_SYNC_CHECK.md` and compare GitHub/local/generated/embedded state.
-7. If a previous handoff says something is unresolved, read that section before doing unrelated work.
+3. Read `docs/Tool-Form Rules.md` before touching tool-form layout, release-doc packaging, or the current `0.8.0` course of work.
+4. Create a timestamped backup zip before editing anything locally.
+5. Inspect the current project state before changing files.
+6. Check Git remote, current branch, and status before editing when working locally.
+7. If working on Preview Actions or a `.docm`/runtime bug, read `REPO_FINDINGS_AND_SYNC_CHECK.md` and compare GitHub/local/generated/embedded state.
+8. If a previous handoff says something is unresolved, read that section before doing unrelated work.
 
 ## Do not destroy local work
 
@@ -68,12 +69,13 @@ If something cannot be verified, say so clearly and record it in `AI_HANDOFF.md`
 
 After making changes:
 
-1. Append a new entry to `AI_HANDOFF.md`.
-2. List every file changed.
-3. Explain what changed and why.
-4. Record tests/checks run.
-5. Record anything not fixed or not attempted.
-6. Record the safest next step.
+1. Keep `AI_HANDOFF.md` short and current.
+2. Put long session history or old detailed logs in `AI_HANDOFF_ARCHIVE.md`.
+3. List every file changed.
+4. Explain what changed and why.
+5. Record tests/checks run.
+6. Record anything not fixed or not attempted.
+7. Record the safest next step.
 
 ## Backup rule
 
@@ -98,10 +100,11 @@ The `backups/` folder should normally be ignored by Git.
 
 1. Prefer a branch or PR-style workflow for non-trivial changes.
 2. Keep `main` or the default branch stable unless Chris explicitly asks for direct commits.
-3. Commit handoff/rules/docs changes separately from code behavior changes when practical.
-4. Use clear commit messages.
-5. Do not delete files unless the reason is clear and recorded in `AI_HANDOFF.md`.
-6. When possible, compare diffs before reporting success.
+3. Treat `codex-0.8.0-release` as the current `0.8.0` working branch unless Chris explicitly changes the release target.
+4. Commit handoff/rules/docs changes separately from code behavior changes when practical.
+5. Use clear commit messages.
+6. Do not delete files unless the reason is clear and recorded in `AI_HANDOFF.md`.
+7. When possible, compare diffs before reporting success.
 
 ## Editing rules
 

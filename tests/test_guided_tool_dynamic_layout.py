@@ -16,11 +16,12 @@ class GuidedToolDynamicLayoutTests(unittest.TestCase):
         self.assertIn("ApplyMSFormTitleStrategy toolForm, True", helpers)
         self.assertLess(
             helpers.index("ApplyMSFormTitleStrategy toolForm, True"),
-            helpers.index('Set titleLabel = EnsureGuidedLabel(toolForm, "lblGuidedToolName")'),
+            helpers.index('Set introLabel = EnsureGuidedLabel(toolForm, "lblGuidedIntro")'),
         )
         self.assertIn("Private Function ShouldHideGuidedControl(ByVal toolForm As Object, ByVal controlName As String) As Boolean", helpers)
         self.assertIn("If GuidedControlMatchesToolTitle(toolForm, ctl) Then", helpers)
         self.assertIn("Private Function GuidedControlMatchesToolTitle(ByVal toolForm As Object, ByVal ctl As Object) As Boolean", helpers)
+        self.assertIn("Trim$(toolForm.Caption)", helpers)
         self.assertIn("If ShouldHideGuidedControl(toolForm, ctl.Name) Then", helpers)
         self.assertIn('HideGuidedControl toolForm.Controls("optScopeSelection")', helpers)
         self.assertIn('InStr(1, toolForm.Controls("optScopeDocument").Caption, "(always)", vbTextCompare) = 0', helpers)
@@ -67,8 +68,6 @@ class GuidedToolDynamicLayoutTests(unittest.TestCase):
         helpers = read("src/modules/modCleanupHelpers.bas")
         installer = read("src/installer/installer.bas")
 
-        self.assertIn('titleLabel.Caption = ""', helpers)
-        self.assertIn("titleLabel.Visible = False", helpers)
         self.assertIn("Private Function ScopeSelectionIsAvailable(ByVal toolForm As Object) As Boolean", helpers)
         self.assertIn('InStr(1, toolForm.Controls("optScopeDocument").Caption, "(always)", vbTextCompare) = 0', helpers)
         self.assertIn('And Len(Trim$(toolForm.Controls("optScopeSelection").Caption)) > 0', helpers)
@@ -137,6 +136,45 @@ class GuidedToolDynamicLayoutTests(unittest.TestCase):
                     self.assertIn(f"Private Sub {control}_Click()", source)
                     self.assertIn("Layout", source)
 
+    def test_select_all_buttons_only_show_for_active_custom_multiselects(self):
+        helpers = read("src/modules/modCleanupHelpers.bas")
+        capitalization = read("src/forms/frmCapitalizationCleanup.bas")
+
+        self.assertIn('Case "cmdSelectAll", "cmdDeselectAll"', helpers)
+        self.assertIn("If Not GuidedCustomModeIsActive(toolForm) Then", helpers)
+        self.assertIn("ShouldHideGuidedControl = True", helpers)
+        self.assertIn("IsGuidedCustomChoiceControl(toolForm.Name, controlName)", helpers)
+        self.assertIn("cmdSelectAll.Visible = optCustom.Value", capitalization)
+        self.assertIn("cmdDeselectAll.Visible = optCustom.Value", capitalization)
+
+    def test_generated_custom_divider_and_info_labels_are_reset_before_relayout(self):
+        helpers = read("src/modules/modCleanupHelpers.bas")
+
+        self.assertIn("ResetGuidedGeneratedChrome toolForm", helpers)
+        self.assertIn('RemoveGuidedGeneratedLabel toolForm, "lblGuidedToolName"', helpers)
+        self.assertIn('HideGuidedGeneratedLabel toolForm, "lblGuidedDivider"', helpers)
+        self.assertIn('HideGuidedGeneratedLabel toolForm, "lblGuidedInfoBorder"', helpers)
+        self.assertIn('HideGuidedGeneratedLabel toolForm, "lblGuidedInfoLine" & CStr(i)', helpers)
+        self.assertIn("Private Sub ResetGuidedGeneratedChrome(ByVal toolForm As Object)", helpers)
+        self.assertIn("Private Sub RemoveGuidedGeneratedLabel(ByVal toolForm As Object, ByVal controlName As String)", helpers)
+        self.assertIn("Private Sub HideGuidedGeneratedLabel(ByVal toolForm As Object, ByVal controlName As String)", helpers)
+
+    def test_shared_layout_uses_compact_spacing(self):
+        helpers = read("src/modules/modCleanupHelpers.bas")
+
+        self.assertIn(".Move M, 8, contentW, introH", helpers)
+        self.assertIn("y = 8 + introH + 4", helpers)
+        self.assertIn('Case "lblGuidedIntro", "chkPreviewOnly", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp"', helpers)
+        self.assertIn("GuidedIntroHeight = 26", helpers)
+        self.assertIn("GuidedIntroHeight = 16", helpers)
+        self.assertIn("GuidedLabelHeight = 36", helpers)
+        self.assertIn("GuidedLabelHeight = 24", helpers)
+        self.assertIn("GuidedOptionHeight = 38", helpers)
+        self.assertIn("GuidedOptionHeight = 24", helpers)
+        self.assertIn("GuidedOptionHeight = 16", helpers)
+        self.assertIn("Const GAP As Single = 4", helpers)
+        self.assertIn("toolForm.Height = y + 24", helpers)
+
     def test_non_custom_detail_groups_relayout_when_trigger_changes(self):
         break_form = read("src/forms/frmBreakNormalizer.bas")
         self.assertIn("Private Sub chkConvertSectionBreaks_Click()", break_form)
@@ -169,12 +207,41 @@ class GuidedToolDynamicLayoutTests(unittest.TestCase):
         self.assertIn('Case "frmHyperlinkRemover.chkRemoveFormat": ControlCaptionText = "Also, remove hyperlink character style (blue underline)"', installer)
 
     def test_header_footer_uses_two_column_order_and_main_menu_caption_is_singular(self):
+        helpers = read("src/modules/modCleanupHelpers.bas")
         installer = read("src/installer/installer.bas")
 
+        self.assertIn('If toolForm.Name = "frmHeaderFooterStandardizer" Then', helpers)
+        self.assertIn("LayoutHeaderFooterChoices toolForm, M, y, contentW, GAP", helpers)
+        self.assertIn("Private Sub LayoutHeaderFooterChoices(ByVal toolForm As Object", helpers)
+        self.assertIn('PositionGuidedChoicePairByName toolForm, "optStandardize", "optClearAll"', helpers)
+        self.assertIn('PositionGuidedChoicePairByName toolForm, "chkHeaders", "chkFooters"', helpers)
+        self.assertIn('PositionGuidedChoicePairByName toolForm, "chkFont", "chkSpacing"', helpers)
+        self.assertIn('PositionGuidedChoicePairByName toolForm, "chkBreakLinks", "chkAlignment"', helpers)
+        self.assertIn('PositionGuidedCenteredChoice toolForm, "optAlignCenter"', helpers)
+        self.assertIn('PositionGuidedChoicePairByName toolForm, "optAlignLeft", "optAlignRight"', helpers)
+
         self.assertIn('Case "frmHeaderFooterStandardizer"', installer)
-        self.assertIn('"chkHeaders", "chkFooters", "chkFont", "chkSpacing", "chkAlignment", "chkBreakLinks"', installer)
-        self.assertLess(installer.index('"chkAlignment", "chkBreakLinks"'), installer.index('"fraAlign", "optAlignLeft"'))
+        self.assertIn('"chkHeaders", "chkFooters", "chkFont", "chkSpacing", "chkBreakLinks", "chkAlignment"', installer)
+        self.assertLess(installer.index('"chkBreakLinks", "chkAlignment"'), installer.index('"fraAlign", "optAlignLeft"'))
+        self.assertIn('"fraAlign", "optAlignLeft", "optAlignRight", "optAlignCenter"', installer)
         self.assertIn('Case "cmdHeaderFooter": cap = "Header / Footer"', installer)
+
+    def test_header_footer_info_box_keeps_unlink_above_set_alignment(self):
+        helpers = read("src/modules/modCleanupHelpers.bas")
+
+        self.assertIn('If toolForm.Name = "frmHeaderFooterStandardizer" Then', helpers)
+        self.assertIn('GuidedInfoLines.Add GuidedInfoLineForControl(toolForm, "chkBreakLinks")', helpers)
+        self.assertIn('GuidedInfoLines.Add GuidedInfoLineForControl(toolForm, "chkAlignment")', helpers)
+        self.assertLess(
+            helpers.index('GuidedInfoLines.Add GuidedInfoLineForControl(toolForm, "chkBreakLinks")'),
+            helpers.index('GuidedInfoLines.Add GuidedInfoLineForControl(toolForm, "chkAlignment")'),
+        )
+
+    def test_capitalization_has_shared_friendly_title_mapping(self):
+        helpers = read("src/modules/modCleanupHelpers.bas")
+
+        self.assertIn('Case "frmCapitalizationCleanup": GuidedToolName = "Capitalization Fixer"', helpers)
+        self.assertIn('Case "frmCapitalizationCleanup": GuidedToolIntro = "Choose how you want capitalization cleaned up."', helpers)
 
 
 if __name__ == "__main__":

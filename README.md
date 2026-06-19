@@ -63,7 +63,7 @@ vbaeval.py             ← validation library + CLI (used by assemble.py)
 
 ## Versioning
 
-The current release is `0.8.0`, which carries forward the locked `0.7.5` baseline and the final pre-`0.8` polish pass into the next programming milestone.
+The current working release is `0.8.0`.
 
 See [`VERSIONING.md`](VERSIONING.md) for the `0.5.0` through `1.0.0` roadmap and the rule for when `SUITE_VERSION` should change.
 

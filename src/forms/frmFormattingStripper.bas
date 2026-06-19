@@ -43,16 +43,20 @@ Private Sub UserForm_Initialize()
 End Sub
 Private Sub optEmphQuick_Click()
     lblSpeedWarning.Caption = "Quick mode is fast and preserves emphasis that applies to whole paragraphs."
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub optEmphThorough_Click()
     lblSpeedWarning.Caption = "Thorough mode examines every run individually and preserves word-level emphasis.  On a long document this may take a minute or more."
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub optEmphStrip_Click()
     lblSpeedWarning.Caption = "Strip mode removes all direct formatting, including bold and italic emphasis."
+    LayoutCleanupToolForm Me
 End Sub
-Private Sub cmdHelp_Click()
-    ShowCleanupToolHelp "Formatting"
-End Sub
+Private Sub chkResetChar_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkResetPara_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkPreserveHighlight_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkPreserveDropCaps_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub

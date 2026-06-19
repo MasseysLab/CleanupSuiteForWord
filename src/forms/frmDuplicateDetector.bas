@@ -57,9 +57,6 @@ Private Sub optMatchFuzzy_Click()
     lblFuzzyWarning.Caption = "Fuzzy match: groups paragraphs sharing the chosen percentage of words.  Slower on large documents."
     LayoutCleanupToolForm Me
 End Sub
-Private Sub cmdHelp_Click()
-    ShowCleanupToolHelp "Duplicate"
-End Sub
 Private Function NormalizeText(ByVal t As String, ByVal stripPunct As Boolean) As String
     Dim r As String
     r = t
@@ -122,6 +119,11 @@ Private Function FindRoot(ByRef par() As Long, ByVal x As Long) As Long
     Loop
     FindRoot = x
 End Function
+Private Sub optHighlightOnly_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub optRemoveDupes_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub optFuzzyLoose_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub optFuzzyMedium_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub optFuzzyStrict_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub

@@ -670,7 +670,7 @@ Public Sub LayoutCleanupToolForm(ByVal toolForm As Object)
     On Error Resume Next
     Const FORM_W As Single = 420
     Const M As Single = 14
-    Const GAP As Single = 6
+    Const GAP As Single = 4
     Const BH As Single = 24
     Dim contentW As Single
     contentW = FORM_W - (2 * M)
@@ -681,35 +681,22 @@ Public Sub LayoutCleanupToolForm(ByVal toolForm As Object)
     toolForm.Controls("chkPreviewOnly").Visible = False
     toolForm.Controls("fraScopeSelection").Visible = False
 
-    Dim titleLabel As Object
     Dim introLabel As Object
-    Set titleLabel = EnsureGuidedLabel(toolForm, "lblGuidedToolName")
+    RemoveGuidedGeneratedLabel toolForm, "lblGuidedToolName"
+    RemoveGuidedGeneratedLabel toolForm, "lblGuidedIntro"
     Set introLabel = EnsureGuidedLabel(toolForm, "lblGuidedIntro")
 
     HideGuidedTitleChrome toolForm
-
-    titleLabel.Caption = ""
-    titleLabel.Visible = False
-    With titleLabel
-        .Move 0, 0, 0, 0
-        .Font.Name = "Segoe UI"
-        .Font.Size = 10
-        .Font.Bold = False
-        .ForeColor = RGB(32, 37, 45)
-        .BackColor = RGB(248, 249, 251)
-        .TextAlign = 0
-        .WordWrap = False
-        .Visible = False
-    End With
+    ResetGuidedGeneratedChrome toolForm
 
     Dim introH As Single
     introH = GuidedIntroHeight(GuidedToolIntro(toolForm.Name))
     With introLabel
         .Caption = GuidedToolIntro(toolForm.Name)
-        .Move M, 10, contentW, introH
+        .Move M, 8, contentW, introH
         .Font.Name = "Segoe UI"
         .Font.Size = 9
-        .Font.Bold = False
+        .Font.Bold = True
         .ForeColor = RGB(88, 101, 116)
         .BackColor = RGB(248, 249, 251)
         .TextAlign = 2
@@ -719,11 +706,24 @@ Public Sub LayoutCleanupToolForm(ByVal toolForm As Object)
     End With
 
     Dim y As Single
-    y = 10 + introH + 8
+    y = 8 + introH + 4
+
+    If toolForm.Name = "frmHeaderFooterStandardizer" Then
+        LayoutHeaderFooterChoices toolForm, M, y, contentW, GAP
+        LayoutGuidedInfoBox toolForm, M, y, contentW
+        LayoutGuidedPreviewButton toolForm, M, y, contentW
+        LayoutGuidedScopeRow toolForm, M, y, contentW
+        LayoutGuidedActionButtons toolForm, M, y, contentW
+        toolForm.Height = y + 24
+        Exit Sub
+    End If
+
     Dim pendingButton As String
     pendingButton = ""
     Dim pendingChoice As String
     pendingChoice = ""
+    Dim customDividerShown As Boolean
+    customDividerShown = False
     Dim ctl As Object
     For Each ctl In toolForm.Controls
         If ShouldSkipGuidedLayoutControl(ctl.Name) Then GoTo NextGuidedControl
@@ -744,8 +744,15 @@ Public Sub LayoutCleanupToolForm(ByVal toolForm As Object)
             GoTo NextGuidedControl
         End If
 
+        If GuidedCustomModeIsActive(toolForm) And IsGuidedCustomChoiceControl(toolForm.Name, ctl.Name) And Not customDividerShown Then
+            FlushGuidedPendingChoice toolForm, pendingChoice, M, y, contentW, GAP
+            FlushGuidedPendingButton toolForm, pendingButton, M, y, contentW, BH, GAP
+            LayoutGuidedDivider toolForm, M, y, contentW
+            customDividerShown = True
+        End If
+
         Select Case ctl.Name
-            Case "cmdPreview", "cmdRun", "cmdReset", "cmdHelp"
+            Case "cmdPreview", "cmdRun", "cmdReset"
                 ' preview and footer actions are laid out after the choices
             Case Else
                 Select Case Left$(ctl.Name, 3)
@@ -786,12 +793,13 @@ NextGuidedControl:
     Next ctl
     FlushGuidedPendingChoice toolForm, pendingChoice, M, y, contentW, GAP
     FlushGuidedPendingButton toolForm, pendingButton, M, y, contentW, BH, GAP
-    y = y + 2
+    y = y + 1
 
+    LayoutGuidedInfoBox toolForm, M, y, contentW
     LayoutGuidedPreviewButton toolForm, M, y, contentW
     LayoutGuidedScopeRow toolForm, M, y, contentW
     LayoutGuidedActionButtons toolForm, M, y, contentW
-    toolForm.Height = y + 34
+    toolForm.Height = y + 24
 End Sub
 Private Function EnsureGuidedLabel(ByVal toolForm As Object, ByVal controlName As String) As Object
     On Error Resume Next
@@ -803,9 +811,35 @@ Private Function EnsureGuidedLabel(ByVal toolForm As Object, ByVal controlName A
         On Error GoTo 0
     End If
 End Function
+Private Sub ResetGuidedGeneratedChrome(ByVal toolForm As Object)
+    On Error Resume Next
+    Dim i As Long
+    RemoveGuidedGeneratedLabel toolForm, "lblGuidedToolName"
+    HideGuidedGeneratedLabel toolForm, "lblGuidedDivider"
+    HideGuidedGeneratedLabel toolForm, "lblGuidedInfoBorder"
+    For i = 1 To 14
+        HideGuidedGeneratedLabel toolForm, "lblGuidedInfoLine" & CStr(i)
+    Next i
+End Sub
+Private Sub RemoveGuidedGeneratedLabel(ByVal toolForm As Object, ByVal controlName As String)
+    On Error Resume Next
+    toolForm.Controls.Remove controlName
+End Sub
+Private Sub HideGuidedGeneratedLabel(ByVal toolForm As Object, ByVal controlName As String)
+    On Error Resume Next
+    HideGuidedControl toolForm.Controls(controlName)
+End Sub
 Private Function ShouldSkipGuidedLayoutControl(ByVal controlName As String) As Boolean
+    If controlName = "lblTitle" Or controlName = "lblIntro" Or controlName = "lblModeSummary" Or controlName = "lblSpeedWarning" Or controlName = "lblFuzzyWarning" Or controlName = "lblGuidedDivider" Then
+        ShouldSkipGuidedLayoutControl = True
+        Exit Function
+    End If
+    If Left$(controlName, 13) = "lblGuidedInfo" Then
+        ShouldSkipGuidedLayoutControl = True
+        Exit Function
+    End If
     Select Case controlName
-        Case "lblGuidedToolName", "lblGuidedIntro", "chkPreviewOnly", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp"
+        Case "lblGuidedIntro", "chkPreviewOnly", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp"
             ShouldSkipGuidedLayoutControl = True
         Case Else
             ShouldSkipGuidedLayoutControl = False
@@ -821,7 +855,7 @@ Private Sub HideGuidedTitleChrome(ByVal toolForm As Object)
     Dim ctl As Object
     For Each ctl In toolForm.Controls
         If Left$(LCase$(ctl.Name), 3) <> "lbl" Then GoTo NextGuidedTitleControl
-        If ctl.Name = "lblGuidedToolName" Or ctl.Name = "lblGuidedIntro" Then GoTo NextGuidedTitleControl
+        If ctl.Name = "lblGuidedIntro" Then GoTo NextGuidedTitleControl
         If ctl.Name = "lblSpeedWarning" Or ctl.Name = "lblFuzzyWarning" Then GoTo NextGuidedTitleControl
         If IsLegacyTitleControlName(ctl.Name) Or GuidedControlMatchesToolTitle(toolForm, ctl) Or IsLikelyGuidedTitleLabel(ctl) Then
             HideGuidedControl ctl
@@ -836,24 +870,30 @@ Private Function IsLikelyGuidedTitleLabel(ByVal ctl As Object) As Boolean
 End Function
 Private Function GuidedControlMatchesToolTitle(ByVal toolForm As Object, ByVal ctl As Object) As Boolean
     On Error Resume Next
-    If ctl.Name = "lblGuidedToolName" Then Exit Function
     If Left$(LCase$(ctl.Name), 3) <> "lbl" Then Exit Function
-    GuidedControlMatchesToolTitle = (Trim$(ctl.Caption) = GuidedToolName(toolForm.Name))
+    Dim captionText As String
+    captionText = Trim$(CStr(ctl.Caption))
+    If Len(captionText) = 0 Then Exit Function
+    GuidedControlMatchesToolTitle = _
+        (captionText = GuidedToolName(toolForm.Name) Or captionText = Trim$(toolForm.Caption))
 End Function
 Private Function ShouldHideGuidedControl(ByVal toolForm As Object, ByVal controlName As String) As Boolean
     On Error Resume Next
     ShouldHideGuidedControl = False
 
-    If Not GuidedCustomModeIsActive(toolForm) Then
-        Select Case controlName
-            Case "chkNBSP", "chkZWSP", "chkZWNJ", "chkZWJ", "chkBOM", "chkSoftHyphen", "chkNBHyphen", _
-                 "chkCurlyDouble", "chkCurlySingle", "chkEmDash", "chkEnDash", "chkEllipses", _
-                 "chkDoubleSpaces", "chkTrimSpaces", "chkSpaceBeforePunct", "chkNormalizeAfterPunct", "chkExtraBlankLines", _
-                 "chkNormalizeBullets", "chkNormalizeNumbering", "chkFixIndent", "chkHyphenToBullets", _
-                 "chkRemoveEmpty", "chkCollapseBreaks", "chkNormalizeParaSpacing", _
-                 "cmdSelectAll", "cmdDeselectAll"
+    Select Case controlName
+        Case "cmdSelectAll", "cmdDeselectAll"
+            If Not GuidedCustomModeIsActive(toolForm) Then
                 ShouldHideGuidedControl = True
-        End Select
+            End If
+            Exit Function
+    End Select
+
+    If Not GuidedCustomModeIsActive(toolForm) Then
+        If IsGuidedCustomChoiceControl(toolForm.Name, controlName) Then
+            ShouldHideGuidedControl = True
+            Exit Function
+        End If
     End If
 
     If toolForm.Name = "frmBreakNormalizer" And Not toolForm.Controls("chkConvertSectionBreaks").Value Then
@@ -888,6 +928,85 @@ Private Function GuidedCustomModeIsActive(ByVal toolForm As Object) As Boolean
     On Error Resume Next
     GuidedCustomModeIsActive = toolForm.Controls("optCustom").Value
 End Function
+Private Sub LayoutHeaderFooterChoices(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single, ByVal GAP As Single)
+    On Error Resume Next
+    HideGuidedControl toolForm.Controls("fraOptions")
+    HideGuidedControl toolForm.Controls("fraAlign")
+
+    PositionGuidedChoicePairByName toolForm, "optStandardize", "optClearAll", M, y, contentW, GAP
+    PositionGuidedChoicePairByName toolForm, "chkHeaders", "chkFooters", M, y, contentW, GAP
+
+    If toolForm.Controls("optStandardize").Value Then
+        PositionGuidedChoicePairByName toolForm, "chkFont", "chkSpacing", M, y, contentW, GAP
+        PositionGuidedChoicePairByName toolForm, "chkBreakLinks", "chkAlignment", M, y, contentW, GAP
+
+        If toolForm.Controls("chkAlignment").Value Then
+            PositionGuidedChoicePairByName toolForm, "optAlignLeft", "optAlignRight", M, y, contentW, GAP
+            PositionGuidedCenteredChoice toolForm, "optAlignCenter", M, y, contentW, GAP
+        Else
+            HideGuidedControl toolForm.Controls("optAlignLeft")
+            HideGuidedControl toolForm.Controls("optAlignRight")
+            HideGuidedControl toolForm.Controls("optAlignCenter")
+        End If
+    Else
+        HideGuidedControl toolForm.Controls("chkFont")
+        HideGuidedControl toolForm.Controls("chkSpacing")
+        HideGuidedControl toolForm.Controls("chkBreakLinks")
+        HideGuidedControl toolForm.Controls("chkAlignment")
+        HideGuidedControl toolForm.Controls("optAlignLeft")
+        HideGuidedControl toolForm.Controls("optAlignRight")
+        HideGuidedControl toolForm.Controls("optAlignCenter")
+    End If
+End Sub
+Private Function IsGuidedCustomChoiceControl(ByVal formName As String, ByVal controlName As String) As Boolean
+    Select Case formName
+        Case "frmPunctuationCleanup"
+            IsGuidedCustomChoiceControl = (controlName = "chkCurlyDouble" Or controlName = "chkCurlySingle" Or controlName = "chkEmDash" Or controlName = "chkEnDash" Or controlName = "chkEllipses")
+        Case "frmUnicodeCleanup"
+            IsGuidedCustomChoiceControl = (controlName = "chkNBSP" Or controlName = "chkZWSP" Or controlName = "chkZWNJ" Or controlName = "chkZWJ" Or controlName = "chkBOM" Or controlName = "chkSoftHyphen" Or controlName = "chkNBHyphen")
+        Case "frmSpacingCleanup"
+            IsGuidedCustomChoiceControl = (controlName = "chkDoubleSpaces" Or controlName = "chkTrimSpaces" Or controlName = "chkSpaceBeforePunct" Or controlName = "chkNormalizeAfterPunct" Or controlName = "chkExtraBlankLines")
+        Case "frmListCleanup"
+            IsGuidedCustomChoiceControl = (controlName = "chkNormalizeBullets" Or controlName = "chkNormalizeNumbering" Or controlName = "chkFixIndent" Or controlName = "chkHyphenToBullets")
+        Case "frmParagraphCleanup"
+            IsGuidedCustomChoiceControl = (controlName = "chkRemoveEmpty" Or controlName = "chkCollapseBreaks" Or controlName = "chkNormalizeParaSpacing" Or controlName = "chkFixIndent")
+        Case "frmCapitalizationCleanup"
+            IsGuidedCustomChoiceControl = (controlName = "chkSentence" Or controlName = "chkTitle" Or controlName = "chkUpper" Or controlName = "chkLower" Or controlName = "chkSmartSentences")
+        Case Else
+            IsGuidedCustomChoiceControl = False
+    End Select
+End Function
+Private Sub LayoutGuidedDivider(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single)
+    On Error Resume Next
+    Dim divider As Object
+    Set divider = EnsureGuidedLabel(toolForm, "lblGuidedDivider")
+    With divider
+        .Caption = ""
+        .BackColor = RGB(210, 215, 221)
+        .BorderStyle = 0
+        .SpecialEffect = 0
+        .Move M, y + 2, contentW, 1
+        .Visible = True
+        .ZOrder 0
+    End With
+    y = y + 5
+End Sub
+Private Sub PositionGuidedChoicePairByName(ByVal toolForm As Object, ByVal firstName As String, ByVal secondName As String, ByVal M As Single, ByRef y As Single, ByVal contentW As Single, ByVal GAP As Single)
+    On Error Resume Next
+    Dim firstCtl As Object
+    Dim secondCtl As Object
+    Set firstCtl = toolForm.Controls(firstName)
+    Set secondCtl = toolForm.Controls(secondName)
+    Dim pendingChoice As String
+    pendingChoice = firstName
+    PositionGuidedChoicePair toolForm, pendingChoice, secondCtl, M, y, contentW, GAP
+End Sub
+Private Sub PositionGuidedCenteredChoice(ByVal toolForm As Object, ByVal controlName As String, ByVal M As Single, ByRef y As Single, ByVal contentW As Single, ByVal GAP As Single)
+    On Error Resume Next
+    Dim pendingChoice As String
+    pendingChoice = controlName
+    FlushGuidedPendingChoice toolForm, pendingChoice, M, y, contentW, GAP
+End Sub
 Private Sub FlushGuidedPendingChoice(ByVal toolForm As Object, ByRef pendingChoice As String, ByVal M As Single, ByRef y As Single, ByVal contentW As Single, ByVal GAP As Single)
     On Error Resume Next
     If Len(pendingChoice) = 0 Then Exit Sub
@@ -927,8 +1046,8 @@ Private Function GuidedSingleChoiceWidth(ByVal ctl As Object, ByVal contentW As 
     On Error Resume Next
     Dim pairW As Single
     pairW = ((contentW - 6) / 2) - 8
-    GuidedSingleChoiceWidth = pairW + 32
-    If GuidedOptionHeight(ctl) > 18 Then GuidedSingleChoiceWidth = contentW - 40
+    GuidedSingleChoiceWidth = pairW + 12
+    If GuidedOptionHeight(ctl) > 18 Then GuidedSingleChoiceWidth = pairW + 28
     If GuidedSingleChoiceWidth < pairW Then GuidedSingleChoiceWidth = pairW
     If GuidedSingleChoiceWidth > contentW Then GuidedSingleChoiceWidth = contentW
 End Function
@@ -978,31 +1097,168 @@ End Sub
 Private Function GuidedLabelHeight(ByVal ctl As Object) As Single
     On Error Resume Next
     If Len(ctl.Caption) > 72 Then
-        GuidedLabelHeight = 42
+        GuidedLabelHeight = 36
     Else
-        GuidedLabelHeight = 32
+        GuidedLabelHeight = 24
     End If
 End Function
 Private Function GuidedIntroHeight(ByVal captionText As String) As Single
     If Len(captionText) > 72 Then
-        GuidedIntroHeight = 30
+        GuidedIntroHeight = 26
     Else
-        GuidedIntroHeight = 18
+        GuidedIntroHeight = 16
     End If
+End Function
+Private Sub LayoutGuidedInfoBox(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single)
+    On Error Resume Next
+    Const GAP As Single = 4
+    Const LINE_H As Single = 14
+    Dim lines As Collection
+    Set lines = GuidedInfoLines(toolForm)
+    If lines.Count = 0 Then Exit Sub
+
+    Dim boxH As Single
+    boxH = 6 + (lines.Count * LINE_H) + 6
+    If boxH < 34 Then boxH = 34
+
+    Dim border As Object
+    Set border = EnsureGuidedLabel(toolForm, "lblGuidedInfoBorder")
+    With border
+        .Caption = ""
+        .BackColor = RGB(255, 255, 255)
+        .BorderStyle = 1
+        .SpecialEffect = 0
+        .Move M, y, contentW, boxH
+        .Visible = True
+    End With
+
+    Dim i As Long
+    Dim lineCtl As Object
+    Dim rawLine As String
+    Dim sepPos As Long
+    Dim lineText As String
+    Dim lineBold As Boolean
+    For i = 1 To lines.Count
+        rawLine = CStr(lines(i))
+        sepPos = InStr(1, rawLine, Chr$(30), vbBinaryCompare)
+        If sepPos > 0 Then
+            lineText = Left$(rawLine, sepPos - 1)
+            lineBold = (Mid$(rawLine, sepPos + 1) = "1")
+        Else
+            lineText = rawLine
+            lineBold = False
+        End If
+        Set lineCtl = EnsureGuidedLabel(toolForm, "lblGuidedInfoLine" & CStr(i))
+        With lineCtl
+            .Caption = lineText
+            .Font.Name = "Segoe UI"
+            .Font.Size = 8.5
+            .Font.Bold = lineBold
+            .ForeColor = RGB(67, 80, 96)
+            .BackColor = RGB(255, 255, 255)
+            .BackStyle = 1
+            .TextAlign = 2
+            .WordWrap = True
+            .BorderStyle = 0
+            .SpecialEffect = 0
+            .Move M + 4, y + 4 + ((i - 1) * LINE_H), contentW - 8, LINE_H
+            .Visible = True
+            .ZOrder 0
+        End With
+    Next i
+
+    For i = lines.Count + 1 To 14
+        HideGuidedControl toolForm.Controls("lblGuidedInfoLine" & CStr(i))
+    Next i
+    y = y + boxH + GAP
+End Sub
+Private Function GuidedInfoLines(ByVal toolForm As Object) As Collection
+    On Error Resume Next
+    Set GuidedInfoLines = New Collection
+
+    If toolForm.Name = "frmHeaderFooterStandardizer" Then
+        GuidedInfoLines.Add GuidedInfoLineForControl(toolForm, "optStandardize")
+        GuidedInfoLines.Add GuidedInfoLineForControl(toolForm, "optClearAll")
+        GuidedInfoLines.Add GuidedInfoLineForControl(toolForm, "chkHeaders")
+        GuidedInfoLines.Add GuidedInfoLineForControl(toolForm, "chkFooters")
+        GuidedInfoLines.Add GuidedInfoLineForControl(toolForm, "chkFont")
+        GuidedInfoLines.Add GuidedInfoLineForControl(toolForm, "chkSpacing")
+        GuidedInfoLines.Add GuidedInfoLineForControl(toolForm, "chkBreakLinks")
+        GuidedInfoLines.Add GuidedInfoLineForControl(toolForm, "chkAlignment")
+        GuidedInfoLines.Add GuidedInfoLineForControl(toolForm, "optAlignLeft")
+        GuidedInfoLines.Add GuidedInfoLineForControl(toolForm, "optAlignCenter")
+        GuidedInfoLines.Add GuidedInfoLineForControl(toolForm, "optAlignRight")
+        Exit Function
+    End If
+
+    Dim customActive As Boolean
+    customActive = GuidedCustomModeIsActive(toolForm)
+    Dim ctl As Object
+    For Each ctl In toolForm.Controls
+        If Not GuidedChoiceShouldAppearInInfo(toolForm, ctl, customActive) Then GoTo NextInfoControl
+        GuidedInfoLines.Add GuidedInfoText(toolForm.Name, ctl.Name, ctl.Caption) & Chr$(30) & IIf(GuidedControlIsSelected(ctl), "1", "0")
+NextInfoControl:
+    Next ctl
+End Function
+Private Function GuidedInfoLineForControl(ByVal toolForm As Object, ByVal controlName As String) As String
+    On Error Resume Next
+    GuidedInfoLineForControl = GuidedInfoText(toolForm.Name, controlName, toolForm.Controls(controlName).Caption) & Chr$(30) & IIf(GuidedControlIsSelected(toolForm.Controls(controlName)), "1", "0")
+End Function
+Private Function GuidedChoiceShouldAppearInInfo(ByVal toolForm As Object, ByVal ctl As Object, ByVal customActive As Boolean) As Boolean
+    On Error Resume Next
+    GuidedChoiceShouldAppearInInfo = False
+    If Left$(ctl.Name, 3) <> "opt" And Left$(ctl.Name, 3) <> "chk" Then Exit Function
+    Select Case ctl.Name
+        Case "chkPreviewOnly", "optScopeDocument", "optScopeSelection"
+            Exit Function
+    End Select
+    If ShouldHideGuidedControl(toolForm, ctl.Name) Then Exit Function
+    If customActive Then
+        GuidedChoiceShouldAppearInInfo = IsGuidedCustomChoiceControl(toolForm.Name, ctl.Name)
+    Else
+        GuidedChoiceShouldAppearInInfo = Not IsGuidedCustomChoiceControl(toolForm.Name, ctl.Name)
+    End If
+End Function
+Private Function GuidedControlIsSelected(ByVal ctl As Object) As Boolean
+    On Error Resume Next
+    GuidedControlIsSelected = CBool(ctl.Value)
+End Function
+Private Function GuidedInfoText(ByVal formName As String, ByVal controlName As String, ByVal fallbackText As String) As String
+    Dim labelText As String
+    labelText = CleanGuidedInfoCaption(fallbackText)
+    Select Case controlName
+        Case "optCustom"
+            GuidedInfoText = "Custom: choose the individual actions below."
+        Case "cmdSelectAll"
+            GuidedInfoText = "Select All: turns on every custom action."
+        Case "cmdDeselectAll"
+            GuidedInfoText = "Deselect All: turns off every custom action."
+        Case Else
+            GuidedInfoText = labelText
+    End Select
+End Function
+Private Function CleanGuidedInfoCaption(ByVal captionText As String) As String
+    CleanGuidedInfoCaption = Replace(captionText, vbCrLf, " ")
+    CleanGuidedInfoCaption = Replace(CleanGuidedInfoCaption, vbCr, " ")
+    CleanGuidedInfoCaption = Replace(CleanGuidedInfoCaption, vbLf, " ")
+    Do While InStr(CleanGuidedInfoCaption, "  ") > 0
+        CleanGuidedInfoCaption = Replace(CleanGuidedInfoCaption, "  ", " ")
+    Loop
+    CleanGuidedInfoCaption = Trim$(CleanGuidedInfoCaption)
 End Function
 Private Function GuidedOptionHeight(ByVal ctl As Object) As Single
     On Error Resume Next
     If Len(ctl.Caption) > 72 Then
-        GuidedOptionHeight = 44
+        GuidedOptionHeight = 38
     ElseIf Len(ctl.Caption) > 34 Then
-        GuidedOptionHeight = 28
+        GuidedOptionHeight = 24
     Else
-        GuidedOptionHeight = 18
+        GuidedOptionHeight = 16
     End If
 End Function
 Private Sub LayoutGuidedScopeRow(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single)
     On Error Resume Next
-    Const GAP As Single = 6
+    Const GAP As Single = 4
     Dim choiceW As Single
     choiceW = (contentW - GAP) / 2
     StyleGuidedOption toolForm.Controls("optScopeDocument")
@@ -1017,7 +1273,7 @@ Private Sub LayoutGuidedScopeRow(ByVal toolForm As Object, ByVal M As Single, By
     toolForm.Controls("optScopeSelection").Move M + choiceW + GAP + 8, y, choiceW - 8, 18
     toolForm.Controls("optScopeDocument").Visible = True
     toolForm.Controls("optScopeSelection").Visible = True
-    y = y + 28
+    y = y + 22
 End Sub
 Private Function ScopeSelectionIsAvailable(ByVal toolForm As Object) As Boolean
     On Error Resume Next
@@ -1027,7 +1283,7 @@ Private Function ScopeSelectionIsAvailable(ByVal toolForm As Object) As Boolean
 End Function
 Private Sub LayoutGuidedPreviewButton(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single)
     On Error Resume Next
-    Const GAP As Single = 6
+    Const GAP As Single = 4
     Const BH As Single = 24
     StyleGuidedButton toolForm.Controls("cmdPreview"), True
     toolForm.Controls("cmdPreview").Caption = "Preview"
@@ -1037,26 +1293,24 @@ Private Sub LayoutGuidedPreviewButton(ByVal toolForm As Object, ByVal M As Singl
 End Sub
 Private Sub LayoutGuidedActionButtons(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single)
     On Error Resume Next
-    Const GAP As Single = 6
+    Const GAP As Single = 4
     Const BH As Single = 24
-    Dim thirdW As Single
-    thirdW = (contentW - (2 * GAP)) / 3
+    Dim halfW As Single
+    halfW = (contentW - GAP) / 2
     StyleGuidedButton toolForm.Controls("cmdRun"), False
     StyleGuidedButton toolForm.Controls("cmdReset"), False
-    StyleGuidedButton toolForm.Controls("cmdHelp"), False
     toolForm.Controls("cmdRun").Caption = "Apply"
     toolForm.Controls("cmdReset").Caption = "Reset"
-    toolForm.Controls("cmdHelp").Caption = "Help"
-    toolForm.Controls("cmdRun").Move M, y, thirdW, BH
-    toolForm.Controls("cmdReset").Move M + thirdW + GAP, y, thirdW, BH
-    toolForm.Controls("cmdHelp").Move M + (2 * (thirdW + GAP)), y, thirdW, BH
+    toolForm.Controls("cmdRun").Move M, y, halfW, BH
+    toolForm.Controls("cmdReset").Move M + halfW + GAP, y, halfW, BH
     toolForm.Controls("cmdRun").Visible = True
     toolForm.Controls("cmdReset").Visible = True
-    toolForm.Controls("cmdHelp").Visible = True
-    y = y + BH + 28
+    HideGuidedControl toolForm.Controls("cmdHelp")
+    y = y + BH + 10
 End Sub
 Private Function GuidedToolName(ByVal formName As String) As String
     Select Case formName
+        Case "frmCapitalizationCleanup": GuidedToolName = "Capitalization Fixer"
         Case "frmPunctuationCleanup": GuidedToolName = "Punctuation Normalizer"
         Case "frmUnicodeCleanup": GuidedToolName = "Invisible Unicode Cleaner"
         Case "frmSpacingCleanup": GuidedToolName = "Spacing Fixer"
@@ -1080,6 +1334,7 @@ Private Function GuidedToolName(ByVal formName As String) As String
 End Function
 Private Function GuidedToolIntro(ByVal formName As String) As String
     Select Case formName
+        Case "frmCapitalizationCleanup": GuidedToolIntro = "Choose how you want capitalization cleaned up."
         Case "frmPunctuationCleanup": GuidedToolIntro = "Choose which punctuation patterns to normalize."
         Case "frmUnicodeCleanup": GuidedToolIntro = "Choose which invisible or problem characters to clean."
         Case "frmSpacingCleanup": GuidedToolIntro = "Choose which spacing problems to fix."
@@ -1124,164 +1379,6 @@ Private Function IsLegacyTitleControlName(controlName As String) As Boolean
     nm = LCase$(controlName)
     IsLegacyTitleControlName = (nm = "lbltitle" Or Left$(nm, 8) = "lbltitle")
 End Function
-Public Sub LayoutCapitalizationCleanupForm(ByVal toolForm As Object)
-    On Error Resume Next
-    Const M As Single = 14
-    Const GAP As Single = 6
-    Const BH As Single = 24
-    Const FORM_W As Single = 420
-    Dim contentW As Single
-    contentW = FORM_W - (2 * M)
-
-    toolForm.Width = FORM_W + 8
-    toolForm.BackColor = RGB(248, 249, 251)
-    ApplyMSFormTitleStrategy toolForm, True
-    toolForm.Controls("chkPreviewOnly").Visible = False
-    toolForm.Controls("fraScopeSelection").Visible = False
-
-    With toolForm.Controls("lblIntro")
-        .Move M, 10, contentW, 18
-        .Font.Name = "Segoe UI"
-        .Font.Size = 9
-        .Font.Bold = False
-        .ForeColor = RGB(88, 101, 116)
-        .BackColor = RGB(248, 249, 251)
-        .TextAlign = 2
-        .WordWrap = False
-        .Visible = True
-    End With
-
-    Dim y As Single
-    y = 36
-    Dim optionW As Single
-    optionW = (contentW - GAP) / 2
-    PositionGuidedChoice toolForm, "optAll", M, y, optionW
-    PositionGuidedChoice toolForm, "optSentence", M + optionW + GAP, y, optionW
-    y = y + 24
-    PositionGuidedChoice toolForm, "optTitle", M, y, optionW
-    PositionGuidedChoice toolForm, "optUpper", M + optionW + GAP, y, optionW
-    y = y + 24
-    PositionGuidedChoice toolForm, "optLower", M, y, optionW
-    PositionGuidedChoice toolForm, "optCustom", M + optionW + GAP, y, optionW
-    y = y + 28
-
-    With toolForm.Controls("lblModeSummary")
-        .Move M, y, contentW, 34
-        .Font.Name = "Segoe UI"
-        .Font.Size = 8.5
-        .Font.Bold = False
-        .ForeColor = RGB(67, 80, 96)
-        .BackColor = RGB(255, 255, 255)
-        .BorderStyle = 1
-        .SpecialEffect = 0
-        .WordWrap = True
-        .Visible = True
-    End With
-    y = y + 42
-
-    toolForm.Controls("fraCustom").Visible = False
-    If toolForm.Controls("optCustom").Value Then
-        PositionGuidedCheck toolForm, "chkSentence", M + 8, y, contentW - 16
-        PositionGuidedCheck toolForm, "chkTitle", M + 8, y + 18, contentW - 16
-        PositionGuidedCheck toolForm, "chkUpper", M + 8, y + 36, contentW - 16
-        PositionGuidedCheck toolForm, "chkLower", M + 8, y + 54, contentW - 16
-        PositionGuidedCheck toolForm, "chkSmartSentences", M + 8, y + 72, contentW - 16
-        y = y + 94
-        With toolForm.Controls("cmdSelectAll")
-            .Move M, y, (contentW - GAP) / 2, BH
-            .Visible = True
-            .ZOrder 0
-        End With
-        With toolForm.Controls("cmdDeselectAll")
-            .Move M + ((contentW - GAP) / 2) + GAP, y, (contentW - GAP) / 2, BH
-            .Visible = True
-            .ZOrder 0
-        End With
-        y = y + BH + 12
-    Else
-        HideGuidedCustom toolForm
-    End If
-
-    With toolForm.Controls("optScopeDocument")
-        .Move M, y, (contentW - GAP) / 2, 18
-        .Font.Name = "Segoe UI"
-        .Font.Size = 8.5
-        .BackColor = RGB(248, 249, 251)
-        .Visible = True
-    End With
-    With toolForm.Controls("optScopeSelection")
-        .Move M + ((contentW - GAP) / 2) + GAP, y, (contentW - GAP) / 2, 18
-        .Font.Name = "Segoe UI"
-        .Font.Size = 8.5
-        .BackColor = RGB(248, 249, 251)
-        .Visible = True
-    End With
-    y = y + 28
-
-    With toolForm.Controls("cmdPreview")
-        .Move M, y, contentW, BH
-        .Caption = "Preview"
-        .Font.Bold = True
-        .Visible = True
-        .Enabled = True
-    End With
-    y = y + BH + GAP
-    With toolForm.Controls("cmdRun")
-        .Move M, y, (contentW - (2 * GAP)) / 3, BH
-        .Caption = "Apply"
-        .Visible = True
-        .Enabled = True
-    End With
-    With toolForm.Controls("cmdReset")
-        .Move M + ((contentW - (2 * GAP)) / 3) + GAP, y, (contentW - (2 * GAP)) / 3, BH
-        .Caption = "Reset"
-        .Visible = True
-        .Enabled = True
-    End With
-    With toolForm.Controls("cmdHelp")
-        .Move M + (2 * (((contentW - (2 * GAP)) / 3) + GAP)), y, (contentW - (2 * GAP)) / 3, BH
-        .Caption = "Help"
-        .Visible = True
-        .Enabled = True
-    End With
-    y = y + BH + 28
-
-    toolForm.Height = y + 34
-End Sub
-Private Sub PositionGuidedChoice(ByVal toolForm As Object, nm As String, L As Single, T As Single, W As Single)
-    On Error Resume Next
-    With toolForm.Controls(nm)
-        .Move L, T, W, 18
-        .Font.Name = "Segoe UI"
-        .Font.Size = 8.5
-        .Font.Bold = False
-        .BackColor = RGB(248, 249, 251)
-        .ForeColor = RGB(32, 37, 45)
-        .Visible = True
-    End With
-End Sub
-Private Sub PositionGuidedCheck(ByVal toolForm As Object, nm As String, L As Single, T As Single, W As Single)
-    On Error Resume Next
-    With toolForm.Controls(nm)
-        .Move L, T, W, 16
-        .Font.Name = "Segoe UI"
-        .Font.Size = 8
-        .BackColor = RGB(248, 249, 251)
-        .Visible = True
-        .ZOrder 0
-    End With
-End Sub
-Private Sub HideGuidedCustom(ByVal toolForm As Object)
-    On Error Resume Next
-    toolForm.Controls("fraCustom").Visible = False
-    toolForm.Controls("chkSentence").Visible = False
-    toolForm.Controls("chkTitle").Visible = False
-    toolForm.Controls("chkUpper").Visible = False
-    toolForm.Controls("chkLower").Visible = False
-    toolForm.Controls("chkSmartSentences").Visible = False
-    toolForm.Controls("cmdSelectAll").Visible = False
-    toolForm.Controls("cmdDeselectAll").Visible = False
-End Sub
 Public Function GetTargetRange() As Range
     If Selection.Type = wdSelectionNormal Or Selection.Type = wdSelectionColumn Then
         Set GetTargetRange = Selection.Range

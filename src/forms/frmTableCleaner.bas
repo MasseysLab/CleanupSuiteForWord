@@ -36,9 +36,6 @@ Private Sub UserForm_Initialize()
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
     LayoutCleanupToolForm Me
 End Sub
-Private Sub cmdHelp_Click()
-    ShowCleanupToolHelp "Table"
-End Sub
 Private Function IsRowEmpty(rw As Row) As Boolean
     Dim cel As Cell
     For Each cel In rw.Cells
@@ -58,6 +55,13 @@ Private Function IsColEmpty(tbl As Table, colIdx As Long) As Boolean
     Next r
     IsColEmpty = True
 End Function
+Private Sub chkRemoveEmptyRows_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkRemoveEmptyCols_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkNormalizePadding_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkStripDirectFormat_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkNormalizeBorders_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkRemoveBorders_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkConvertToText_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub

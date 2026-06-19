@@ -39,13 +39,16 @@ Private Sub UserForm_Initialize()
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
     LayoutCleanupToolForm Me
 End Sub
-Private Sub cmdHelp_Click()
-    ShowCleanupToolHelp "Break"
-End Sub
 Private Sub chkConvertSectionBreaks_Click()
     fraConvertTo.Enabled = chkConvertSectionBreaks.Value
     LayoutCleanupToolForm Me
 End Sub
+Private Sub chkCollapseSectionBreaks_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkCollapsePageBreaks_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub optConvertNextPage_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub optConvertContinuous_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub optConvertEvenPage_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub optConvertOddPage_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub

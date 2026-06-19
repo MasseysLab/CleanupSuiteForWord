@@ -42,10 +42,7 @@ Private Sub UserForm_Initialize()
     chkSmartSentences.Caption = "Smart sentence detection (skip abbreviations)"
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
     UpdateModeSummary
-    LayoutCapitalizationCleanupForm Me
-End Sub
-Private Sub cmdHelp_Click()
-    ShowCleanupToolHelp "Capitalization"
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub UpdateCustomVisibility()
     fraCustom.Visible = False
@@ -75,7 +72,7 @@ End Sub
 Private Sub RefreshCapitalizationChoices()
     UpdateCustomVisibility
     UpdateModeSummary
-    LayoutCapitalizationCleanupForm Me
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub optAll_Click(): RefreshCapitalizationChoices: End Sub
 Private Sub optSentence_Click(): RefreshCapitalizationChoices: End Sub
@@ -85,19 +82,26 @@ Private Sub optLower_Click(): RefreshCapitalizationChoices: End Sub
 Private Sub optCustom_Click(): RefreshCapitalizationChoices: End Sub
 Private Sub ClearCustomChecks(): chkSentence.Value = False: chkTitle.Value = False: chkUpper.Value = False: chkLower.Value = False: chkSmartSentences.Value = False: End Sub
 Private Sub cmdSelectAll_Click()
-    If optCustom.Value Then
-        chkSentence.Value = True
-        chkTitle.Value = True
-        chkUpper.Value = True
-        chkLower.Value = True
-        chkSmartSentences.Value = True
-    End If
+    optCustom.Value = True
+    UpdateCustomVisibility
+    chkSentence.Value = True
+    chkTitle.Value = True
+    chkUpper.Value = True
+    chkLower.Value = True
+    chkSmartSentences.Value = True
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdDeselectAll_Click()
-    If optCustom.Value Then
-        ClearCustomChecks
-    End If
+    optCustom.Value = True
+    UpdateCustomVisibility
+    ClearCustomChecks
+    LayoutCleanupToolForm Me
 End Sub
+Private Sub chkSentence_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkTitle_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkUpper_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkLower_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkSmartSentences_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub

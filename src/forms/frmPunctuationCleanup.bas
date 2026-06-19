@@ -41,9 +41,6 @@ Private Sub UserForm_Initialize()
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
     LayoutCleanupToolForm Me
 End Sub
-Private Sub cmdHelp_Click()
-    ShowCleanupToolHelp "Punctuation"
-End Sub
 Private Sub UpdateCustomVisibility()
     fraCustom.Visible = False
 End Sub
@@ -60,17 +57,26 @@ Private Sub ClearCustomChecks()
     chkEllipses.Value = False
 End Sub
 Private Sub cmdSelectAll_Click()
-    If optCustom.Value Then
-        chkCurlyDouble.Value = True
-        chkCurlySingle.Value = True
-        chkEmDash.Value = True
-        chkEnDash.Value = True
-        chkEllipses.Value = True
-    End If
+    optCustom.Value = True
+    UpdateCustomVisibility
+    chkCurlyDouble.Value = True
+    chkCurlySingle.Value = True
+    chkEmDash.Value = True
+    chkEnDash.Value = True
+    chkEllipses.Value = True
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdDeselectAll_Click()
-    If optCustom.Value Then ClearCustomChecks
+    optCustom.Value = True
+    UpdateCustomVisibility
+    ClearCustomChecks
+    LayoutCleanupToolForm Me
 End Sub
+Private Sub chkCurlyDouble_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkCurlySingle_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkEmDash_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkEnDash_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkEllipses_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub

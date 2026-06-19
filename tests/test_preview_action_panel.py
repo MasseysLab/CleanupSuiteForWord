@@ -218,10 +218,7 @@ class PreviewActionPanelTests(unittest.TestCase):
                 self.assertIn("Public Sub PreviewFromPanel()", source)
                 self.assertIn("Private Sub cmdReset_Click()", source)
                 self.assertIn("UserForm_Initialize", source)
-                self.assertTrue(
-                    "LayoutCleanupToolForm Me" in source
-                    or "LayoutCapitalizationCleanupForm Me" in source
-                )
+                self.assertIn("LayoutCleanupToolForm Me", source)
                 self.assertIn("chkPreviewOnly.Value = True", source)
                 self.assertIn("cmdRun_Click", source)
                 preview_from_panel = source[

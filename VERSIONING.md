@@ -8,7 +8,7 @@ The project uses a simple SemVer-style ladder, but with `0.x.0` milestones until
 
 `0.8.0`
 
-This is the current programming milestone, carrying forward the locked `0.7.5` release with the shared Preview Actions polish and release-ready UI cleanup as the starting point for the `0.8.x` line.
+This is the current working milestone for the `0.8.x` line.
 
 ## Roadmap
 

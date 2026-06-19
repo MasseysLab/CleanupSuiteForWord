@@ -1,10 +1,10 @@
 # CleanupSuite Human-Friendly User Manual
 
-**Target release:** 0.8.0 release
+**Target release:** 0.8.0
 **Prepared:** 2026-06-14
 **Audience:** normal Word users, not programmers
 
-> Documentation basis: updated for CleanupSuite 0.8.0, carrying forward the documented 0.7.5 baseline plus the 0.8.0 UI/help polish. Screenshots are intentionally deferred.
+> Documentation basis: CleanupSuite 0.8.0 as currently prepared in this repository. Screenshots are intentionally deferred.
 
 
 ## What CleanupSuite is

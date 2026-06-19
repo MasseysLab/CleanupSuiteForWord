@@ -42,9 +42,6 @@ Private Sub UserForm_Initialize()
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
     LayoutCleanupToolForm Me
 End Sub
-Private Sub cmdHelp_Click()
-    ShowCleanupToolHelp "HeaderFooter"
-End Sub
 Private Sub optStandardize_Click()
     LayoutCleanupToolForm Me
 End Sub
@@ -75,6 +72,14 @@ Private Sub ApplyToHF(hf As HeaderFooter, doClear As Boolean, doFont As Boolean,
     End If
     cntAreas = cntAreas + 1
 End Sub
+Private Sub chkHeaders_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkFooters_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkFont_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkSpacing_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkBreakLinks_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub optAlignLeft_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub optAlignCenter_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub optAlignRight_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub

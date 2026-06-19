@@ -27,12 +27,12 @@ Private Sub UserForm_Initialize()
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
     LayoutCleanupToolForm Me
 End Sub
-Private Sub cmdHelp_Click()
-    ShowCleanupToolHelp "Footnote"
-End Sub
 Private Function InScope(r As Range, targetRange As Range) As Boolean
     InScope = (r.Start >= targetRange.Start And r.Start <= targetRange.End)
 End Function
+Private Sub chkFootnotes_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkEndnotes_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkKeepTextInline_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub

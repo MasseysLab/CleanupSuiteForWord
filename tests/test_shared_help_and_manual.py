@@ -55,11 +55,12 @@ class SharedHelpAndManualTests(unittest.TestCase):
         "cmdHelpObject": "Object",
     }
 
-    def test_tool_help_buttons_use_shared_help_text(self):
+    def test_tool_forms_do_not_have_help_buttons_or_handlers(self):
         for filename, key in self.TOOL_HELP_KEYS.items():
             source = read(f"src/forms/{filename}")
             with self.subTest(form=filename):
-                self.assertIn(f'ShowCleanupToolHelp "{key}"', source)
+                self.assertNotIn(f'ShowCleanupToolHelp "{key}"', source)
+                self.assertNotIn("cmdHelp_Click", source)
                 self.assertNotIn("MsgBox h, vbInformation", source)
                 self.assertNotIn("Help  --", source)
 
@@ -96,13 +97,14 @@ class SharedHelpAndManualTests(unittest.TestCase):
         self.assertNotIn("Help  --", helpers)
         self.assertNotIn("  --", helpers)
 
-    def test_capitalization_help_has_one_source_for_menu_and_tool(self):
+    def test_capitalization_help_has_one_source_from_main_menu_only(self):
         launcher = read("src/forms/frmCleanupSuiteLauncher.bas")
         form = read("src/forms/frmCapitalizationCleanup.bas")
         helpers = read("src/modules/modCleanupHelpers.bas")
 
         self.assertIn('ShowCleanupToolHelp "Capitalization"', launcher)
-        self.assertIn('ShowCleanupToolHelp "Capitalization"', form)
+        self.assertNotIn('ShowCleanupToolHelp "Capitalization"', form)
+        self.assertNotIn("cmdHelp_Click", form)
         self.assertEqual(2, helpers.count('Case "Capitalization"'))
         self.assertIn("Fix sentence starts", helpers)
         self.assertNotIn("All (Smart)", helpers)

@@ -37,9 +37,6 @@ Private Sub UserForm_Initialize()
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
     LayoutCleanupToolForm Me
 End Sub
-Private Sub cmdHelp_Click()
-    ShowCleanupToolHelp "Spacing"
-End Sub
 Private Sub UpdateCustomVisibility(): fraCustom.Visible = False: End Sub
 Private Sub optAll_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
 Private Sub optDoubleSpaces_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
@@ -50,19 +47,26 @@ Private Sub ClearCustomChecks()
     chkNormalizeAfterPunct.Value = False: chkExtraBlankLines.Value = False
 End Sub
 Private Sub cmdSelectAll_Click()
-    If optCustom.Value Then
-        chkDoubleSpaces.Value = True
-        chkTrimSpaces.Value = True
-        chkSpaceBeforePunct.Value = True
-        chkNormalizeAfterPunct.Value = True
-        chkExtraBlankLines.Value = True
-    End If
+    optCustom.Value = True
+    UpdateCustomVisibility
+    chkDoubleSpaces.Value = True
+    chkTrimSpaces.Value = True
+    chkSpaceBeforePunct.Value = True
+    chkNormalizeAfterPunct.Value = True
+    chkExtraBlankLines.Value = True
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdDeselectAll_Click()
-    If optCustom.Value Then
-        ClearCustomChecks
-    End If
+    optCustom.Value = True
+    UpdateCustomVisibility
+    ClearCustomChecks
+    LayoutCleanupToolForm Me
 End Sub
+Private Sub chkDoubleSpaces_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkTrimSpaces_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkSpaceBeforePunct_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkNormalizeAfterPunct_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkExtraBlankLines_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub

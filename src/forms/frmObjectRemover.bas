@@ -34,9 +34,6 @@ Private Sub UserForm_Initialize()
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
     LayoutCleanupToolForm Me
 End Sub
-Private Sub cmdHelp_Click()
-    ShowCleanupToolHelp "Object"
-End Sub
 Private Function ProcessPictures(doDelete As Boolean) As Long
     On Error Resume Next
     Dim c As Long, k As Long
@@ -131,6 +128,13 @@ Private Function ProcessHiddenText(doDelete As Boolean) As Long
     End If
     If found Then ProcessHiddenText = 1 Else ProcessHiddenText = 0
 End Function
+Private Sub chkPictures_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkTextBoxes_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkFrames_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkHorizontalLines_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkHtmlControls_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkHiddenText_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkTables_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub

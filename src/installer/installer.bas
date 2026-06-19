@@ -390,6 +390,8 @@ Private Sub AttemptCreateControls(vbProj As VBIDE.VBProject, formName As String,
         Exit Sub
     End If
 
+    RemoveToolFormHelpButton formName, designer
+
     ' Best-effort: add controls only if they do not exist, then apply a
     ' consistent generated layout so the installed forms are usable without
     ' hand-adjusting them in the designer.
@@ -455,7 +457,6 @@ Private Sub LayoutGenericToolControls(comp As VBIDE.VBComponent, designer As Obj
     Const BTN_H As Single = 24
     Dim contentW As Single: contentW = FORM_W - (2 * MARGIN)
     Dim halfW As Single: halfW = (contentW - GAP) / 2
-    Dim thirdW As Single: thirdW = (contentW - (2 * GAP)) / 3
     Dim y As Single: y = 36
     Dim pend As String: pend = ""
     Dim pendingChoice As String: pendingChoice = ""
@@ -479,7 +480,7 @@ Private Sub LayoutGenericToolControls(comp As VBIDE.VBComponent, designer As Obj
         If CStr(cn) = "cmdPreview" Then
             GoTo NextControl
         End If
-        If CStr(cn) = "cmdRun" Or CStr(cn) = "cmdReset" Or CStr(cn) = "cmdHelp" Then
+        If CStr(cn) = "cmdRun" Or CStr(cn) = "cmdReset" Then
             GoTo NextControl
         End If
         If Left$(CStr(cn), 3) = "fra" Then
@@ -545,9 +546,8 @@ NextControl:
         designer.Controls("optScopeDocument").Visible = False
         designer.Controls("optScopeSelection").Visible = False
     End If
-    PositionControl designer, "cmdRun", MARGIN, y, thirdW, BTN_H
-    PositionControl designer, "cmdReset", MARGIN + thirdW + GAP, y, thirdW, BTN_H
-    PositionControl designer, "cmdHelp", MARGIN + (2 * (thirdW + GAP)), y, thirdW, BTN_H
+    PositionControl designer, "cmdRun", MARGIN, y, halfW, BTN_H
+    PositionControl designer, "cmdReset", MARGIN + halfW + GAP, y, halfW, BTN_H
     y = y + BTN_H + 28
     comp.Properties("Width") = FORM_W + 8
     comp.Properties("Height") = y + 40
@@ -615,8 +615,8 @@ Private Function GenericSingleChoiceWidth(designer As Object, ByVal controlName 
     On Error Resume Next
     Dim pairW As Single
     pairW = ((contentW - 6) / 2) - 8
-    GenericSingleChoiceWidth = pairW + 32
-    If GenericChoiceHeight(designer, controlName) > 18 Then GenericSingleChoiceWidth = contentW - 40
+    GenericSingleChoiceWidth = pairW + 12
+    If GenericChoiceHeight(designer, controlName) > 18 Then GenericSingleChoiceWidth = pairW + 28
     If GenericSingleChoiceWidth < pairW Then GenericSingleChoiceWidth = pairW
     If GenericSingleChoiceWidth > contentW Then GenericSingleChoiceWidth = contentW
 End Function
@@ -694,9 +694,8 @@ Private Sub LayoutCapitalizationControls(comp As VBIDE.VBComponent, designer As 
 
     PositionControl designer, "cmdPreview", MARGIN, y, contentW, BTN_H
     y = y + BTN_H + GAP
-    PositionControl designer, "cmdRun", MARGIN, y, (contentW - (2 * GAP)) / 3, BTN_H
-    PositionControl designer, "cmdReset", MARGIN + ((contentW - (2 * GAP)) / 3) + GAP, y, (contentW - (2 * GAP)) / 3, BTN_H
-    PositionControl designer, "cmdHelp", MARGIN + (2 * (((contentW - (2 * GAP)) / 3) + GAP)), y, (contentW - (2 * GAP)) / 3, BTN_H
+    PositionControl designer, "cmdRun", MARGIN, y, (contentW - GAP) / 2, BTN_H
+    PositionControl designer, "cmdReset", MARGIN + ((contentW - GAP) / 2) + GAP, y, (contentW - GAP) / 2, BTN_H
     y = y + BTN_H + 28
 
     comp.Properties("Width") = FORM_W + 8
@@ -858,18 +857,19 @@ Private Sub ApplyFormStyle(comp As VBIDE.VBComponent, designer As Object)
 End Sub
 Private Function FormBodyOwnsTitle(formName As String) As Boolean
     Select Case formName
-        Case "frmCleanupSuiteLauncher", "frmPreviewActions", "frmCapitalizationCleanup", _
-             "frmPunctuationCleanup", "frmUnicodeCleanup", "frmSpacingCleanup", _
-             "frmListCleanup", "frmParagraphCleanup", "frmDuplicateDetector", _
-             "frmFontNormalizer", "frmTableCleaner", "frmBreakNormalizer", _
-             "frmDocumentTrim", "frmFormattingStripper", "frmHyperlinkRemover", _
-             "frmSoftReturnConverter", "frmMetadataScrubber", "frmStyleCleanup", _
-             "frmFootnoteRemover", "frmHeaderFooterStandardizer", "frmObjectRemover"
+        Case "frmCleanupSuiteLauncher", "frmPreviewActions"
             FormBodyOwnsTitle = True
         Case Else
             FormBodyOwnsTitle = False
     End Select
 End Function
+
+Private Sub RemoveToolFormHelpButton(formName As String, designer As Object)
+    On Error Resume Next
+    If formName = "frmCleanupSuiteLauncher" Or formName = "frmPreviewActions" Then Exit Sub
+    If Not FormBodyOwnsTitle(formName) Then Exit Sub
+    designer.Controls.Remove "cmdHelp"
+End Sub
 
 Private Sub ApplyControlStyle(designer As Object, formName As String, nm As String)
     On Error Resume Next
@@ -1200,7 +1200,6 @@ Private Sub SetButtonCaption(designer As Object, nm As String)
         Case "cmdUserManual": cap = "User Manual"
         Case "cmdSelectAll": cap = "Select All"
         Case "cmdDeselectAll": cap = "Deselect All"
-        Case "cmdHelp": cap = "Help"
         Case "cmdUnicode": cap = "Invisible Unicode"
         Case "cmdPunctuation": cap = "Punctuation"
         Case "cmdSpacing": cap = "Spacing"
@@ -1318,78 +1317,78 @@ Private Function ControlsForForm(formName As String) As Variant
         Case "frmPunctuationCleanup"
             ControlsForForm = Array("optAll", "optQuotes", "optDashes", "optEllipses", "optCustom", "fraCustom", _
                                     "chkCurlyDouble", "chkCurlySingle", "chkEmDash", "chkEnDash", "chkEllipses", _
-                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmUnicodeCleanup"
             ControlsForForm = Array("optAll", "optNBSP", "optZeroWidth", "optCustom", "fraCustom", _
                                     "chkNBSP", "chkZWSP", "chkZWNJ", "chkZWJ", "chkBOM", "chkSoftHyphen", "chkNBHyphen", _
-                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmSpacingCleanup"
             ControlsForForm = Array("optAll", "optDoubleSpaces", "optTrim", "optCustom", "fraCustom", _
                                     "chkDoubleSpaces", "chkTrimSpaces", "chkSpaceBeforePunct", "chkNormalizeAfterPunct", "chkExtraBlankLines", _
-                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmCapitalizationCleanup"
             ControlsForForm = Array("lblIntro", "optAll", "optSentence", "optTitle", "optUpper", "optLower", "optCustom", "lblModeSummary", "fraCustom", _
                                     "chkSentence", "chkTitle", "chkUpper", "chkLower", "chkSmartSentences", _
-                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmListCleanup"
             ControlsForForm = Array("optAll", "optBullets", "optNumbering", "optIndent", "optCustom", "fraCustom", _
                                     "chkNormalizeBullets", "chkNormalizeNumbering", "chkFixIndent", "chkHyphenToBullets", _
-                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmParagraphCleanup"
             ControlsForForm = Array("optAll", "optRemoveEmpty", "optNormalizeSpacing", "optCustom", "fraCustom", _
                                     "chkRemoveEmpty", "chkCollapseBreaks", "chkNormalizeParaSpacing", "chkFixIndent", _
-                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmDuplicateDetector"
             ControlsForForm = Array("optHighlightOnly", "optRemoveDupes", "fraMatching", _
                                     "optMatchExact", "optMatchNormalized", "optMatchFuzzy", _
                                     "fraThreshold", "optFuzzyLoose", "optFuzzyMedium", "optFuzzyStrict", "lblFuzzyWarning", _
-                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmFontNormalizer"
             ControlsForForm = Array("chkFontFace", "chkFontSize", "chkBold", "chkItalic", "chkFontColor", _
-                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmTableCleaner"
             ControlsForForm = Array("chkRemoveEmptyRows", "chkRemoveEmptyCols", "chkNormalizePadding", _
                                     "chkStripDirectFormat", "chkNormalizeBorders", "chkRemoveBorders", "chkConvertToText", _
-                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmBreakNormalizer"
             ControlsForForm = Array("chkCollapseSectionBreaks", "chkCollapsePageBreaks", _
                                     "chkConvertSectionBreaks", "fraConvertTo", _
                                     "optConvertNextPage", "optConvertContinuous", "optConvertEvenPage", "optConvertOddPage", _
-                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmDocumentTrim"
-            ControlsForForm = Array("chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdHelp")
+            ControlsForForm = Array("chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmFormattingStripper"
             ControlsForForm = Array("chkResetChar", "chkResetPara", "fraEmphasis", _
                                     "optEmphQuick", "optEmphThorough", "optEmphStrip", "lblSpeedWarning", _
-                                    "chkPreserveHighlight", "chkPreserveDropCaps", "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp", _
+                                    "chkPreserveHighlight", "chkPreserveDropCaps", "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmHyperlinkRemover"
-            ControlsForForm = Array("chkRemoveFormat", "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp", _
+            ControlsForForm = Array("chkRemoveFormat", "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmSoftReturnConverter"
-            ControlsForForm = Array("optSoftToPara", "optParaToSoft", "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp", _
+            ControlsForForm = Array("optSoftToPara", "optParaToSoft", "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmMetadataScrubber"
             ControlsForForm = Array("chkProperties", "chkPersonalInfo", "chkComments", "chkRevisions", _
-                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp", _
+                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmStyleCleanup"
-            ControlsForForm = Array("chkRemoveUnused", "chkRemapVariants", "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp", _
+            ControlsForForm = Array("chkRemoveUnused", "chkRemapVariants", "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmFootnoteRemover"
             ControlsForForm = Array("chkFootnotes", "chkEndnotes", "chkKeepTextInline", _
-                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp", _
+                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmHeaderFooterStandardizer"
             ControlsForForm = Array("optStandardize", "optClearAll", "fraOptions", _
-                                    "chkHeaders", "chkFooters", "chkFont", "chkSpacing", "chkAlignment", "chkBreakLinks", _
-                                    "fraAlign", "optAlignLeft", "optAlignCenter", "optAlignRight", _
-                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp", _
+                                    "chkHeaders", "chkFooters", "chkFont", "chkSpacing", "chkBreakLinks", "chkAlignment", _
+                                    "fraAlign", "optAlignLeft", "optAlignRight", "optAlignCenter", _
+                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmObjectRemover"
             ControlsForForm = Array("chkPictures", "chkTextBoxes", "chkFrames", "chkHorizontalLines", _
                                     "chkHtmlControls", "chkHiddenText", "chkTables", _
-                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp", _
+                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case Else
             ControlsForForm = Array()

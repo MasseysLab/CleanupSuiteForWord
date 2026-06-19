@@ -20,9 +20,6 @@ Private Sub UserForm_Initialize()
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
     LayoutCleanupToolForm Me
 End Sub
-Private Sub cmdHelp_Click()
-    ShowCleanupToolHelp "Style"
-End Sub
 Private Function StyleInUse(st As Style) As Boolean
     Dim fr As Range: Set fr = ActiveDocument.Content
     With fr.Find
@@ -50,6 +47,8 @@ Private Function RemapStyle(fromName As String, toName As String) As Long
     RemapStyle = 1
     On Error GoTo 0
 End Function
+Private Sub chkRemoveUnused_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkRemapVariants_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub

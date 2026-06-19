@@ -18,9 +18,6 @@ Private Sub UserForm_Initialize()
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
     LayoutCleanupToolForm Me
 End Sub
-Private Sub cmdHelp_Click()
-    ShowCleanupToolHelp "DocumentTrim"
-End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub

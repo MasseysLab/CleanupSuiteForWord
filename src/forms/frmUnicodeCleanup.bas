@@ -42,9 +42,6 @@ Private Sub UserForm_Initialize()
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
     LayoutCleanupToolForm Me
 End Sub
-Private Sub cmdHelp_Click()
-    ShowCleanupToolHelp "Unicode"
-End Sub
 Private Sub UpdateCustomVisibility()
     fraCustom.Visible = False
 End Sub
@@ -57,13 +54,22 @@ Private Sub ClearCustomChecks()
     chkBOM.Value = False: chkSoftHyphen.Value = False: chkNBHyphen.Value = False
 End Sub
 Private Sub cmdSelectAll_Click()
-    If optCustom.Value Then
-        chkNBSP.Value = True: chkZWSP.Value = True: chkZWNJ.Value = True: chkZWJ.Value = True
-        chkBOM.Value = True: chkSoftHyphen.Value = True: chkNBHyphen.Value = True
-    End If
+    optCustom.Value = True
+    UpdateCustomVisibility
+    chkNBSP.Value = True
+    chkZWSP.Value = True
+    chkZWNJ.Value = True
+    chkZWJ.Value = True
+    chkBOM.Value = True
+    chkSoftHyphen.Value = True
+    chkNBHyphen.Value = True
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdDeselectAll_Click()
-    If optCustom.Value Then ClearCustomChecks
+    optCustom.Value = True
+    UpdateCustomVisibility
+    ClearCustomChecks
+    LayoutCleanupToolForm Me
 End Sub
 Private Function UnicodeChar(ByVal codePoint As Long) As String
     If codePoint > &H7FFF Then
@@ -72,6 +78,13 @@ Private Function UnicodeChar(ByVal codePoint As Long) As String
         UnicodeChar = ChrW$(codePoint)
     End If
 End Function
+Private Sub chkNBSP_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkZWSP_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkZWNJ_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkZWJ_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkBOM_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkSoftHyphen_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkNBHyphen_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub

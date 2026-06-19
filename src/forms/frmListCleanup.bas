@@ -38,9 +38,6 @@ Private Sub UserForm_Initialize()
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
     LayoutCleanupToolForm Me
 End Sub
-Private Sub cmdHelp_Click()
-    ShowCleanupToolHelp "List"
-End Sub
 Private Sub UpdateCustomVisibility(): fraCustom.Visible = False: End Sub
 Private Sub optAll_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
 Private Sub optBullets_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
@@ -49,18 +46,24 @@ Private Sub optIndent_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me:
 Private Sub optCustom_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
 Private Sub ClearCustomChecks(): chkNormalizeBullets.Value = False: chkNormalizeNumbering.Value = False: chkFixIndent.Value = False: chkHyphenToBullets.Value = False: End Sub
 Private Sub cmdSelectAll_Click()
-    If optCustom.Value Then
-        chkNormalizeBullets.Value = True
-        chkNormalizeNumbering.Value = True
-        chkFixIndent.Value = True
-        chkHyphenToBullets.Value = True
-    End If
+    optCustom.Value = True
+    UpdateCustomVisibility
+    chkNormalizeBullets.Value = True
+    chkNormalizeNumbering.Value = True
+    chkFixIndent.Value = True
+    chkHyphenToBullets.Value = True
+    LayoutCleanupToolForm Me
 End Sub
 Private Sub cmdDeselectAll_Click()
-    If optCustom.Value Then
-        ClearCustomChecks
-    End If
+    optCustom.Value = True
+    UpdateCustomVisibility
+    ClearCustomChecks
+    LayoutCleanupToolForm Me
 End Sub
+Private Sub chkNormalizeBullets_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkNormalizeNumbering_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkFixIndent_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkHyphenToBullets_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub
