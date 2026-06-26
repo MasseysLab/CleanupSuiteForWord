@@ -32,7 +32,7 @@ Private Sub UserForm_Initialize()
     optQuotes.Caption = "Quotes only"
     optDashes.Caption = "Dashes only"
     optEllipses.Caption = "Ellipses only"
-    optCustom.Caption = "Custom (choose below)"
+    optCustom.Caption = "Custom"
     chkCurlyDouble.Caption = "Curly double quotes  -> straight double quotes"
     chkCurlySingle.Caption = "Curly single quotes / apostrophes  -> straight single quotes"
     chkEmDash.Caption = "Em dash  ->  hyphen-minus  -"

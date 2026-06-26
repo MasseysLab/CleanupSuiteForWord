@@ -106,14 +106,20 @@ Public Function CleanupHelpText(ByVal toolKey As String) As String
         Case "Capitalization"
             AddHelpLine h, "Capitalization Fixer"
             AddHelpLine h, ""
-            AddHelpLine h, "Applies consistent capitalization to paragraph text in the selected scope."
+            AddHelpLine h, "Repairs messy capitalization without duplicating Word's broad case-conversion commands."
             AddHelpLine h, ""
             AddHelpLine h, "Modes:"
-            AddHelpLine h, "- Fix sentence starts: recommended for general text. It capitalizes likely sentence starts after . ? ! while leaving existing casing alone where possible."
-            AddHelpLine h, "- Sentence case: capitalizes the first character and lowercases the rest."
-            AddHelpLine h, "- Title case: capitalizes the first letter of every word."
-            AddHelpLine h, "- UPPERCASE / lowercase: converts affected paragraph text to that case."
-            AddHelpLine h, "- Custom: runs selected choices from top to bottom. Later choices can override earlier choices."
+            AddHelpLine h, "- Conservative repair: fixes only obvious capitalization damage."
+            AddHelpLine h, "- Balanced (coming soon): planned for a later version."
+            AddHelpLine h, "- Aggressive (coming soon): planned for a later version."
+            AddHelpLine h, "- Custom: uses only the protections you select."
+            AddHelpLine h, ""
+            AddHelpLine h, "Advanced protections:"
+            AddHelpLine h, "- Abbreviation lists: reduces false sentence starts after common abbreviations."
+            AddHelpLine h, "- Acronym protection: keeps terms such as API, PDF, or VBA uppercase."
+            AddHelpLine h, "- Name and brand protection: restores known mixed-case names such as iPhone or GitHub."
+            AddHelpLine h, "- Heading heuristics: avoids over-normalizing short heading-like lines."
+            AddHelpLine h, "- Boundary context: treats bullets, quotes, and other sentence-boundary punctuation more carefully."
             AddHelpLine h, ""
             AddHelpLine h, "Scope:"
             AddHelpLine h, "Select text before opening this tool to enable Selected text only."
@@ -708,6 +714,8 @@ Public Sub LayoutCleanupToolForm(ByVal toolForm As Object)
     Dim y As Single
     y = 8 + introH + 4
 
+    HideGuidedExternalWarnings toolForm
+
     If toolForm.Name = "frmHeaderFooterStandardizer" Then
         LayoutHeaderFooterChoices toolForm, M, y, contentW, GAP
         LayoutGuidedInfoBox toolForm, M, y, contentW
@@ -732,8 +740,6 @@ Public Sub LayoutCleanupToolForm(ByVal toolForm As Object)
             GoTo NextGuidedControl
         End If
         If ShouldHideGuidedControl(toolForm, ctl.Name) Then
-            FlushGuidedPendingChoice toolForm, pendingChoice, M, y, contentW, GAP
-            FlushGuidedPendingButton toolForm, pendingButton, M, y, contentW, BH, GAP
             HideGuidedControl ctl
             GoTo NextGuidedControl
         End If
@@ -744,11 +750,18 @@ Public Sub LayoutCleanupToolForm(ByVal toolForm As Object)
             GoTo NextGuidedControl
         End If
 
-        If GuidedCustomModeIsActive(toolForm) And IsGuidedCustomChoiceControl(toolForm.Name, ctl.Name) And Not customDividerShown Then
-            FlushGuidedPendingChoice toolForm, pendingChoice, M, y, contentW, GAP
-            FlushGuidedPendingButton toolForm, pendingButton, M, y, contentW, BH, GAP
-            LayoutGuidedDivider toolForm, M, y, contentW
-            customDividerShown = True
+        If Not customDividerShown Then
+            If GuidedCustomModeIsActive(toolForm) And IsGuidedCustomChoiceControl(toolForm.Name, ctl.Name) Then
+                FlushGuidedPendingChoice toolForm, pendingChoice, M, y, contentW, GAP
+                FlushGuidedPendingButton toolForm, pendingButton, M, y, contentW, BH, GAP
+                LayoutGuidedDivider toolForm, M, y, contentW
+                customDividerShown = True
+            ElseIf toolForm.Name = "frmCapitalizationCleanup" And GuidedCustomModeIsActive(toolForm) And IsCapitalizationAdvancedControl(ctl.Name) Then
+                FlushGuidedPendingChoice toolForm, pendingChoice, M, y, contentW, GAP
+                FlushGuidedPendingButton toolForm, pendingButton, M, y, contentW, BH, GAP
+                LayoutGuidedDivider toolForm, M, y, contentW
+                customDividerShown = True
+            End If
         End If
 
         Select Case ctl.Name
@@ -817,8 +830,11 @@ Private Sub ResetGuidedGeneratedChrome(ByVal toolForm As Object)
     RemoveGuidedGeneratedLabel toolForm, "lblGuidedToolName"
     HideGuidedGeneratedLabel toolForm, "lblGuidedDivider"
     HideGuidedGeneratedLabel toolForm, "lblGuidedInfoBorder"
-    For i = 1 To 14
+    HideGuidedGeneratedLabel toolForm, "lblGuidedInfoMeasure"
+    For i = 1 To 20
         HideGuidedGeneratedLabel toolForm, "lblGuidedInfoLine" & CStr(i)
+        HideGuidedGeneratedLabel toolForm, "lblGuidedInfoName" & CStr(i)
+        HideGuidedGeneratedLabel toolForm, "lblGuidedInfoDetail" & CStr(i)
     Next i
 End Sub
 Private Sub RemoveGuidedGeneratedLabel(ByVal toolForm As Object, ByVal controlName As String)
@@ -828,6 +844,12 @@ End Sub
 Private Sub HideGuidedGeneratedLabel(ByVal toolForm As Object, ByVal controlName As String)
     On Error Resume Next
     HideGuidedControl toolForm.Controls(controlName)
+End Sub
+Private Sub HideGuidedExternalWarnings(ByVal toolForm As Object)
+    On Error Resume Next
+    HideGuidedControl toolForm.Controls("lblFuzzyWarning")
+    HideGuidedControl toolForm.Controls("lblSpeedWarning")
+    HideGuidedControl toolForm.Controls("lblModeSummary")
 End Sub
 Private Function ShouldSkipGuidedLayoutControl(ByVal controlName As String) As Boolean
     If controlName = "lblTitle" Or controlName = "lblIntro" Or controlName = "lblModeSummary" Or controlName = "lblSpeedWarning" Or controlName = "lblFuzzyWarning" Or controlName = "lblGuidedDivider" Then
@@ -923,10 +945,24 @@ Private Function ShouldHideGuidedControl(ByVal toolForm As Object, ByVal control
             End Select
         End If
     End If
+
+    If toolForm.Name = "frmCapitalizationCleanup" Then
+        Select Case controlName
+            Case "optUpper", "optLower"
+                ShouldHideGuidedControl = True
+                Exit Function
+            Case "chkSentence", "chkTitle", "chkUpper", "chkLower", "chkSmartSentences"
+                ShouldHideGuidedControl = Not GuidedCustomModeIsActive(toolForm)
+                Exit Function
+        End Select
+    End If
 End Function
 Private Function GuidedCustomModeIsActive(ByVal toolForm As Object) As Boolean
     On Error Resume Next
     GuidedCustomModeIsActive = toolForm.Controls("optCustom").Value
+End Function
+Private Function IsCapitalizationAdvancedControl(ByVal controlName As String) As Boolean
+    IsCapitalizationAdvancedControl = (controlName = "chkSentence" Or controlName = "chkTitle" Or controlName = "chkUpper" Or controlName = "chkLower" Or controlName = "chkSmartSentences")
 End Function
 Private Sub LayoutHeaderFooterChoices(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single, ByVal GAP As Single)
     On Error Resume Next
@@ -970,8 +1006,6 @@ Private Function IsGuidedCustomChoiceControl(ByVal formName As String, ByVal con
             IsGuidedCustomChoiceControl = (controlName = "chkNormalizeBullets" Or controlName = "chkNormalizeNumbering" Or controlName = "chkFixIndent" Or controlName = "chkHyphenToBullets")
         Case "frmParagraphCleanup"
             IsGuidedCustomChoiceControl = (controlName = "chkRemoveEmpty" Or controlName = "chkCollapseBreaks" Or controlName = "chkNormalizeParaSpacing" Or controlName = "chkFixIndent")
-        Case "frmCapitalizationCleanup"
-            IsGuidedCustomChoiceControl = (controlName = "chkSentence" Or controlName = "chkTitle" Or controlName = "chkUpper" Or controlName = "chkLower" Or controlName = "chkSmartSentences")
         Case Else
             IsGuidedCustomChoiceControl = False
     End Select
@@ -1048,6 +1082,11 @@ Private Function GuidedSingleChoiceWidth(ByVal ctl As Object, ByVal contentW As 
     pairW = ((contentW - 6) / 2) - 8
     GuidedSingleChoiceWidth = pairW + 12
     If GuidedOptionHeight(ctl) > 18 Then GuidedSingleChoiceWidth = pairW + 28
+    If Len(Trim$(ctl.Caption)) > 42 Then
+        GuidedSingleChoiceWidth = contentW - 24
+    ElseIf Len(Trim$(ctl.Caption)) > 30 Then
+        GuidedSingleChoiceWidth = pairW + 72
+    End If
     If GuidedSingleChoiceWidth < pairW Then GuidedSingleChoiceWidth = pairW
     If GuidedSingleChoiceWidth > contentW Then GuidedSingleChoiceWidth = contentW
 End Function
@@ -1112,13 +1151,49 @@ End Function
 Private Sub LayoutGuidedInfoBox(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single)
     On Error Resume Next
     Const GAP As Single = 4
-    Const LINE_H As Single = 14
+    Const BOX_PAD As Single = 10
+    Const INNER_GAP As Single = 4
     Dim lines As Collection
     Set lines = GuidedInfoLines(toolForm)
     If lines.Count = 0 Then Exit Sub
 
     Dim boxH As Single
-    boxH = 6 + (lines.Count * LINE_H) + 6
+    boxH = 8
+    Dim i As Long
+    Dim rawLine As String
+    Dim boldPos As Long
+    Dim nameText As String
+    Dim detailText As String
+    Dim lineBold As Boolean
+    Dim lineH As Single
+    Dim nameW As Single
+    Dim nameColW As Single
+    Dim detailW As Single
+    Dim measureCtl As Object
+    nameColW = 72
+    For i = 1 To lines.Count
+        rawLine = CStr(lines(i))
+        nameText = GuidedInfoRecordName(rawLine)
+        nameW = GuidedInfoNameWidth(nameText)
+        If nameW > nameColW Then nameColW = nameW
+    Next i
+    If nameColW > 92 Then nameColW = 92
+    detailW = contentW - ((BOX_PAD * 2) + nameColW + INNER_GAP)
+    Set measureCtl = EnsureGuidedLabel(toolForm, "lblGuidedInfoMeasure")
+    For i = 1 To lines.Count
+        rawLine = CStr(lines(i))
+        nameText = GuidedInfoRecordName(rawLine)
+        detailText = GuidedInfoRecordDetail(rawLine)
+        boldPos = InStrRev(rawLine, Chr$(30), -1, vbBinaryCompare)
+        If boldPos > 0 Then
+            lineBold = (Mid$(rawLine, boldPos + 1) = "1")
+        Else
+            lineBold = False
+        End If
+        lineH = GuidedInfoLineHeight(toolForm, detailText, detailW, lineBold)
+        boxH = boxH + lineH
+    Next i
+    boxH = boxH + 4
     If boxH < 34 Then boxH = 34
 
     Dim border As Object
@@ -1132,46 +1207,102 @@ Private Sub LayoutGuidedInfoBox(ByVal toolForm As Object, ByVal M As Single, ByR
         .Visible = True
     End With
 
-    Dim i As Long
     Dim lineCtl As Object
-    Dim rawLine As String
-    Dim sepPos As Long
-    Dim lineText As String
-    Dim lineBold As Boolean
+    Dim nameCtl As Object
+    Dim detailCtl As Object
+    Dim lineTop As Single
+    lineTop = y + 6
     For i = 1 To lines.Count
         rawLine = CStr(lines(i))
-        sepPos = InStr(1, rawLine, Chr$(30), vbBinaryCompare)
-        If sepPos > 0 Then
-            lineText = Left$(rawLine, sepPos - 1)
-            lineBold = (Mid$(rawLine, sepPos + 1) = "1")
+        nameText = GuidedInfoRecordName(rawLine)
+        detailText = GuidedInfoRecordDetail(rawLine)
+        boldPos = InStrRev(rawLine, Chr$(30), -1, vbBinaryCompare)
+        If boldPos > 0 Then
+            lineBold = (Mid$(rawLine, boldPos + 1) = "1")
         Else
-            lineText = rawLine
             lineBold = False
         End If
+        lineH = GuidedInfoLineHeight(toolForm, detailText, detailW, lineBold)
+
         Set lineCtl = EnsureGuidedLabel(toolForm, "lblGuidedInfoLine" & CStr(i))
-        With lineCtl
-            .Caption = lineText
+        lineCtl.Visible = False
+        lineCtl.Move 0, 0, 0, 0
+
+        Set nameCtl = EnsureGuidedLabel(toolForm, "lblGuidedInfoName" & CStr(i))
+        With nameCtl
+            .Caption = nameText & ":"
             .Font.Name = "Segoe UI"
-            .Font.Size = 8.5
+            .Font.Size = 7.5
             .Font.Bold = lineBold
             .ForeColor = RGB(67, 80, 96)
             .BackColor = RGB(255, 255, 255)
             .BackStyle = 1
-            .TextAlign = 2
+            .TextAlign = 1
             .WordWrap = True
             .BorderStyle = 0
             .SpecialEffect = 0
-            .Move M + 4, y + 4 + ((i - 1) * LINE_H), contentW - 8, LINE_H
+            .Move M + BOX_PAD, lineTop, nameColW, lineH
             .Visible = True
             .ZOrder 0
         End With
+
+        Set detailCtl = EnsureGuidedLabel(toolForm, "lblGuidedInfoDetail" & CStr(i))
+        With detailCtl
+            .Caption = detailText
+            .Font.Name = "Segoe UI"
+            .Font.Size = 7.5
+            .Font.Bold = lineBold
+            .ForeColor = RGB(67, 80, 96)
+            .BackColor = RGB(255, 255, 255)
+            .BackStyle = 1
+            .TextAlign = 1
+            .WordWrap = True
+            .BorderStyle = 0
+            .SpecialEffect = 0
+            .Move M + BOX_PAD + nameColW + INNER_GAP, lineTop, detailW, lineH
+            .Visible = True
+            .ZOrder 0
+        End With
+        lineTop = lineTop + lineH
     Next i
 
-    For i = lines.Count + 1 To 14
+    For i = lines.Count + 1 To 20
         HideGuidedControl toolForm.Controls("lblGuidedInfoLine" & CStr(i))
+        HideGuidedControl toolForm.Controls("lblGuidedInfoName" & CStr(i))
+        HideGuidedControl toolForm.Controls("lblGuidedInfoDetail" & CStr(i))
     Next i
     y = y + boxH + GAP
 End Sub
+Private Function GuidedInfoNameWidth(ByVal nameText As String) As Single
+    GuidedInfoNameWidth = 18 + (Len(nameText) * 3.6)
+    If GuidedInfoNameWidth < 56 Then GuidedInfoNameWidth = 56
+    If GuidedInfoNameWidth > 110 Then GuidedInfoNameWidth = 110
+End Function
+Private Function GuidedInfoLineHeight(ByVal toolForm As Object, ByVal detailText As String, ByVal detailWidth As Single, Optional ByVal isBold As Boolean = False) As Single
+    Dim measureCtl As Object
+    Set measureCtl = EnsureGuidedLabel(toolForm, "lblGuidedInfoMeasure")
+    With measureCtl
+        .Caption = detailText
+        .Font.Name = "Segoe UI"
+        .Font.Size = 7.5
+        .Font.Bold = isBold
+        .ForeColor = RGB(67, 80, 96)
+        .BackColor = RGB(255, 255, 255)
+        .BackStyle = 1
+        .TextAlign = 1
+        .WordWrap = True
+        .BorderStyle = 0
+        .SpecialEffect = 0
+        .Visible = False
+        .Move -1000, -1000, detailWidth, 11
+        .AutoSize = False
+        .AutoSize = True
+        GuidedInfoLineHeight = measureCtl.Height - 2
+        .AutoSize = False
+        .Move -1000, -1000, detailWidth, GuidedInfoLineHeight
+    End With
+    If GuidedInfoLineHeight < 11 Then GuidedInfoLineHeight = 11
+End Function
 Private Function GuidedInfoLines(ByVal toolForm As Object) As Collection
     On Error Resume Next
     Set GuidedInfoLines = New Collection
@@ -1196,13 +1327,13 @@ Private Function GuidedInfoLines(ByVal toolForm As Object) As Collection
     Dim ctl As Object
     For Each ctl In toolForm.Controls
         If Not GuidedChoiceShouldAppearInInfo(toolForm, ctl, customActive) Then GoTo NextInfoControl
-        GuidedInfoLines.Add GuidedInfoText(toolForm.Name, ctl.Name, ctl.Caption) & Chr$(30) & IIf(GuidedControlIsSelected(ctl), "1", "0")
+        GuidedInfoLines.Add GuidedInfoRecord(toolForm.Name, ctl.Name, ctl.Caption, GuidedControlIsSelected(ctl))
 NextInfoControl:
     Next ctl
 End Function
 Private Function GuidedInfoLineForControl(ByVal toolForm As Object, ByVal controlName As String) As String
     On Error Resume Next
-    GuidedInfoLineForControl = GuidedInfoText(toolForm.Name, controlName, toolForm.Controls(controlName).Caption) & Chr$(30) & IIf(GuidedControlIsSelected(toolForm.Controls(controlName)), "1", "0")
+    GuidedInfoLineForControl = GuidedInfoRecord(toolForm.Name, controlName, toolForm.Controls(controlName).Caption, GuidedControlIsSelected(toolForm.Controls(controlName)))
 End Function
 Private Function GuidedChoiceShouldAppearInInfo(ByVal toolForm As Object, ByVal ctl As Object, ByVal customActive As Boolean) As Boolean
     On Error Resume Next
@@ -1213,7 +1344,13 @@ Private Function GuidedChoiceShouldAppearInInfo(ByVal toolForm As Object, ByVal 
             Exit Function
     End Select
     If ShouldHideGuidedControl(toolForm, ctl.Name) Then Exit Function
-    If customActive Then
+    If toolForm.Name = "frmCapitalizationCleanup" Then
+        If customActive Then
+            GuidedChoiceShouldAppearInInfo = IsCapitalizationAdvancedControl(ctl.Name)
+        Else
+            GuidedChoiceShouldAppearInInfo = (Left$(ctl.Name, 3) = "opt")
+        End If
+    ElseIf customActive Then
         GuidedChoiceShouldAppearInInfo = IsGuidedCustomChoiceControl(toolForm.Name, ctl.Name)
     Else
         GuidedChoiceShouldAppearInInfo = Not IsGuidedCustomChoiceControl(toolForm.Name, ctl.Name)
@@ -1223,19 +1360,293 @@ Private Function GuidedControlIsSelected(ByVal ctl As Object) As Boolean
     On Error Resume Next
     GuidedControlIsSelected = CBool(ctl.Value)
 End Function
-Private Function GuidedInfoText(ByVal formName As String, ByVal controlName As String, ByVal fallbackText As String) As String
-    Dim labelText As String
-    labelText = CleanGuidedInfoCaption(fallbackText)
-    Select Case controlName
-        Case "optCustom"
-            GuidedInfoText = "Custom: choose the individual actions below."
-        Case "cmdSelectAll"
-            GuidedInfoText = "Select All: turns on every custom action."
-        Case "cmdDeselectAll"
-            GuidedInfoText = "Deselect All: turns off every custom action."
+Private Function GuidedInfoRecord(ByVal formName As String, ByVal controlName As String, ByVal fallbackText As String, ByVal isSelected As Boolean) As String
+    GuidedInfoRecord = GuidedInfoDisplayName(formName, controlName, fallbackText) & Chr$(29) & GuidedInfoAdvisory(formName, controlName, fallbackText) & Chr$(30) & IIf(isSelected, "1", "0")
+End Function
+Private Function GuidedInfoRecordName(ByVal rawLine As String) As String
+    Dim namePos As Long
+    namePos = InStr(1, rawLine, Chr$(29), vbBinaryCompare)
+    If namePos > 0 Then
+        GuidedInfoRecordName = Left$(rawLine, namePos - 1)
+    Else
+        GuidedInfoRecordName = rawLine
+    End If
+End Function
+Private Function GuidedInfoRecordDetail(ByVal rawLine As String) As String
+    Dim namePos As Long
+    Dim boldPos As Long
+    namePos = InStr(1, rawLine, Chr$(29), vbBinaryCompare)
+    boldPos = InStrRev(rawLine, Chr$(30), -1, vbBinaryCompare)
+    If namePos = 0 Then Exit Function
+    If boldPos > namePos Then
+        GuidedInfoRecordDetail = Mid$(rawLine, namePos + 1, (boldPos - namePos) - 1)
+    Else
+        GuidedInfoRecordDetail = Mid$(rawLine, namePos + 1)
+    End If
+End Function
+Private Function GuidedInfoDisplayName(ByVal formName As String, ByVal controlName As String, ByVal fallbackText As String) As String
+    Dim key As String
+    key = formName & "." & controlName
+    Select Case key
+        Case "frmBreakNormalizer.chkCollapseSectionBreaks": GuidedInfoDisplayName = "Collapse section breaks"
+        Case "frmBreakNormalizer.chkCollapsePageBreaks": GuidedInfoDisplayName = "Collapse page breaks"
+        Case "frmBreakNormalizer.chkConvertSectionBreaks": GuidedInfoDisplayName = "Convert section breaks"
+        Case "frmCapitalizationCleanup.optAll": GuidedInfoDisplayName = "Conservative repair"
+        Case "frmCapitalizationCleanup.optSentence": GuidedInfoDisplayName = "Balanced (coming soon)"
+        Case "frmCapitalizationCleanup.optTitle": GuidedInfoDisplayName = "Aggressive (coming soon)"
+        Case "frmCapitalizationCleanup.optUpper": GuidedInfoDisplayName = "Legacy hidden option"
+        Case "frmCapitalizationCleanup.optLower": GuidedInfoDisplayName = "Legacy hidden option"
+        Case "frmCapitalizationCleanup.optCustom": GuidedInfoDisplayName = "Custom"
+        Case "frmCapitalizationCleanup.chkSentence": GuidedInfoDisplayName = "Abbreviation lists"
+        Case "frmCapitalizationCleanup.chkTitle": GuidedInfoDisplayName = "Acronym protection"
+        Case "frmCapitalizationCleanup.chkUpper": GuidedInfoDisplayName = "Name and brand protection"
+        Case "frmCapitalizationCleanup.chkLower": GuidedInfoDisplayName = "Heading heuristics"
+        Case "frmCapitalizationCleanup.chkSmartSentences": GuidedInfoDisplayName = "Boundary context"
+        Case "frmDuplicateDetector.optHighlightOnly": GuidedInfoDisplayName = "Preview duplicates"
+        Case "frmDuplicateDetector.optRemoveDupes": GuidedInfoDisplayName = "Remove duplicates"
+        Case "frmDuplicateDetector.optMatchExact": GuidedInfoDisplayName = "Exact match"
+        Case "frmDuplicateDetector.optMatchNormalized": GuidedInfoDisplayName = "Normalized match"
+        Case "frmDuplicateDetector.optMatchFuzzy": GuidedInfoDisplayName = "Fuzzy match"
+        Case "frmDuplicateDetector.optFuzzyLoose": GuidedInfoDisplayName = "Loose"
+        Case "frmDuplicateDetector.optFuzzyMedium": GuidedInfoDisplayName = "Medium"
+        Case "frmDuplicateDetector.optFuzzyStrict": GuidedInfoDisplayName = "Strict"
+        Case "frmFontNormalizer.chkFontFace": GuidedInfoDisplayName = "Font face"
+        Case "frmFontNormalizer.chkFontSize": GuidedInfoDisplayName = "Font size"
+        Case "frmFontNormalizer.chkBold": GuidedInfoDisplayName = "Bold overrides"
+        Case "frmFontNormalizer.chkItalic": GuidedInfoDisplayName = "Italic overrides"
+        Case "frmFontNormalizer.chkFontColor": GuidedInfoDisplayName = "Font color overrides"
+        Case "frmFootnoteRemover.chkFootnotes": GuidedInfoDisplayName = "Remove footnotes"
+        Case "frmFootnoteRemover.chkEndnotes": GuidedInfoDisplayName = "Remove endnotes"
+        Case "frmFootnoteRemover.chkKeepTextInline": GuidedInfoDisplayName = "Keep note text"
+        Case "frmFormattingStripper.chkResetChar": GuidedInfoDisplayName = "Strip character formatting"
+        Case "frmFormattingStripper.chkResetPara": GuidedInfoDisplayName = "Strip paragraph formatting"
+        Case "frmFormattingStripper.optEmphQuick": GuidedInfoDisplayName = "Quick"
+        Case "frmFormattingStripper.optEmphThorough": GuidedInfoDisplayName = "Thorough"
+        Case "frmFormattingStripper.optEmphStrip": GuidedInfoDisplayName = "Strip"
+        Case "frmFormattingStripper.chkPreserveHighlight": GuidedInfoDisplayName = "Preserve highlighting"
+        Case "frmFormattingStripper.chkPreserveDropCaps": GuidedInfoDisplayName = "Preserve drop caps"
+        Case "frmHeaderFooterStandardizer.optStandardize": GuidedInfoDisplayName = "Standardize"
+        Case "frmHeaderFooterStandardizer.optClearAll": GuidedInfoDisplayName = "Clear all"
+        Case "frmHeaderFooterStandardizer.chkHeaders": GuidedInfoDisplayName = "Headers"
+        Case "frmHeaderFooterStandardizer.chkFooters": GuidedInfoDisplayName = "Footers"
+        Case "frmHeaderFooterStandardizer.chkFont": GuidedInfoDisplayName = "Reset font"
+        Case "frmHeaderFooterStandardizer.chkSpacing": GuidedInfoDisplayName = "Remove spacing"
+        Case "frmHeaderFooterStandardizer.chkBreakLinks": GuidedInfoDisplayName = "Unlink sections"
+        Case "frmHeaderFooterStandardizer.chkAlignment": GuidedInfoDisplayName = "Set alignment"
+        Case "frmHyperlinkRemover.chkRemoveFormat": GuidedInfoDisplayName = "Remove link style"
+        Case "frmListCleanup.optAll": GuidedInfoDisplayName = "All list fixes"
+        Case "frmListCleanup.optBullets": GuidedInfoDisplayName = "Bullet conversion"
+        Case "frmListCleanup.optNumbering": GuidedInfoDisplayName = "Number conversion"
+        Case "frmListCleanup.optIndent": GuidedInfoDisplayName = "Indentation only"
+        Case "frmListCleanup.optCustom": GuidedInfoDisplayName = "Custom"
+        Case "frmListCleanup.chkNormalizeBullets": GuidedInfoDisplayName = "Bullet conversion"
+        Case "frmListCleanup.chkNormalizeNumbering": GuidedInfoDisplayName = "Number conversion"
+        Case "frmListCleanup.chkFixIndent": GuidedInfoDisplayName = "Indentation"
+        Case "frmListCleanup.chkHyphenToBullets": GuidedInfoDisplayName = "Hyphen lines"
+        Case "frmMetadataScrubber.chkProperties": GuidedInfoDisplayName = "Document properties"
+        Case "frmMetadataScrubber.chkPersonalInfo": GuidedInfoDisplayName = "Personal info"
+        Case "frmMetadataScrubber.chkComments": GuidedInfoDisplayName = "Comments"
+        Case "frmMetadataScrubber.chkRevisions": GuidedInfoDisplayName = "Tracked changes"
+        Case "frmObjectRemover.chkPictures": GuidedInfoDisplayName = "Pictures"
+        Case "frmObjectRemover.chkTextBoxes": GuidedInfoDisplayName = "Text boxes"
+        Case "frmObjectRemover.chkFrames": GuidedInfoDisplayName = "Frames"
+        Case "frmObjectRemover.chkHorizontalLines": GuidedInfoDisplayName = "Horizontal lines"
+        Case "frmObjectRemover.chkHtmlControls": GuidedInfoDisplayName = "Form controls"
+        Case "frmObjectRemover.chkHiddenText": GuidedInfoDisplayName = "Hidden text"
+        Case "frmObjectRemover.chkTables": GuidedInfoDisplayName = "Tables"
+        Case "frmParagraphCleanup.optAll": GuidedInfoDisplayName = "All paragraph fixes"
+        Case "frmParagraphCleanup.optRemoveEmpty": GuidedInfoDisplayName = "Empty paragraphs"
+        Case "frmParagraphCleanup.optNormalizeSpacing": GuidedInfoDisplayName = "Paragraph spacing"
+        Case "frmParagraphCleanup.optCustom": GuidedInfoDisplayName = "Custom"
+        Case "frmParagraphCleanup.chkRemoveEmpty": GuidedInfoDisplayName = "Collapse empties"
+        Case "frmParagraphCleanup.chkCollapseBreaks": GuidedInfoDisplayName = "Soft returns to paragraphs"
+        Case "frmParagraphCleanup.chkNormalizeParaSpacing": GuidedInfoDisplayName = "Space Before/After"
+        Case "frmParagraphCleanup.chkFixIndent": GuidedInfoDisplayName = "Leading manual indents"
+        Case "frmPunctuationCleanup.optAll": GuidedInfoDisplayName = "All punctuation fixes"
+        Case "frmPunctuationCleanup.optQuotes": GuidedInfoDisplayName = "Quotes"
+        Case "frmPunctuationCleanup.optDashes": GuidedInfoDisplayName = "Dashes"
+        Case "frmPunctuationCleanup.optEllipses": GuidedInfoDisplayName = "Ellipses"
+        Case "frmPunctuationCleanup.optCustom": GuidedInfoDisplayName = "Custom"
+        Case "frmPunctuationCleanup.chkCurlyDouble": GuidedInfoDisplayName = "Curly double quotes"
+        Case "frmPunctuationCleanup.chkCurlySingle": GuidedInfoDisplayName = "Curly single quotes"
+        Case "frmPunctuationCleanup.chkEmDash": GuidedInfoDisplayName = "Em dashes"
+        Case "frmPunctuationCleanup.chkEnDash": GuidedInfoDisplayName = "En dashes"
+        Case "frmPunctuationCleanup.chkEllipses": GuidedInfoDisplayName = "Ellipsis character"
+        Case "frmSoftReturnConverter.optSoftToPara": GuidedInfoDisplayName = "Soft to paragraphs"
+        Case "frmSoftReturnConverter.optParaToSoft": GuidedInfoDisplayName = "Paragraphs to soft returns"
+        Case "frmSpacingCleanup.optAll": GuidedInfoDisplayName = "All spacing fixes"
+        Case "frmSpacingCleanup.optDoubleSpaces": GuidedInfoDisplayName = "Double spaces"
+        Case "frmSpacingCleanup.optTrim": GuidedInfoDisplayName = "Trim outer spaces"
+        Case "frmSpacingCleanup.optCustom": GuidedInfoDisplayName = "Custom"
+        Case "frmSpacingCleanup.chkDoubleSpaces": GuidedInfoDisplayName = "Collapse extra spaces"
+        Case "frmSpacingCleanup.chkTrimSpaces": GuidedInfoDisplayName = "Trim outer spaces"
+        Case "frmSpacingCleanup.chkSpaceBeforePunct": GuidedInfoDisplayName = "Space before punctuation"
+        Case "frmSpacingCleanup.chkNormalizeAfterPunct": GuidedInfoDisplayName = "Spacing after punctuation"
+        Case "frmSpacingCleanup.chkExtraBlankLines": GuidedInfoDisplayName = "Extra blank lines"
+        Case "frmStyleCleanup.chkRemoveUnused": GuidedInfoDisplayName = "Remove unused styles"
+        Case "frmStyleCleanup.chkRemapVariants": GuidedInfoDisplayName = "Remap variants"
+        Case "frmTableCleaner.chkRemoveEmptyRows": GuidedInfoDisplayName = "Empty rows"
+        Case "frmTableCleaner.chkRemoveEmptyCols": GuidedInfoDisplayName = "Empty columns"
+        Case "frmTableCleaner.chkNormalizePadding": GuidedInfoDisplayName = "Cell padding"
+        Case "frmTableCleaner.chkStripDirectFormat": GuidedInfoDisplayName = "Cell formatting"
+        Case "frmTableCleaner.chkNormalizeBorders": GuidedInfoDisplayName = "Border styles"
+        Case "frmTableCleaner.chkRemoveBorders": GuidedInfoDisplayName = "Remove borders"
+        Case "frmTableCleaner.chkConvertToText": GuidedInfoDisplayName = "Single-column to text"
+        Case "frmUnicodeCleanup.optAll": GuidedInfoDisplayName = "All invisible characters"
+        Case "frmUnicodeCleanup.optNBSP": GuidedInfoDisplayName = "Nonbreaking spaces"
+        Case "frmUnicodeCleanup.optZeroWidth": GuidedInfoDisplayName = "Zero-width characters"
+        Case "frmUnicodeCleanup.optCustom": GuidedInfoDisplayName = "Custom"
+        Case "frmUnicodeCleanup.chkNBSP": GuidedInfoDisplayName = "Nonbreaking spaces"
+        Case "frmUnicodeCleanup.chkZWSP": GuidedInfoDisplayName = "Zero-width spaces"
+        Case "frmUnicodeCleanup.chkZWNJ": GuidedInfoDisplayName = "Zero-width nonjoiners"
+        Case "frmUnicodeCleanup.chkZWJ": GuidedInfoDisplayName = "Zero-width joiners"
+        Case "frmUnicodeCleanup.chkBOM": GuidedInfoDisplayName = "Byte-order marks"
+        Case "frmUnicodeCleanup.chkSoftHyphen": GuidedInfoDisplayName = "Soft hyphens"
+        Case "frmUnicodeCleanup.chkNBHyphen": GuidedInfoDisplayName = "Nonbreaking hyphens"
         Case Else
-            GuidedInfoText = labelText
+            GuidedInfoDisplayName = CleanGuidedInfoCaption(fallbackText)
     End Select
+End Function
+Private Function GuidedInfoAdvisory(ByVal formName As String, ByVal controlName As String, ByVal fallbackText As String) As String
+    Dim key As String
+    key = formName & "." & controlName
+    Select Case key
+        Case "frmBreakNormalizer.chkCollapseSectionBreaks": GuidedInfoAdvisory = "Shrinks repeated section-break stacks to one clean break."
+        Case "frmBreakNormalizer.chkCollapsePageBreaks": GuidedInfoAdvisory = "Shrinks repeated page-break stacks to one clean break."
+        Case "frmBreakNormalizer.chkConvertSectionBreaks": GuidedInfoAdvisory = "Replaces section boundaries with plain page breaks, removing section-level formatting splits."
+        Case "frmBreakNormalizer.optConvertNextPage": GuidedInfoAdvisory = "Keeps a normal next-page start after conversion."
+        Case "frmBreakNormalizer.optConvertContinuous": GuidedInfoAdvisory = "Preserves flow without forcing a new page."
+        Case "frmBreakNormalizer.optConvertEvenPage": GuidedInfoAdvisory = "Forces converted content to begin on the next even page."
+        Case "frmBreakNormalizer.optConvertOddPage": GuidedInfoAdvisory = "Forces converted content to begin on the next odd page."
+        Case "frmCapitalizationCleanup.optAll": GuidedInfoAdvisory = "Fixes only obvious capitalization damage and leaves already-reasonable wording alone."
+        Case "frmCapitalizationCleanup.optSentence": GuidedInfoAdvisory = "Planned for a later version."
+        Case "frmCapitalizationCleanup.optTitle": GuidedInfoAdvisory = "Planned for a later version."
+        Case "frmCapitalizationCleanup.optUpper": GuidedInfoAdvisory = "Legacy hidden option retained only for compatibility with existing forms."
+        Case "frmCapitalizationCleanup.optLower": GuidedInfoAdvisory = "Legacy hidden option retained only for compatibility with existing forms."
+        Case "frmCapitalizationCleanup.optCustom": GuidedInfoAdvisory = "Lets you turn the smart-repair protections on and off yourself."
+        Case "frmCapitalizationCleanup.chkSentence": GuidedInfoAdvisory = "Reduces false sentence starts after common abbreviations such as Dr. or Inc."
+        Case "frmCapitalizationCleanup.chkTitle": GuidedInfoAdvisory = "Keeps terms such as API, PDF, or VBA uppercase after repair."
+        Case "frmCapitalizationCleanup.chkUpper": GuidedInfoAdvisory = "Restores known mixed-case names and brands such as iPhone or GitHub."
+        Case "frmCapitalizationCleanup.chkLower": GuidedInfoAdvisory = "Avoids over-normalizing short heading-like lines."
+        Case "frmCapitalizationCleanup.chkSmartSentences": GuidedInfoAdvisory = "Treats quotes, bullets, and punctuation boundaries more carefully."
+        Case "frmDuplicateDetector.optHighlightOnly": GuidedInfoAdvisory = "Marks likely duplicates for review without deleting any text."
+        Case "frmDuplicateDetector.optRemoveDupes": GuidedInfoAdvisory = "Deletes later duplicates and keeps the first surviving paragraph in each group."
+        Case "frmDuplicateDetector.optMatchExact": GuidedInfoAdvisory = "Fastest check; punctuation and spacing must still match."
+        Case "frmDuplicateDetector.optMatchNormalized": GuidedInfoAdvisory = "Ignores punctuation and extra spaces to catch cosmetic repeats."
+        Case "frmDuplicateDetector.optMatchFuzzy": GuidedInfoAdvisory = "Catches near-duplicates by word overlap, but runs slower on long documents."
+        Case "frmDuplicateDetector.optFuzzyLoose": GuidedInfoAdvisory = "Broadest fuzzy setting; finds more candidates but needs more review."
+        Case "frmDuplicateDetector.optFuzzyMedium": GuidedInfoAdvisory = "Balanced fuzzy setting for most cleanup passes."
+        Case "frmDuplicateDetector.optFuzzyStrict": GuidedInfoAdvisory = "Most conservative fuzzy setting; fewer false matches, but easier to miss loose repeats."
+        Case "frmFontNormalizer.chkFontFace": GuidedInfoAdvisory = "Returns direct font-name overrides to the document default."
+        Case "frmFontNormalizer.chkFontSize": GuidedInfoAdvisory = "Returns direct size overrides to the active style's size."
+        Case "frmFontNormalizer.chkBold": GuidedInfoAdvisory = "Removes manual bolding that does not come from the style."
+        Case "frmFontNormalizer.chkItalic": GuidedInfoAdvisory = "Removes manual italics that do not come from the style."
+        Case "frmFontNormalizer.chkFontColor": GuidedInfoAdvisory = "Clears manual font colors so styled colors can lead again."
+        Case "frmFootnoteRemover.chkFootnotes": GuidedInfoAdvisory = "Deletes footnotes in scope, including their reference marks."
+        Case "frmFootnoteRemover.chkEndnotes": GuidedInfoAdvisory = "Deletes endnotes in scope, including their reference marks."
+        Case "frmFootnoteRemover.chkKeepTextInline": GuidedInfoAdvisory = "Keeps each note's wording in brackets before removing the note itself."
+        Case "frmFormattingStripper.chkResetChar": GuidedInfoAdvisory = "Removes direct font-level overrides while leaving styles in charge."
+        Case "frmFormattingStripper.chkResetPara": GuidedInfoAdvisory = "Removes direct paragraph formatting such as indents, spacing, and alignment."
+        Case "frmFormattingStripper.optEmphQuick": GuidedInfoAdvisory = "Fastest pass; preserves emphasis that applies to whole paragraphs."
+        Case "frmFormattingStripper.optEmphThorough": GuidedInfoAdvisory = "Checks runs one by one; slower, but safer for mixed emphasis."
+        Case "frmFormattingStripper.optEmphStrip": GuidedInfoAdvisory = "Removes direct emphasis too, including manual bold and italic."
+        Case "frmFormattingStripper.chkPreserveHighlight": GuidedInfoAdvisory = "Leaves highlight colors in place while other direct formatting is stripped."
+        Case "frmFormattingStripper.chkPreserveDropCaps": GuidedInfoAdvisory = "Keeps decorative drop caps instead of flattening them."
+        Case "frmHeaderFooterStandardizer.optStandardize": GuidedInfoAdvisory = "Keeps the content but cleans formatting across the chosen header and footer areas."
+        Case "frmHeaderFooterStandardizer.optClearAll": GuidedInfoAdvisory = "Deletes the chosen header and footer content outright."
+        Case "frmHeaderFooterStandardizer.chkHeaders": GuidedInfoAdvisory = "Applies the chosen action to headers."
+        Case "frmHeaderFooterStandardizer.chkFooters": GuidedInfoAdvisory = "Applies the chosen action to footers."
+        Case "frmHeaderFooterStandardizer.chkFont": GuidedInfoAdvisory = "Returns header and footer text to the document's default font."
+        Case "frmHeaderFooterStandardizer.chkSpacing": GuidedInfoAdvisory = "Clears paragraph spacing so header/footer lines sit tightly again."
+        Case "frmHeaderFooterStandardizer.chkBreakLinks": GuidedInfoAdvisory = "Lets each section stand on its own instead of inheriting from the previous one."
+        Case "frmHeaderFooterStandardizer.chkAlignment": GuidedInfoAdvisory = "Turns on the left, center, or right alignment choices below."
+        Case "frmHeaderFooterStandardizer.optAlignLeft": GuidedInfoAdvisory = "Sets the chosen header or footer paragraphs to left alignment."
+        Case "frmHeaderFooterStandardizer.optAlignCenter": GuidedInfoAdvisory = "Sets the chosen header or footer paragraphs to centered alignment."
+        Case "frmHeaderFooterStandardizer.optAlignRight": GuidedInfoAdvisory = "Sets the chosen header or footer paragraphs to right alignment."
+        Case "frmHyperlinkRemover.chkRemoveFormat": GuidedInfoAdvisory = "Also clears the blue underline styling after the link itself is removed."
+        Case "frmListCleanup.optAll": GuidedInfoAdvisory = "Runs bullet conversion, number conversion, and indentation cleanup together."
+        Case "frmListCleanup.optBullets": GuidedInfoAdvisory = "Converts manual bullet-like lines without changing numbered lists."
+        Case "frmListCleanup.optNumbering": GuidedInfoAdvisory = "Converts typed number patterns into real Word numbering."
+        Case "frmListCleanup.optIndent": GuidedInfoAdvisory = "Leaves list content alone and only corrects indent depth."
+        Case "frmListCleanup.optCustom": GuidedInfoAdvisory = "Shows the individual list repairs so you can mix only the ones you need."
+        Case "frmListCleanup.chkNormalizeBullets": GuidedInfoAdvisory = "Turns manual bullets into the document's standard Word bullet form."
+        Case "frmListCleanup.chkNormalizeNumbering": GuidedInfoAdvisory = "Turns typed numbering into Word-managed numbered lists."
+        Case "frmListCleanup.chkFixIndent": GuidedInfoAdvisory = "Straightens list left indents without changing bullet or number text."
+        Case "frmListCleanup.chkHyphenToBullets": GuidedInfoAdvisory = "Promotes plain hyphen-led lines into proper bullet items."
+        Case "frmMetadataScrubber.chkProperties": GuidedInfoAdvisory = "Clears built-in file fields such as Title, Author, and Company."
+        Case "frmMetadataScrubber.chkPersonalInfo": GuidedInfoAdvisory = "Removes names tied to saves and tracked revisions."
+        Case "frmMetadataScrubber.chkComments": GuidedInfoAdvisory = "Deletes reviewer comments from the document."
+        Case "frmMetadataScrubber.chkRevisions": GuidedInfoAdvisory = "Accepts tracked changes first, so markup cannot be reviewed afterward."
+        Case "frmObjectRemover.chkTables": GuidedInfoAdvisory = "Deletes whole tables and everything inside them, not just table formatting."
+        Case "frmParagraphCleanup.optAll": GuidedInfoAdvisory = "Runs the tool's full paragraph cleanup pass."
+        Case "frmParagraphCleanup.optCustom": GuidedInfoAdvisory = "Shows the individual paragraph repairs so you can combine them."
+        Case "frmPunctuationCleanup.optAll": GuidedInfoAdvisory = "Runs quote, dash, and ellipsis cleanup in one pass."
+        Case "frmPunctuationCleanup.optQuotes": GuidedInfoAdvisory = "Targets curly quotes and apostrophes without touching dashes or ellipses."
+        Case "frmPunctuationCleanup.optDashes": GuidedInfoAdvisory = "Targets em and en dashes without changing quotes or ellipses."
+        Case "frmPunctuationCleanup.optEllipses": GuidedInfoAdvisory = "Targets only the ellipsis character and leaves other punctuation alone."
+        Case "frmPunctuationCleanup.optCustom": GuidedInfoAdvisory = "Shows the individual punctuation conversions so you can mix them."
+        Case "frmPunctuationCleanup.chkCurlyDouble": GuidedInfoAdvisory = "Replaces curly double quotes with plain straight double quotes."
+        Case "frmPunctuationCleanup.chkCurlySingle": GuidedInfoAdvisory = "Replaces curly single quotes and apostrophes with straight apostrophes."
+        Case "frmPunctuationCleanup.chkEmDash": GuidedInfoAdvisory = "Replaces em dashes with a plain keyboard hyphen."
+        Case "frmPunctuationCleanup.chkEnDash": GuidedInfoAdvisory = "Replaces en dashes with a plain keyboard hyphen."
+        Case "frmPunctuationCleanup.chkEllipses": GuidedInfoAdvisory = "Replaces the single ellipsis character with three plain periods."
+        Case "frmSoftReturnConverter.optSoftToPara": GuidedInfoAdvisory = "Turns manual line breaks into real paragraphs for cleaner editing and reflow."
+        Case "frmSoftReturnConverter.optParaToSoft": GuidedInfoAdvisory = "Keeps visible line breaks without starting new paragraphs."
+        Case "frmSpacingCleanup.optAll": GuidedInfoAdvisory = "Runs every spacing repair this tool offers in one pass."
+        Case "frmSpacingCleanup.optDoubleSpaces": GuidedInfoAdvisory = "Targets repeated spaces between words and leaves edge spacing alone."
+        Case "frmSpacingCleanup.optTrim": GuidedInfoAdvisory = "Targets leading and trailing spaces without changing doubled inner spaces."
+        Case "frmSpacingCleanup.optCustom": GuidedInfoAdvisory = "Shows the individual spacing repairs so you can combine them."
+        Case "frmSpacingCleanup.chkDoubleSpaces": GuidedInfoAdvisory = "Collapses repeated spaces so only one clean space remains."
+        Case "frmSpacingCleanup.chkTrimSpaces": GuidedInfoAdvisory = "Removes stray spaces at the start or end of paragraphs."
+        Case "frmSpacingCleanup.chkSpaceBeforePunct": GuidedInfoAdvisory = "Deletes stray spaces that appear before punctuation marks."
+        Case "frmSpacingCleanup.chkNormalizeAfterPunct": GuidedInfoAdvisory = "Resets uneven post-punctuation spacing to a single clean space."
+        Case "frmSpacingCleanup.chkExtraBlankLines": GuidedInfoAdvisory = "Collapses repeated blank paragraphs between blocks of text."
+        Case "frmUnicodeCleanup.optAll": GuidedInfoAdvisory = "Sweeps the common invisible troublemakers that interfere with search, wrap, and cleanup."
+        Case "frmUnicodeCleanup.optNBSP": GuidedInfoAdvisory = "Targets only nonbreaking spaces and leaves zero-width characters alone."
+        Case "frmUnicodeCleanup.optZeroWidth": GuidedInfoAdvisory = "Targets zero-width characters and leaves visible spacing characters alone."
+        Case "frmUnicodeCleanup.optCustom": GuidedInfoAdvisory = "Shows the individual invisible-character cleanups so you can combine them."
+        Case "frmUnicodeCleanup.chkNBSP": GuidedInfoAdvisory = "Replaces nonbreaking spaces with normal spaces."
+        Case "frmUnicodeCleanup.chkZWSP": GuidedInfoAdvisory = "Removes hidden zero-width spaces that split searches and word counts."
+        Case "frmUnicodeCleanup.chkZWNJ": GuidedInfoAdvisory = "Removes zero-width nonjoiners often copied from web or PDF text."
+        Case "frmUnicodeCleanup.chkZWJ": GuidedInfoAdvisory = "Removes zero-width joiners that can hide inside pasted text."
+        Case "frmUnicodeCleanup.chkBOM": GuidedInfoAdvisory = "Removes stray byte-order marks embedded inside document text."
+        Case "frmUnicodeCleanup.chkSoftHyphen": GuidedInfoAdvisory = "Removes soft hyphens that can disrupt clean searching and export."
+        Case "frmUnicodeCleanup.chkNBHyphen": GuidedInfoAdvisory = "Replaces nonbreaking hyphens with standard editable hyphens."
+        Case "frmStyleCleanup.chkRemoveUnused": GuidedInfoAdvisory = "Deletes custom styles that are not currently applied."
+        Case "frmStyleCleanup.chkRemapVariants": GuidedInfoAdvisory = "Moves content into your canonical styles instead of leaving lookalike variants."
+        Case Else
+            GuidedInfoAdvisory = GuidedGenericAdvisory(CleanGuidedInfoCaption(fallbackText))
+    End Select
+End Function
+Private Function GuidedGenericAdvisory(ByVal labelText As String) As String
+    If Len(labelText) = 0 Then Exit Function
+    If Left$(labelText, 6) = "Clear " Then
+        GuidedGenericAdvisory = "Removes this metadata or review content from the file."
+    ElseIf Left$(labelText, 7) = "Remove " Then
+        GuidedGenericAdvisory = "Removes matching content wherever this cleanup finds it."
+    ElseIf Left$(labelText, 10) = "Normalize " Then
+        GuidedGenericAdvisory = "Resets direct variations to a cleaner, consistent form."
+    ElseIf Left$(labelText, 8) = "Convert " Then
+        GuidedGenericAdvisory = "Converts matching content into the target Word-friendly form."
+    ElseIf Left$(labelText, 9) = "Collapse " Then
+        GuidedGenericAdvisory = "Merges repeats so only one clean instance remains."
+    ElseIf Left$(labelText, 10) = "Preserve " Then
+        GuidedGenericAdvisory = "Leaves this formatting in place while other cleanup runs."
+    ElseIf Left$(labelText, 8) = "Include " Then
+        GuidedGenericAdvisory = "Applies the chosen action to this area."
+    ElseIf Left$(labelText, 4) = "Fix " Then
+        GuidedGenericAdvisory = "Corrects this issue without changing unrelated text."
+    ElseIf Left$(labelText, 4) = "Set " Then
+        GuidedGenericAdvisory = "Applies the selected setting when the tool runs."
+    ElseIf Left$(labelText, 6) = "Also, " Then
+        GuidedGenericAdvisory = "Adds this extra cleanup after the main removal step."
+    ElseIf labelText = "Left" Or labelText = "Center" Or labelText = "Right" Then
+        GuidedGenericAdvisory = "Uses this alignment when alignment cleanup is enabled."
+    ElseIf labelText = "Custom" Then
+        GuidedGenericAdvisory = "Shows the individual actions so you can combine them."
+    Else
+        GuidedGenericAdvisory = "Applies this cleanup when the tool runs."
+    End If
 End Function
 Private Function CleanGuidedInfoCaption(ByVal captionText As String) As String
     CleanGuidedInfoCaption = Replace(captionText, vbCrLf, " ")
@@ -1249,11 +1660,11 @@ End Function
 Private Function GuidedOptionHeight(ByVal ctl As Object) As Single
     On Error Resume Next
     If Len(ctl.Caption) > 72 Then
-        GuidedOptionHeight = 38
+        GuidedOptionHeight = 44
     ElseIf Len(ctl.Caption) > 34 Then
-        GuidedOptionHeight = 24
+        GuidedOptionHeight = 28
     Else
-        GuidedOptionHeight = 16
+        GuidedOptionHeight = 18
     End If
 End Function
 Private Sub LayoutGuidedScopeRow(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single)
@@ -1334,7 +1745,7 @@ Private Function GuidedToolName(ByVal formName As String) As String
 End Function
 Private Function GuidedToolIntro(ByVal formName As String) As String
     Select Case formName
-        Case "frmCapitalizationCleanup": GuidedToolIntro = "Choose how you want capitalization cleaned up."
+        Case "frmCapitalizationCleanup": GuidedToolIntro = "Choose how strongly capitalization should be repaired."
         Case "frmPunctuationCleanup": GuidedToolIntro = "Choose which punctuation patterns to normalize."
         Case "frmUnicodeCleanup": GuidedToolIntro = "Choose which invisible or problem characters to clean."
         Case "frmSpacingCleanup": GuidedToolIntro = "Choose which spacing problems to fix."

@@ -20,6 +20,7 @@ Public Sub Configure(sourceForm As Object, toolName As String, summaryText As St
     mToolName = toolName
     mSummaryText = summaryText
     mPreviewOn = True
+    Me.Caption = ""
     ApplyMSFormTitleStrategy Me, True
     lblTitle.Caption = ""
     lblHint.Caption = toolName
@@ -35,6 +36,7 @@ End Sub
 Private Sub LayoutPanel()
     Dim summaryH As Single
     summaryH = RequiredSummaryHeight(mSummaryText, CONTENT_W)
+    Me.Caption = ""
     Me.Width = FORM_W
     Me.Height = MaxSingle(MIN_FORM_H, 74 + summaryH)
     lblTitle.Caption = ""

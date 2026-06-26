@@ -41,9 +41,25 @@ vbaeval.py             ← validation library + CLI (used by assemble.py)
 **Edit a form or module:**
 
 1. Open its `.bas` file in `src/forms/` or `src/modules/` and edit.
-2. Run `python assemble.py`.  If validation passes, `VBA_Cleanup_tool.txt` is updated and
+2. Run `python assemble.py` (or `powershell -File .\build.ps1`). If validation passes,
+   `VBA_Cleanup_tool.txt` is updated and
    `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt` is refreshed to match.
 3. Paste the updated `.txt` into Word and test.
+
+**Quick contributor loop:**
+
+- Edit source in `src/`
+- Build with `powershell -File .\build.ps1`
+- Run the sanity check with `powershell -File .\check.ps1`
+- Test the generated `.txt` in Word
+- Commit the source changes and the rebuilt output together
+
+**Contributor checklist:**
+
+1. Keep edits in `src/` and avoid hand-editing the generated `.txt` files.
+2. Rebuild after every meaningful change.
+3. Verify the generated bundle in Word before considering the work done.
+4. Commit source and rebuilt output together when the output changed.
 
 **Edit the installer (wiring, control layout, etc.):**
 
@@ -63,7 +79,7 @@ vbaeval.py             ← validation library + CLI (used by assemble.py)
 
 ## Versioning
 
-The current working release is `0.8.0`.
+The current working release is `0.8.5` Alpha.
 
 See [`VERSIONING.md`](VERSIONING.md) for the `0.5.0` through `1.0.0` roadmap and the rule for when `SUITE_VERSION` should change.
 

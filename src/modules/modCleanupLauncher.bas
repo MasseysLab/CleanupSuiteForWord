@@ -1,5 +1,5 @@
 Option Explicit
-Public Const SUITE_VERSION As String = "0.8.0"
+Public Const SUITE_VERSION As String = "0.8.5"
 Public gRibbon As Object   ' IRibbonUI -- stored for optional Invalidate calls
 Sub ShowCleanupSuiteLauncher()
     frmCleanupSuiteLauncher.Show

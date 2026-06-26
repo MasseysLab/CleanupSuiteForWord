@@ -85,6 +85,7 @@ function Sync-FormCaptions {
 $sourceItems = @(
     @{ Path = (Join-Path $RepoRoot "src\forms\frmBreakNormalizer.bas"); ComponentName = "frmBreakNormalizer" },
     @{ Path = (Join-Path $RepoRoot "src\forms\frmCapitalizationCleanup.bas"); ComponentName = "frmCapitalizationCleanup" },
+    @{ Path = (Join-Path $RepoRoot "src\forms\frmCleanupSuiteLauncher.bas"); ComponentName = "frmCleanupSuiteLauncher" },
     @{ Path = (Join-Path $RepoRoot "src\forms\frmDocumentTrim.bas"); ComponentName = "frmDocumentTrim" },
     @{ Path = (Join-Path $RepoRoot "src\forms\frmDuplicateDetector.bas"); ComponentName = "frmDuplicateDetector" },
     @{ Path = (Join-Path $RepoRoot "src\forms\frmFontNormalizer.bas"); ComponentName = "frmFontNormalizer" },
@@ -96,6 +97,7 @@ $sourceItems = @(
     @{ Path = (Join-Path $RepoRoot "src\forms\frmMetadataScrubber.bas"); ComponentName = "frmMetadataScrubber" },
     @{ Path = (Join-Path $RepoRoot "src\forms\frmObjectRemover.bas"); ComponentName = "frmObjectRemover" },
     @{ Path = (Join-Path $RepoRoot "src\forms\frmParagraphCleanup.bas"); ComponentName = "frmParagraphCleanup" },
+    @{ Path = (Join-Path $RepoRoot "src\forms\frmPreviewActions.bas"); ComponentName = "frmPreviewActions" },
     @{ Path = (Join-Path $RepoRoot "src\forms\frmPunctuationCleanup.bas"); ComponentName = "frmPunctuationCleanup" },
     @{ Path = (Join-Path $RepoRoot "src\forms\frmSoftReturnConverter.bas"); ComponentName = "frmSoftReturnConverter" },
     @{ Path = (Join-Path $RepoRoot "src\forms\frmSpacingCleanup.bas"); ComponentName = "frmSpacingCleanup" },
@@ -103,6 +105,7 @@ $sourceItems = @(
     @{ Path = (Join-Path $RepoRoot "src\forms\frmTableCleaner.bas"); ComponentName = "frmTableCleaner" },
     @{ Path = (Join-Path $RepoRoot "src\forms\frmUnicodeCleanup.bas"); ComponentName = "frmUnicodeCleanup" },
     @{ Path = (Join-Path $RepoRoot "src\modules\modCleanupHelpers.bas"); ComponentName = "modCleanupHelpers" },
+    @{ Path = (Join-Path $RepoRoot "src\modules\modCleanupLauncher.bas"); ComponentName = "modCleanupLauncher" },
     @{ Path = (Join-Path $RepoRoot "src\installer\installer.bas"); ComponentName = "modCleanupSuiteInstaller" }
 )
 

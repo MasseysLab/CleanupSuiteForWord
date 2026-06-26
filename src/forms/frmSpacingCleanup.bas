@@ -28,7 +28,7 @@ Private Sub UserForm_Initialize()
     optAll.Caption = "All spacing fixes"
     optDoubleSpaces.Caption = "Double spaces only"
     optTrim.Caption = "Trim leading / trailing spaces"
-    optCustom.Caption = "Custom (choose below)"
+    optCustom.Caption = "Custom"
     chkDoubleSpaces.Caption = "Collapse double (and multiple) spaces"
     chkTrimSpaces.Caption = "Remove leading and trailing spaces"
     chkSpaceBeforePunct.Caption = "Remove space before punctuation  ( , . : ; ! ? )"

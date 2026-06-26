@@ -617,6 +617,11 @@ Private Function GenericSingleChoiceWidth(designer As Object, ByVal controlName 
     pairW = ((contentW - 6) / 2) - 8
     GenericSingleChoiceWidth = pairW + 12
     If GenericChoiceHeight(designer, controlName) > 18 Then GenericSingleChoiceWidth = pairW + 28
+    If Len(Trim$(CStr(designer.Controls(controlName).Caption))) > 42 Then
+        GenericSingleChoiceWidth = contentW - 24
+    ElseIf Len(Trim$(CStr(designer.Controls(controlName).Caption))) > 30 Then
+        GenericSingleChoiceWidth = pairW + 72
+    End If
     If GenericSingleChoiceWidth < pairW Then GenericSingleChoiceWidth = pairW
     If GenericSingleChoiceWidth > contentW Then GenericSingleChoiceWidth = contentW
 End Function
@@ -659,10 +664,13 @@ Private Sub LayoutCapitalizationControls(comp As VBIDE.VBComponent, designer As 
     PositionControl designer, "optSentence", MARGIN + optionW + GAP, y, optionW, 18
     y = y + 24
     PositionControl designer, "optTitle", MARGIN, y, optionW, 18
-    PositionControl designer, "optUpper", MARGIN + optionW + GAP, y, optionW, 18
-    y = y + 24
-    PositionControl designer, "optLower", MARGIN, y, optionW, 18
     PositionControl designer, "optCustom", MARGIN + optionW + GAP, y, optionW, 18
+    PositionControl designer, "optUpper", 0, 0, 0, 0
+    PositionControl designer, "optLower", 0, 0, 0, 0
+    designer.Controls("optUpper").Visible = False
+    designer.Controls("optLower").Visible = False
+    designer.Controls("optSentence").Enabled = False
+    designer.Controls("optTitle").Enabled = False
     y = y + 28
 
     PositionControl designer, "lblModeSummary", MARGIN, y, contentW, 34
@@ -671,21 +679,17 @@ Private Sub LayoutCapitalizationControls(comp As VBIDE.VBComponent, designer As 
 
     PositionControl designer, "fraCustom", 0, 0, 0, 0
     designer.Controls("fraCustom").Visible = False
-    PositionControl designer, "chkSentence", MARGIN + 8, y, contentW - 16, 16
-    PositionControl designer, "chkTitle", MARGIN + 8, y + 18, contentW - 16, 16
-    PositionControl designer, "chkUpper", MARGIN + 8, y + 36, contentW - 16, 16
-    PositionControl designer, "chkLower", MARGIN + 8, y + 54, contentW - 16, 16
-    PositionControl designer, "chkSmartSentences", MARGIN + 8, y + 72, contentW - 16, 16
-    designer.Controls("chkSentence").Visible = False
-    designer.Controls("chkTitle").Visible = False
-    designer.Controls("chkUpper").Visible = False
-    designer.Controls("chkLower").Visible = False
-    designer.Controls("chkSmartSentences").Visible = False
+    PositionControl designer, "chkSentence", MARGIN + 8, y, contentW - 16, 18
+    PositionControl designer, "chkTitle", MARGIN + 8, y + 22, contentW - 16, 18
+    PositionControl designer, "chkUpper", MARGIN + 8, y + 44, contentW - 16, 18
+    PositionControl designer, "chkLower", MARGIN + 8, y + 66, contentW - 16, 18
+    PositionControl designer, "chkSmartSentences", MARGIN + 8, y + 88, contentW - 16, 18
     PositionControl designer, "cmdSelectAll", MARGIN, y + 94, (contentW - GAP) / 2, BTN_H
     PositionControl designer, "cmdDeselectAll", MARGIN + ((contentW - GAP) / 2) + GAP, y + 94, (contentW - GAP) / 2, BTN_H
     designer.Controls("cmdSelectAll").Visible = False
     designer.Controls("cmdDeselectAll").Visible = False
 
+    y = y + 114
     PositionControl designer, "optScopeDocument", MARGIN, y, (contentW - GAP) / 2, 18
     PositionControl designer, "optScopeSelection", MARGIN + ((contentW - GAP) / 2) + GAP, y, (contentW - GAP) / 2, 18
     designer.Controls("fraScopeSelection").Visible = False
@@ -983,22 +987,22 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmBreakNormalizer.optConvertOddPage": ControlCaptionText = "Odd Page"
         Case "frmBreakNormalizer.optScopeDocument": ControlCaptionText = "Entire document"
         Case "frmBreakNormalizer.optScopeSelection": ControlCaptionText = "Selected text only"
-        Case "frmCapitalizationCleanup.chkLower": ControlCaptionText = "Fix all-lowercase paragraphs"
+        Case "frmCapitalizationCleanup.chkLower": ControlCaptionText = "Treat likely headings carefully"
         Case "frmCapitalizationCleanup.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
-        Case "frmCapitalizationCleanup.chkSentence": ControlCaptionText = "Capitalize sentence starts"
-        Case "frmCapitalizationCleanup.chkSmartSentences": ControlCaptionText = "Smart sentence detection (skip abbreviations)"
-        Case "frmCapitalizationCleanup.chkTitle": ControlCaptionText = "Apply title case to headings"
-        Case "frmCapitalizationCleanup.chkUpper": ControlCaptionText = "Convert ALL-CAPS words (5+ letters)"
-        Case "frmCapitalizationCleanup.lblIntro": ControlCaptionText = "Choose how you want capitalization cleaned up."
-        Case "frmCapitalizationCleanup.lblModeSummary": ControlCaptionText = "Recommended: capitalizes likely sentence starts after . ? ! while leaving existing casing alone where possible."
-        Case "frmCapitalizationCleanup.optAll": ControlCaptionText = "Fix sentence starts"
+        Case "frmCapitalizationCleanup.chkSentence": ControlCaptionText = "Use abbreviation lists"
+        Case "frmCapitalizationCleanup.chkSmartSentences": ControlCaptionText = "Use quote, bullet, and boundary context"
+        Case "frmCapitalizationCleanup.chkTitle": ControlCaptionText = "Protect common acronyms"
+        Case "frmCapitalizationCleanup.chkUpper": ControlCaptionText = "Protect names and brands"
+        Case "frmCapitalizationCleanup.lblIntro": ControlCaptionText = "Choose how strongly capitalization should be repaired."
+        Case "frmCapitalizationCleanup.lblModeSummary": ControlCaptionText = "Fixes only obvious capitalization damage and leaves already-reasonable wording alone."
+        Case "frmCapitalizationCleanup.optAll": ControlCaptionText = "Conservative"
         Case "frmCapitalizationCleanup.optCustom": ControlCaptionText = "Custom"
-        Case "frmCapitalizationCleanup.optLower": ControlCaptionText = "lowercase"
+        Case "frmCapitalizationCleanup.optLower": ControlCaptionText = "Legacy hidden option"
         Case "frmCapitalizationCleanup.optScopeDocument": ControlCaptionText = "Entire document"
         Case "frmCapitalizationCleanup.optScopeSelection": ControlCaptionText = "Selected text only"
-        Case "frmCapitalizationCleanup.optSentence": ControlCaptionText = "Sentence case"
-        Case "frmCapitalizationCleanup.optTitle": ControlCaptionText = "Title case"
-        Case "frmCapitalizationCleanup.optUpper": ControlCaptionText = "UPPERCASE"
+        Case "frmCapitalizationCleanup.optSentence": ControlCaptionText = "Balanced (coming soon)"
+        Case "frmCapitalizationCleanup.optTitle": ControlCaptionText = "Aggressive (coming soon)"
+        Case "frmCapitalizationCleanup.optUpper": ControlCaptionText = "Legacy hidden option"
         Case "frmCleanupSuiteLauncher.chkAutoSave": ControlCaptionText = "Auto-save before running each tool"
         Case "frmCleanupSuiteLauncher.chkReturnToMainAfterApply": ControlCaptionText = "Return to main menu after completion review"
         Case "frmCleanupSuiteLauncher.chkShowCompletionReviewAfterApply": ControlCaptionText = "Show completion review after apply"
@@ -1092,7 +1096,7 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmListCleanup.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
         Case "frmListCleanup.optAll": ControlCaptionText = "All list fixes"
         Case "frmListCleanup.optBullets": ControlCaptionText = "Convert manual bullet lists"
-        Case "frmListCleanup.optCustom": ControlCaptionText = "Custom (choose below)"
+        Case "frmListCleanup.optCustom": ControlCaptionText = "Custom"
         Case "frmListCleanup.optIndent": ControlCaptionText = "Fix list indentation"
         Case "frmListCleanup.optNumbering": ControlCaptionText = "Convert manual numbered lists"
         Case "frmListCleanup.optScopeDocument": ControlCaptionText = "Entire document"
@@ -1118,7 +1122,7 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmParagraphCleanup.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
         Case "frmParagraphCleanup.chkRemoveEmpty": ControlCaptionText = "Collapse multiple consecutive empty paragraphs"
         Case "frmParagraphCleanup.optAll": ControlCaptionText = "All paragraph fixes"
-        Case "frmParagraphCleanup.optCustom": ControlCaptionText = "Custom (choose below)"
+        Case "frmParagraphCleanup.optCustom": ControlCaptionText = "Custom"
         Case "frmParagraphCleanup.optNormalizeSpacing": ControlCaptionText = "Normalize paragraph spacing"
         Case "frmParagraphCleanup.optRemoveEmpty": ControlCaptionText = "Remove empty paragraphs"
         Case "frmParagraphCleanup.optScopeDocument": ControlCaptionText = "Entire document"
@@ -1130,7 +1134,7 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmPunctuationCleanup.chkEnDash": ControlCaptionText = "En dash  ->  hyphen-minus  -"
         Case "frmPunctuationCleanup.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
         Case "frmPunctuationCleanup.optAll": ControlCaptionText = "All punctuation types"
-        Case "frmPunctuationCleanup.optCustom": ControlCaptionText = "Custom (choose below)"
+        Case "frmPunctuationCleanup.optCustom": ControlCaptionText = "Custom"
         Case "frmPunctuationCleanup.optDashes": ControlCaptionText = "Dashes only"
         Case "frmPunctuationCleanup.optEllipses": ControlCaptionText = "Ellipses only"
         Case "frmPunctuationCleanup.optQuotes": ControlCaptionText = "Quotes only"
@@ -1151,7 +1155,7 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmSpacingCleanup.chkSpaceBeforePunct": ControlCaptionText = "Remove space before punctuation  ( , . : ; ! ? )"
         Case "frmSpacingCleanup.chkTrimSpaces": ControlCaptionText = "Remove leading and trailing spaces"
         Case "frmSpacingCleanup.optAll": ControlCaptionText = "All spacing fixes"
-        Case "frmSpacingCleanup.optCustom": ControlCaptionText = "Custom (choose below)"
+        Case "frmSpacingCleanup.optCustom": ControlCaptionText = "Custom"
         Case "frmSpacingCleanup.optDoubleSpaces": ControlCaptionText = "Double spaces only"
         Case "frmSpacingCleanup.optScopeDocument": ControlCaptionText = "Entire document"
         Case "frmSpacingCleanup.optScopeSelection": ControlCaptionText = "Selected text only"
@@ -1179,7 +1183,7 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmUnicodeCleanup.chkZWNJ": ControlCaptionText = "Zero-width non-joiners (U+200C)"
         Case "frmUnicodeCleanup.chkZWSP": ControlCaptionText = "Zero-width spaces (U+200B)"
         Case "frmUnicodeCleanup.optAll": ControlCaptionText = "All invisible / problem characters"
-        Case "frmUnicodeCleanup.optCustom": ControlCaptionText = "Custom (choose below)"
+        Case "frmUnicodeCleanup.optCustom": ControlCaptionText = "Custom"
         Case "frmUnicodeCleanup.optNBSP": ControlCaptionText = "Non-breaking spaces only"
         Case "frmUnicodeCleanup.optScopeDocument": ControlCaptionText = "Entire document"
         Case "frmUnicodeCleanup.optScopeSelection": ControlCaptionText = "Selected text only"

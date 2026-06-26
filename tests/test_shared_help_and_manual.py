@@ -106,7 +106,7 @@ class SharedHelpAndManualTests(unittest.TestCase):
         self.assertNotIn('ShowCleanupToolHelp "Capitalization"', form)
         self.assertNotIn("cmdHelp_Click", form)
         self.assertEqual(2, helpers.count('Case "Capitalization"'))
-        self.assertIn("Fix sentence starts", helpers)
+        self.assertIn("Conservative repair", helpers)
         self.assertNotIn("All (Smart)", helpers)
 
     def test_launcher_has_user_manual_pdf_button(self):

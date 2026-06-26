@@ -5,21 +5,21 @@ reasoning level is unknown at the start of a design-heavy tool-form discussion,
 ask Chris. For broad shared-form/layout passes, recommend a stronger model and
 High reasoning.
 
-**Current 0.8.0 Course**
+**Current 0.8.5 Alpha Course**
 
-1. Treat `0.8.0` as the current working release unless Chris explicitly changes
+1. Treat `0.8.5` as the current working release unless Chris explicitly changes
    the target.
 2. The active working branch is `codex-0.8.0-release`. The old
    `codex-0.7.0-start` name is historical and should not be used for new work.
 3. Keep `AI_HANDOFF.md` short and current. Put long session history in
    `AI_HANDOFF_ARCHIVE.md` instead of letting the active handoff become hard to
    use again.
-4. Current release docs belong in the `0.8.0` set:
-   `Human_Friendly_User_Manual_v0.8.0.md`,
-   `Programmers_Guide_Adding_Tools_v0.8.0.md`,
-   `Tool_Reference_Refined_v0.8.0.md`,
-   `Release_Notes_0.7.5_to_0.8.0.md`, and
-   `Documentation_Handoff_0.8.0.md`.
+4. Current release docs belong in the `0.8.5` set:
+   `Human_Friendly_User_Manual_v0.8.5.md`,
+   `Programmers_Guide_Adding_Tools_v0.8.5.md`,
+   `Tool_Reference_Refined_v0.8.5.md`,
+   `Release_Notes_0.8.0_to_0.8.5.md`, and
+   `Documentation_Handoff_0.8.5.md`.
 5. Current release export artifacts belong in `documents/` and should be listed
    in `docs/README_DOC_PACKAGE.md`.
 6. Use `scripts/export_markdown_docs_to_docx.py` when refreshing DOCX exports
@@ -27,8 +27,8 @@ High reasoning.
 7. Historical `0.6.x` and `0.7.x` docs should remain as historical records.
    Do not rename or rewrite them just to make a current release list look tidy.
 8. When changing release docs or export artifacts, update
-   `docs/README_DOC_PACKAGE.md`, `docs/Documentation_Handoff_0.8.0.md`, and
-   `docs/Release_Notes_0.7.5_to_0.8.0.md` if their file lists or claims change.
+   `docs/README_DOC_PACKAGE.md`, `docs/Documentation_Handoff_0.8.5.md`, and
+   `docs/Release_Notes_0.8.0_to_0.8.5.md` if their file lists or claims change.
 9. `0.8.5` is the Alpha release. `0.9.0` is Alpha plus full documentation.
    Clean-house work waits until the `0.9.0` documentation state is complete
    unless Chris explicitly asks for earlier cleanup.

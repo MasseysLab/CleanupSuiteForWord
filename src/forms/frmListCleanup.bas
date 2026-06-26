@@ -30,7 +30,7 @@ Private Sub UserForm_Initialize()
     optBullets.Caption = "Convert manual bullet lists"
     optNumbering.Caption = "Convert manual numbered lists"
     optIndent.Caption = "Fix list indentation"
-    optCustom.Caption = "Custom (choose below)"
+    optCustom.Caption = "Custom"
     chkNormalizeBullets.Caption = "Convert manual hyphens / asterisks to List Bullet style"
     chkNormalizeNumbering.Caption = "Convert manual numbers to List Number style"
     chkFixIndent.Caption = "Fix list indentation"

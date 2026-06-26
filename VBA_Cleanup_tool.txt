@@ -617,6 +617,11 @@ Private Function GenericSingleChoiceWidth(designer As Object, ByVal controlName 
     pairW = ((contentW - 6) / 2) - 8
     GenericSingleChoiceWidth = pairW + 12
     If GenericChoiceHeight(designer, controlName) > 18 Then GenericSingleChoiceWidth = pairW + 28
+    If Len(Trim$(CStr(designer.Controls(controlName).Caption))) > 42 Then
+        GenericSingleChoiceWidth = contentW - 24
+    ElseIf Len(Trim$(CStr(designer.Controls(controlName).Caption))) > 30 Then
+        GenericSingleChoiceWidth = pairW + 72
+    End If
     If GenericSingleChoiceWidth < pairW Then GenericSingleChoiceWidth = pairW
     If GenericSingleChoiceWidth > contentW Then GenericSingleChoiceWidth = contentW
 End Function
@@ -659,10 +664,13 @@ Private Sub LayoutCapitalizationControls(comp As VBIDE.VBComponent, designer As 
     PositionControl designer, "optSentence", MARGIN + optionW + GAP, y, optionW, 18
     y = y + 24
     PositionControl designer, "optTitle", MARGIN, y, optionW, 18
-    PositionControl designer, "optUpper", MARGIN + optionW + GAP, y, optionW, 18
-    y = y + 24
-    PositionControl designer, "optLower", MARGIN, y, optionW, 18
     PositionControl designer, "optCustom", MARGIN + optionW + GAP, y, optionW, 18
+    PositionControl designer, "optUpper", 0, 0, 0, 0
+    PositionControl designer, "optLower", 0, 0, 0, 0
+    designer.Controls("optUpper").Visible = False
+    designer.Controls("optLower").Visible = False
+    designer.Controls("optSentence").Enabled = False
+    designer.Controls("optTitle").Enabled = False
     y = y + 28
 
     PositionControl designer, "lblModeSummary", MARGIN, y, contentW, 34
@@ -671,21 +679,17 @@ Private Sub LayoutCapitalizationControls(comp As VBIDE.VBComponent, designer As 
 
     PositionControl designer, "fraCustom", 0, 0, 0, 0
     designer.Controls("fraCustom").Visible = False
-    PositionControl designer, "chkSentence", MARGIN + 8, y, contentW - 16, 16
-    PositionControl designer, "chkTitle", MARGIN + 8, y + 18, contentW - 16, 16
-    PositionControl designer, "chkUpper", MARGIN + 8, y + 36, contentW - 16, 16
-    PositionControl designer, "chkLower", MARGIN + 8, y + 54, contentW - 16, 16
-    PositionControl designer, "chkSmartSentences", MARGIN + 8, y + 72, contentW - 16, 16
-    designer.Controls("chkSentence").Visible = False
-    designer.Controls("chkTitle").Visible = False
-    designer.Controls("chkUpper").Visible = False
-    designer.Controls("chkLower").Visible = False
-    designer.Controls("chkSmartSentences").Visible = False
+    PositionControl designer, "chkSentence", MARGIN + 8, y, contentW - 16, 18
+    PositionControl designer, "chkTitle", MARGIN + 8, y + 22, contentW - 16, 18
+    PositionControl designer, "chkUpper", MARGIN + 8, y + 44, contentW - 16, 18
+    PositionControl designer, "chkLower", MARGIN + 8, y + 66, contentW - 16, 18
+    PositionControl designer, "chkSmartSentences", MARGIN + 8, y + 88, contentW - 16, 18
     PositionControl designer, "cmdSelectAll", MARGIN, y + 94, (contentW - GAP) / 2, BTN_H
     PositionControl designer, "cmdDeselectAll", MARGIN + ((contentW - GAP) / 2) + GAP, y + 94, (contentW - GAP) / 2, BTN_H
     designer.Controls("cmdSelectAll").Visible = False
     designer.Controls("cmdDeselectAll").Visible = False
 
+    y = y + 114
     PositionControl designer, "optScopeDocument", MARGIN, y, (contentW - GAP) / 2, 18
     PositionControl designer, "optScopeSelection", MARGIN + ((contentW - GAP) / 2) + GAP, y, (contentW - GAP) / 2, 18
     designer.Controls("fraScopeSelection").Visible = False
@@ -983,22 +987,22 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmBreakNormalizer.optConvertOddPage": ControlCaptionText = "Odd Page"
         Case "frmBreakNormalizer.optScopeDocument": ControlCaptionText = "Entire document"
         Case "frmBreakNormalizer.optScopeSelection": ControlCaptionText = "Selected text only"
-        Case "frmCapitalizationCleanup.chkLower": ControlCaptionText = "Fix all-lowercase paragraphs"
+        Case "frmCapitalizationCleanup.chkLower": ControlCaptionText = "Treat likely headings carefully"
         Case "frmCapitalizationCleanup.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
-        Case "frmCapitalizationCleanup.chkSentence": ControlCaptionText = "Capitalize sentence starts"
-        Case "frmCapitalizationCleanup.chkSmartSentences": ControlCaptionText = "Smart sentence detection (skip abbreviations)"
-        Case "frmCapitalizationCleanup.chkTitle": ControlCaptionText = "Apply title case to headings"
-        Case "frmCapitalizationCleanup.chkUpper": ControlCaptionText = "Convert ALL-CAPS words (5+ letters)"
-        Case "frmCapitalizationCleanup.lblIntro": ControlCaptionText = "Choose how you want capitalization cleaned up."
-        Case "frmCapitalizationCleanup.lblModeSummary": ControlCaptionText = "Recommended: capitalizes likely sentence starts after . ? ! while leaving existing casing alone where possible."
-        Case "frmCapitalizationCleanup.optAll": ControlCaptionText = "Fix sentence starts"
+        Case "frmCapitalizationCleanup.chkSentence": ControlCaptionText = "Use abbreviation lists"
+        Case "frmCapitalizationCleanup.chkSmartSentences": ControlCaptionText = "Use quote, bullet, and boundary context"
+        Case "frmCapitalizationCleanup.chkTitle": ControlCaptionText = "Protect common acronyms"
+        Case "frmCapitalizationCleanup.chkUpper": ControlCaptionText = "Protect names and brands"
+        Case "frmCapitalizationCleanup.lblIntro": ControlCaptionText = "Choose how strongly capitalization should be repaired."
+        Case "frmCapitalizationCleanup.lblModeSummary": ControlCaptionText = "Fixes only obvious capitalization damage and leaves already-reasonable wording alone."
+        Case "frmCapitalizationCleanup.optAll": ControlCaptionText = "Conservative"
         Case "frmCapitalizationCleanup.optCustom": ControlCaptionText = "Custom"
-        Case "frmCapitalizationCleanup.optLower": ControlCaptionText = "lowercase"
+        Case "frmCapitalizationCleanup.optLower": ControlCaptionText = "Legacy hidden option"
         Case "frmCapitalizationCleanup.optScopeDocument": ControlCaptionText = "Entire document"
         Case "frmCapitalizationCleanup.optScopeSelection": ControlCaptionText = "Selected text only"
-        Case "frmCapitalizationCleanup.optSentence": ControlCaptionText = "Sentence case"
-        Case "frmCapitalizationCleanup.optTitle": ControlCaptionText = "Title case"
-        Case "frmCapitalizationCleanup.optUpper": ControlCaptionText = "UPPERCASE"
+        Case "frmCapitalizationCleanup.optSentence": ControlCaptionText = "Balanced (coming soon)"
+        Case "frmCapitalizationCleanup.optTitle": ControlCaptionText = "Aggressive (coming soon)"
+        Case "frmCapitalizationCleanup.optUpper": ControlCaptionText = "Legacy hidden option"
         Case "frmCleanupSuiteLauncher.chkAutoSave": ControlCaptionText = "Auto-save before running each tool"
         Case "frmCleanupSuiteLauncher.chkReturnToMainAfterApply": ControlCaptionText = "Return to main menu after completion review"
         Case "frmCleanupSuiteLauncher.chkShowCompletionReviewAfterApply": ControlCaptionText = "Show completion review after apply"
@@ -1092,7 +1096,7 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmListCleanup.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
         Case "frmListCleanup.optAll": ControlCaptionText = "All list fixes"
         Case "frmListCleanup.optBullets": ControlCaptionText = "Convert manual bullet lists"
-        Case "frmListCleanup.optCustom": ControlCaptionText = "Custom (choose below)"
+        Case "frmListCleanup.optCustom": ControlCaptionText = "Custom"
         Case "frmListCleanup.optIndent": ControlCaptionText = "Fix list indentation"
         Case "frmListCleanup.optNumbering": ControlCaptionText = "Convert manual numbered lists"
         Case "frmListCleanup.optScopeDocument": ControlCaptionText = "Entire document"
@@ -1118,7 +1122,7 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmParagraphCleanup.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
         Case "frmParagraphCleanup.chkRemoveEmpty": ControlCaptionText = "Collapse multiple consecutive empty paragraphs"
         Case "frmParagraphCleanup.optAll": ControlCaptionText = "All paragraph fixes"
-        Case "frmParagraphCleanup.optCustom": ControlCaptionText = "Custom (choose below)"
+        Case "frmParagraphCleanup.optCustom": ControlCaptionText = "Custom"
         Case "frmParagraphCleanup.optNormalizeSpacing": ControlCaptionText = "Normalize paragraph spacing"
         Case "frmParagraphCleanup.optRemoveEmpty": ControlCaptionText = "Remove empty paragraphs"
         Case "frmParagraphCleanup.optScopeDocument": ControlCaptionText = "Entire document"
@@ -1130,7 +1134,7 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmPunctuationCleanup.chkEnDash": ControlCaptionText = "En dash  ->  hyphen-minus  -"
         Case "frmPunctuationCleanup.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
         Case "frmPunctuationCleanup.optAll": ControlCaptionText = "All punctuation types"
-        Case "frmPunctuationCleanup.optCustom": ControlCaptionText = "Custom (choose below)"
+        Case "frmPunctuationCleanup.optCustom": ControlCaptionText = "Custom"
         Case "frmPunctuationCleanup.optDashes": ControlCaptionText = "Dashes only"
         Case "frmPunctuationCleanup.optEllipses": ControlCaptionText = "Ellipses only"
         Case "frmPunctuationCleanup.optQuotes": ControlCaptionText = "Quotes only"
@@ -1151,7 +1155,7 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmSpacingCleanup.chkSpaceBeforePunct": ControlCaptionText = "Remove space before punctuation  ( , . : ; ! ? )"
         Case "frmSpacingCleanup.chkTrimSpaces": ControlCaptionText = "Remove leading and trailing spaces"
         Case "frmSpacingCleanup.optAll": ControlCaptionText = "All spacing fixes"
-        Case "frmSpacingCleanup.optCustom": ControlCaptionText = "Custom (choose below)"
+        Case "frmSpacingCleanup.optCustom": ControlCaptionText = "Custom"
         Case "frmSpacingCleanup.optDoubleSpaces": ControlCaptionText = "Double spaces only"
         Case "frmSpacingCleanup.optScopeDocument": ControlCaptionText = "Entire document"
         Case "frmSpacingCleanup.optScopeSelection": ControlCaptionText = "Selected text only"
@@ -1179,7 +1183,7 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmUnicodeCleanup.chkZWNJ": ControlCaptionText = "Zero-width non-joiners (U+200C)"
         Case "frmUnicodeCleanup.chkZWSP": ControlCaptionText = "Zero-width spaces (U+200B)"
         Case "frmUnicodeCleanup.optAll": ControlCaptionText = "All invisible / problem characters"
-        Case "frmUnicodeCleanup.optCustom": ControlCaptionText = "Custom (choose below)"
+        Case "frmUnicodeCleanup.optCustom": ControlCaptionText = "Custom"
         Case "frmUnicodeCleanup.optNBSP": ControlCaptionText = "Non-breaking spaces only"
         Case "frmUnicodeCleanup.optScopeDocument": ControlCaptionText = "Entire document"
         Case "frmUnicodeCleanup.optScopeSelection": ControlCaptionText = "Selected text only"
@@ -1555,14 +1559,20 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "        Case ""Capitalization""" & vbCrLf
     s = s & "            AddHelpLine h, ""Capitalization Fixer""" & vbCrLf
     s = s & "            AddHelpLine h, """"" & vbCrLf
-    s = s & "            AddHelpLine h, ""Applies consistent capitalization to paragraph text in the selected scope.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""Repairs messy capitalization without duplicating Word's broad case-conversion commands.""" & vbCrLf
     s = s & "            AddHelpLine h, """"" & vbCrLf
     s = s & "            AddHelpLine h, ""Modes:""" & vbCrLf
-    s = s & "            AddHelpLine h, ""- Fix sentence starts: recommended for general text. It capitalizes likely sentence starts after . ? ! while leaving existing casing alone where possible.""" & vbCrLf
-    s = s & "            AddHelpLine h, ""- Sentence case: capitalizes the first character and lowercases the rest.""" & vbCrLf
-    s = s & "            AddHelpLine h, ""- Title case: capitalizes the first letter of every word.""" & vbCrLf
-    s = s & "            AddHelpLine h, ""- UPPERCASE / lowercase: converts affected paragraph text to that case.""" & vbCrLf
-    s = s & "            AddHelpLine h, ""- Custom: runs selected choices from top to bottom. Later choices can override earlier choices.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Conservative repair: fixes only obvious capitalization damage.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Balanced (coming soon): planned for a later version.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Aggressive (coming soon): planned for a later version.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Custom: uses only the protections you select.""" & vbCrLf
+    s = s & "            AddHelpLine h, """"" & vbCrLf
+    s = s & "            AddHelpLine h, ""Advanced protections:""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Abbreviation lists: reduces false sentence starts after common abbreviations.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Acronym protection: keeps terms such as API, PDF, or VBA uppercase.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Name and brand protection: restores known mixed-case names such as iPhone or GitHub.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Heading heuristics: avoids over-normalizing short heading-like lines.""" & vbCrLf
+    s = s & "            AddHelpLine h, ""- Boundary context: treats bullets, quotes, and other sentence-boundary punctuation more carefully.""" & vbCrLf
     s = s & "            AddHelpLine h, """"" & vbCrLf
     s = s & "            AddHelpLine h, ""Scope:""" & vbCrLf
     s = s & "            AddHelpLine h, ""Select text before opening this tool to enable Selected text only.""" & vbCrLf
@@ -2157,6 +2167,8 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "    Dim y As Single" & vbCrLf
     s = s & "    y = 8 + introH + 4" & vbCrLf
     s = s & "" & vbCrLf
+    s = s & "    HideGuidedExternalWarnings toolForm" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "    If toolForm.Name = ""frmHeaderFooterStandardizer"" Then" & vbCrLf
     s = s & "        LayoutHeaderFooterChoices toolForm, M, y, contentW, GAP" & vbCrLf
     s = s & "        LayoutGuidedInfoBox toolForm, M, y, contentW" & vbCrLf
@@ -2181,8 +2193,6 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "            GoTo NextGuidedControl" & vbCrLf
     s = s & "        End If" & vbCrLf
     s = s & "        If ShouldHideGuidedControl(toolForm, ctl.Name) Then" & vbCrLf
-    s = s & "            FlushGuidedPendingChoice toolForm, pendingChoice, M, y, contentW, GAP" & vbCrLf
-    s = s & "            FlushGuidedPendingButton toolForm, pendingButton, M, y, contentW, BH, GAP" & vbCrLf
     s = s & "            HideGuidedControl ctl" & vbCrLf
     s = s & "            GoTo NextGuidedControl" & vbCrLf
     s = s & "        End If" & vbCrLf
@@ -2193,11 +2203,18 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "            GoTo NextGuidedControl" & vbCrLf
     s = s & "        End If" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "        If GuidedCustomModeIsActive(toolForm) And IsGuidedCustomChoiceControl(toolForm.Name, ctl.Name) And Not customDividerShown Then" & vbCrLf
-    s = s & "            FlushGuidedPendingChoice toolForm, pendingChoice, M, y, contentW, GAP" & vbCrLf
-    s = s & "            FlushGuidedPendingButton toolForm, pendingButton, M, y, contentW, BH, GAP" & vbCrLf
-    s = s & "            LayoutGuidedDivider toolForm, M, y, contentW" & vbCrLf
-    s = s & "            customDividerShown = True" & vbCrLf
+    s = s & "        If Not customDividerShown Then" & vbCrLf
+    s = s & "            If GuidedCustomModeIsActive(toolForm) And IsGuidedCustomChoiceControl(toolForm.Name, ctl.Name) Then" & vbCrLf
+    s = s & "                FlushGuidedPendingChoice toolForm, pendingChoice, M, y, contentW, GAP" & vbCrLf
+    s = s & "                FlushGuidedPendingButton toolForm, pendingButton, M, y, contentW, BH, GAP" & vbCrLf
+    s = s & "                LayoutGuidedDivider toolForm, M, y, contentW" & vbCrLf
+    s = s & "                customDividerShown = True" & vbCrLf
+    s = s & "            ElseIf toolForm.Name = ""frmCapitalizationCleanup"" And GuidedCustomModeIsActive(toolForm) And IsCapitalizationAdvancedControl(ctl.Name) Then" & vbCrLf
+    s = s & "                FlushGuidedPendingChoice toolForm, pendingChoice, M, y, contentW, GAP" & vbCrLf
+    s = s & "                FlushGuidedPendingButton toolForm, pendingButton, M, y, contentW, BH, GAP" & vbCrLf
+    s = s & "                LayoutGuidedDivider toolForm, M, y, contentW" & vbCrLf
+    s = s & "                customDividerShown = True" & vbCrLf
+    s = s & "            End If" & vbCrLf
     s = s & "        End If" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "        Select Case ctl.Name" & vbCrLf
@@ -2266,8 +2283,11 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "    RemoveGuidedGeneratedLabel toolForm, ""lblGuidedToolName""" & vbCrLf
     s = s & "    HideGuidedGeneratedLabel toolForm, ""lblGuidedDivider""" & vbCrLf
     s = s & "    HideGuidedGeneratedLabel toolForm, ""lblGuidedInfoBorder""" & vbCrLf
-    s = s & "    For i = 1 To 14" & vbCrLf
+    s = s & "    HideGuidedGeneratedLabel toolForm, ""lblGuidedInfoMeasure""" & vbCrLf
+    s = s & "    For i = 1 To 20" & vbCrLf
     s = s & "        HideGuidedGeneratedLabel toolForm, ""lblGuidedInfoLine"" & CStr(i)" & vbCrLf
+    s = s & "        HideGuidedGeneratedLabel toolForm, ""lblGuidedInfoName"" & CStr(i)" & vbCrLf
+    s = s & "        HideGuidedGeneratedLabel toolForm, ""lblGuidedInfoDetail"" & CStr(i)" & vbCrLf
     s = s & "    Next i" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub RemoveGuidedGeneratedLabel(ByVal toolForm As Object, ByVal controlName As String)" & vbCrLf
@@ -2277,6 +2297,12 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "Private Sub HideGuidedGeneratedLabel(ByVal toolForm As Object, ByVal controlName As String)" & vbCrLf
     s = s & "    On Error Resume Next" & vbCrLf
     s = s & "    HideGuidedControl toolForm.Controls(controlName)" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "Private Sub HideGuidedExternalWarnings(ByVal toolForm As Object)" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    HideGuidedControl toolForm.Controls(""lblFuzzyWarning"")" & vbCrLf
+    s = s & "    HideGuidedControl toolForm.Controls(""lblSpeedWarning"")" & vbCrLf
+    s = s & "    HideGuidedControl toolForm.Controls(""lblModeSummary"")" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Function ShouldSkipGuidedLayoutControl(ByVal controlName As String) As Boolean" & vbCrLf
     s = s & "    If controlName = ""lblTitle"" Or controlName = ""lblIntro"" Or controlName = ""lblModeSummary"" Or controlName = ""lblSpeedWarning"" Or controlName = ""lblFuzzyWarning"" Or controlName = ""lblGuidedDivider"" Then" & vbCrLf
@@ -2372,10 +2398,24 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "            End Select" & vbCrLf
     s = s & "        End If" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If toolForm.Name = ""frmCapitalizationCleanup"" Then" & vbCrLf
+    s = s & "        Select Case controlName" & vbCrLf
+    s = s & "            Case ""optUpper"", ""optLower""" & vbCrLf
+    s = s & "                ShouldHideGuidedControl = True" & vbCrLf
+    s = s & "                Exit Function" & vbCrLf
+    s = s & "            Case ""chkSentence"", ""chkTitle"", ""chkUpper"", ""chkLower"", ""chkSmartSentences""" & vbCrLf
+    s = s & "                ShouldHideGuidedControl = Not GuidedCustomModeIsActive(toolForm)" & vbCrLf
+    s = s & "                Exit Function" & vbCrLf
+    s = s & "        End Select" & vbCrLf
+    s = s & "    End If" & vbCrLf
     s = s & "End Function" & vbCrLf
     s = s & "Private Function GuidedCustomModeIsActive(ByVal toolForm As Object) As Boolean" & vbCrLf
     s = s & "    On Error Resume Next" & vbCrLf
     s = s & "    GuidedCustomModeIsActive = toolForm.Controls(""optCustom"").Value" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "Private Function IsCapitalizationAdvancedControl(ByVal controlName As String) As Boolean" & vbCrLf
+    s = s & "    IsCapitalizationAdvancedControl = (controlName = ""chkSentence"" Or controlName = ""chkTitle"" Or controlName = ""chkUpper"" Or controlName = ""chkLower"" Or controlName = ""chkSmartSentences"")" & vbCrLf
     s = s & "End Function" & vbCrLf
     s = s & "Private Sub LayoutHeaderFooterChoices(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single, ByVal GAP As Single)" & vbCrLf
     s = s & "    On Error Resume Next" & vbCrLf
@@ -2419,8 +2459,6 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "            IsGuidedCustomChoiceControl = (controlName = ""chkNormalizeBullets"" Or controlName = ""chkNormalizeNumbering"" Or controlName = ""chkFixIndent"" Or controlName = ""chkHyphenToBullets"")" & vbCrLf
     s = s & "        Case ""frmParagraphCleanup""" & vbCrLf
     s = s & "            IsGuidedCustomChoiceControl = (controlName = ""chkRemoveEmpty"" Or controlName = ""chkCollapseBreaks"" Or controlName = ""chkNormalizeParaSpacing"" Or controlName = ""chkFixIndent"")" & vbCrLf
-    s = s & "        Case ""frmCapitalizationCleanup""" & vbCrLf
-    s = s & "            IsGuidedCustomChoiceControl = (controlName = ""chkSentence"" Or controlName = ""chkTitle"" Or controlName = ""chkUpper"" Or controlName = ""chkLower"" Or controlName = ""chkSmartSentences"")" & vbCrLf
     s = s & "        Case Else" & vbCrLf
     s = s & "            IsGuidedCustomChoiceControl = False" & vbCrLf
     s = s & "    End Select" & vbCrLf
@@ -2497,6 +2535,11 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "    pairW = ((contentW - 6) / 2) - 8" & vbCrLf
     s = s & "    GuidedSingleChoiceWidth = pairW + 12" & vbCrLf
     s = s & "    If GuidedOptionHeight(ctl) > 18 Then GuidedSingleChoiceWidth = pairW + 28" & vbCrLf
+    s = s & "    If Len(Trim$(ctl.Caption)) > 42 Then" & vbCrLf
+    s = s & "        GuidedSingleChoiceWidth = contentW - 24" & vbCrLf
+    s = s & "    ElseIf Len(Trim$(ctl.Caption)) > 30 Then" & vbCrLf
+    s = s & "        GuidedSingleChoiceWidth = pairW + 72" & vbCrLf
+    s = s & "    End If" & vbCrLf
     s = s & "    If GuidedSingleChoiceWidth < pairW Then GuidedSingleChoiceWidth = pairW" & vbCrLf
     s = s & "    If GuidedSingleChoiceWidth > contentW Then GuidedSingleChoiceWidth = contentW" & vbCrLf
     s = s & "End Function" & vbCrLf
@@ -2561,13 +2604,49 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "Private Sub LayoutGuidedInfoBox(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single)" & vbCrLf
     s = s & "    On Error Resume Next" & vbCrLf
     s = s & "    Const GAP As Single = 4" & vbCrLf
-    s = s & "    Const LINE_H As Single = 14" & vbCrLf
+    s = s & "    Const BOX_PAD As Single = 10" & vbCrLf
+    s = s & "    Const INNER_GAP As Single = 4" & vbCrLf
     s = s & "    Dim lines As Collection" & vbCrLf
     s = s & "    Set lines = GuidedInfoLines(toolForm)" & vbCrLf
     s = s & "    If lines.Count = 0 Then Exit Sub" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "    Dim boxH As Single" & vbCrLf
-    s = s & "    boxH = 6 + (lines.Count * LINE_H) + 6" & vbCrLf
+    s = s & "    boxH = 8" & vbCrLf
+    s = s & "    Dim i As Long" & vbCrLf
+    s = s & "    Dim rawLine As String" & vbCrLf
+    s = s & "    Dim boldPos As Long" & vbCrLf
+    s = s & "    Dim nameText As String" & vbCrLf
+    s = s & "    Dim detailText As String" & vbCrLf
+    s = s & "    Dim lineBold As Boolean" & vbCrLf
+    s = s & "    Dim lineH As Single" & vbCrLf
+    s = s & "    Dim nameW As Single" & vbCrLf
+    s = s & "    Dim nameColW As Single" & vbCrLf
+    s = s & "    Dim detailW As Single" & vbCrLf
+    s = s & "    Dim measureCtl As Object" & vbCrLf
+    s = s & "    nameColW = 72" & vbCrLf
+    s = s & "    For i = 1 To lines.Count" & vbCrLf
+    s = s & "        rawLine = CStr(lines(i))" & vbCrLf
+    s = s & "        nameText = GuidedInfoRecordName(rawLine)" & vbCrLf
+    s = s & "        nameW = GuidedInfoNameWidth(nameText)" & vbCrLf
+    s = s & "        If nameW > nameColW Then nameColW = nameW" & vbCrLf
+    s = s & "    Next i" & vbCrLf
+    s = s & "    If nameColW > 92 Then nameColW = 92" & vbCrLf
+    s = s & "    detailW = contentW - ((BOX_PAD * 2) + nameColW + INNER_GAP)" & vbCrLf
+    s = s & "    Set measureCtl = EnsureGuidedLabel(toolForm, ""lblGuidedInfoMeasure"")" & vbCrLf
+    s = s & "    For i = 1 To lines.Count" & vbCrLf
+    s = s & "        rawLine = CStr(lines(i))" & vbCrLf
+    s = s & "        nameText = GuidedInfoRecordName(rawLine)" & vbCrLf
+    s = s & "        detailText = GuidedInfoRecordDetail(rawLine)" & vbCrLf
+    s = s & "        boldPos = InStrRev(rawLine, Chr$(30), -1, vbBinaryCompare)" & vbCrLf
+    s = s & "        If boldPos > 0 Then" & vbCrLf
+    s = s & "            lineBold = (Mid$(rawLine, boldPos + 1) = ""1"")" & vbCrLf
+    s = s & "        Else" & vbCrLf
+    s = s & "            lineBold = False" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "        lineH = GuidedInfoLineHeight(toolForm, detailText, detailW, lineBold)" & vbCrLf
+    s = s & "        boxH = boxH + lineH" & vbCrLf
+    s = s & "    Next i" & vbCrLf
+    s = s & "    boxH = boxH + 4" & vbCrLf
     s = s & "    If boxH < 34 Then boxH = 34" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "    Dim border As Object" & vbCrLf
@@ -2581,46 +2660,102 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "        .Visible = True" & vbCrLf
     s = s & "    End With" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "    Dim i As Long" & vbCrLf
     s = s & "    Dim lineCtl As Object" & vbCrLf
-    s = s & "    Dim rawLine As String" & vbCrLf
-    s = s & "    Dim sepPos As Long" & vbCrLf
-    s = s & "    Dim lineText As String" & vbCrLf
-    s = s & "    Dim lineBold As Boolean" & vbCrLf
+    s = s & "    Dim nameCtl As Object" & vbCrLf
+    s = s & "    Dim detailCtl As Object" & vbCrLf
+    s = s & "    Dim lineTop As Single" & vbCrLf
+    s = s & "    lineTop = y + 6" & vbCrLf
     s = s & "    For i = 1 To lines.Count" & vbCrLf
     s = s & "        rawLine = CStr(lines(i))" & vbCrLf
-    s = s & "        sepPos = InStr(1, rawLine, Chr$(30), vbBinaryCompare)" & vbCrLf
-    s = s & "        If sepPos > 0 Then" & vbCrLf
-    s = s & "            lineText = Left$(rawLine, sepPos - 1)" & vbCrLf
-    s = s & "            lineBold = (Mid$(rawLine, sepPos + 1) = ""1"")" & vbCrLf
+    s = s & "        nameText = GuidedInfoRecordName(rawLine)" & vbCrLf
+    s = s & "        detailText = GuidedInfoRecordDetail(rawLine)" & vbCrLf
+    s = s & "        boldPos = InStrRev(rawLine, Chr$(30), -1, vbBinaryCompare)" & vbCrLf
+    s = s & "        If boldPos > 0 Then" & vbCrLf
+    s = s & "            lineBold = (Mid$(rawLine, boldPos + 1) = ""1"")" & vbCrLf
     s = s & "        Else" & vbCrLf
-    s = s & "            lineText = rawLine" & vbCrLf
     s = s & "            lineBold = False" & vbCrLf
     s = s & "        End If" & vbCrLf
+    s = s & "        lineH = GuidedInfoLineHeight(toolForm, detailText, detailW, lineBold)" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "        Set lineCtl = EnsureGuidedLabel(toolForm, ""lblGuidedInfoLine"" & CStr(i))" & vbCrLf
-    s = s & "        With lineCtl" & vbCrLf
-    s = s & "            .Caption = lineText" & vbCrLf
+    s = s & "        lineCtl.Visible = False" & vbCrLf
+    s = s & "        lineCtl.Move 0, 0, 0, 0" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Set nameCtl = EnsureGuidedLabel(toolForm, ""lblGuidedInfoName"" & CStr(i))" & vbCrLf
+    s = s & "        With nameCtl" & vbCrLf
+    s = s & "            .Caption = nameText & "":""" & vbCrLf
     s = s & "            .Font.Name = ""Segoe UI""" & vbCrLf
-    s = s & "            .Font.Size = 8.5" & vbCrLf
+    s = s & "            .Font.Size = 7.5" & vbCrLf
     s = s & "            .Font.Bold = lineBold" & vbCrLf
     s = s & "            .ForeColor = RGB(67, 80, 96)" & vbCrLf
     s = s & "            .BackColor = RGB(255, 255, 255)" & vbCrLf
     s = s & "            .BackStyle = 1" & vbCrLf
-    s = s & "            .TextAlign = 2" & vbCrLf
+    s = s & "            .TextAlign = 1" & vbCrLf
     s = s & "            .WordWrap = True" & vbCrLf
     s = s & "            .BorderStyle = 0" & vbCrLf
     s = s & "            .SpecialEffect = 0" & vbCrLf
-    s = s & "            .Move M + 4, y + 4 + ((i - 1) * LINE_H), contentW - 8, LINE_H" & vbCrLf
+    s = s & "            .Move M + BOX_PAD, lineTop, nameColW, lineH" & vbCrLf
     s = s & "            .Visible = True" & vbCrLf
     s = s & "            .ZOrder 0" & vbCrLf
     s = s & "        End With" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Set detailCtl = EnsureGuidedLabel(toolForm, ""lblGuidedInfoDetail"" & CStr(i))" & vbCrLf
+    s = s & "        With detailCtl" & vbCrLf
+    s = s & "            .Caption = detailText" & vbCrLf
+    s = s & "            .Font.Name = ""Segoe UI""" & vbCrLf
+    s = s & "            .Font.Size = 7.5" & vbCrLf
+    s = s & "            .Font.Bold = lineBold" & vbCrLf
+    s = s & "            .ForeColor = RGB(67, 80, 96)" & vbCrLf
+    s = s & "            .BackColor = RGB(255, 255, 255)" & vbCrLf
+    s = s & "            .BackStyle = 1" & vbCrLf
+    s = s & "            .TextAlign = 1" & vbCrLf
+    s = s & "            .WordWrap = True" & vbCrLf
+    s = s & "            .BorderStyle = 0" & vbCrLf
+    s = s & "            .SpecialEffect = 0" & vbCrLf
+    s = s & "            .Move M + BOX_PAD + nameColW + INNER_GAP, lineTop, detailW, lineH" & vbCrLf
+    s = s & "            .Visible = True" & vbCrLf
+    s = s & "            .ZOrder 0" & vbCrLf
+    s = s & "        End With" & vbCrLf
+    s = s & "        lineTop = lineTop + lineH" & vbCrLf
     s = s & "    Next i" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "    For i = lines.Count + 1 To 14" & vbCrLf
+    s = s & "    For i = lines.Count + 1 To 20" & vbCrLf
     s = s & "        HideGuidedControl toolForm.Controls(""lblGuidedInfoLine"" & CStr(i))" & vbCrLf
+    s = s & "        HideGuidedControl toolForm.Controls(""lblGuidedInfoName"" & CStr(i))" & vbCrLf
+    s = s & "        HideGuidedControl toolForm.Controls(""lblGuidedInfoDetail"" & CStr(i))" & vbCrLf
     s = s & "    Next i" & vbCrLf
     s = s & "    y = y + boxH + GAP" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "Private Function GuidedInfoNameWidth(ByVal nameText As String) As Single" & vbCrLf
+    s = s & "    GuidedInfoNameWidth = 18 + (Len(nameText) * 3.6)" & vbCrLf
+    s = s & "    If GuidedInfoNameWidth < 56 Then GuidedInfoNameWidth = 56" & vbCrLf
+    s = s & "    If GuidedInfoNameWidth > 110 Then GuidedInfoNameWidth = 110" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "Private Function GuidedInfoLineHeight(ByVal toolForm As Object, ByVal detailText As String, ByVal detailWidth As Single, Optional ByVal isBold As Boolean = False) As Single" & vbCrLf
+    s = s & "    Dim measureCtl As Object" & vbCrLf
+    s = s & "    Set measureCtl = EnsureGuidedLabel(toolForm, ""lblGuidedInfoMeasure"")" & vbCrLf
+    s = s & "    With measureCtl" & vbCrLf
+    s = s & "        .Caption = detailText" & vbCrLf
+    s = s & "        .Font.Name = ""Segoe UI""" & vbCrLf
+    s = s & "        .Font.Size = 7.5" & vbCrLf
+    s = s & "        .Font.Bold = isBold" & vbCrLf
+    s = s & "        .ForeColor = RGB(67, 80, 96)" & vbCrLf
+    s = s & "        .BackColor = RGB(255, 255, 255)" & vbCrLf
+    s = s & "        .BackStyle = 1" & vbCrLf
+    s = s & "        .TextAlign = 1" & vbCrLf
+    s = s & "        .WordWrap = True" & vbCrLf
+    s = s & "        .BorderStyle = 0" & vbCrLf
+    s = s & "        .SpecialEffect = 0" & vbCrLf
+    s = s & "        .Visible = False" & vbCrLf
+    s = s & "        .Move -1000, -1000, detailWidth, 11" & vbCrLf
+    s = s & "        .AutoSize = False" & vbCrLf
+    s = s & "        .AutoSize = True" & vbCrLf
+    s = s & "        GuidedInfoLineHeight = measureCtl.Height - 2" & vbCrLf
+    s = s & "        .AutoSize = False" & vbCrLf
+    s = s & "        .Move -1000, -1000, detailWidth, GuidedInfoLineHeight" & vbCrLf
+    s = s & "    End With" & vbCrLf
+    s = s & "    If GuidedInfoLineHeight < 11 Then GuidedInfoLineHeight = 11" & vbCrLf
+    s = s & "End Function" & vbCrLf
     s = s & "Private Function GuidedInfoLines(ByVal toolForm As Object) As Collection" & vbCrLf
     s = s & "    On Error Resume Next" & vbCrLf
     s = s & "    Set GuidedInfoLines = New Collection" & vbCrLf
@@ -2645,13 +2780,13 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "    Dim ctl As Object" & vbCrLf
     s = s & "    For Each ctl In toolForm.Controls" & vbCrLf
     s = s & "        If Not GuidedChoiceShouldAppearInInfo(toolForm, ctl, customActive) Then GoTo NextInfoControl" & vbCrLf
-    s = s & "        GuidedInfoLines.Add GuidedInfoText(toolForm.Name, ctl.Name, ctl.Caption) & Chr$(30) & IIf(GuidedControlIsSelected(ctl), ""1"", ""0"")" & vbCrLf
+    s = s & "        GuidedInfoLines.Add GuidedInfoRecord(toolForm.Name, ctl.Name, ctl.Caption, GuidedControlIsSelected(ctl))" & vbCrLf
     s = s & "NextInfoControl:" & vbCrLf
     s = s & "    Next ctl" & vbCrLf
     s = s & "End Function" & vbCrLf
     s = s & "Private Function GuidedInfoLineForControl(ByVal toolForm As Object, ByVal controlName As String) As String" & vbCrLf
     s = s & "    On Error Resume Next" & vbCrLf
-    s = s & "    GuidedInfoLineForControl = GuidedInfoText(toolForm.Name, controlName, toolForm.Controls(controlName).Caption) & Chr$(30) & IIf(GuidedControlIsSelected(toolForm.Controls(controlName)), ""1"", ""0"")" & vbCrLf
+    s = s & "    GuidedInfoLineForControl = GuidedInfoRecord(toolForm.Name, controlName, toolForm.Controls(controlName).Caption, GuidedControlIsSelected(toolForm.Controls(controlName)))" & vbCrLf
     s = s & "End Function" & vbCrLf
     s = s & "Private Function GuidedChoiceShouldAppearInInfo(ByVal toolForm As Object, ByVal ctl As Object, ByVal customActive As Boolean) As Boolean" & vbCrLf
     s = s & "    On Error Resume Next" & vbCrLf
@@ -2662,7 +2797,13 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "            Exit Function" & vbCrLf
     s = s & "    End Select" & vbCrLf
     s = s & "    If ShouldHideGuidedControl(toolForm, ctl.Name) Then Exit Function" & vbCrLf
-    s = s & "    If customActive Then" & vbCrLf
+    s = s & "    If toolForm.Name = ""frmCapitalizationCleanup"" Then" & vbCrLf
+    s = s & "        If customActive Then" & vbCrLf
+    s = s & "            GuidedChoiceShouldAppearInInfo = IsCapitalizationAdvancedControl(ctl.Name)" & vbCrLf
+    s = s & "        Else" & vbCrLf
+    s = s & "            GuidedChoiceShouldAppearInInfo = (Left$(ctl.Name, 3) = ""opt"")" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "    ElseIf customActive Then" & vbCrLf
     s = s & "        GuidedChoiceShouldAppearInInfo = IsGuidedCustomChoiceControl(toolForm.Name, ctl.Name)" & vbCrLf
     s = s & "    Else" & vbCrLf
     s = s & "        GuidedChoiceShouldAppearInInfo = Not IsGuidedCustomChoiceControl(toolForm.Name, ctl.Name)" & vbCrLf
@@ -2672,19 +2813,293 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "    On Error Resume Next" & vbCrLf
     s = s & "    GuidedControlIsSelected = CBool(ctl.Value)" & vbCrLf
     s = s & "End Function" & vbCrLf
-    s = s & "Private Function GuidedInfoText(ByVal formName As String, ByVal controlName As String, ByVal fallbackText As String) As String" & vbCrLf
-    s = s & "    Dim labelText As String" & vbCrLf
-    s = s & "    labelText = CleanGuidedInfoCaption(fallbackText)" & vbCrLf
-    s = s & "    Select Case controlName" & vbCrLf
-    s = s & "        Case ""optCustom""" & vbCrLf
-    s = s & "            GuidedInfoText = ""Custom: choose the individual actions below.""" & vbCrLf
-    s = s & "        Case ""cmdSelectAll""" & vbCrLf
-    s = s & "            GuidedInfoText = ""Select All: turns on every custom action.""" & vbCrLf
-    s = s & "        Case ""cmdDeselectAll""" & vbCrLf
-    s = s & "            GuidedInfoText = ""Deselect All: turns off every custom action.""" & vbCrLf
+    s = s & "Private Function GuidedInfoRecord(ByVal formName As String, ByVal controlName As String, ByVal fallbackText As String, ByVal isSelected As Boolean) As String" & vbCrLf
+    s = s & "    GuidedInfoRecord = GuidedInfoDisplayName(formName, controlName, fallbackText) & Chr$(29) & GuidedInfoAdvisory(formName, controlName, fallbackText) & Chr$(30) & IIf(isSelected, ""1"", ""0"")" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "Private Function GuidedInfoRecordName(ByVal rawLine As String) As String" & vbCrLf
+    s = s & "    Dim namePos As Long" & vbCrLf
+    s = s & "    namePos = InStr(1, rawLine, Chr$(29), vbBinaryCompare)" & vbCrLf
+    s = s & "    If namePos > 0 Then" & vbCrLf
+    s = s & "        GuidedInfoRecordName = Left$(rawLine, namePos - 1)" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        GuidedInfoRecordName = rawLine" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "Private Function GuidedInfoRecordDetail(ByVal rawLine As String) As String" & vbCrLf
+    s = s & "    Dim namePos As Long" & vbCrLf
+    s = s & "    Dim boldPos As Long" & vbCrLf
+    s = s & "    namePos = InStr(1, rawLine, Chr$(29), vbBinaryCompare)" & vbCrLf
+    s = s & "    boldPos = InStrRev(rawLine, Chr$(30), -1, vbBinaryCompare)" & vbCrLf
+    s = s & "    If namePos = 0 Then Exit Function" & vbCrLf
+    s = s & "    If boldPos > namePos Then" & vbCrLf
+    s = s & "        GuidedInfoRecordDetail = Mid$(rawLine, namePos + 1, (boldPos - namePos) - 1)" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        GuidedInfoRecordDetail = Mid$(rawLine, namePos + 1)" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "Private Function GuidedInfoDisplayName(ByVal formName As String, ByVal controlName As String, ByVal fallbackText As String) As String" & vbCrLf
+    s = s & "    Dim key As String" & vbCrLf
+    s = s & "    key = formName & ""."" & controlName" & vbCrLf
+    s = s & "    Select Case key" & vbCrLf
+    s = s & "        Case ""frmBreakNormalizer.chkCollapseSectionBreaks"": GuidedInfoDisplayName = ""Collapse section breaks""" & vbCrLf
+    s = s & "        Case ""frmBreakNormalizer.chkCollapsePageBreaks"": GuidedInfoDisplayName = ""Collapse page breaks""" & vbCrLf
+    s = s & "        Case ""frmBreakNormalizer.chkConvertSectionBreaks"": GuidedInfoDisplayName = ""Convert section breaks""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.optAll"": GuidedInfoDisplayName = ""Conservative repair""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.optSentence"": GuidedInfoDisplayName = ""Balanced (coming soon)""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.optTitle"": GuidedInfoDisplayName = ""Aggressive (coming soon)""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.optUpper"": GuidedInfoDisplayName = ""Legacy hidden option""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.optLower"": GuidedInfoDisplayName = ""Legacy hidden option""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.optCustom"": GuidedInfoDisplayName = ""Custom""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.chkSentence"": GuidedInfoDisplayName = ""Abbreviation lists""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.chkTitle"": GuidedInfoDisplayName = ""Acronym protection""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.chkUpper"": GuidedInfoDisplayName = ""Name and brand protection""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.chkLower"": GuidedInfoDisplayName = ""Heading heuristics""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.chkSmartSentences"": GuidedInfoDisplayName = ""Boundary context""" & vbCrLf
+    s = s & "        Case ""frmDuplicateDetector.optHighlightOnly"": GuidedInfoDisplayName = ""Preview duplicates""" & vbCrLf
+    s = s & "        Case ""frmDuplicateDetector.optRemoveDupes"": GuidedInfoDisplayName = ""Remove duplicates""" & vbCrLf
+    s = s & "        Case ""frmDuplicateDetector.optMatchExact"": GuidedInfoDisplayName = ""Exact match""" & vbCrLf
+    s = s & "        Case ""frmDuplicateDetector.optMatchNormalized"": GuidedInfoDisplayName = ""Normalized match""" & vbCrLf
+    s = s & "        Case ""frmDuplicateDetector.optMatchFuzzy"": GuidedInfoDisplayName = ""Fuzzy match""" & vbCrLf
+    s = s & "        Case ""frmDuplicateDetector.optFuzzyLoose"": GuidedInfoDisplayName = ""Loose""" & vbCrLf
+    s = s & "        Case ""frmDuplicateDetector.optFuzzyMedium"": GuidedInfoDisplayName = ""Medium""" & vbCrLf
+    s = s & "        Case ""frmDuplicateDetector.optFuzzyStrict"": GuidedInfoDisplayName = ""Strict""" & vbCrLf
+    s = s & "        Case ""frmFontNormalizer.chkFontFace"": GuidedInfoDisplayName = ""Font face""" & vbCrLf
+    s = s & "        Case ""frmFontNormalizer.chkFontSize"": GuidedInfoDisplayName = ""Font size""" & vbCrLf
+    s = s & "        Case ""frmFontNormalizer.chkBold"": GuidedInfoDisplayName = ""Bold overrides""" & vbCrLf
+    s = s & "        Case ""frmFontNormalizer.chkItalic"": GuidedInfoDisplayName = ""Italic overrides""" & vbCrLf
+    s = s & "        Case ""frmFontNormalizer.chkFontColor"": GuidedInfoDisplayName = ""Font color overrides""" & vbCrLf
+    s = s & "        Case ""frmFootnoteRemover.chkFootnotes"": GuidedInfoDisplayName = ""Remove footnotes""" & vbCrLf
+    s = s & "        Case ""frmFootnoteRemover.chkEndnotes"": GuidedInfoDisplayName = ""Remove endnotes""" & vbCrLf
+    s = s & "        Case ""frmFootnoteRemover.chkKeepTextInline"": GuidedInfoDisplayName = ""Keep note text""" & vbCrLf
+    s = s & "        Case ""frmFormattingStripper.chkResetChar"": GuidedInfoDisplayName = ""Strip character formatting""" & vbCrLf
+    s = s & "        Case ""frmFormattingStripper.chkResetPara"": GuidedInfoDisplayName = ""Strip paragraph formatting""" & vbCrLf
+    s = s & "        Case ""frmFormattingStripper.optEmphQuick"": GuidedInfoDisplayName = ""Quick""" & vbCrLf
+    s = s & "        Case ""frmFormattingStripper.optEmphThorough"": GuidedInfoDisplayName = ""Thorough""" & vbCrLf
+    s = s & "        Case ""frmFormattingStripper.optEmphStrip"": GuidedInfoDisplayName = ""Strip""" & vbCrLf
+    s = s & "        Case ""frmFormattingStripper.chkPreserveHighlight"": GuidedInfoDisplayName = ""Preserve highlighting""" & vbCrLf
+    s = s & "        Case ""frmFormattingStripper.chkPreserveDropCaps"": GuidedInfoDisplayName = ""Preserve drop caps""" & vbCrLf
+    s = s & "        Case ""frmHeaderFooterStandardizer.optStandardize"": GuidedInfoDisplayName = ""Standardize""" & vbCrLf
+    s = s & "        Case ""frmHeaderFooterStandardizer.optClearAll"": GuidedInfoDisplayName = ""Clear all""" & vbCrLf
+    s = s & "        Case ""frmHeaderFooterStandardizer.chkHeaders"": GuidedInfoDisplayName = ""Headers""" & vbCrLf
+    s = s & "        Case ""frmHeaderFooterStandardizer.chkFooters"": GuidedInfoDisplayName = ""Footers""" & vbCrLf
+    s = s & "        Case ""frmHeaderFooterStandardizer.chkFont"": GuidedInfoDisplayName = ""Reset font""" & vbCrLf
+    s = s & "        Case ""frmHeaderFooterStandardizer.chkSpacing"": GuidedInfoDisplayName = ""Remove spacing""" & vbCrLf
+    s = s & "        Case ""frmHeaderFooterStandardizer.chkBreakLinks"": GuidedInfoDisplayName = ""Unlink sections""" & vbCrLf
+    s = s & "        Case ""frmHeaderFooterStandardizer.chkAlignment"": GuidedInfoDisplayName = ""Set alignment""" & vbCrLf
+    s = s & "        Case ""frmHyperlinkRemover.chkRemoveFormat"": GuidedInfoDisplayName = ""Remove link style""" & vbCrLf
+    s = s & "        Case ""frmListCleanup.optAll"": GuidedInfoDisplayName = ""All list fixes""" & vbCrLf
+    s = s & "        Case ""frmListCleanup.optBullets"": GuidedInfoDisplayName = ""Bullet conversion""" & vbCrLf
+    s = s & "        Case ""frmListCleanup.optNumbering"": GuidedInfoDisplayName = ""Number conversion""" & vbCrLf
+    s = s & "        Case ""frmListCleanup.optIndent"": GuidedInfoDisplayName = ""Indentation only""" & vbCrLf
+    s = s & "        Case ""frmListCleanup.optCustom"": GuidedInfoDisplayName = ""Custom""" & vbCrLf
+    s = s & "        Case ""frmListCleanup.chkNormalizeBullets"": GuidedInfoDisplayName = ""Bullet conversion""" & vbCrLf
+    s = s & "        Case ""frmListCleanup.chkNormalizeNumbering"": GuidedInfoDisplayName = ""Number conversion""" & vbCrLf
+    s = s & "        Case ""frmListCleanup.chkFixIndent"": GuidedInfoDisplayName = ""Indentation""" & vbCrLf
+    s = s & "        Case ""frmListCleanup.chkHyphenToBullets"": GuidedInfoDisplayName = ""Hyphen lines""" & vbCrLf
+    s = s & "        Case ""frmMetadataScrubber.chkProperties"": GuidedInfoDisplayName = ""Document properties""" & vbCrLf
+    s = s & "        Case ""frmMetadataScrubber.chkPersonalInfo"": GuidedInfoDisplayName = ""Personal info""" & vbCrLf
+    s = s & "        Case ""frmMetadataScrubber.chkComments"": GuidedInfoDisplayName = ""Comments""" & vbCrLf
+    s = s & "        Case ""frmMetadataScrubber.chkRevisions"": GuidedInfoDisplayName = ""Tracked changes""" & vbCrLf
+    s = s & "        Case ""frmObjectRemover.chkPictures"": GuidedInfoDisplayName = ""Pictures""" & vbCrLf
+    s = s & "        Case ""frmObjectRemover.chkTextBoxes"": GuidedInfoDisplayName = ""Text boxes""" & vbCrLf
+    s = s & "        Case ""frmObjectRemover.chkFrames"": GuidedInfoDisplayName = ""Frames""" & vbCrLf
+    s = s & "        Case ""frmObjectRemover.chkHorizontalLines"": GuidedInfoDisplayName = ""Horizontal lines""" & vbCrLf
+    s = s & "        Case ""frmObjectRemover.chkHtmlControls"": GuidedInfoDisplayName = ""Form controls""" & vbCrLf
+    s = s & "        Case ""frmObjectRemover.chkHiddenText"": GuidedInfoDisplayName = ""Hidden text""" & vbCrLf
+    s = s & "        Case ""frmObjectRemover.chkTables"": GuidedInfoDisplayName = ""Tables""" & vbCrLf
+    s = s & "        Case ""frmParagraphCleanup.optAll"": GuidedInfoDisplayName = ""All paragraph fixes""" & vbCrLf
+    s = s & "        Case ""frmParagraphCleanup.optRemoveEmpty"": GuidedInfoDisplayName = ""Empty paragraphs""" & vbCrLf
+    s = s & "        Case ""frmParagraphCleanup.optNormalizeSpacing"": GuidedInfoDisplayName = ""Paragraph spacing""" & vbCrLf
+    s = s & "        Case ""frmParagraphCleanup.optCustom"": GuidedInfoDisplayName = ""Custom""" & vbCrLf
+    s = s & "        Case ""frmParagraphCleanup.chkRemoveEmpty"": GuidedInfoDisplayName = ""Collapse empties""" & vbCrLf
+    s = s & "        Case ""frmParagraphCleanup.chkCollapseBreaks"": GuidedInfoDisplayName = ""Soft returns to paragraphs""" & vbCrLf
+    s = s & "        Case ""frmParagraphCleanup.chkNormalizeParaSpacing"": GuidedInfoDisplayName = ""Space Before/After""" & vbCrLf
+    s = s & "        Case ""frmParagraphCleanup.chkFixIndent"": GuidedInfoDisplayName = ""Leading manual indents""" & vbCrLf
+    s = s & "        Case ""frmPunctuationCleanup.optAll"": GuidedInfoDisplayName = ""All punctuation fixes""" & vbCrLf
+    s = s & "        Case ""frmPunctuationCleanup.optQuotes"": GuidedInfoDisplayName = ""Quotes""" & vbCrLf
+    s = s & "        Case ""frmPunctuationCleanup.optDashes"": GuidedInfoDisplayName = ""Dashes""" & vbCrLf
+    s = s & "        Case ""frmPunctuationCleanup.optEllipses"": GuidedInfoDisplayName = ""Ellipses""" & vbCrLf
+    s = s & "        Case ""frmPunctuationCleanup.optCustom"": GuidedInfoDisplayName = ""Custom""" & vbCrLf
+    s = s & "        Case ""frmPunctuationCleanup.chkCurlyDouble"": GuidedInfoDisplayName = ""Curly double quotes""" & vbCrLf
+    s = s & "        Case ""frmPunctuationCleanup.chkCurlySingle"": GuidedInfoDisplayName = ""Curly single quotes""" & vbCrLf
+    s = s & "        Case ""frmPunctuationCleanup.chkEmDash"": GuidedInfoDisplayName = ""Em dashes""" & vbCrLf
+    s = s & "        Case ""frmPunctuationCleanup.chkEnDash"": GuidedInfoDisplayName = ""En dashes""" & vbCrLf
+    s = s & "        Case ""frmPunctuationCleanup.chkEllipses"": GuidedInfoDisplayName = ""Ellipsis character""" & vbCrLf
+    s = s & "        Case ""frmSoftReturnConverter.optSoftToPara"": GuidedInfoDisplayName = ""Soft to paragraphs""" & vbCrLf
+    s = s & "        Case ""frmSoftReturnConverter.optParaToSoft"": GuidedInfoDisplayName = ""Paragraphs to soft returns""" & vbCrLf
+    s = s & "        Case ""frmSpacingCleanup.optAll"": GuidedInfoDisplayName = ""All spacing fixes""" & vbCrLf
+    s = s & "        Case ""frmSpacingCleanup.optDoubleSpaces"": GuidedInfoDisplayName = ""Double spaces""" & vbCrLf
+    s = s & "        Case ""frmSpacingCleanup.optTrim"": GuidedInfoDisplayName = ""Trim outer spaces""" & vbCrLf
+    s = s & "        Case ""frmSpacingCleanup.optCustom"": GuidedInfoDisplayName = ""Custom""" & vbCrLf
+    s = s & "        Case ""frmSpacingCleanup.chkDoubleSpaces"": GuidedInfoDisplayName = ""Collapse extra spaces""" & vbCrLf
+    s = s & "        Case ""frmSpacingCleanup.chkTrimSpaces"": GuidedInfoDisplayName = ""Trim outer spaces""" & vbCrLf
+    s = s & "        Case ""frmSpacingCleanup.chkSpaceBeforePunct"": GuidedInfoDisplayName = ""Space before punctuation""" & vbCrLf
+    s = s & "        Case ""frmSpacingCleanup.chkNormalizeAfterPunct"": GuidedInfoDisplayName = ""Spacing after punctuation""" & vbCrLf
+    s = s & "        Case ""frmSpacingCleanup.chkExtraBlankLines"": GuidedInfoDisplayName = ""Extra blank lines""" & vbCrLf
+    s = s & "        Case ""frmStyleCleanup.chkRemoveUnused"": GuidedInfoDisplayName = ""Remove unused styles""" & vbCrLf
+    s = s & "        Case ""frmStyleCleanup.chkRemapVariants"": GuidedInfoDisplayName = ""Remap variants""" & vbCrLf
+    s = s & "        Case ""frmTableCleaner.chkRemoveEmptyRows"": GuidedInfoDisplayName = ""Empty rows""" & vbCrLf
+    s = s & "        Case ""frmTableCleaner.chkRemoveEmptyCols"": GuidedInfoDisplayName = ""Empty columns""" & vbCrLf
+    s = s & "        Case ""frmTableCleaner.chkNormalizePadding"": GuidedInfoDisplayName = ""Cell padding""" & vbCrLf
+    s = s & "        Case ""frmTableCleaner.chkStripDirectFormat"": GuidedInfoDisplayName = ""Cell formatting""" & vbCrLf
+    s = s & "        Case ""frmTableCleaner.chkNormalizeBorders"": GuidedInfoDisplayName = ""Border styles""" & vbCrLf
+    s = s & "        Case ""frmTableCleaner.chkRemoveBorders"": GuidedInfoDisplayName = ""Remove borders""" & vbCrLf
+    s = s & "        Case ""frmTableCleaner.chkConvertToText"": GuidedInfoDisplayName = ""Single-column to text""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.optAll"": GuidedInfoDisplayName = ""All invisible characters""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.optNBSP"": GuidedInfoDisplayName = ""Nonbreaking spaces""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.optZeroWidth"": GuidedInfoDisplayName = ""Zero-width characters""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.optCustom"": GuidedInfoDisplayName = ""Custom""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.chkNBSP"": GuidedInfoDisplayName = ""Nonbreaking spaces""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.chkZWSP"": GuidedInfoDisplayName = ""Zero-width spaces""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.chkZWNJ"": GuidedInfoDisplayName = ""Zero-width nonjoiners""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.chkZWJ"": GuidedInfoDisplayName = ""Zero-width joiners""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.chkBOM"": GuidedInfoDisplayName = ""Byte-order marks""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.chkSoftHyphen"": GuidedInfoDisplayName = ""Soft hyphens""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.chkNBHyphen"": GuidedInfoDisplayName = ""Nonbreaking hyphens""" & vbCrLf
     s = s & "        Case Else" & vbCrLf
-    s = s & "            GuidedInfoText = labelText" & vbCrLf
+    s = s & "            GuidedInfoDisplayName = CleanGuidedInfoCaption(fallbackText)" & vbCrLf
     s = s & "    End Select" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "Private Function GuidedInfoAdvisory(ByVal formName As String, ByVal controlName As String, ByVal fallbackText As String) As String" & vbCrLf
+    s = s & "    Dim key As String" & vbCrLf
+    s = s & "    key = formName & ""."" & controlName" & vbCrLf
+    s = s & "    Select Case key" & vbCrLf
+    s = s & "        Case ""frmBreakNormalizer.chkCollapseSectionBreaks"": GuidedInfoAdvisory = ""Shrinks repeated section-break stacks to one clean break.""" & vbCrLf
+    s = s & "        Case ""frmBreakNormalizer.chkCollapsePageBreaks"": GuidedInfoAdvisory = ""Shrinks repeated page-break stacks to one clean break.""" & vbCrLf
+    s = s & "        Case ""frmBreakNormalizer.chkConvertSectionBreaks"": GuidedInfoAdvisory = ""Replaces section boundaries with plain page breaks, removing section-level formatting splits.""" & vbCrLf
+    s = s & "        Case ""frmBreakNormalizer.optConvertNextPage"": GuidedInfoAdvisory = ""Keeps a normal next-page start after conversion.""" & vbCrLf
+    s = s & "        Case ""frmBreakNormalizer.optConvertContinuous"": GuidedInfoAdvisory = ""Preserves flow without forcing a new page.""" & vbCrLf
+    s = s & "        Case ""frmBreakNormalizer.optConvertEvenPage"": GuidedInfoAdvisory = ""Forces converted content to begin on the next even page.""" & vbCrLf
+    s = s & "        Case ""frmBreakNormalizer.optConvertOddPage"": GuidedInfoAdvisory = ""Forces converted content to begin on the next odd page.""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.optAll"": GuidedInfoAdvisory = ""Fixes only obvious capitalization damage and leaves already-reasonable wording alone.""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.optSentence"": GuidedInfoAdvisory = ""Planned for a later version.""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.optTitle"": GuidedInfoAdvisory = ""Planned for a later version.""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.optUpper"": GuidedInfoAdvisory = ""Legacy hidden option retained only for compatibility with existing forms.""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.optLower"": GuidedInfoAdvisory = ""Legacy hidden option retained only for compatibility with existing forms.""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.optCustom"": GuidedInfoAdvisory = ""Lets you turn the smart-repair protections on and off yourself.""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.chkSentence"": GuidedInfoAdvisory = ""Reduces false sentence starts after common abbreviations such as Dr. or Inc.""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.chkTitle"": GuidedInfoAdvisory = ""Keeps terms such as API, PDF, or VBA uppercase after repair.""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.chkUpper"": GuidedInfoAdvisory = ""Restores known mixed-case names and brands such as iPhone or GitHub.""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.chkLower"": GuidedInfoAdvisory = ""Avoids over-normalizing short heading-like lines.""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup.chkSmartSentences"": GuidedInfoAdvisory = ""Treats quotes, bullets, and punctuation boundaries more carefully.""" & vbCrLf
+    s = s & "        Case ""frmDuplicateDetector.optHighlightOnly"": GuidedInfoAdvisory = ""Marks likely duplicates for review without deleting any text.""" & vbCrLf
+    s = s & "        Case ""frmDuplicateDetector.optRemoveDupes"": GuidedInfoAdvisory = ""Deletes later duplicates and keeps the first surviving paragraph in each group.""" & vbCrLf
+    s = s & "        Case ""frmDuplicateDetector.optMatchExact"": GuidedInfoAdvisory = ""Fastest check; punctuation and spacing must still match.""" & vbCrLf
+    s = s & "        Case ""frmDuplicateDetector.optMatchNormalized"": GuidedInfoAdvisory = ""Ignores punctuation and extra spaces to catch cosmetic repeats.""" & vbCrLf
+    s = s & "        Case ""frmDuplicateDetector.optMatchFuzzy"": GuidedInfoAdvisory = ""Catches near-duplicates by word overlap, but runs slower on long documents.""" & vbCrLf
+    s = s & "        Case ""frmDuplicateDetector.optFuzzyLoose"": GuidedInfoAdvisory = ""Broadest fuzzy setting; finds more candidates but needs more review.""" & vbCrLf
+    s = s & "        Case ""frmDuplicateDetector.optFuzzyMedium"": GuidedInfoAdvisory = ""Balanced fuzzy setting for most cleanup passes.""" & vbCrLf
+    s = s & "        Case ""frmDuplicateDetector.optFuzzyStrict"": GuidedInfoAdvisory = ""Most conservative fuzzy setting; fewer false matches, but easier to miss loose repeats.""" & vbCrLf
+    s = s & "        Case ""frmFontNormalizer.chkFontFace"": GuidedInfoAdvisory = ""Returns direct font-name overrides to the document default.""" & vbCrLf
+    s = s & "        Case ""frmFontNormalizer.chkFontSize"": GuidedInfoAdvisory = ""Returns direct size overrides to the active style's size.""" & vbCrLf
+    s = s & "        Case ""frmFontNormalizer.chkBold"": GuidedInfoAdvisory = ""Removes manual bolding that does not come from the style.""" & vbCrLf
+    s = s & "        Case ""frmFontNormalizer.chkItalic"": GuidedInfoAdvisory = ""Removes manual italics that do not come from the style.""" & vbCrLf
+    s = s & "        Case ""frmFontNormalizer.chkFontColor"": GuidedInfoAdvisory = ""Clears manual font colors so styled colors can lead again.""" & vbCrLf
+    s = s & "        Case ""frmFootnoteRemover.chkFootnotes"": GuidedInfoAdvisory = ""Deletes footnotes in scope, including their reference marks.""" & vbCrLf
+    s = s & "        Case ""frmFootnoteRemover.chkEndnotes"": GuidedInfoAdvisory = ""Deletes endnotes in scope, including their reference marks.""" & vbCrLf
+    s = s & "        Case ""frmFootnoteRemover.chkKeepTextInline"": GuidedInfoAdvisory = ""Keeps each note's wording in brackets before removing the note itself.""" & vbCrLf
+    s = s & "        Case ""frmFormattingStripper.chkResetChar"": GuidedInfoAdvisory = ""Removes direct font-level overrides while leaving styles in charge.""" & vbCrLf
+    s = s & "        Case ""frmFormattingStripper.chkResetPara"": GuidedInfoAdvisory = ""Removes direct paragraph formatting such as indents, spacing, and alignment.""" & vbCrLf
+    s = s & "        Case ""frmFormattingStripper.optEmphQuick"": GuidedInfoAdvisory = ""Fastest pass; preserves emphasis that applies to whole paragraphs.""" & vbCrLf
+    s = s & "        Case ""frmFormattingStripper.optEmphThorough"": GuidedInfoAdvisory = ""Checks runs one by one; slower, but safer for mixed emphasis.""" & vbCrLf
+    s = s & "        Case ""frmFormattingStripper.optEmphStrip"": GuidedInfoAdvisory = ""Removes direct emphasis too, including manual bold and italic.""" & vbCrLf
+    s = s & "        Case ""frmFormattingStripper.chkPreserveHighlight"": GuidedInfoAdvisory = ""Leaves highlight colors in place while other direct formatting is stripped.""" & vbCrLf
+    s = s & "        Case ""frmFormattingStripper.chkPreserveDropCaps"": GuidedInfoAdvisory = ""Keeps decorative drop caps instead of flattening them.""" & vbCrLf
+    s = s & "        Case ""frmHeaderFooterStandardizer.optStandardize"": GuidedInfoAdvisory = ""Keeps the content but cleans formatting across the chosen header and footer areas.""" & vbCrLf
+    s = s & "        Case ""frmHeaderFooterStandardizer.optClearAll"": GuidedInfoAdvisory = ""Deletes the chosen header and footer content outright.""" & vbCrLf
+    s = s & "        Case ""frmHeaderFooterStandardizer.chkHeaders"": GuidedInfoAdvisory = ""Applies the chosen action to headers.""" & vbCrLf
+    s = s & "        Case ""frmHeaderFooterStandardizer.chkFooters"": GuidedInfoAdvisory = ""Applies the chosen action to footers.""" & vbCrLf
+    s = s & "        Case ""frmHeaderFooterStandardizer.chkFont"": GuidedInfoAdvisory = ""Returns header and footer text to the document's default font.""" & vbCrLf
+    s = s & "        Case ""frmHeaderFooterStandardizer.chkSpacing"": GuidedInfoAdvisory = ""Clears paragraph spacing so header/footer lines sit tightly again.""" & vbCrLf
+    s = s & "        Case ""frmHeaderFooterStandardizer.chkBreakLinks"": GuidedInfoAdvisory = ""Lets each section stand on its own instead of inheriting from the previous one.""" & vbCrLf
+    s = s & "        Case ""frmHeaderFooterStandardizer.chkAlignment"": GuidedInfoAdvisory = ""Turns on the left, center, or right alignment choices below.""" & vbCrLf
+    s = s & "        Case ""frmHeaderFooterStandardizer.optAlignLeft"": GuidedInfoAdvisory = ""Sets the chosen header or footer paragraphs to left alignment.""" & vbCrLf
+    s = s & "        Case ""frmHeaderFooterStandardizer.optAlignCenter"": GuidedInfoAdvisory = ""Sets the chosen header or footer paragraphs to centered alignment.""" & vbCrLf
+    s = s & "        Case ""frmHeaderFooterStandardizer.optAlignRight"": GuidedInfoAdvisory = ""Sets the chosen header or footer paragraphs to right alignment.""" & vbCrLf
+    s = s & "        Case ""frmHyperlinkRemover.chkRemoveFormat"": GuidedInfoAdvisory = ""Also clears the blue underline styling after the link itself is removed.""" & vbCrLf
+    s = s & "        Case ""frmListCleanup.optAll"": GuidedInfoAdvisory = ""Runs bullet conversion, number conversion, and indentation cleanup together.""" & vbCrLf
+    s = s & "        Case ""frmListCleanup.optBullets"": GuidedInfoAdvisory = ""Converts manual bullet-like lines without changing numbered lists.""" & vbCrLf
+    s = s & "        Case ""frmListCleanup.optNumbering"": GuidedInfoAdvisory = ""Converts typed number patterns into real Word numbering.""" & vbCrLf
+    s = s & "        Case ""frmListCleanup.optIndent"": GuidedInfoAdvisory = ""Leaves list content alone and only corrects indent depth.""" & vbCrLf
+    s = s & "        Case ""frmListCleanup.optCustom"": GuidedInfoAdvisory = ""Shows the individual list repairs so you can mix only the ones you need.""" & vbCrLf
+    s = s & "        Case ""frmListCleanup.chkNormalizeBullets"": GuidedInfoAdvisory = ""Turns manual bullets into the document's standard Word bullet form.""" & vbCrLf
+    s = s & "        Case ""frmListCleanup.chkNormalizeNumbering"": GuidedInfoAdvisory = ""Turns typed numbering into Word-managed numbered lists.""" & vbCrLf
+    s = s & "        Case ""frmListCleanup.chkFixIndent"": GuidedInfoAdvisory = ""Straightens list left indents without changing bullet or number text.""" & vbCrLf
+    s = s & "        Case ""frmListCleanup.chkHyphenToBullets"": GuidedInfoAdvisory = ""Promotes plain hyphen-led lines into proper bullet items.""" & vbCrLf
+    s = s & "        Case ""frmMetadataScrubber.chkProperties"": GuidedInfoAdvisory = ""Clears built-in file fields such as Title, Author, and Company.""" & vbCrLf
+    s = s & "        Case ""frmMetadataScrubber.chkPersonalInfo"": GuidedInfoAdvisory = ""Removes names tied to saves and tracked revisions.""" & vbCrLf
+    s = s & "        Case ""frmMetadataScrubber.chkComments"": GuidedInfoAdvisory = ""Deletes reviewer comments from the document.""" & vbCrLf
+    s = s & "        Case ""frmMetadataScrubber.chkRevisions"": GuidedInfoAdvisory = ""Accepts tracked changes first, so markup cannot be reviewed afterward.""" & vbCrLf
+    s = s & "        Case ""frmObjectRemover.chkTables"": GuidedInfoAdvisory = ""Deletes whole tables and everything inside them, not just table formatting.""" & vbCrLf
+    s = s & "        Case ""frmParagraphCleanup.optAll"": GuidedInfoAdvisory = ""Runs the tool's full paragraph cleanup pass.""" & vbCrLf
+    s = s & "        Case ""frmParagraphCleanup.optCustom"": GuidedInfoAdvisory = ""Shows the individual paragraph repairs so you can combine them.""" & vbCrLf
+    s = s & "        Case ""frmPunctuationCleanup.optAll"": GuidedInfoAdvisory = ""Runs quote, dash, and ellipsis cleanup in one pass.""" & vbCrLf
+    s = s & "        Case ""frmPunctuationCleanup.optQuotes"": GuidedInfoAdvisory = ""Targets curly quotes and apostrophes without touching dashes or ellipses.""" & vbCrLf
+    s = s & "        Case ""frmPunctuationCleanup.optDashes"": GuidedInfoAdvisory = ""Targets em and en dashes without changing quotes or ellipses.""" & vbCrLf
+    s = s & "        Case ""frmPunctuationCleanup.optEllipses"": GuidedInfoAdvisory = ""Targets only the ellipsis character and leaves other punctuation alone.""" & vbCrLf
+    s = s & "        Case ""frmPunctuationCleanup.optCustom"": GuidedInfoAdvisory = ""Shows the individual punctuation conversions so you can mix them.""" & vbCrLf
+    s = s & "        Case ""frmPunctuationCleanup.chkCurlyDouble"": GuidedInfoAdvisory = ""Replaces curly double quotes with plain straight double quotes.""" & vbCrLf
+    s = s & "        Case ""frmPunctuationCleanup.chkCurlySingle"": GuidedInfoAdvisory = ""Replaces curly single quotes and apostrophes with straight apostrophes.""" & vbCrLf
+    s = s & "        Case ""frmPunctuationCleanup.chkEmDash"": GuidedInfoAdvisory = ""Replaces em dashes with a plain keyboard hyphen.""" & vbCrLf
+    s = s & "        Case ""frmPunctuationCleanup.chkEnDash"": GuidedInfoAdvisory = ""Replaces en dashes with a plain keyboard hyphen.""" & vbCrLf
+    s = s & "        Case ""frmPunctuationCleanup.chkEllipses"": GuidedInfoAdvisory = ""Replaces the single ellipsis character with three plain periods.""" & vbCrLf
+    s = s & "        Case ""frmSoftReturnConverter.optSoftToPara"": GuidedInfoAdvisory = ""Turns manual line breaks into real paragraphs for cleaner editing and reflow.""" & vbCrLf
+    s = s & "        Case ""frmSoftReturnConverter.optParaToSoft"": GuidedInfoAdvisory = ""Keeps visible line breaks without starting new paragraphs.""" & vbCrLf
+    s = s & "        Case ""frmSpacingCleanup.optAll"": GuidedInfoAdvisory = ""Runs every spacing repair this tool offers in one pass.""" & vbCrLf
+    s = s & "        Case ""frmSpacingCleanup.optDoubleSpaces"": GuidedInfoAdvisory = ""Targets repeated spaces between words and leaves edge spacing alone.""" & vbCrLf
+    s = s & "        Case ""frmSpacingCleanup.optTrim"": GuidedInfoAdvisory = ""Targets leading and trailing spaces without changing doubled inner spaces.""" & vbCrLf
+    s = s & "        Case ""frmSpacingCleanup.optCustom"": GuidedInfoAdvisory = ""Shows the individual spacing repairs so you can combine them.""" & vbCrLf
+    s = s & "        Case ""frmSpacingCleanup.chkDoubleSpaces"": GuidedInfoAdvisory = ""Collapses repeated spaces so only one clean space remains.""" & vbCrLf
+    s = s & "        Case ""frmSpacingCleanup.chkTrimSpaces"": GuidedInfoAdvisory = ""Removes stray spaces at the start or end of paragraphs.""" & vbCrLf
+    s = s & "        Case ""frmSpacingCleanup.chkSpaceBeforePunct"": GuidedInfoAdvisory = ""Deletes stray spaces that appear before punctuation marks.""" & vbCrLf
+    s = s & "        Case ""frmSpacingCleanup.chkNormalizeAfterPunct"": GuidedInfoAdvisory = ""Resets uneven post-punctuation spacing to a single clean space.""" & vbCrLf
+    s = s & "        Case ""frmSpacingCleanup.chkExtraBlankLines"": GuidedInfoAdvisory = ""Collapses repeated blank paragraphs between blocks of text.""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.optAll"": GuidedInfoAdvisory = ""Sweeps the common invisible troublemakers that interfere with search, wrap, and cleanup.""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.optNBSP"": GuidedInfoAdvisory = ""Targets only nonbreaking spaces and leaves zero-width characters alone.""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.optZeroWidth"": GuidedInfoAdvisory = ""Targets zero-width characters and leaves visible spacing characters alone.""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.optCustom"": GuidedInfoAdvisory = ""Shows the individual invisible-character cleanups so you can combine them.""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.chkNBSP"": GuidedInfoAdvisory = ""Replaces nonbreaking spaces with normal spaces.""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.chkZWSP"": GuidedInfoAdvisory = ""Removes hidden zero-width spaces that split searches and word counts.""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.chkZWNJ"": GuidedInfoAdvisory = ""Removes zero-width nonjoiners often copied from web or PDF text.""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.chkZWJ"": GuidedInfoAdvisory = ""Removes zero-width joiners that can hide inside pasted text.""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.chkBOM"": GuidedInfoAdvisory = ""Removes stray byte-order marks embedded inside document text.""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.chkSoftHyphen"": GuidedInfoAdvisory = ""Removes soft hyphens that can disrupt clean searching and export.""" & vbCrLf
+    s = s & "        Case ""frmUnicodeCleanup.chkNBHyphen"": GuidedInfoAdvisory = ""Replaces nonbreaking hyphens with standard editable hyphens.""" & vbCrLf
+    s = s & "        Case ""frmStyleCleanup.chkRemoveUnused"": GuidedInfoAdvisory = ""Deletes custom styles that are not currently applied.""" & vbCrLf
+    s = s & "        Case ""frmStyleCleanup.chkRemapVariants"": GuidedInfoAdvisory = ""Moves content into your canonical styles instead of leaving lookalike variants.""" & vbCrLf
+    s = s & "        Case Else" & vbCrLf
+    s = s & "            GuidedInfoAdvisory = GuidedGenericAdvisory(CleanGuidedInfoCaption(fallbackText))" & vbCrLf
+    s = s & "    End Select" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "Private Function GuidedGenericAdvisory(ByVal labelText As String) As String" & vbCrLf
+    s = s & "    If Len(labelText) = 0 Then Exit Function" & vbCrLf
+    s = s & "    If Left$(labelText, 6) = ""Clear "" Then" & vbCrLf
+    s = s & "        GuidedGenericAdvisory = ""Removes this metadata or review content from the file.""" & vbCrLf
+    s = s & "    ElseIf Left$(labelText, 7) = ""Remove "" Then" & vbCrLf
+    s = s & "        GuidedGenericAdvisory = ""Removes matching content wherever this cleanup finds it.""" & vbCrLf
+    s = s & "    ElseIf Left$(labelText, 10) = ""Normalize "" Then" & vbCrLf
+    s = s & "        GuidedGenericAdvisory = ""Resets direct variations to a cleaner, consistent form.""" & vbCrLf
+    s = s & "    ElseIf Left$(labelText, 8) = ""Convert "" Then" & vbCrLf
+    s = s & "        GuidedGenericAdvisory = ""Converts matching content into the target Word-friendly form.""" & vbCrLf
+    s = s & "    ElseIf Left$(labelText, 9) = ""Collapse "" Then" & vbCrLf
+    s = s & "        GuidedGenericAdvisory = ""Merges repeats so only one clean instance remains.""" & vbCrLf
+    s = s & "    ElseIf Left$(labelText, 10) = ""Preserve "" Then" & vbCrLf
+    s = s & "        GuidedGenericAdvisory = ""Leaves this formatting in place while other cleanup runs.""" & vbCrLf
+    s = s & "    ElseIf Left$(labelText, 8) = ""Include "" Then" & vbCrLf
+    s = s & "        GuidedGenericAdvisory = ""Applies the chosen action to this area.""" & vbCrLf
+    s = s & "    ElseIf Left$(labelText, 4) = ""Fix "" Then" & vbCrLf
+    s = s & "        GuidedGenericAdvisory = ""Corrects this issue without changing unrelated text.""" & vbCrLf
+    s = s & "    ElseIf Left$(labelText, 4) = ""Set "" Then" & vbCrLf
+    s = s & "        GuidedGenericAdvisory = ""Applies the selected setting when the tool runs.""" & vbCrLf
+    s = s & "    ElseIf Left$(labelText, 6) = ""Also, "" Then" & vbCrLf
+    s = s & "        GuidedGenericAdvisory = ""Adds this extra cleanup after the main removal step.""" & vbCrLf
+    s = s & "    ElseIf labelText = ""Left"" Or labelText = ""Center"" Or labelText = ""Right"" Then" & vbCrLf
+    s = s & "        GuidedGenericAdvisory = ""Uses this alignment when alignment cleanup is enabled.""" & vbCrLf
+    s = s & "    ElseIf labelText = ""Custom"" Then" & vbCrLf
+    s = s & "        GuidedGenericAdvisory = ""Shows the individual actions so you can combine them.""" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        GuidedGenericAdvisory = ""Applies this cleanup when the tool runs.""" & vbCrLf
+    s = s & "    End If" & vbCrLf
     s = s & "End Function" & vbCrLf
     s = s & "Private Function CleanGuidedInfoCaption(ByVal captionText As String) As String" & vbCrLf
     s = s & "    CleanGuidedInfoCaption = Replace(captionText, vbCrLf, "" "")" & vbCrLf
@@ -2698,11 +3113,11 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "Private Function GuidedOptionHeight(ByVal ctl As Object) As Single" & vbCrLf
     s = s & "    On Error Resume Next" & vbCrLf
     s = s & "    If Len(ctl.Caption) > 72 Then" & vbCrLf
-    s = s & "        GuidedOptionHeight = 38" & vbCrLf
+    s = s & "        GuidedOptionHeight = 44" & vbCrLf
     s = s & "    ElseIf Len(ctl.Caption) > 34 Then" & vbCrLf
-    s = s & "        GuidedOptionHeight = 24" & vbCrLf
+    s = s & "        GuidedOptionHeight = 28" & vbCrLf
     s = s & "    Else" & vbCrLf
-    s = s & "        GuidedOptionHeight = 16" & vbCrLf
+    s = s & "        GuidedOptionHeight = 18" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "End Function" & vbCrLf
     s = s & "Private Sub LayoutGuidedScopeRow(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single)" & vbCrLf
@@ -2783,7 +3198,7 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "End Function" & vbCrLf
     s = s & "Private Function GuidedToolIntro(ByVal formName As String) As String" & vbCrLf
     s = s & "    Select Case formName" & vbCrLf
-    s = s & "        Case ""frmCapitalizationCleanup"": GuidedToolIntro = ""Choose how you want capitalization cleaned up.""" & vbCrLf
+    s = s & "        Case ""frmCapitalizationCleanup"": GuidedToolIntro = ""Choose how strongly capitalization should be repaired.""" & vbCrLf
     s = s & "        Case ""frmPunctuationCleanup"": GuidedToolIntro = ""Choose which punctuation patterns to normalize.""" & vbCrLf
     s = s & "        Case ""frmUnicodeCleanup"": GuidedToolIntro = ""Choose which invisible or problem characters to clean.""" & vbCrLf
     s = s & "        Case ""frmSpacingCleanup"": GuidedToolIntro = ""Choose which spacing problems to fix.""" & vbCrLf
@@ -2865,7 +3280,7 @@ End Function
 Private Function modCleanupLauncher_Code() As String
     Dim s As String
     s = s & "Option Explicit" & vbCrLf
-    s = s & "Public Const SUITE_VERSION As String = ""0.8.0""" & vbCrLf
+    s = s & "Public Const SUITE_VERSION As String = ""0.8.5""" & vbCrLf
     s = s & "Public gRibbon As Object   ' IRibbonUI -- stored for optional Invalidate calls" & vbCrLf
     s = s & "Sub ShowCleanupSuiteLauncher()" & vbCrLf
     s = s & "    frmCleanupSuiteLauncher.Show" & vbCrLf
@@ -2938,7 +3353,7 @@ Private Function frmPunctuationCleanup_Code() As String
     s = s & "    optQuotes.Caption = ""Quotes only""" & vbCrLf
     s = s & "    optDashes.Caption = ""Dashes only""" & vbCrLf
     s = s & "    optEllipses.Caption = ""Ellipses only""" & vbCrLf
-    s = s & "    optCustom.Caption = ""Custom (choose below)""" & vbCrLf
+    s = s & "    optCustom.Caption = ""Custom""" & vbCrLf
     s = s & "    chkCurlyDouble.Caption = ""Curly double quotes  -> straight double quotes""" & vbCrLf
     s = s & "    chkCurlySingle.Caption = ""Curly single quotes / apostrophes  -> straight single quotes""" & vbCrLf
     s = s & "    chkEmDash.Caption = ""Em dash  ->  hyphen-minus  -""" & vbCrLf
@@ -3135,7 +3550,7 @@ Private Function frmUnicodeCleanup_Code() As String
     s = s & "    optAll.Caption = ""All invisible / problem characters""" & vbCrLf
     s = s & "    optNBSP.Caption = ""Non-breaking spaces only""" & vbCrLf
     s = s & "    optZeroWidth.Caption = ""Zero-width characters only""" & vbCrLf
-    s = s & "    optCustom.Caption = ""Custom (choose below)""" & vbCrLf
+    s = s & "    optCustom.Caption = ""Custom""" & vbCrLf
     s = s & "    chkNBSP.Caption = ""Non-breaking spaces (U+00A0)""" & vbCrLf
     s = s & "    chkZWSP.Caption = ""Zero-width spaces (U+200B)""" & vbCrLf
     s = s & "    chkZWNJ.Caption = ""Zero-width non-joiners (U+200C)""" & vbCrLf
@@ -3322,7 +3737,7 @@ Private Function frmSpacingCleanup_Code() As String
     s = s & "    optAll.Caption = ""All spacing fixes""" & vbCrLf
     s = s & "    optDoubleSpaces.Caption = ""Double spaces only""" & vbCrLf
     s = s & "    optTrim.Caption = ""Trim leading / trailing spaces""" & vbCrLf
-    s = s & "    optCustom.Caption = ""Custom (choose below)""" & vbCrLf
+    s = s & "    optCustom.Caption = ""Custom""" & vbCrLf
     s = s & "    chkDoubleSpaces.Caption = ""Collapse double (and multiple) spaces""" & vbCrLf
     s = s & "    chkTrimSpaces.Caption = ""Remove leading and trailing spaces""" & vbCrLf
     s = s & "    chkSpaceBeforePunct.Caption = ""Remove space before punctuation  ( , . : ; ! ? )""" & vbCrLf
@@ -3557,18 +3972,14 @@ End Function
 Private Function frmCapitalizationCleanup_Code() As String
     Dim s As String
     s = s & "Option Explicit" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)" & vbCrLf
     s = s & "    ReturnToMainAfterToolClose Me, Cancel, CloseMode" & vbCrLf
     s = s & "End Sub" & vbCrLf
-    s = s & "' --------------------------------------------------------------" & vbCrLf
-    s = s & "'  Capitalization Fixer" & vbCrLf
-    s = s & "'  Applies consistent capitalization across paragraphs: sentence case," & vbCrLf
-    s = s & "'  title case, UPPERCASE, lowercase, or smart sentence detection (which" & vbCrLf
-    s = s & "'  capitalizes the first letter after sentence-ending punctuation)." & vbCrLf
-    s = s & "'  Operates paragraph by paragraph within the target scope." & vbCrLf
-    s = s & "' --------------------------------------------------------------" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "Private Sub UserForm_Initialize()" & vbCrLf
     s = s & "    ApplyMSFormTitleStrategy Me, True" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "    optAll.GroupName = ""CapMode""" & vbCrLf
     s = s & "    optSentence.GroupName = ""CapMode""" & vbCrLf
     s = s & "    optTitle.GroupName = ""CapMode""" & vbCrLf
@@ -3577,7 +3988,23 @@ Private Function frmCapitalizationCleanup_Code() As String
     s = s & "    optCustom.GroupName = ""CapMode""" & vbCrLf
     s = s & "    optScopeDocument.GroupName = ""CapScope""" & vbCrLf
     s = s & "    optScopeSelection.GroupName = ""CapScope""" & vbCrLf
-    s = s & "    optAll.Value = True: UpdateCustomVisibility: ClearCustomChecks" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    optAll.Caption = ""Conservative""" & vbCrLf
+    s = s & "    optSentence.Caption = ""Balanced (coming soon)""" & vbCrLf
+    s = s & "    optTitle.Caption = ""Aggressive (coming soon)""" & vbCrLf
+    s = s & "    optCustom.Caption = ""Custom""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    optAll.Visible = True" & vbCrLf
+    s = s & "    optSentence.Visible = True" & vbCrLf
+    s = s & "    optTitle.Visible = True" & vbCrLf
+    s = s & "    optUpper.Visible = False" & vbCrLf
+    s = s & "    optLower.Visible = False" & vbCrLf
+    s = s & "    optCustom.Visible = True" & vbCrLf
+    s = s & "    optSentence.Enabled = False" & vbCrLf
+    s = s & "    optTitle.Enabled = False" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    optAll.Value = True" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "    optScopeDocument.Caption = ""Entire document""" & vbCrLf
     s = s & "    optScopeDocument.Value = True" & vbCrLf
     s = s & "    optScopeSelection.Caption = ""Selected text only""" & vbCrLf
@@ -3586,24 +4013,25 @@ Private Function frmCapitalizationCleanup_Code() As String
     s = s & "    Else" & vbCrLf
     s = s & "        optScopeSelection.Enabled = False" & vbCrLf
     s = s & "    End If" & vbCrLf
-    s = s & "    lblIntro.Caption = ""Choose how you want capitalization cleaned up.""" & vbCrLf
-    s = s & "    optAll.Caption = ""Fix sentence starts""" & vbCrLf
-    s = s & "    optSentence.Caption = ""Sentence case""" & vbCrLf
-    s = s & "    optTitle.Caption = ""Title case""" & vbCrLf
-    s = s & "    optUpper.Caption = ""UPPERCASE""" & vbCrLf
-    s = s & "    optLower.Caption = ""lowercase""" & vbCrLf
-    s = s & "    optCustom.Caption = ""Custom""" & vbCrLf
-    s = s & "    chkSentence.Caption = ""Capitalize sentence starts""" & vbCrLf
-    s = s & "    chkTitle.Caption = ""Apply title case to headings""" & vbCrLf
-    s = s & "    chkUpper.Caption = ""Convert ALL-CAPS words (5+ letters)""" & vbCrLf
-    s = s & "    chkLower.Caption = ""Fix all-lowercase paragraphs""" & vbCrLf
-    s = s & "    chkSmartSentences.Caption = ""Smart sentence detection (skip abbreviations)""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    lblIntro.Caption = ""Choose how strongly capitalization should be repaired.""" & vbCrLf
+    s = s & "    chkSentence.Caption = ""Use abbreviation lists""" & vbCrLf
+    s = s & "    chkTitle.Caption = ""Protect common acronyms""" & vbCrLf
+    s = s & "    chkUpper.Caption = ""Protect names and brands""" & vbCrLf
+    s = s & "    chkLower.Caption = ""Treat likely headings carefully""" & vbCrLf
+    s = s & "    chkSmartSentences.Caption = ""Use quote, bullet, and boundary context""" & vbCrLf
     s = s & "    chkPreviewOnly.Caption = ""Preview only (highlight, do not change)""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    ApplyModeDefaults" & vbCrLf
+    s = s & "    UpdateAdvancedVisibility" & vbCrLf
     s = s & "    UpdateModeSummary" & vbCrLf
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
-    s = s & "Private Sub UpdateCustomVisibility()" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub UpdateAdvancedVisibility()" & vbCrLf
     s = s & "    fraCustom.Visible = False" & vbCrLf
+    s = s & "    optUpper.Visible = False" & vbCrLf
+    s = s & "    optLower.Visible = False" & vbCrLf
     s = s & "    chkSentence.Visible = optCustom.Value" & vbCrLf
     s = s & "    chkTitle.Visible = optCustom.Value" & vbCrLf
     s = s & "    chkUpper.Visible = optCustom.Value" & vbCrLf
@@ -3612,36 +4040,65 @@ Private Function frmCapitalizationCleanup_Code() As String
     s = s & "    cmdSelectAll.Visible = optCustom.Value" & vbCrLf
     s = s & "    cmdDeselectAll.Visible = optCustom.Value" & vbCrLf
     s = s & "End Sub" & vbCrLf
-    s = s & "Private Sub UpdateModeSummary()" & vbCrLf
-    s = s & "    If optAll.Value Then" & vbCrLf
-    s = s & "        lblModeSummary.Caption = ""Recommended: capitalizes likely sentence starts after . ? ! while leaving existing casing alone where possible.""" & vbCrLf
-    s = s & "    ElseIf optSentence.Value Then" & vbCrLf
-    s = s & "        lblModeSummary.Caption = ""Makes each paragraph sentence case: first character uppercase, remaining text lowercase.""" & vbCrLf
-    s = s & "    ElseIf optTitle.Value Then" & vbCrLf
-    s = s & "        lblModeSummary.Caption = ""Applies Title Case to every word in each affected paragraph.""" & vbCrLf
-    s = s & "    ElseIf optUpper.Value Then" & vbCrLf
-    s = s & "        lblModeSummary.Caption = ""Converts affected paragraph text to UPPERCASE.""" & vbCrLf
-    s = s & "    ElseIf optLower.Value Then" & vbCrLf
-    s = s & "        lblModeSummary.Caption = ""Converts affected paragraph text to lowercase.""" & vbCrLf
-    s = s & "    ElseIf optCustom.Value Then" & vbCrLf
-    s = s & "        lblModeSummary.Caption = ""Custom runs selected choices in order; later choices can override earlier ones.""" & vbCrLf
-    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub ApplyModeDefaults()" & vbCrLf
+    s = s & "    Select Case ActiveRepairModeName(False)" & vbCrLf
+    s = s & "        Case ""Conservative""" & vbCrLf
+    s = s & "            chkSentence.Value = True" & vbCrLf
+    s = s & "            chkTitle.Value = True" & vbCrLf
+    s = s & "            chkUpper.Value = True" & vbCrLf
+    s = s & "            chkLower.Value = True" & vbCrLf
+    s = s & "            chkSmartSentences.Value = True" & vbCrLf
+    s = s & "        Case Else" & vbCrLf
+    s = s & "            If Not (chkSentence.Value Or chkTitle.Value Or chkUpper.Value Or chkLower.Value Or chkSmartSentences.Value) Then" & vbCrLf
+    s = s & "                chkSentence.Value = True" & vbCrLf
+    s = s & "                chkTitle.Value = True" & vbCrLf
+    s = s & "                chkUpper.Value = True" & vbCrLf
+    s = s & "                chkLower.Value = True" & vbCrLf
+    s = s & "                chkSmartSentences.Value = True" & vbCrLf
+    s = s & "            End If" & vbCrLf
+    s = s & "    End Select" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub UpdateModeSummary()" & vbCrLf
+    s = s & "    Select Case ActiveRepairModeName(False)" & vbCrLf
+    s = s & "        Case ""Conservative""" & vbCrLf
+    s = s & "            lblModeSummary.Caption = ""Fixes only obvious capitalization damage and leaves already-reasonable wording alone.""" & vbCrLf
+    s = s & "        Case Else" & vbCrLf
+    s = s & "            lblModeSummary.Caption = ""Custom uses only the protections you select below.""" & vbCrLf
+    s = s & "    End Select" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function ActiveRepairModeName(Optional ByVal unused As Boolean = False) As String" & vbCrLf
+    s = s & "    If optAll.Value Then" & vbCrLf
+    s = s & "        ActiveRepairModeName = ""Conservative""" & vbCrLf
+    s = s & "        Exit Function" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    If optCustom.Value Then" & vbCrLf
+    s = s & "        ActiveRepairModeName = ""Custom""" & vbCrLf
+    s = s & "        Exit Function" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    ActiveRepairModeName = ""Conservative""" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "Private Sub RefreshCapitalizationChoices()" & vbCrLf
-    s = s & "    UpdateCustomVisibility" & vbCrLf
+    s = s & "    ApplyModeDefaults" & vbCrLf
+    s = s & "    UpdateAdvancedVisibility" & vbCrLf
     s = s & "    UpdateModeSummary" & vbCrLf
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "Private Sub optAll_Click(): RefreshCapitalizationChoices: End Sub" & vbCrLf
     s = s & "Private Sub optSentence_Click(): RefreshCapitalizationChoices: End Sub" & vbCrLf
     s = s & "Private Sub optTitle_Click(): RefreshCapitalizationChoices: End Sub" & vbCrLf
     s = s & "Private Sub optUpper_Click(): RefreshCapitalizationChoices: End Sub" & vbCrLf
     s = s & "Private Sub optLower_Click(): RefreshCapitalizationChoices: End Sub" & vbCrLf
     s = s & "Private Sub optCustom_Click(): RefreshCapitalizationChoices: End Sub" & vbCrLf
-    s = s & "Private Sub ClearCustomChecks(): chkSentence.Value = False: chkTitle.Value = False: chkUpper.Value = False: chkLower.Value = False: chkSmartSentences.Value = False: End Sub" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "Private Sub cmdSelectAll_Click()" & vbCrLf
     s = s & "    optCustom.Value = True" & vbCrLf
-    s = s & "    UpdateCustomVisibility" & vbCrLf
+    s = s & "    UpdateAdvancedVisibility" & vbCrLf
+    s = s & "    UpdateModeSummary" & vbCrLf
     s = s & "    chkSentence.Value = True" & vbCrLf
     s = s & "    chkTitle.Value = True" & vbCrLf
     s = s & "    chkUpper.Value = True" & vbCrLf
@@ -3649,108 +4106,151 @@ Private Function frmCapitalizationCleanup_Code() As String
     s = s & "    chkSmartSentences.Value = True" & vbCrLf
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "Private Sub cmdDeselectAll_Click()" & vbCrLf
     s = s & "    optCustom.Value = True" & vbCrLf
-    s = s & "    UpdateCustomVisibility" & vbCrLf
-    s = s & "    ClearCustomChecks" & vbCrLf
+    s = s & "    UpdateAdvancedVisibility" & vbCrLf
+    s = s & "    UpdateModeSummary" & vbCrLf
+    s = s & "    chkSentence.Value = False" & vbCrLf
+    s = s & "    chkTitle.Value = False" & vbCrLf
+    s = s & "    chkUpper.Value = False" & vbCrLf
+    s = s & "    chkLower.Value = False" & vbCrLf
+    s = s & "    chkSmartSentences.Value = False" & vbCrLf
     s = s & "    LayoutCleanupToolForm Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "Private Sub chkSentence_Click(): LayoutCleanupToolForm Me: End Sub" & vbCrLf
     s = s & "Private Sub chkTitle_Click(): LayoutCleanupToolForm Me: End Sub" & vbCrLf
     s = s & "Private Sub chkUpper_Click(): LayoutCleanupToolForm Me: End Sub" & vbCrLf
     s = s & "Private Sub chkLower_Click(): LayoutCleanupToolForm Me: End Sub" & vbCrLf
     s = s & "Private Sub chkSmartSentences_Click(): LayoutCleanupToolForm Me: End Sub" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "Private Sub cmdPreview_Click()" & vbCrLf
     s = s & "    PreviewFromPanel" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "Public Sub PreviewFromPanel()" & vbCrLf
     s = s & "    chkPreviewOnly.Value = True" & vbCrLf
     s = s & "    cmdRun_Click" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "Private Sub cmdReset_Click()" & vbCrLf
     s = s & "    UserForm_Initialize" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "Public Sub RunAfterPreview()" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "    cmdRun_Click" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "Private Sub cmdRun_Click()" & vbCrLf
     s = s & "    If ActiveDocument.ProtectionType <> wdNoProtection Then" & vbCrLf
-    s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected"": Exit Sub" & vbCrLf
+    s = s & "        MsgBox ""This document is protected. Please remove protection before running cleanup."", vbExclamation, ""Document Protected""" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
     s = s & "    End If" & vbCrLf
-    s = s & "    If Not GuardBeforeCleanup(""Capitalization Fixer"") Then Unload Me: Exit Sub" & vbCrLf
-    s = s & "    Dim previewOnly As Boolean: previewOnly = chkPreviewOnly.Value" & vbCrLf
+    s = s & "    If Not GuardBeforeCleanup(""Capitalization Fixer"") Then" & vbCrLf
+    s = s & "        Unload Me" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim previewOnly As Boolean" & vbCrLf
+    s = s & "    previewOnly = chkPreviewOnly.Value" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "    Dim targetRange As Range" & vbCrLf
     s = s & "    If optScopeSelection.Value And optScopeSelection.Enabled Then" & vbCrLf
     s = s & "        Set targetRange = GetTargetRange()" & vbCrLf
     s = s & "    Else" & vbCrLf
     s = s & "        Set targetRange = ActiveDocument.Content" & vbCrLf
     s = s & "    End If" & vbCrLf
-    s = s & "    Dim doSentence As Boolean, doTitle As Boolean, doUpper As Boolean, doLower As Boolean, doSmart As Boolean" & vbCrLf
-    s = s & "    If optAll.Value Then doSmart = True" & vbCrLf
-    s = s & "    If optSentence.Value Then doSentence = True" & vbCrLf
-    s = s & "    If optTitle.Value Then doTitle = True" & vbCrLf
-    s = s & "    If optUpper.Value Then doUpper = True" & vbCrLf
-    s = s & "    If optLower.Value Then doLower = True" & vbCrLf
-    s = s & "    If optCustom.Value Then doSentence = chkSentence.Value: doTitle = chkTitle.Value: doUpper = chkUpper.Value: doLower = chkLower.Value: doSmart = chkSmartSentences.Value" & vbCrLf
-    s = s & "    If Not (doSentence Or doTitle Or doUpper Or doLower Or doSmart) Then MsgBox ""No capitalization option selected."", vbInformation: Exit Sub" & vbCrLf
-    s = s & "    ' Preview: highlight paragraphs that would change (simple heuristic)" & vbCrLf
-    s = s & "    Dim p As Paragraph, original As String, transformed As String, changedCount As Long: changedCount = 0" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim modeName As String" & vbCrLf
+    s = s & "    modeName = ActiveRepairModeName(False)" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim useAbbreviations As Boolean" & vbCrLf
+    s = s & "    Dim protectAcronyms As Boolean" & vbCrLf
+    s = s & "    Dim protectNames As Boolean" & vbCrLf
+    s = s & "    Dim useHeadingHeuristics As Boolean" & vbCrLf
+    s = s & "    Dim useContextRules As Boolean" & vbCrLf
+    s = s & "    useAbbreviations = chkSentence.Value" & vbCrLf
+    s = s & "    protectAcronyms = chkTitle.Value" & vbCrLf
+    s = s & "    protectNames = chkUpper.Value" & vbCrLf
+    s = s & "    useHeadingHeuristics = chkLower.Value" & vbCrLf
+    s = s & "    useContextRules = chkSmartSentences.Value" & vbCrLf
+    s = s & "    If modeName = ""Conservative"" Then" & vbCrLf
+    s = s & "        useAbbreviations = True" & vbCrLf
+    s = s & "        protectAcronyms = True" & vbCrLf
+    s = s & "        protectNames = True" & vbCrLf
+    s = s & "        useHeadingHeuristics = True" & vbCrLf
+    s = s & "        useContextRules = True" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    If modeName = ""Custom"" Then" & vbCrLf
+    s = s & "        If Not (useAbbreviations Or protectAcronyms Or protectNames Or useHeadingHeuristics Or useContextRules) Then" & vbCrLf
+    s = s & "            MsgBox ""No custom repair protections are selected."", vbInformation, ""Capitalization Fixer""" & vbCrLf
+    s = s & "            Exit Sub" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim p As Paragraph" & vbCrLf
+    s = s & "    Dim original As String" & vbCrLf
+    s = s & "    Dim transformed As String" & vbCrLf
+    s = s & "    Dim changedCount As Long" & vbCrLf
+    s = s & "    changedCount = 0" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "    For Each p In ActiveDocument.Paragraphs" & vbCrLf
     s = s & "        If p.Range.Start >= targetRange.Start And p.Range.End <= targetRange.End Then" & vbCrLf
     s = s & "            original = p.Range.Text" & vbCrLf
     s = s & "            If Right$(original, 1) = vbCr Then original = Left$(original, Len(original) - 1)" & vbCrLf
-    s = s & "            transformed = original" & vbCrLf
-    s = s & "            If doSentence Then transformed = SentenceCase(transformed)" & vbCrLf
-    s = s & "            If doTitle Then transformed = TitleCase(transformed)" & vbCrLf
-    s = s & "            If doUpper Then transformed = UCase$(transformed)" & vbCrLf
-    s = s & "            If doLower Then transformed = LCase$(transformed)" & vbCrLf
-    s = s & "            If doSmart Then transformed = SmartSentenceCase(transformed)" & vbCrLf
+    s = s & "            transformed = SmartRepairParagraph(original, modeName, useAbbreviations, protectAcronyms, protectNames, useHeadingHeuristics, useContextRules)" & vbCrLf
     s = s & "            If transformed <> original Then" & vbCrLf
-    s = s & "                p.Range.HighlightColorIndex = wdYellow: changedCount = changedCount + 1" & vbCrLf
+    s = s & "                p.Range.HighlightColorIndex = wdYellow" & vbCrLf
+    s = s & "                changedCount = changedCount + 1" & vbCrLf
     s = s & "            End If" & vbCrLf
     s = s & "        End If" & vbCrLf
     s = s & "    Next p" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "    If previewOnly Then" & vbCrLf
     s = s & "        ShowPreviewActions Me, ""Capitalization Fixer"", ""Preview complete. "" & changedCount & "" paragraphs highlighted.""" & vbCrLf
     s = s & "        Exit Sub" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "    MarkCleanupStart ""Capitalization Fixer""" & vbCrLf
     s = s & "    Dim undoRec As UndoRecord" & vbCrLf
     s = s & "    Set undoRec = Application.UndoRecord" & vbCrLf
     s = s & "    undoRec.StartCustomRecord ""Cleanup Suite - Capitalization Fixer""" & vbCrLf
     s = s & "    On Error GoTo RunErr" & vbCrLf
-    s = s & "    ' Apply changes" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "    For Each p In ActiveDocument.Paragraphs" & vbCrLf
     s = s & "        If p.Range.Start >= targetRange.Start And p.Range.End <= targetRange.End Then" & vbCrLf
     s = s & "            original = p.Range.Text" & vbCrLf
     s = s & "            If Right$(original, 1) = vbCr Then original = Left$(original, Len(original) - 1)" & vbCrLf
-    s = s & "            transformed = original" & vbCrLf
-    s = s & "            If doSentence Then transformed = SentenceCase(transformed)" & vbCrLf
-    s = s & "            If doTitle Then transformed = TitleCase(transformed)" & vbCrLf
-    s = s & "            If doUpper Then transformed = UCase$(transformed)" & vbCrLf
-    s = s & "            If doLower Then transformed = LCase$(transformed)" & vbCrLf
-    s = s & "            If doSmart Then transformed = SmartSentenceCase(transformed)" & vbCrLf
+    s = s & "            transformed = SmartRepairParagraph(original, modeName, useAbbreviations, protectAcronyms, protectNames, useHeadingHeuristics, useContextRules)" & vbCrLf
     s = s & "            If transformed <> original Then p.Range.Text = transformed & vbCr" & vbCrLf
     s = s & "        End If" & vbCrLf
     s = s & "    Next p" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "    RemoveAllHighlighting targetRange" & vbCrLf
-    s = s & "    Dim results As Collection: Set results = New Collection" & vbCrLf
+    s = s & "    Dim results As Collection" & vbCrLf
+    s = s & "    Set results = New Collection" & vbCrLf
+    s = s & "    results.Add ""Mode: "" & modeName" & vbCrLf
     s = s & "    results.Add ""Paragraphs changed: "" & changedCount" & vbCrLf
     s = s & "    ShowCleanupReport ""Capitalization Cleanup"", results" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "    undoRec.EndCustomRecord" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    MarkCleanupToolApplied" & vbCrLf
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "RunErr:" & vbCrLf
     s = s & "    Dim originalErrNumber As Long" & vbCrLf
     s = s & "    Dim originalErrDescription As String" & vbCrLf
     s = s & "    originalErrNumber = Err.Number" & vbCrLf
     s = s & "    originalErrDescription = Err.Description" & vbCrLf
-    s = s & "    On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    undoRec.EndCustomRecord" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Dim errMsg As String" & vbCrLf
     s = s & "    errMsg = ""An unexpected error occurred: "" & originalErrNumber & "" - "" & originalErrDescription" & vbCrLf
@@ -3759,32 +4259,459 @@ Private Function frmCapitalizationCleanup_Code() As String
     s = s & "             ""Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back.""" & vbCrLf
     s = s & "    MsgBox errMsg, vbCritical, ""Cleanup Error""" & vbCrLf
     s = s & "End Sub" & vbCrLf
-    s = s & "' Helper functions for capitalization" & vbCrLf
-    s = s & "Private Function SentenceCase(s As String) As String" & vbCrLf
-    s = s & "    s = LCase$(s)" & vbCrLf
-    s = s & "    If Len(Trim$(s)) = 0 Then SentenceCase = s: Exit Function" & vbCrLf
-    s = s & "    Dim leadLen As Long: leadLen = Len(s) - Len(LTrim$(s))" & vbCrLf
-    s = s & "    SentenceCase = Left$(s, leadLen) & UCase$(Mid$(s, leadLen + 1, 1)) & Mid$(s, leadLen + 2)" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function SmartRepairParagraph(ByVal textValue As String, ByVal modeName As String, ByVal useAbbreviations As Boolean, ByVal protectAcronyms As Boolean, ByVal protectNames As Boolean, ByVal useHeadingHeuristics As Boolean, ByVal useContextRules As Boolean) As String" & vbCrLf
+    s = s & "    If Len(Trim$(textValue)) = 0 Then" & vbCrLf
+    s = s & "        SmartRepairParagraph = textValue" & vbCrLf
+    s = s & "        Exit Function" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim headingLike As Boolean" & vbCrLf
+    s = s & "    headingLike = useHeadingHeuristics And IsLikelyHeadingText(textValue)" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim working As String" & vbCrLf
+    s = s & "    working = textValue" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If ShouldNormalizeEntireParagraph(textValue, modeName, headingLike) Then" & vbCrLf
+    s = s & "        working = LCase$(working)" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    working = NormalizeLongUppercaseWords(working, modeName, protectAcronyms, protectNames, headingLike)" & vbCrLf
+    s = s & "    working = ApplySentenceRepairs(working, modeName, useAbbreviations, useContextRules, headingLike)" & vbCrLf
+    s = s & "    working = RestoreProtectedTerms(working, protectAcronyms, protectNames)" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    SmartRepairParagraph = working" & vbCrLf
     s = s & "End Function" & vbCrLf
-    s = s & "Private Function TitleCase(s As String) As String" & vbCrLf
-    s = s & "    Dim arr: arr = Split(LCase$(s), "" "")" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function ShouldNormalizeEntireParagraph(ByVal textValue As String, ByVal modeName As String, ByVal headingLike As Boolean) As Boolean" & vbCrLf
+    s = s & "    If headingLike Then Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim lowerCount As Long" & vbCrLf
+    s = s & "    Dim upperCount As Long" & vbCrLf
+    s = s & "    Dim letterCount As Long" & vbCrLf
+    s = s & "    CountLetterCase textValue, lowerCount, upperCount, letterCount" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If letterCount < 6 Then Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim lowerRatio As Double" & vbCrLf
+    s = s & "    Dim upperRatio As Double" & vbCrLf
+    s = s & "    lowerRatio = lowerCount / letterCount" & vbCrLf
+    s = s & "    upperRatio = upperCount / letterCount" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Select Case modeName" & vbCrLf
+    s = s & "        Case ""Balanced""" & vbCrLf
+    s = s & "            If lowerRatio >= 0.92 And upperCount <= 2 Then ShouldNormalizeEntireParagraph = True" & vbCrLf
+    s = s & "            If upperRatio >= 0.9 And CountWords(textValue) >= 4 Then ShouldNormalizeEntireParagraph = True" & vbCrLf
+    s = s & "        Case ""Aggressive""" & vbCrLf
+    s = s & "            If lowerRatio >= 0.78 Or upperRatio >= 0.78 Then ShouldNormalizeEntireParagraph = True" & vbCrLf
+    s = s & "            If CountAllUpperWords(textValue, 4) >= 2 Then ShouldNormalizeEntireParagraph = True" & vbCrLf
+    s = s & "    End Select" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub CountLetterCase(ByVal textValue As String, ByRef lowerCount As Long, ByRef upperCount As Long, ByRef letterCount As Long)" & vbCrLf
     s = s & "    Dim i As Long" & vbCrLf
-    s = s & "    For i = LBound(arr) To UBound(arr)" & vbCrLf
-    s = s & "        If Len(arr(i)) > 0 Then arr(i) = UCase$(Left$(arr(i), 1)) & Mid$(arr(i), 2)" & vbCrLf
+    s = s & "    Dim currentChar As String" & vbCrLf
+    s = s & "    For i = 1 To Len(textValue)" & vbCrLf
+    s = s & "        currentChar = Mid$(textValue, i, 1)" & vbCrLf
+    s = s & "        If currentChar Like ""[A-Za-z]"" Then" & vbCrLf
+    s = s & "            letterCount = letterCount + 1" & vbCrLf
+    s = s & "            If currentChar = LCase$(currentChar) Then" & vbCrLf
+    s = s & "                lowerCount = lowerCount + 1" & vbCrLf
+    s = s & "            Else" & vbCrLf
+    s = s & "                upperCount = upperCount + 1" & vbCrLf
+    s = s & "            End If" & vbCrLf
+    s = s & "        End If" & vbCrLf
     s = s & "    Next i" & vbCrLf
-    s = s & "    TitleCase = Join(arr, "" "")" & vbCrLf
-    s = s & "End Function" & vbCrLf
-    s = s & "Private Function SmartSentenceCase(s As String) As String" & vbCrLf
-    s = s & "    ' Very simple heuristic: capitalize after sentence-ending punctuation" & vbCrLf
-    s = s & "    Dim i As Long, result As String, capNext As Boolean: capNext = True" & vbCrLf
-    s = s & "    For i = 1 To Len(s)" & vbCrLf
-    s = s & "        Dim currentChar As String: currentChar = Mid$(s, i, 1)" & vbCrLf
-    s = s & "        If capNext And currentChar >= ""a"" And currentChar <= ""z"" Then currentChar = UCase$(currentChar): capNext = False" & vbCrLf
-    s = s & "        result = result & currentChar" & vbCrLf
-    s = s & "        If currentChar = ""."" Or currentChar = ""?"" Or currentChar = ""!"" Then capNext = True" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function CountWords(ByVal textValue As String) As Long" & vbCrLf
+    s = s & "    Dim i As Long" & vbCrLf
+    s = s & "    Dim inWord As Boolean" & vbCrLf
+    s = s & "    Dim currentChar As String" & vbCrLf
+    s = s & "    For i = 1 To Len(textValue)" & vbCrLf
+    s = s & "        currentChar = Mid$(textValue, i, 1)" & vbCrLf
+    s = s & "        If IsTokenWordChar(currentChar) Then" & vbCrLf
+    s = s & "            If Not inWord Then" & vbCrLf
+    s = s & "                CountWords = CountWords + 1" & vbCrLf
+    s = s & "                inWord = True" & vbCrLf
+    s = s & "            End If" & vbCrLf
+    s = s & "        Else" & vbCrLf
+    s = s & "            inWord = False" & vbCrLf
+    s = s & "        End If" & vbCrLf
     s = s & "    Next i" & vbCrLf
-    s = s & "    SmartSentenceCase = result" & vbCrLf
     s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function CountAllUpperWords(ByVal textValue As String, ByVal minLetters As Long) As Long" & vbCrLf
+    s = s & "    Dim i As Long" & vbCrLf
+    s = s & "    Dim token As String" & vbCrLf
+    s = s & "    Dim currentChar As String" & vbCrLf
+    s = s & "    For i = 1 To Len(textValue) + 1" & vbCrLf
+    s = s & "        If i <= Len(textValue) Then" & vbCrLf
+    s = s & "            currentChar = Mid$(textValue, i, 1)" & vbCrLf
+    s = s & "        Else" & vbCrLf
+    s = s & "            currentChar = "" """ & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        If IsTokenWordChar(currentChar) Then" & vbCrLf
+    s = s & "            token = token & currentChar" & vbCrLf
+    s = s & "        ElseIf Len(token) > 0 Then" & vbCrLf
+    s = s & "            If IsLongUppercaseWord(token, minLetters) Then CountAllUpperWords = CountAllUpperWords + 1" & vbCrLf
+    s = s & "            token = """"" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "    Next i" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function NormalizeLongUppercaseWords(ByVal textValue As String, ByVal modeName As String, ByVal protectAcronyms As Boolean, ByVal protectNames As Boolean, ByVal headingLike As Boolean) As String" & vbCrLf
+    s = s & "    If headingLike Then" & vbCrLf
+    s = s & "        NormalizeLongUppercaseWords = textValue" & vbCrLf
+    s = s & "        Exit Function" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim threshold As Long" & vbCrLf
+    s = s & "    Select Case modeName" & vbCrLf
+    s = s & "        Case ""Conservative"": threshold = 8" & vbCrLf
+    s = s & "        Case ""Balanced"": threshold = 5" & vbCrLf
+    s = s & "        Case Else: threshold = 4" & vbCrLf
+    s = s & "    End Select" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim resultText As String" & vbCrLf
+    s = s & "    Dim token As String" & vbCrLf
+    s = s & "    Dim i As Long" & vbCrLf
+    s = s & "    Dim currentChar As String" & vbCrLf
+    s = s & "    For i = 1 To Len(textValue) + 1" & vbCrLf
+    s = s & "        If i <= Len(textValue) Then" & vbCrLf
+    s = s & "            currentChar = Mid$(textValue, i, 1)" & vbCrLf
+    s = s & "        Else" & vbCrLf
+    s = s & "            currentChar = "" """ & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        If IsTokenWordChar(currentChar) Then" & vbCrLf
+    s = s & "            token = token & currentChar" & vbCrLf
+    s = s & "        Else" & vbCrLf
+    s = s & "            If Len(token) > 0 Then" & vbCrLf
+    s = s & "                resultText = resultText & NormalizeUppercaseToken(token, threshold, protectAcronyms, protectNames)" & vbCrLf
+    s = s & "                token = """"" & vbCrLf
+    s = s & "            End If" & vbCrLf
+    s = s & "            If i <= Len(textValue) Then resultText = resultText & currentChar" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "    Next i" & vbCrLf
+    s = s & "    NormalizeLongUppercaseWords = resultText" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function NormalizeUppercaseToken(ByVal tokenText As String, ByVal minLetters As Long, ByVal protectAcronyms As Boolean, ByVal protectNames As Boolean) As String" & vbCrLf
+    s = s & "    If Not IsLongUppercaseWord(tokenText, minLetters) Then" & vbCrLf
+    s = s & "        NormalizeUppercaseToken = tokenText" & vbCrLf
+    s = s & "        Exit Function" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim canonical As String" & vbCrLf
+    s = s & "    canonical = CanonicalProtectedToken(tokenText, protectAcronyms, protectNames)" & vbCrLf
+    s = s & "    If Len(canonical) > 0 Then" & vbCrLf
+    s = s & "        NormalizeUppercaseToken = canonical" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        NormalizeUppercaseToken = ProperWordTokenCase(tokenText)" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function IsLongUppercaseWord(ByVal tokenText As String, ByVal minLetters As Long) As Boolean" & vbCrLf
+    s = s & "    Dim lettersOnly As String" & vbCrLf
+    s = s & "    lettersOnly = TokenLettersOnly(tokenText)" & vbCrLf
+    s = s & "    If Len(lettersOnly) < minLetters Then Exit Function" & vbCrLf
+    s = s & "    If lettersOnly <> UCase$(lettersOnly) Then Exit Function" & vbCrLf
+    s = s & "    IsLongUppercaseWord = True" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function ApplySentenceRepairs(ByVal textValue As String, ByVal modeName As String, ByVal useAbbreviations As Boolean, ByVal useContextRules As Boolean, ByVal headingLike As Boolean) As String" & vbCrLf
+    s = s & "    Dim resultText As String" & vbCrLf
+    s = s & "    Dim capNext As Boolean" & vbCrLf
+    s = s & "    capNext = True" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim currentWord As String" & vbCrLf
+    s = s & "    Dim lastWord As String" & vbCrLf
+    s = s & "    Dim i As Long" & vbCrLf
+    s = s & "    Dim currentChar As String" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    For i = 1 To Len(textValue)" & vbCrLf
+    s = s & "        currentChar = Mid$(textValue, i, 1)" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        If IsTokenWordChar(currentChar) Then" & vbCrLf
+    s = s & "            currentWord = currentWord & currentChar" & vbCrLf
+    s = s & "            If capNext And currentChar Like ""[a-z]"" Then" & vbCrLf
+    s = s & "                currentChar = UCase$(currentChar)" & vbCrLf
+    s = s & "                capNext = False" & vbCrLf
+    s = s & "            ElseIf capNext And currentChar Like ""[A-Z]"" Then" & vbCrLf
+    s = s & "                capNext = False" & vbCrLf
+    s = s & "            End If" & vbCrLf
+    s = s & "            resultText = resultText & currentChar" & vbCrLf
+    s = s & "        Else" & vbCrLf
+    s = s & "            If Len(currentWord) > 0 Then" & vbCrLf
+    s = s & "                lastWord = currentWord" & vbCrLf
+    s = s & "                currentWord = """"" & vbCrLf
+    s = s & "            End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "            resultText = resultText & currentChar" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "            Select Case currentChar" & vbCrLf
+    s = s & "                Case ""."", ""?"", ""!""" & vbCrLf
+    s = s & "                    If currentChar = ""."" And useAbbreviations And IsCapitalizationAbbreviation(lastWord & ""."") Then" & vbCrLf
+    s = s & "                        capNext = False" & vbCrLf
+    s = s & "                    ElseIf headingLike And modeName = ""Conservative"" Then" & vbCrLf
+    s = s & "                        capNext = False" & vbCrLf
+    s = s & "                    Else" & vbCrLf
+    s = s & "                        capNext = True" & vbCrLf
+    s = s & "                    End If" & vbCrLf
+    s = s & "                Case "":"", "";""" & vbCrLf
+    s = s & "                    If modeName = ""Aggressive"" And Not headingLike Then capNext = True" & vbCrLf
+    s = s & "                Case vbCr, vbLf" & vbCrLf
+    s = s & "                    capNext = True" & vbCrLf
+    s = s & "                Case Else" & vbCrLf
+    s = s & "                    If capNext Then" & vbCrLf
+    s = s & "                        If useContextRules Then" & vbCrLf
+    s = s & "                            If Not IsContextSkippableWhileAwaitingSentence(currentChar) Then capNext = False" & vbCrLf
+    s = s & "                        ElseIf currentChar <> "" "" And currentChar <> vbTab Then" & vbCrLf
+    s = s & "                            capNext = False" & vbCrLf
+    s = s & "                        End If" & vbCrLf
+    s = s & "                    End If" & vbCrLf
+    s = s & "            End Select" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "    Next i" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    ApplySentenceRepairs = resultText" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function IsContextSkippableWhileAwaitingSentence(ByVal currentChar As String) As Boolean" & vbCrLf
+    s = s & "    Select Case currentChar" & vbCrLf
+    s = s & "        Case "" "", vbTab, """""""", ""'"", ""("", ""["", ""{"", ChrW$(147), ChrW$(148), ""-"", ChrW$(8211), ChrW$(8212), ""*"", ChrW$(8226)" & vbCrLf
+    s = s & "            IsContextSkippableWhileAwaitingSentence = True" & vbCrLf
+    s = s & "    End Select" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function RestoreProtectedTerms(ByVal textValue As String, ByVal protectAcronyms As Boolean, ByVal protectNames As Boolean) As String" & vbCrLf
+    s = s & "    Dim resultText As String" & vbCrLf
+    s = s & "    Dim token As String" & vbCrLf
+    s = s & "    Dim i As Long" & vbCrLf
+    s = s & "    Dim currentChar As String" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    For i = 1 To Len(textValue) + 1" & vbCrLf
+    s = s & "        If i <= Len(textValue) Then" & vbCrLf
+    s = s & "            currentChar = Mid$(textValue, i, 1)" & vbCrLf
+    s = s & "        Else" & vbCrLf
+    s = s & "            currentChar = "" """ & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        If IsTokenWordChar(currentChar) Then" & vbCrLf
+    s = s & "            token = token & currentChar" & vbCrLf
+    s = s & "        Else" & vbCrLf
+    s = s & "            If Len(token) > 0 Then" & vbCrLf
+    s = s & "                resultText = resultText & RestoreProtectedToken(token, protectAcronyms, protectNames)" & vbCrLf
+    s = s & "                token = """"" & vbCrLf
+    s = s & "            End If" & vbCrLf
+    s = s & "            If i <= Len(textValue) Then resultText = resultText & currentChar" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "    Next i" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    RestoreProtectedTerms = resultText" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function RestoreProtectedToken(ByVal tokenText As String, ByVal protectAcronyms As Boolean, ByVal protectNames As Boolean) As String" & vbCrLf
+    s = s & "    Dim canonical As String" & vbCrLf
+    s = s & "    canonical = CanonicalProtectedToken(tokenText, protectAcronyms, protectNames)" & vbCrLf
+    s = s & "    If Len(canonical) > 0 Then" & vbCrLf
+    s = s & "        RestoreProtectedToken = canonical" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        RestoreProtectedToken = tokenText" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function CanonicalProtectedToken(ByVal tokenText As String, ByVal protectAcronyms As Boolean, ByVal protectNames As Boolean) As String" & vbCrLf
+    s = s & "    If InStr(tokenText, ""-"") > 0 Then" & vbCrLf
+    s = s & "        CanonicalProtectedToken = CanonicalizeDelimitedToken(tokenText, ""-"", protectAcronyms, protectNames)" & vbCrLf
+    s = s & "        If Len(CanonicalProtectedToken) > 0 Then Exit Function" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If protectNames Then" & vbCrLf
+    s = s & "        Dim nameKey As String" & vbCrLf
+    s = s & "        nameKey = LCase$(tokenText)" & vbCrLf
+    s = s & "        If GetCapitalizationProtectedTermDict().Exists(nameKey) Then" & vbCrLf
+    s = s & "            CanonicalProtectedToken = CStr(GetCapitalizationProtectedTermDict()(nameKey))" & vbCrLf
+    s = s & "            Exit Function" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "        CanonicalProtectedToken = CanonicalizeNameByHeuristic(tokenText)" & vbCrLf
+    s = s & "        If Len(CanonicalProtectedToken) > 0 Then Exit Function" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If protectAcronyms Then" & vbCrLf
+    s = s & "        Dim acronymKey As String" & vbCrLf
+    s = s & "        acronymKey = UCase$(TokenLettersOnly(tokenText))" & vbCrLf
+    s = s & "        If GetCapitalizationAcronymDict().Exists(acronymKey) Then" & vbCrLf
+    s = s & "            CanonicalProtectedToken = CStr(GetCapitalizationAcronymDict()(acronymKey))" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function CanonicalizeDelimitedToken(ByVal tokenText As String, ByVal delimiterText As String, ByVal protectAcronyms As Boolean, ByVal protectNames As Boolean) As String" & vbCrLf
+    s = s & "    Dim parts As Variant" & vbCrLf
+    s = s & "    parts = Split(tokenText, delimiterText)" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim i As Long" & vbCrLf
+    s = s & "    Dim rebuilt As String" & vbCrLf
+    s = s & "    For i = LBound(parts) To UBound(parts)" & vbCrLf
+    s = s & "        Dim tokenPart As String" & vbCrLf
+    s = s & "        tokenPart = CStr(parts(i))" & vbCrLf
+    s = s & "        Dim canonicalPart As String" & vbCrLf
+    s = s & "        canonicalPart = CanonicalProtectedToken(tokenPart, protectAcronyms, protectNames)" & vbCrLf
+    s = s & "        If Len(canonicalPart) = 0 Then canonicalPart = tokenPart" & vbCrLf
+    s = s & "        If i > LBound(parts) Then rebuilt = rebuilt & delimiterText" & vbCrLf
+    s = s & "        rebuilt = rebuilt & canonicalPart" & vbCrLf
+    s = s & "    Next i" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If rebuilt <> tokenText Then CanonicalizeDelimitedToken = rebuilt" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function CanonicalizeNameByHeuristic(ByVal tokenText As String) As String" & vbCrLf
+    s = s & "    Dim lowerToken As String" & vbCrLf
+    s = s & "    lowerToken = LCase$(tokenText)" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If Left$(lowerToken, 2) = ""mc"" And Len(lowerToken) > 2 Then" & vbCrLf
+    s = s & "        CanonicalizeNameByHeuristic = ""Mc"" & UCase$(Mid$(lowerToken, 3, 1)) & Mid$(lowerToken, 4)" & vbCrLf
+    s = s & "        Exit Function" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If Left$(lowerToken, 2) = ""o'"" And Len(lowerToken) > 2 Then" & vbCrLf
+    s = s & "        CanonicalizeNameByHeuristic = ""O'"" & UCase$(Mid$(lowerToken, 3, 1)) & Mid$(lowerToken, 4)" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function ProperWordTokenCase(ByVal tokenText As String) As String" & vbCrLf
+    s = s & "    Dim lowerToken As String" & vbCrLf
+    s = s & "    lowerToken = LCase$(tokenText)" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim i As Long" & vbCrLf
+    s = s & "    Dim currentChar As String" & vbCrLf
+    s = s & "    Dim makeUpper As Boolean" & vbCrLf
+    s = s & "    makeUpper = True" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    For i = 1 To Len(lowerToken)" & vbCrLf
+    s = s & "        currentChar = Mid$(lowerToken, i, 1)" & vbCrLf
+    s = s & "        If currentChar Like ""[A-Za-z]"" Then" & vbCrLf
+    s = s & "            If makeUpper Then" & vbCrLf
+    s = s & "                ProperWordTokenCase = ProperWordTokenCase & UCase$(currentChar)" & vbCrLf
+    s = s & "                makeUpper = False" & vbCrLf
+    s = s & "            Else" & vbCrLf
+    s = s & "                ProperWordTokenCase = ProperWordTokenCase & currentChar" & vbCrLf
+    s = s & "            End If" & vbCrLf
+    s = s & "        Else" & vbCrLf
+    s = s & "            ProperWordTokenCase = ProperWordTokenCase & currentChar" & vbCrLf
+    s = s & "            makeUpper = (currentChar = ""-"")" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "    Next i" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function TokenLettersOnly(ByVal tokenText As String) As String" & vbCrLf
+    s = s & "    Dim i As Long" & vbCrLf
+    s = s & "    Dim currentChar As String" & vbCrLf
+    s = s & "    For i = 1 To Len(tokenText)" & vbCrLf
+    s = s & "        currentChar = Mid$(tokenText, i, 1)" & vbCrLf
+    s = s & "        If currentChar Like ""[A-Za-z0-9]"" Then TokenLettersOnly = TokenLettersOnly & currentChar" & vbCrLf
+    s = s & "    Next i" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function IsTokenWordChar(ByVal currentChar As String) As Boolean" & vbCrLf
+    s = s & "    If currentChar Like ""[A-Za-z0-9]"" Then" & vbCrLf
+    s = s & "        IsTokenWordChar = True" & vbCrLf
+    s = s & "    ElseIf currentChar = ""'"" Or currentChar = ""-"" Then" & vbCrLf
+    s = s & "        IsTokenWordChar = True" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function IsLikelyHeadingText(ByVal textValue As String) As Boolean" & vbCrLf
+    s = s & "    Dim trimmedText As String" & vbCrLf
+    s = s & "    trimmedText = Trim$(textValue)" & vbCrLf
+    s = s & "    If Len(trimmedText) = 0 Then Exit Function" & vbCrLf
+    s = s & "    If Len(trimmedText) > 90 Then Exit Function" & vbCrLf
+    s = s & "    If Right$(trimmedText, 1) = ""."" Or Right$(trimmedText, 1) = ""?"" Or Right$(trimmedText, 1) = ""!"" Then Exit Function" & vbCrLf
+    s = s & "    If CountWords(trimmedText) > 10 Then Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim lowerCount As Long" & vbCrLf
+    s = s & "    Dim upperCount As Long" & vbCrLf
+    s = s & "    Dim letterCount As Long" & vbCrLf
+    s = s & "    CountLetterCase trimmedText, lowerCount, upperCount, letterCount" & vbCrLf
+    s = s & "    If letterCount = 0 Then Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If upperCount / letterCount >= 0.65 Then" & vbCrLf
+    s = s & "        IsLikelyHeadingText = True" & vbCrLf
+    s = s & "        Exit Function" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim titleWords As Long" & vbCrLf
+    s = s & "    Dim words As Variant" & vbCrLf
+    s = s & "    words = Split(Replace(trimmedText, vbTab, "" ""), "" "")" & vbCrLf
+    s = s & "    Dim i As Long" & vbCrLf
+    s = s & "    For i = LBound(words) To UBound(words)" & vbCrLf
+    s = s & "        Dim currentWord As String" & vbCrLf
+    s = s & "        currentWord = CStr(words(i))" & vbCrLf
+    s = s & "        If Len(TokenLettersOnly(currentWord)) > 0 Then" & vbCrLf
+    s = s & "            If Left$(currentWord, 1) = UCase$(Left$(currentWord, 1)) And Mid$(currentWord, 2) = LCase$(Mid$(currentWord, 2)) Then" & vbCrLf
+    s = s & "                titleWords = titleWords + 1" & vbCrLf
+    s = s & "            End If" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "    Next i" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If titleWords >= 2 And titleWords >= CountWords(trimmedText) - 1 Then IsLikelyHeadingText = True" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function IsCapitalizationAbbreviation(ByVal tokenText As String) As Boolean" & vbCrLf
+    s = s & "    Dim normalized As String" & vbCrLf
+    s = s & "    normalized = LCase$(Trim$(tokenText))" & vbCrLf
+    s = s & "    If Len(normalized) = 2 And Right$(normalized, 1) = ""."" Then" & vbCrLf
+    s = s & "        IsCapitalizationAbbreviation = True" & vbCrLf
+    s = s & "        Exit Function" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    IsCapitalizationAbbreviation = GetCapitalizationAbbreviationDict().Exists(normalized)" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function GetCapitalizationAbbreviationDict() As Object" & vbCrLf
+    s = s & "    Static dict As Object" & vbCrLf
+    s = s & "    If dict Is Nothing Then" & vbCrLf
+    s = s & "        Set dict = CreateObject(""Scripting.Dictionary"")" & vbCrLf
+    s = s & "        AddLookupValues dict, Array(""dr."", ""mr."", ""mrs."", ""ms."", ""prof."", ""sr."", ""jr."", ""st."", ""mt."", ""vs."", ""etc."", ""inc."", ""ltd."", ""co."", ""corp."", ""dept."", ""fig."", ""no."", ""nos."", ""est."", ""misc."", ""approx."", ""jan."", ""feb."", ""mar."", ""apr."", ""jun."", ""jul."", ""aug."", ""sep."", ""sept."", ""oct."", ""nov."", ""dec."")" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    Set GetCapitalizationAbbreviationDict = dict" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function GetCapitalizationAcronymDict() As Object" & vbCrLf
+    s = s & "    Static dict As Object" & vbCrLf
+    s = s & "    If dict Is Nothing Then" & vbCrLf
+    s = s & "        Set dict = CreateObject(""Scripting.Dictionary"")" & vbCrLf
+    s = s & "        AddLookupPairs dict, Array(""API|API"", ""CEO|CEO"", ""CFO|CFO"", ""CIA|CIA"", ""COO|COO"", ""FAQ|FAQ"", ""FBI|FBI"", ""HTML|HTML"", ""OCR|OCR"", ""PDF|PDF"", ""PR|PR"", ""SQL|SQL"", ""URL|URL"", ""USA|USA"", ""VBA|VBA"", ""NASA|NASA"")" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    Set GetCapitalizationAcronymDict = dict" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function GetCapitalizationProtectedTermDict() As Object" & vbCrLf
+    s = s & "    Static dict As Object" & vbCrLf
+    s = s & "    If dict Is Nothing Then" & vbCrLf
+    s = s & "        Set dict = CreateObject(""Scripting.Dictionary"")" & vbCrLf
+    s = s & "        AddLookupPairs dict, Array(""ebay|eBay"", ""github|GitHub"", ""iphone|iPhone"", ""ipad|iPad"", ""linkedin|LinkedIn"", ""macbook|MacBook"", ""mcdonald|McDonald"", ""oreilly|O'Reilly"", ""powerpoint|PowerPoint"", ""youtube|YouTube"")" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    Set GetCapitalizationProtectedTermDict = dict" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub AddLookupValues(ByVal dict As Object, ByVal values As Variant)" & vbCrLf
+    s = s & "    Dim i As Long" & vbCrLf
+    s = s & "    For i = LBound(values) To UBound(values)" & vbCrLf
+    s = s & "        dict(CStr(values(i))) = True" & vbCrLf
+    s = s & "    Next i" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub AddLookupPairs(ByVal dict As Object, ByVal values As Variant)" & vbCrLf
+    s = s & "    Dim i As Long" & vbCrLf
+    s = s & "    For i = LBound(values) To UBound(values)" & vbCrLf
+    s = s & "        Dim parts As Variant" & vbCrLf
+    s = s & "        parts = Split(CStr(values(i)), ""|"")" & vbCrLf
+    s = s & "        dict(CStr(parts(0))) = CStr(parts(1))" & vbCrLf
+    s = s & "    Next i" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & ""
     frmCapitalizationCleanup_Code = s
 End Function
@@ -3824,7 +4751,7 @@ Private Function frmListCleanup_Code() As String
     s = s & "    optBullets.Caption = ""Convert manual bullet lists""" & vbCrLf
     s = s & "    optNumbering.Caption = ""Convert manual numbered lists""" & vbCrLf
     s = s & "    optIndent.Caption = ""Fix list indentation""" & vbCrLf
-    s = s & "    optCustom.Caption = ""Custom (choose below)""" & vbCrLf
+    s = s & "    optCustom.Caption = ""Custom""" & vbCrLf
     s = s & "    chkNormalizeBullets.Caption = ""Convert manual hyphens / asterisks to List Bullet style""" & vbCrLf
     s = s & "    chkNormalizeNumbering.Caption = ""Convert manual numbers to List Number style""" & vbCrLf
     s = s & "    chkFixIndent.Caption = ""Fix list indentation""" & vbCrLf
@@ -4036,7 +4963,7 @@ Private Function frmParagraphCleanup_Code() As String
     s = s & "    optAll.Caption = ""All paragraph fixes""" & vbCrLf
     s = s & "    optRemoveEmpty.Caption = ""Remove empty paragraphs""" & vbCrLf
     s = s & "    optNormalizeSpacing.Caption = ""Normalize paragraph spacing""" & vbCrLf
-    s = s & "    optCustom.Caption = ""Custom (choose below)""" & vbCrLf
+    s = s & "    optCustom.Caption = ""Custom""" & vbCrLf
     s = s & "    chkRemoveEmpty.Caption = ""Collapse multiple consecutive empty paragraphs""" & vbCrLf
     s = s & "    chkCollapseBreaks.Caption = ""Convert soft returns (Shift+Enter) to paragraph marks""" & vbCrLf
     s = s & "    chkNormalizeParaSpacing.Caption = ""Normalize Space Before / Space After settings""" & vbCrLf
@@ -6504,6 +7431,7 @@ Private Function frmPreviewActions_Code() As String
     s = s & "    mToolName = toolName" & vbCrLf
     s = s & "    mSummaryText = summaryText" & vbCrLf
     s = s & "    mPreviewOn = True" & vbCrLf
+    s = s & "    Me.Caption = """"" & vbCrLf
     s = s & "    ApplyMSFormTitleStrategy Me, True" & vbCrLf
     s = s & "    lblTitle.Caption = """"" & vbCrLf
     s = s & "    lblHint.Caption = toolName" & vbCrLf
@@ -6519,6 +7447,7 @@ Private Function frmPreviewActions_Code() As String
     s = s & "Private Sub LayoutPanel()" & vbCrLf
     s = s & "    Dim summaryH As Single" & vbCrLf
     s = s & "    summaryH = RequiredSummaryHeight(mSummaryText, CONTENT_W)" & vbCrLf
+    s = s & "    Me.Caption = """"" & vbCrLf
     s = s & "    Me.Width = FORM_W" & vbCrLf
     s = s & "    Me.Height = MaxSingle(MIN_FORM_H, 74 + summaryH)" & vbCrLf
     s = s & "    lblTitle.Caption = """"" & vbCrLf

@@ -28,7 +28,7 @@ Private Sub UserForm_Initialize()
     optAll.Caption = "All paragraph fixes"
     optRemoveEmpty.Caption = "Remove empty paragraphs"
     optNormalizeSpacing.Caption = "Normalize paragraph spacing"
-    optCustom.Caption = "Custom (choose below)"
+    optCustom.Caption = "Custom"
     chkRemoveEmpty.Caption = "Collapse multiple consecutive empty paragraphs"
     chkCollapseBreaks.Caption = "Convert soft returns (Shift+Enter) to paragraph marks"
     chkNormalizeParaSpacing.Caption = "Normalize Space Before / Space After settings"

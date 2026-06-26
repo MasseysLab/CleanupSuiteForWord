@@ -31,7 +31,7 @@ Private Sub UserForm_Initialize()
     optAll.Caption = "All invisible / problem characters"
     optNBSP.Caption = "Non-breaking spaces only"
     optZeroWidth.Caption = "Zero-width characters only"
-    optCustom.Caption = "Custom (choose below)"
+    optCustom.Caption = "Custom"
     chkNBSP.Caption = "Non-breaking spaces (U+00A0)"
     chkZWSP.Caption = "Zero-width spaces (U+200B)"
     chkZWNJ.Caption = "Zero-width non-joiners (U+200C)"

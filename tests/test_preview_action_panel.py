@@ -10,7 +10,7 @@ def read(path: str) -> str:
 
 
 class PreviewActionPanelTests(unittest.TestCase):
-    def test_preview_action_form_is_assembled_and_installed(self):
+    def test_preview_action_form_is_registered_in_manifest_and_installer(self):
         manifest = read("src/manifest.txt")
         installer = read("src/installer/installer.bas")
 
@@ -20,7 +20,7 @@ class PreviewActionPanelTests(unittest.TestCase):
         self.assertIn('"frmPreviewActions"', installer)
         self.assertIn('Case "frmPreviewActions": FriendlyFormCaption = "Preview Actions"', installer)
 
-    def test_shared_preview_panel_helper_exists(self):
+    def test_preview_panel_helpers_manage_panel_lifecycle_and_state(self):
         helpers = read("src/modules/modCleanupHelpers.bas")
         panel = read("src/forms/frmPreviewActions.bas")
 
@@ -42,6 +42,7 @@ class PreviewActionPanelTests(unittest.TestCase):
         )
         self.assertNotIn("vbModeless", helpers)
         self.assertIn("Public Sub Configure", panel)
+        self.assertIn("Me.Caption = \"\"", panel)
         self.assertIn('CallByName mSourceForm, "RunAfterPreview", VbMethod', panel)
         self.assertIn('CallByName src, "PreviewFromPanel", VbMethod', panel)
         self.assertIn("RemoveAllHighlighting ActiveDocument.Content", panel)
@@ -109,7 +110,7 @@ class PreviewActionPanelTests(unittest.TestCase):
         self.assertNotIn("cmdBack", panel)
         self.assertNotIn("cmdClose", panel)
 
-    def test_preview_panel_has_only_decisive_actions(self):
+    def test_preview_panel_exposes_only_decisive_actions(self):
         installer = read("src/installer/installer.bas")
 
         self.assertIn(
@@ -119,7 +120,7 @@ class PreviewActionPanelTests(unittest.TestCase):
         self.assertNotIn('"cmdBack"', installer)
         self.assertNotIn('"cmdClose"', installer)
 
-    def test_launcher_hides_while_subtool_is_open(self):
+    def test_launcher_hides_while_a_subtool_is_open(self):
         launcher = read("src/forms/frmCleanupSuiteLauncher.bas")
 
         self.assertIn("Private Sub OpenCleanupTool(ByVal formName As String)", launcher)
@@ -133,7 +134,7 @@ class PreviewActionPanelTests(unittest.TestCase):
         self.assertIn('Private Sub cmdUnicode_Click(): OpenCleanupTool "frmUnicodeCleanup": End Sub', launcher)
         self.assertIn('Private Sub cmdCapitalization_Click(): OpenCleanupTool "frmCapitalizationCleanup": End Sub', launcher)
 
-    def test_preview_capable_forms_can_apply_from_panel(self):
+    def test_preview_capable_forms_can_apply_changes_from_the_panel(self):
         form_paths = [
             path
             for path in (ROOT / "src" / "forms").glob("frm*.bas")
@@ -150,7 +151,7 @@ class PreviewActionPanelTests(unittest.TestCase):
                 self.assertIn("ShowPreviewActions Me", source)
                 self.assertIn("MarkCleanupToolApplied", source)
 
-    def test_apply_and_preview_button_language(self):
+    def test_apply_and_preview_buttons_use_the_expected_labels(self):
         installer = read("src/installer/installer.bas")
 
         self.assertIn('If CStr(cn) = "cmdPreview" Then', installer)
@@ -178,7 +179,7 @@ class PreviewActionPanelTests(unittest.TestCase):
         self.assertNotIn('"chkPreviewOnly", "cmdRun"', installer)
         self.assertNotIn('"cmdDeselectAll", "cmdRun"', installer)
 
-    def test_preview_panel_summary_height_is_dynamic(self):
+    def test_preview_panel_summary_height_resizes_with_content(self):
         panel = read("src/forms/frmPreviewActions.bas")
 
         self.assertIn("Private Function RequiredSummaryHeight", panel)
@@ -188,7 +189,7 @@ class PreviewActionPanelTests(unittest.TestCase):
         self.assertIn("Private Function MinSingle", panel)
         self.assertIn("Private Function MaxSingle", panel)
 
-    def test_blank_document_apply_is_short_circuited_before_tool_runs(self):
+    def test_blank_document_apply_is_short_circuited_before_any_tool_runs(self):
         helpers = read("src/modules/modCleanupHelpers.bas")
         panel = read("src/forms/frmPreviewActions.bas")
 
@@ -203,7 +204,7 @@ class PreviewActionPanelTests(unittest.TestCase):
             panel.index('CallByName mSourceForm, "RunAfterPreview", VbMethod'),
         )
 
-    def test_preview_capable_forms_have_preview_button_hook(self):
+    def test_preview_capable_forms_have_the_preview_button_hook(self):
         form_paths = [
             path
             for path in (ROOT / "src" / "forms").glob("frm*.bas")
@@ -234,7 +235,7 @@ class PreviewActionPanelTests(unittest.TestCase):
                     preview_from_panel.rindex("chkPreviewOnly.Value = False"),
                 )
 
-    def test_return_to_main_after_apply_setting_is_wired(self):
+    def test_return_to_main_after_apply_setting_is_wired_through_launcher_and_helpers(self):
         launcher = read("src/forms/frmCleanupSuiteLauncher.bas")
         helpers = read("src/modules/modCleanupHelpers.bas")
         panel = read("src/forms/frmPreviewActions.bas")
@@ -266,7 +267,7 @@ class PreviewActionPanelTests(unittest.TestCase):
         self.assertIn("Private Sub cmdResetAll_Click()", launcher)
         self.assertIn("ResetCleanupSuiteDefaults", launcher)
 
-    def test_installer_report_write_is_unique_and_nonfatal(self):
+    def test_installer_report_writing_is_unique_and_nonfatal(self):
         installer = read("src/installer/installer.bas")
 
         self.assertIn("WriteInstallReport reportText", installer)

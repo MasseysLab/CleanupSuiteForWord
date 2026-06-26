@@ -6,9 +6,9 @@ The project uses a simple SemVer-style ladder, but with `0.x.0` milestones until
 
 ## Current Version
 
-`0.8.0`
+`0.8.5`
 
-This is the current working milestone for the `0.8.x` line.
+This is the current Alpha milestone for the `0.8.x` line.
 
 ## Roadmap
 
