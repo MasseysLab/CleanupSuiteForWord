@@ -17,6 +17,18 @@ def read_exact(path: Path) -> str:
 
 
 class AssembleSyncTests(unittest.TestCase):
+    def test_manifest_parser_ignores_crlf_whitespace_only_lines(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manifest = Path(temp_dir) / "manifest.txt"
+            manifest.write_bytes(
+                b"# Windows checkout\r\n\r\n  \r\nVERBATIM sample.bas\r\nSEP\r\n"
+            )
+
+            self.assertEqual(
+                list(ASSEMBLE.parse_manifest(str(manifest))),
+                [("VERBATIM", ["sample.bas"]), ("SEP", [])],
+            )
+
     def test_rebuilding_root_bundle_refreshes_practice_copy(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)

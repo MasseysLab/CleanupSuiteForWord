@@ -77,7 +77,7 @@ def parse_manifest(manifest_path):
     """Yield (type, args) tuples for each non-comment, non-blank line."""
     with open(manifest_path, "r", newline="\n", encoding="utf-8") as f:
         for raw in f:
-            line = raw.rstrip("\n")
+            line = raw.strip()
             if not line or line.startswith("#"):
                 continue
             parts = line.split(None, 2)   # max 3 parts: TYPE path [func]
