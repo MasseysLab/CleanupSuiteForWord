@@ -6,15 +6,17 @@ import unittest
 from pathlib import Path
 
 
-DOCUMENTS_SKILL_ROOT = Path(
-    r"C:\Users\Chris\.codex\plugins\cache\openai-primary-runtime\documents"
+DOCUMENTS_SKILL_ROOT = (
+    Path.home() / ".codex" / "plugins" / "cache" / "openai-primary-runtime" / "documents"
 )
 
 
 def resolve_render_docx_path() -> Path:
     candidates = sorted(DOCUMENTS_SKILL_ROOT.glob(r"*\skills\documents\render_docx.py"))
     if not candidates:
-        raise FileNotFoundError(f"render_docx.py not found under {DOCUMENTS_SKILL_ROOT}")
+        raise unittest.SkipTest(
+            f"bundled render_docx.py is not available under {DOCUMENTS_SKILL_ROOT}"
+        )
     return candidates[-1]
 
 
