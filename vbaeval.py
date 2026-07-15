@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2026 Christopher Travis Massey
+# Copyright (c) 2026 MasseysLab
 # See LICENSE for full terms.
 
 """
@@ -98,7 +98,7 @@ def eval_concat(expr):
 
 def builder_names(c=None):
     c = content if c is None else c
-    return [b for b in re.findall(r"Private Function (\w+)\(\) As String", c)
+    return [b for b in re.findall(r"(?m)^Private Function (\w+)\(\) As String\s*$", c)
             if b != "RIBBON_XML"]
 
 def extract_code(name, c=None):
@@ -246,12 +246,18 @@ def control_wiring(c=None):
         decl = set(re.findall(r'"(\w+)"', mm.group(1))) if mm else set()
         code = extract_code(b, c) or ""
         used = set()
-        for x in re.finditer(r"\b((?:" + "|".join(PRE) + r")[A-Z]\w*)", code):
+        # Scan identifiers in code, plus explicit Controls("name") lookups.
+        # Caption/table text can contain control-like words, so string literals
+        # are stripped before the broad identifier pass.
+        direct_controls = set(re.findall(r'\bControls\("((?:' + "|".join(PRE) + r')[A-Z]\w*)"\)', code))
+        wiring_code = re.sub(r'"(?:[^"]|"")*"', '""', code)
+        for x in re.finditer(r"\b((?:" + "|".join(PRE) + r")[A-Z]\w*)", wiring_code):
             nm = x.group(1)
             for sf in SUF:
                 if nm.endswith(sf):
                     nm = nm[:-len(sf)]; break
             used.add(nm)
+        used.update(direct_controls)
         missing = sorted(used - decl)
         if missing:
             gaps[form] = missing

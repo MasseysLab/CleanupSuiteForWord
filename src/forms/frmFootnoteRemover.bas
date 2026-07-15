@@ -19,11 +19,7 @@ Private Sub UserForm_Initialize()
     optScopeDocument.Caption = "Entire document"
     optScopeDocument.Value = True
     optScopeSelection.Caption = "Selected text only"
-    If Selection.Type = wdSelectionNormal Or Selection.Type = wdSelectionColumn Then
-        optScopeSelection.Enabled = True
-    Else
-        optScopeSelection.Enabled = False
-    End If
+    RefreshScopeSelectionState Me, True
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
     LayoutCleanupToolForm Me
 End Sub
@@ -33,12 +29,17 @@ End Function
 Private Sub chkFootnotes_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub chkEndnotes_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub chkKeepTextInline_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub cmdRiskPlacementFootnoteFootnotes_Click(): ShowToolRiskChoiceExplanation "Remove footnotes", "Removes content", "Deletes footnotes and their reference marks." : End Sub
+Private Sub cmdRiskPlacementFootnoteEndnotes_Click(): ShowToolRiskChoiceExplanation "Remove endnotes", "Removes content", "Deletes endnotes and their reference marks." : End Sub
+Private Sub cmdRiskPlacementFootnoteKeepText_Click(): ShowToolRiskChoiceExplanation "Keep note text inline", "Text caution", "Copies note wording into the document before removing the note itself." : End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub
 Public Sub PreviewFromPanel()
     chkPreviewOnly.Value = True
+    BeginPreviewActionIndicator Me
     cmdRun_Click
+    EndPreviewActionIndicator
     chkPreviewOnly.Value = False
 End Sub
 Private Sub cmdReset_Click()
@@ -78,7 +79,14 @@ Private Sub cmdRun_Click()
                 If InScope(enP.Reference, targetRange) Then enP.Reference.HighlightColorIndex = wdYellow: pe = pe + 1
             Next enP
         End If
-        ShowPreviewActions Me, "Footnote / Endnote Remover", "Preview complete." & vbCrLf & "Footnotes to remove: " & pf & vbCrLf & "Endnotes to remove: " & pe
+        Dim previewRows As Collection
+        Dim keptInline As Long
+        If keepText Then keptInline = pf + pe
+        Set previewRows = NewPreviewSummaryRows()
+        AddPreviewSummaryRow previewRows, "Footnotes", pf, False, (Not doFoot)
+        AddPreviewSummaryRow previewRows, "Endnotes", pe, False, (Not doEnd)
+        AddPreviewSummaryRow previewRows, "Note text kept inline", keptInline, True, (Not keepText)
+        ShowPreviewActionsSummary Me, "Footnote / Endnote Remover", previewRows
         Exit Sub
     End If
     MarkCleanupStart "Footnote / Endnote Remover"
@@ -91,8 +99,12 @@ Private Sub cmdRun_Click()
         For i = ActiveDocument.Footnotes.Count To 1 Step -1
             Dim fn As Footnote: Set fn = ActiveDocument.Footnotes(i)
             If InScope(fn.Reference, targetRange) Then
-                If keepText Then fn.Reference.InsertAfter " [" & Trim$(fn.Range.Text) & "]"
+                Dim footInsertAt As Long
+                Dim footText As String
+                footInsertAt = fn.Reference.Start
+                If keepText Then footText = CleanInlineNoteText(fn.Range.Text)
                 fn.Delete
+                If keepText Then ActiveDocument.Range(footInsertAt, footInsertAt).InsertAfter " [" & footText & "]"
                 cntFoot = cntFoot + 1
             End If
         Next i
@@ -101,17 +113,16 @@ Private Sub cmdRun_Click()
         For i = ActiveDocument.Endnotes.Count To 1 Step -1
             Dim en As Endnote: Set en = ActiveDocument.Endnotes(i)
             If InScope(en.Reference, targetRange) Then
-                If keepText Then en.Reference.InsertAfter " [" & Trim$(en.Range.Text) & "]"
+                Dim endInsertAt As Long
+                Dim endText As String
+                endInsertAt = en.Reference.Start
+                If keepText Then endText = CleanInlineNoteText(en.Range.Text)
                 en.Delete
+                If keepText Then ActiveDocument.Range(endInsertAt, endInsertAt).InsertAfter " [" & endText & "]"
                 cntEnd = cntEnd + 1
             End If
         Next i
     End If
-    Dim results As Collection: Set results = New Collection
-    If doFoot Then results.Add "Footnotes removed: " & cntFoot
-    If doEnd Then results.Add "Endnotes removed: " & cntEnd
-    If keepText Then results.Add "Note text kept inline in [brackets]"
-    ShowCleanupReport "Footnote / Endnote Remover", results
     undoRec.EndCustomRecord
     MarkCleanupEnd
     MarkCleanupToolApplied
@@ -131,3 +142,8 @@ RunErr:
              "Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back."
     MsgBox errMsg, vbCritical, "Cleanup Error"
 End Sub
+Private Function CleanInlineNoteText(ByVal noteText As String) As String
+    noteText = Replace(noteText, vbCr, "")
+    noteText = Replace(noteText, Chr$(2), "")
+    CleanInlineNoteText = Trim$(noteText)
+End Function

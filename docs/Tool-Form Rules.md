@@ -1,44 +1,44 @@
-I raised your Reasoning level to High.
+# CleanupSuite Tool-Form Rules
 
-Use these rules before touching any Cleanup Suite tool-form. If the model or
-reasoning level is unknown at the start of a design-heavy tool-form discussion,
-ask Chris. For broad shared-form/layout passes, recommend a stronger model and
-High reasoning.
+Use these rules before changing a CleanupSuite tool form. Shared layout changes
+need careful reasoning because a small control-placement change can affect every
+installed form and the supported 1024 x 768 pixel display size.
 
-**Current 0.8.5 Alpha Course**
+**Current 0.9.0 Alpha Course**
 
-1. Treat `0.8.5` as the current working release unless Chris explicitly changes
-   the target.
-2. The active working branch is `codex-0.8.0-release`. The old
-   `codex-0.7.0-start` name is historical and should not be used for new work.
-3. Keep `AI_HANDOFF.md` short and current. Put long session history in
-   `AI_HANDOFF_ARCHIVE.md` instead of letting the active handoff become hard to
-   use again.
-4. Current release docs belong in the `0.8.5` set:
-   `Human_Friendly_User_Manual_v0.8.5.md`,
-   `Programmers_Guide_Adding_Tools_v0.8.5.md`,
-   `Tool_Reference_Refined_v0.8.5.md`,
-   `Release_Notes_0.8.0_to_0.8.5.md`, and
-   `Documentation_Handoff_0.8.5.md`.
-5. Current release export artifacts belong in `documents/` and should be listed
+1. Treat `0.9.0-alpha` as the current release and reserve `0.9.5-beta` for the
+   next public milestone.
+2. Current release documentation consists of:
+   `CleanupSuite_User_Manual_v0.9.0-alpha.md`,
+   `CleanupSuite_Programmers_Guide_For_Adding_Tools_v0.9.0-alpha.md`, and the
+   stable PDF under `documents/CleanupSuite_User_Manual.pdf`.
+3. Current release export artifacts belong in `documents/` and must be listed
    in `docs/README_DOC_PACKAGE.md`.
-6. Use `scripts/export_markdown_docs_to_docx.py` when refreshing DOCX exports
-   from the Markdown docs.
-7. Historical `0.6.x` and `0.7.x` docs should remain as historical records.
-   Do not rename or rewrite them just to make a current release list look tidy.
-8. When changing release docs or export artifacts, update
-   `docs/README_DOC_PACKAGE.md`, `docs/Documentation_Handoff_0.8.5.md`, and
-   `docs/Release_Notes_0.8.0_to_0.8.5.md` if their file lists or claims change.
-9. `0.8.5` is the Alpha release. `0.9.0` is Alpha plus full documentation.
-   Clean-house work waits until the `0.9.0` documentation state is complete
-   unless Chris explicitly asks for earlier cleanup.
+4. Historical documentation remains a historical record. Do not rename or
+   rewrite it merely to make the current release list look smaller.
+5. Keep release-facing rules aligned with `README.md`, `VERSIONING.md`, and the
+   current programmer guide.
+
+**Preview-Only Apply Rule**
+
+1. Normal guided cleanup tool-forms configure settings and run Preview only.
+2. Apply appears only in the Preview Actions window after a preview has run.
+3. Existing internal apply procedures may remain as hidden plumbing for `RunAfterPreview`, but normal tool-forms must not expose a visible Apply button.
+4. Reset is a small secondary utility in the top-right title row, not a bottom workflow button.
+5. Scoped tools use one compact bottom row: `Selected text only` above `Entire document` on the left, and a large Preview button centered vertically on the right.
+6. Full-document-only tools show one prominent Preview button at the bottom.
+7. MetaDataSuite is an advanced dashboard exception and does not follow the generic guided cleanup layout.
 
 **Tool Form Layout**
 
-1. All tool-forms follow the same sectional order: top-left body title, centered
-   bold instruction, main choices, optional divider and custom choices, optional
-   Select All / Deselect All row, informational box, Preview button, Scope row
-   when scope is available, then Apply and Reset.
+0. Hyperlink Cleaner is the current example tool design to reference for guided
+   tool-forms. Match its compact two-mode choice layout, per-choice risk chips,
+   selected-choice emphasis in the information box, and preview-only action flow
+   unless a tool has a clear reason to differ.
+1. All tool-forms follow the same sectional order: top-left body title with the
+   small Reset utility at the right, centered bold instruction, main choices,
+   optional divider and custom choices, optional Select All / Deselect All row,
+   informational box, then the Preview and Scope area.
 2. The form title bar should not carry the tool title. The visible tool title
    belongs in the top-left body area.
 3. The centered bold sentence is the instruction or intro, not a repeated title.
@@ -54,16 +54,19 @@ High reasoning.
 9. The informational box lists the currently relevant choice group. Main-choice
    mode lists main choices; Custom mode lists custom choices. Selected items are
    bolded.
-10. The Preview button covers the full margined row.
-11. Scope appears below Preview when the tool supports selection scope. Tools that
-    always work on the full document do not show an Entire document option.
-12. Apply and Reset are the only bottom action buttons on tool-forms. Help stays
-    on the main menu, not inside the tool-forms.
-13. Header / Footer Standardizer special rule: Unlink sections appears before Set
+10. Scoped tools place scope choices on the left with `Selected text only` above
+    `Entire document`, and Preview on the right centered vertically in that row.
+11. Tools that always work on the full document do not show an Entire document
+    option and use one prominent Preview button at the bottom.
+12. Apply is not visible inside normal guided tool-forms. Apply is only visible
+    in the Preview Actions window after preview. Help stays on the main menu,
+    not inside the tool-forms.
+13. Reset is a tiny secondary utility in the top-right title row. It is not a
+    bottom workflow button.
+14. Header / Footer Standardizer special rule: Unlink sections appears before Set
     alignment and shares its row. When Set alignment is selected, Left and Right
     share one row, and Center appears on the next row truly centered.
-14. Keep vertical spacing compact. Do not leave large gaps between the choices,
-    information box, Preview, Scope, or bottom buttons unless content needs the
-    room.
-15. When generated bundles or root project files change, update the matching
+15. Keep vertical spacing compact. Do not leave large gaps between the choices,
+    information box, scope, or Preview unless content needs the room.
+16. When generated bundles or root project files change, update the matching
     practice files in `Practice - Try CleanupSuite Here` before finishing.

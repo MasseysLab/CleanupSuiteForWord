@@ -26,7 +26,8 @@ class SharedHelpAndManualTests(unittest.TestCase):
         "frmFormattingStripper.bas": "Formatting",
         "frmHyperlinkRemover.bas": "Hyperlink",
         "frmSoftReturnConverter.bas": "SoftReturn",
-        "frmMetadataScrubber.bas": "Metadata",
+        "frmMetaDataSuite.bas": "MetaDataSuite",
+        "frmFinalReview.bas": "FinalReview",
         "frmStyleCleanup.bas": "Style",
         "frmFootnoteRemover.bas": "Footnote",
         "frmHeaderFooterStandardizer.bas": "HeaderFooter",
@@ -48,7 +49,8 @@ class SharedHelpAndManualTests(unittest.TestCase):
         "cmdHelpFormat": "Formatting",
         "cmdHelpHyperlink": "Hyperlink",
         "cmdHelpSoftReturn": "SoftReturn",
-        "cmdHelpMetadata": "Metadata",
+        "cmdHelpMetadata": "MetaDataSuite",
+        "cmdHelpFinalReview": "FinalReview",
         "cmdHelpStyle": "Style",
         "cmdHelpFootnote": "Footnote",
         "cmdHelpHeaderFooter": "HeaderFooter",
@@ -106,7 +108,7 @@ class SharedHelpAndManualTests(unittest.TestCase):
         self.assertNotIn('ShowCleanupToolHelp "Capitalization"', form)
         self.assertNotIn("cmdHelp_Click", form)
         self.assertEqual(2, helpers.count('Case "Capitalization"'))
-        self.assertIn("Conservative repair", helpers)
+        self.assertIn("Recommended repair", helpers)
         self.assertNotIn("All (Smart)", helpers)
 
     def test_launcher_has_user_manual_pdf_button(self):
@@ -124,7 +126,7 @@ class SharedHelpAndManualTests(unittest.TestCase):
         self.assertIn('PositionControl designer, "cmdUserManual"', installer)
 
     def test_user_manual_pdf_artifact_exists(self):
-        pdf_path = ROOT / "documents" / "CleanupSuite_Human_Friendly_User_Manual_v0.8.0.pdf"
+        pdf_path = ROOT / "documents" / "CleanupSuite_User_Manual.pdf"
         self.assertTrue(pdf_path.exists())
         self.assertGreater(pdf_path.stat().st_size, 10_000)
 

@@ -89,6 +89,10 @@ End Function
 Private Function ProcessHtmlControls(doDelete As Boolean) As Long
     On Error Resume Next
     Dim c As Long, k As Long
+    For k = ActiveDocument.ContentControls.Count To 1 Step -1
+        c = c + 1
+        If doDelete Then ActiveDocument.ContentControls(k).Delete True
+    Next k
     For k = ActiveDocument.InlineShapes.Count To 1 Step -1
         If ActiveDocument.InlineShapes(k).Type = wdInlineShapeOLEControlObject Then
             c = c + 1
@@ -135,12 +139,21 @@ Private Sub chkHorizontalLines_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub chkHtmlControls_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub chkHiddenText_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub chkTables_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub cmdRiskPlacementObjectPictures_Click(): ShowToolRiskChoiceExplanation "Remove pictures", "Removes content", "Deletes inline and floating images." : End Sub
+Private Sub cmdRiskPlacementObjectTextBoxes_Click(): ShowToolRiskChoiceExplanation "Remove text boxes", "Removes content", "Deletes text boxes and their contents." : End Sub
+Private Sub cmdRiskPlacementObjectFrames_Click(): ShowToolRiskChoiceExplanation "Remove frames", "Structure change", "Removes frame containers while keeping their text." : End Sub
+Private Sub cmdRiskPlacementObjectLines_Click(): ShowToolRiskChoiceExplanation "Remove horizontal lines", "Removes content", "Deletes horizontal line objects." : End Sub
+Private Sub cmdRiskPlacementObjectControls_Click(): ShowToolRiskChoiceExplanation "Remove form controls", "Removes content", "Deletes HTML or ActiveX form controls." : End Sub
+Private Sub cmdRiskPlacementObjectHiddenText_Click(): ShowToolRiskChoiceExplanation "Remove hidden text", "Removes content", "Deletes text marked hidden." : End Sub
+Private Sub cmdRiskPlacementObjectTables_Click(): ShowToolRiskChoiceExplanation "Remove tables", "Removes content", "Deletes tables and everything inside them." : End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub
 Public Sub PreviewFromPanel()
     chkPreviewOnly.Value = True
+    BeginPreviewActionIndicator Me
     cmdRun_Click
+    EndPreviewActionIndicator
     chkPreviewOnly.Value = False
 End Sub
 Private Sub cmdReset_Click()
@@ -166,16 +179,30 @@ Private Sub cmdRun_Click()
     Dim doTab As Boolean: doTab = chkTables.Value
     If Not (doPic Or doTxt Or doFra Or doHL Or doHtml Or doHid Or doTab) Then MsgBox "Select at least one element type to remove.", vbInformation: Exit Sub
     If previewOnly Then
-        Dim msg As String
-        msg = "Preview -- elements that would be removed (entire document):"
-        If doPic Then msg = msg & vbCrLf & "Pictures: " & ProcessPictures(False)
-        If doTxt Then msg = msg & vbCrLf & "Text boxes: " & ProcessTextBoxes(False)
-        If doFra Then msg = msg & vbCrLf & "Frames: " & ProcessFrames(False)
-        If doHL Then msg = msg & vbCrLf & "Horizontal lines: " & ProcessHorizontalLines(False)
-        If doHtml Then msg = msg & vbCrLf & "HTML/ActiveX controls: " & ProcessHtmlControls(False)
-        If doTab Then msg = msg & vbCrLf & "Tables: " & ProcessTables(False)
-        If doHid Then msg = msg & vbCrLf & "Hidden text present: " & IIf(ProcessHiddenText(False) > 0, "Yes", "No")
-        ShowPreviewActions Me, "Object Remover", msg
+        Dim previewPictures As Long
+        Dim previewTextBoxes As Long
+        Dim previewFrames As Long
+        Dim previewHorizontalLines As Long
+        Dim previewFormControls As Long
+        Dim previewHiddenText As Long
+        Dim previewTables As Long
+        If doPic Then previewPictures = ProcessPictures(False)
+        If doTxt Then previewTextBoxes = ProcessTextBoxes(False)
+        If doFra Then previewFrames = ProcessFrames(False)
+        If doHL Then previewHorizontalLines = ProcessHorizontalLines(False)
+        If doHtml Then previewFormControls = ProcessHtmlControls(False)
+        If doHid Then previewHiddenText = ProcessHiddenText(False)
+        If doTab Then previewTables = ProcessTables(False)
+        Dim previewRows As Collection
+        Set previewRows = NewPreviewSummaryRows()
+        AddPreviewSummaryRow previewRows, "Pictures", previewPictures, True, (Not doPic)
+        AddPreviewSummaryRow previewRows, "Text boxes", previewTextBoxes, True, (Not doTxt)
+        AddPreviewSummaryRow previewRows, "Frames", previewFrames, True, (Not doFra)
+        AddPreviewSummaryRow previewRows, "Horizontal lines", previewHorizontalLines, True, (Not doHL)
+        AddPreviewSummaryRow previewRows, "Form controls", previewFormControls, True, (Not doHtml)
+        AddPreviewSummaryRow previewRows, "Hidden text", previewHiddenText, True, (Not doHid)
+        AddPreviewSummaryRow previewRows, "Tables", previewTables, True, (Not doTab)
+        ShowPreviewActionsSummary Me, "Object Remover", previewRows
         Exit Sub
     End If
     If doTab Then
@@ -190,22 +217,17 @@ Private Sub cmdRun_Click()
     undoRec.StartCustomRecord "Cleanup Suite - Remove Objects"
     On Error GoTo RunErr
     Application.ScreenUpdating = False
-    Dim results As Collection: Set results = New Collection
-    If doPic Then results.Add "Pictures removed: " & ProcessPictures(True)
-    If doTxt Then results.Add "Text boxes removed: " & ProcessTextBoxes(True)
-    If doFra Then results.Add "Frames removed (text kept): " & ProcessFrames(True)
-    If doHL Then results.Add "Horizontal lines removed: " & ProcessHorizontalLines(True)
-    If doHtml Then results.Add "HTML/ActiveX controls removed: " & ProcessHtmlControls(True)
-    If doTab Then results.Add "Tables removed: " & ProcessTables(True)
+    If doPic Then UpdateCleanupProgress "Removing pictures": ProcessPictures True
+    If doTxt Then UpdateCleanupProgress "Removing text boxes": ProcessTextBoxes True
+    If doFra Then UpdateCleanupProgress "Removing frames": ProcessFrames True
+    If doHL Then UpdateCleanupProgress "Removing horizontal lines": ProcessHorizontalLines True
+    If doHtml Then UpdateCleanupProgress "Removing form controls": ProcessHtmlControls True
+    If doTab Then UpdateCleanupProgress "Removing tables": ProcessTables True
     If doHid Then
-        If ProcessHiddenText(True) > 0 Then
-            results.Add "Hidden text removed"
-        Else
-            results.Add "No hidden text found"
-        End If
+        UpdateCleanupProgress "Removing hidden text"
+        ProcessHiddenText True
     End If
     Application.ScreenUpdating = True
-    ShowCleanupReport "Remove Objects", results
     undoRec.EndCustomRecord
     MarkCleanupEnd
     MarkCleanupToolApplied

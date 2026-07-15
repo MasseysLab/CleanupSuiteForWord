@@ -162,7 +162,6 @@ CleanupSuite uses Word `CustomDocumentProperties` for global settings:
 - `CleanupSuiteReturnToMainAfterApply`
 - `CleanupSuiteReturnToMainAfterClose`
 - `CleanupSuiteInProgress`
-- `CleanupSuiteShowCompletionReviewAfterApply`
 
 This keeps settings with the active document rather than relying on a separate config file. The helper pattern deletes and recreates the property so values are normalized to `"True"` or `"False"`.
 

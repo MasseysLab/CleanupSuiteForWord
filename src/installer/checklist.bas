@@ -9,8 +9,9 @@ B. Exact control names (copy/paste into the designer):
    frmPunctuationCleanup: optAll, optQuotes, optDashes, optEllipses, optCustom, fraCustom, chkCurlyDouble, chkCurlySingle, chkEmDash, chkEnDash, chkEllipses, chkPreviewOnly, cmdSelectAll, cmdDeselectAll, cmdPreview, cmdRun, cmdReset
    frmUnicodeCleanup: optAll, optNBSP, optZeroWidth, optCustom, fraCustom, chkNBSP, chkZWSP, chkZWNJ, chkZWJ, chkBOM, chkSoftHyphen, chkNBHyphen, chkPreviewOnly, cmdSelectAll, cmdDeselectAll, cmdPreview, cmdRun, cmdReset
    frmSpacingCleanup: optAll, optDoubleSpaces, optTrim, optCustom, fraCustom, chkDoubleSpaces, chkTrimSpaces, chkSpaceBeforePunct, chkNormalizeAfterPunct, chkExtraBlankLines, chkPreviewOnly, cmdSelectAll, cmdDeselectAll, cmdPreview, cmdRun, cmdReset
-   frmCapitalizationCleanup: optAll, optSentence, optTitle, optUpper, optLower, optCustom, fraCustom, chkSentence, chkTitle, chkUpper, chkLower, chkSmartSentences, chkPreviewOnly, cmdSelectAll, cmdDeselectAll, cmdPreview, cmdRun, cmdReset
+   frmCapitalizationCleanup: optAll, optCustom, chkSentence, chkTitle, chkUpper, chkLower, chkHeadingParentheses, chkSmartSentences, cmdEditExceptions, chkPreviewOnly, cmdSelectAll, cmdDeselectAll, cmdPreview, cmdRun, cmdReset
    frmListCleanup: optAll, optBullets, optNumbering, optIndent, optCustom, fraCustom, chkNormalizeBullets, chkNormalizeNumbering, chkFixIndent, chkHyphenToBullets, chkPreviewOnly, cmdSelectAll, cmdDeselectAll, cmdPreview, cmdRun, cmdReset
    frmParagraphCleanup: optAll, optRemoveEmpty, optNormalizeSpacing, optCustom, fraCustom, chkRemoveEmpty, chkCollapseBreaks, chkNormalizeParaSpacing, chkFixIndent, chkPreviewOnly, cmdSelectAll, cmdDeselectAll, cmdPreview, cmdRun, cmdReset
+   frmHyperlinkRemover: optHideLinks, optRemoveLinks, cmdRiskPlacementHyperlinkHide, cmdRiskPlacementHyperlinkRemove, chkPreviewOnly, cmdPreview, cmdRun, cmdReset
 
 C. After adding controls and verifying code: Debug -> Compile. Then run ShowCleanupSuiteLauncher and test each tool in Preview Only mode on a copy of a document.

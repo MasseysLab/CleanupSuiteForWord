@@ -18,11 +18,7 @@ Private Sub UserForm_Initialize()
     optScopeDocument.Caption = "Entire document"
     optScopeDocument.Value = True
     optScopeSelection.Caption = "Selected text only"
-    If Selection.Type = wdSelectionNormal Or Selection.Type = wdSelectionColumn Then
-        optScopeSelection.Enabled = True
-    Else
-        optScopeSelection.Enabled = False
-    End If
+    RefreshScopeSelectionState Me, True
     optSoftToPara.Caption = "Convert soft returns (Shift+Enter) to paragraph marks"
     optParaToSoft.Caption = "Convert paragraph marks to soft returns"
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
@@ -30,12 +26,16 @@ Private Sub UserForm_Initialize()
 End Sub
 Private Sub optSoftToPara_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub optParaToSoft_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub cmdRiskPlacementSoftReturnToPara_Click(): ShowToolRiskChoiceExplanation "Soft returns to paragraphs", "Structure change", "Turns Shift+Enter line breaks into paragraph marks." : End Sub
+Private Sub cmdRiskPlacementSoftReturnToSoft_Click(): ShowToolRiskChoiceExplanation "Paragraphs to soft returns", "Structure change", "Turns paragraph marks into soft returns in the selected scope." : End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub
 Public Sub PreviewFromPanel()
     chkPreviewOnly.Value = True
+    BeginPreviewActionIndicator Me
     cmdRun_Click
+    EndPreviewActionIndicator
     chkPreviewOnly.Value = False
 End Sub
 Private Sub cmdReset_Click()
@@ -59,22 +59,15 @@ Private Sub cmdRun_Click()
         Set targetRange = ActiveDocument.Content
     End If
     Dim softToPara As Boolean: softToPara = optSoftToPara.Value
-    Dim findText As String, replText As String, markChar As String
-    If softToPara Then
-        findText = "^l": replText = "^p": markChar = Chr(11)
-    Else
-        findText = "^p": replText = "^l": markChar = Chr(13)
-    End If
     If previewOnly Then
-        With targetRange.Find
-            .ClearFormatting: .Replacement.ClearFormatting
-            .Text = findText: .Replacement.Text = "^&": .Replacement.Highlight = True
-            .Forward = True: .Wrap = wdFindStop
-            .Execute Replace:=wdReplaceAll
-        End With
-        Dim pt As String: pt = targetRange.Text
-        Dim pc As Long: pc = Len(pt) - Len(Replace(pt, markChar, ""))
-        ShowPreviewActions Me, "Soft Return Converter", "Preview complete. " & pc & " breaks highlighted."
+        Dim pc As Long
+        Dim previewRows As Collection
+        RemoveAllHighlighting ActiveDocument.Content
+        pc = CountSoftReturnConvertibleMarks(targetRange, softToPara)
+        Set previewRows = NewPreviewSummaryRows()
+        AddPreviewSummaryRow previewRows, "Soft returns", IIf(softToPara, pc, 0), True, (Not softToPara)
+        AddPreviewSummaryRow previewRows, "Paragraph marks", IIf(softToPara, 0, pc), True, softToPara
+        ShowPreviewActionsSummary Me, "Soft Return Converter", previewRows
         Exit Sub
     End If
     MarkCleanupStart "Soft Return Converter"
@@ -82,21 +75,8 @@ Private Sub cmdRun_Click()
     Set undoRec = Application.UndoRecord
     undoRec.StartCustomRecord "Cleanup Suite - Soft Return Converter"
     On Error GoTo RunErr
-    Dim txt As String: txt = targetRange.Text
-    Dim cnt As Long: cnt = Len(txt) - Len(Replace(txt, markChar, ""))
-    With targetRange.Find
-        .ClearFormatting: .Replacement.ClearFormatting
-        .Text = findText: .Replacement.Text = replText
-        .Forward = True: .Wrap = wdFindStop
-        .Execute Replace:=wdReplaceAll
-    End With
-    Dim results As Collection: Set results = New Collection
-    If softToPara Then
-        results.Add "Soft returns converted to paragraphs: " & cnt
-    Else
-        results.Add "Paragraphs converted to soft returns: " & cnt
-    End If
-    ShowCleanupReport "Soft Return Converter", results
+    Dim cnt As Long: cnt = ReplaceSoftReturnMarks(targetRange, softToPara)
+    RemoveAllHighlighting ActiveDocument.Content
     undoRec.EndCustomRecord
     MarkCleanupEnd
     MarkCleanupToolApplied
@@ -116,3 +96,54 @@ RunErr:
              "Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back."
     MsgBox errMsg, vbCritical, "Cleanup Error"
 End Sub
+Private Function CountSoftReturnConvertibleMarks(ByVal searchRange As Range, ByVal softToPara As Boolean) As Long
+    If softToPara Then
+        CountSoftReturnConvertibleMarks = CountSoftReturnCharacters(searchRange.Text, Chr$(11))
+    Else
+        CountSoftReturnConvertibleMarks = CountSoftReturnCharacters(searchRange.Text, Chr$(13))
+        If Right$(searchRange.Text, 1) = Chr$(13) Then
+            If CountSoftReturnConvertibleMarks > 0 Then CountSoftReturnConvertibleMarks = CountSoftReturnConvertibleMarks - 1
+        End If
+    End If
+End Function
+Private Function CountSoftReturnCharacters(ByVal textValue As String, ByVal markChar As String) As Long
+    CountSoftReturnCharacters = Len(textValue) - Len(Replace(textValue, markChar, ""))
+End Function
+Private Function ReplaceSoftReturnMarks(ByVal searchRange As Range, ByVal softToPara As Boolean) As Long
+    Dim matchRange As Range
+    Dim searchEnd As Long
+    Dim nextStart As Long
+    searchEnd = searchRange.End
+    Set matchRange = ActiveDocument.Range(searchRange.Start, searchEnd)
+
+    Do While matchRange.Start < searchEnd
+        With matchRange.Find
+            .ClearFormatting
+            If softToPara Then
+                .Text = "^l"
+            Else
+                .Text = "^p"
+            End If
+            .Forward = True
+            .Wrap = wdFindStop
+            .MatchWildcards = False
+            If Not .Execute Then Exit Do
+        End With
+
+        ' A terminal selected paragraph mark belongs to the boundary with
+        ' unselected content. Converting it would merge and reformat the
+        ' paragraph after the selection.
+        If (Not softToPara) And matchRange.End >= searchEnd Then Exit Do
+
+        If softToPara Then
+            matchRange.Text = Chr$(13)
+        Else
+            If matchRange.End >= ActiveDocument.Content.End Then Exit Do
+            matchRange.Text = Chr$(11)
+        End If
+        ReplaceSoftReturnMarks = ReplaceSoftReturnMarks + 1
+        nextStart = matchRange.End
+        If nextStart >= searchEnd Then Exit Do
+        Set matchRange = ActiveDocument.Range(nextStart, searchEnd)
+    Loop
+End Function

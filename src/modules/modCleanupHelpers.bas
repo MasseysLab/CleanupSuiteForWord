@@ -4,10 +4,40 @@ Public gPreviewActionPanel As Object
 Private gPreviewActionPanelHasPosition As Boolean
 Private gPreviewActionPanelLeft As Single
 Private gPreviewActionPanelTop As Single
+Private gPreviewScopeHasRange As Boolean
+Private gPreviewScopeStart As Long
+Private gPreviewScopeEnd As Long
+Private gPreviewScopeDocumentKey As String
 Private gCleanupToolExitReason As String
+Private gPreviewShadingDocuments As Collection
+Private gPreviewShadingStarts As Collection
+Private gPreviewShadingEnds As Collection
+Private gPreviewShadingKeys As Object
+Private gPreviewShadingBackgrounds As Collection
+Private gPreviewShadingForegrounds As Collection
+Private gPreviewShadingTextures As Collection
+Private gPreviewViewSessionActive As Boolean
+Private gPreviewViewDocument As Document
+Private gPreviewViewWindow As Window
+Private gPreviewViewSelection As Range
+Private gPreviewViewType As WdViewType
+Private gPreviewViewReadingLayout As Boolean
+Private gPreviewViewZoom As Long
+Private gPreviewViewVerticalScroll As Long
+Private gPreviewViewHasVerticalScroll As Boolean
+Private gCleanupProgressActive As Boolean
+Private gCleanupProgressToolName As String
+Private gPreviewActionIndicatorActive As Boolean
+Private gPreviewActionIndicatorForm As Object
+Private gPreviewActionIndicatorCaption As String
+Private gPreviewActionIndicatorEnabled As Boolean
+Private gPreviewActionIndicatorBackColor As Long
+Private gPreviewActionIndicatorForeColor As Long
 Private Const CLEANUP_TOOL_EXIT_APPLY As String = "apply"
 Private Const CLEANUP_TOOL_EXIT_CLOSE As String = "close"
-Public Const CLEANUP_SUITE_USER_MANUAL_PDF_URL As String = "https://raw.githubusercontent.com/MasseysLab/CleanupSuiteForWord/v0.8.0/documents/CleanupSuite_Human_Friendly_User_Manual_v0.8.0.pdf"
+Private Const CLEANUP_SETTINGS_APP As String = "CleanupSuiteForWord"
+Private Const CLEANUP_SETTINGS_SECTION As String = "GlobalDefaults"
+Public Const CLEANUP_SUITE_USER_MANUAL_PDF_URL As String = "https://raw.githubusercontent.com/MasseysLab/CleanupSuiteForWord/main/documents/CleanupSuite_User_Manual.pdf"
 
 Public Sub OpenCleanupUserManualPdf()
     On Error GoTo OpenErr
@@ -37,9 +67,10 @@ Public Function CleanupHelpTitle(ByVal toolKey As String) As String
         Case "Break": CleanupHelpTitle = "Break Normalizer"
         Case "DocumentTrim": CleanupHelpTitle = "Document Trim"
         Case "Formatting": CleanupHelpTitle = "Formatting Stripper"
-        Case "Hyperlink": CleanupHelpTitle = "Hyperlink Remover"
+        Case "Hyperlink": CleanupHelpTitle = "Hyperlink Cleaner"
         Case "SoftReturn": CleanupHelpTitle = "Soft Return Converter"
-        Case "Metadata": CleanupHelpTitle = "Metadata Scrubber"
+        Case "MetaDataSuite": CleanupHelpTitle = "MetaDataSuite"
+        Case "FinalReview": CleanupHelpTitle = "Final Review"
         Case "Style": CleanupHelpTitle = "Style Cleanup"
         Case "Footnote": CleanupHelpTitle = "Footnote / Endnote Remover"
         Case "HeaderFooter": CleanupHelpTitle = "Header / Footer Standardizer"
@@ -108,17 +139,16 @@ Public Function CleanupHelpText(ByVal toolKey As String) As String
             AddHelpLine h, ""
             AddHelpLine h, "Repairs messy capitalization without duplicating Word's broad case-conversion commands."
             AddHelpLine h, ""
-            AddHelpLine h, "Modes:"
-            AddHelpLine h, "- Conservative repair: fixes only obvious capitalization damage."
-            AddHelpLine h, "- Balanced (coming soon): planned for a later version."
-            AddHelpLine h, "- Aggressive (coming soon): planned for a later version."
-            AddHelpLine h, "- Custom: uses only the protections you select."
+            AddHelpLine h, "Repair choices:"
+            AddHelpLine h, "- Recommended repair: uses every protection for a dependable general cleanup."
+            AddHelpLine h, "- Custom repair: uses only the protections you select."
             AddHelpLine h, ""
             AddHelpLine h, "Advanced protections:"
             AddHelpLine h, "- Abbreviation lists: reduces false sentence starts after common abbreviations."
             AddHelpLine h, "- Acronym protection: keeps terms such as API, PDF, or VBA uppercase."
             AddHelpLine h, "- Name and brand protection: restores known mixed-case names such as iPhone or GitHub."
-            AddHelpLine h, "- Heading heuristics: avoids over-normalizing short heading-like lines."
+            AddHelpLine h, "- Heading repair: title-cases likely headings; when cleared, suspected headings are left completely unchanged."
+            AddHelpLine h, "- Parenthetical heading repair: optionally title-cases balanced words inside parentheses; it is off by default."
             AddHelpLine h, "- Boundary context: treats bullets, quotes, and other sentence-boundary punctuation more carefully."
             AddHelpLine h, ""
             AddHelpLine h, "Scope:"
@@ -269,18 +299,19 @@ Public Function CleanupHelpText(ByVal toolKey As String) As String
             AddHelpLine h, "Preview highlights paragraphs carrying direct formatting."
 
         Case "Hyperlink"
-            AddHelpLine h, "Hyperlink Remover"
+            AddHelpLine h, "Hyperlink Cleaner"
             AddHelpLine h, ""
-            AddHelpLine h, "Removes hyperlink targets while keeping the visible text."
+            AddHelpLine h, "Choose whether to hide visible hyperlink styling while keeping links, or remove hyperlink targets while keeping visible text."
             AddHelpLine h, ""
-            AddHelpLine h, "Option:"
-            AddHelpLine h, "- Also remove hyperlink character style: clears the blue underline after the link is removed."
+            AddHelpLine h, "Choices:"
+            AddHelpLine h, "- Hide hyperlink styling, keep links: text looks normal, but the link target remains available."
+            AddHelpLine h, "- Remove hyperlinks, keep visible text: deletes the link target and leaves the words."
             AddHelpLine h, ""
             AddHelpLine h, "Scope:"
             AddHelpLine h, "Select text before opening the tool to limit cleanup to the selection."
             AddHelpLine h, ""
             AddHelpLine h, "Preview:"
-            AddHelpLine h, "Preview highlights hyperlinks that would be removed."
+            AddHelpLine h, "Preview highlights hyperlinks affected by the selected choice."
 
         Case "SoftReturn"
             AddHelpLine h, "Soft Return Converter"
@@ -297,22 +328,41 @@ Public Function CleanupHelpText(ByVal toolKey As String) As String
             AddHelpLine h, "Preview:"
             AddHelpLine h, "Preview highlights breaks that would be converted."
 
-        Case "Metadata"
-            AddHelpLine h, "Metadata Scrubber"
+        Case "MetaDataSuite"
+            AddHelpLine h, "MetaDataSuite"
             AddHelpLine h, ""
-            AddHelpLine h, "Removes document metadata and review artifacts before a document is shared."
+            AddHelpLine h, "Advanced metadata inspection, editing, clearing, and privacy management for Word documents."
+            AddHelpLine h, ""
+            AddHelpLine h, "Why it is gated:"
+            AddHelpLine h, "- This tool can inspect and act across multiple metadata and package areas."
+            AddHelpLine h, "- It is meant for deliberate advanced use, not routine one-click cleanup."
+            AddHelpLine h, ""
+            AddHelpLine h, "Includes:"
+            AddHelpLine h, "- Quick document-property and package checks."
+            AddHelpLine h, "- Deeper metadata and crypto-pattern investigation."
+            AddHelpLine h, "- Safe-edit and grouped metadata-management workflows."
+            AddHelpLine h, "- Clear Sharing Properties for populated document info fields before sharing."
+            AddHelpLine h, ""
+            AddHelpLine h, "Boundary:"
+            AddHelpLine h, "- Comments, tracked changes, and author-removal workflows belong in Final Review."
+            AddHelpLine h, ""
+            AddHelpLine h, "Undoability:"
+            AddHelpLine h, "- Some metadata actions are not fully undoable after save. Read each warning before applying changes."
+
+        Case "FinalReview"
+            AddHelpLine h, "Final Review"
+            AddHelpLine h, ""
+            AddHelpLine h, "Finalizes review markup before a document is shared or archived."
             AddHelpLine h, ""
             AddHelpLine h, "Options:"
-            AddHelpLine h, "- Clear document properties: removes built-in properties such as title, author, company, and manager."
-            AddHelpLine h, "- Clear personal information: removes or anonymizes revision author information where Word allows it."
-            AddHelpLine h, "- Remove all comments: deletes comments from the document."
+            AddHelpLine h, "- Remove all comments: deletes reviewer comments from the document."
             AddHelpLine h, "- Accept tracked changes and clear revision marks: finalizes the current revision state."
             AddHelpLine h, ""
             AddHelpLine h, "Scope:"
-            AddHelpLine h, "This tool always works on the full document because metadata is document-level information."
+            AddHelpLine h, "This tool always works on the full document because comments and tracked changes are document-level review artifacts."
             AddHelpLine h, ""
             AddHelpLine h, "Preview:"
-            AddHelpLine h, "Preview shows current document metadata and review counts."
+            AddHelpLine h, "Preview shows the current comment count and tracked-change count."
 
         Case "Style"
             AddHelpLine h, "Style Cleanup"
@@ -415,38 +465,446 @@ Private Sub ApplyPreviewActionPanelPosition(ByVal panel As Object)
 End Sub
 
 Public Sub ShowPreviewActions(ByVal sourceForm As Object, toolName As String, summaryText As String)
+    Dim rows As Collection
+    Set rows = NewPreviewSummaryRows()
+    AddPreviewSummaryRow rows, summaryText, ""
+    ShowPreviewActionsSummary sourceForm, toolName, rows
+End Sub
+
+Public Function NewPreviewSummaryRows() As Collection
+    Set NewPreviewSummaryRows = New Collection
+End Function
+
+Public Sub AddPreviewSummaryRow(ByVal rows As Collection, ByVal itemText As String, ByVal countValue As Variant, Optional ByVal isUnhighlighted As Boolean = False, Optional ByVal isInactive As Boolean = False)
+    If rows Is Nothing Then Exit Sub
+    rows.Add PreviewSummaryRowText(itemText, countValue, isUnhighlighted, isInactive)
+End Sub
+
+Private Function PreviewSummaryRowText(ByVal itemText As String, ByVal countValue As Variant, ByVal isUnhighlighted As Boolean, ByVal isInactive As Boolean) As String
+    Dim displayText As String
+    displayText = CleanPreviewSummaryCell(itemText)
+    If isUnhighlighted Then displayText = displayText & " (unhighlighted)"
+    PreviewSummaryRowText = displayText & vbTab & CStr(countValue) & vbTab & IIf(isInactive, "inactive", "")
+End Function
+
+Private Function CleanPreviewSummaryCell(ByVal textValue As String) As String
+    CleanPreviewSummaryCell = Replace(textValue, vbTab, " ")
+    CleanPreviewSummaryCell = Replace(CleanPreviewSummaryCell, vbCrLf, " ")
+    CleanPreviewSummaryCell = Replace(CleanPreviewSummaryCell, vbCr, " ")
+    CleanPreviewSummaryCell = Replace(CleanPreviewSummaryCell, vbLf, " ")
+    CleanPreviewSummaryCell = Trim$(CleanPreviewSummaryCell)
+End Function
+
+Public Sub ShowPreviewActionsSummary(ByVal sourceForm As Object, ByVal toolName As String, ByVal rows As Collection)
     On Error GoTo Fallback
+    EndPreviewActionIndicator
+    CapturePreviewScopeRange sourceForm
     sourceForm.Hide
     Set gPreviewActionPanel = New frmPreviewActions
-    gPreviewActionPanel.Configure sourceForm, toolName, summaryText
+    gPreviewActionPanel.ConfigureSummary sourceForm, toolName, rows
     ApplyPreviewActionPanelPosition gPreviewActionPanel
-    gPreviewActionPanel.Show
+    gPreviewActionPanel.Show vbModal
+    ResumePreviewActionPanelModelessIfRequested
     Exit Sub
 Fallback:
-    MsgBox summaryText & vbCrLf & vbCrLf & _
+    RestoreCleanupSuiteTransientState
+    MsgBox PreviewSummaryFallbackText(rows) & vbCrLf & vbCrLf & _
            "Preview is still visible in the document. Run again without Preview to apply, or clear highlighting manually.", _
            vbInformation, toolName & " Preview"
 End Sub
 
+Private Sub ResumePreviewActionPanelModelessIfRequested()
+    Dim resumeModeless As Boolean
+
+    On Error Resume Next
+    If gPreviewActionPanel Is Nothing Then Exit Sub
+    resumeModeless = CBool(CallByName(gPreviewActionPanel, "ConsumeModelessResumeRequest", VbMethod))
+    If Not resumeModeless Then Exit Sub
+    ApplyPreviewActionPanelPosition gPreviewActionPanel
+    gPreviewActionPanel.Show vbModeless
+    On Error GoTo 0
+End Sub
+
+Private Function PreviewSummaryFallbackText(ByVal rows As Collection) As String
+    Dim rowText As Variant
+    Dim rowParts As Variant
+    If rows Is Nothing Then Exit Function
+    For Each rowText In rows
+        rowParts = Split(CStr(rowText), vbTab)
+        If Len(PreviewSummaryFallbackText) > 0 Then PreviewSummaryFallbackText = PreviewSummaryFallbackText & vbCrLf
+        If UBound(rowParts) >= 1 Then
+            PreviewSummaryFallbackText = PreviewSummaryFallbackText & rowParts(0) & ": " & rowParts(1)
+        Else
+            PreviewSummaryFallbackText = PreviewSummaryFallbackText & CStr(rowText)
+        End If
+    Next rowText
+End Function
+
+Private Sub CapturePreviewScopeRange(ByVal sourceForm As Object)
+    ClearPreviewScopeRange
+    On Error Resume Next
+    If sourceForm Is Nothing Then Exit Sub
+    If Not ScopeSelectionIsAvailable(sourceForm) Then Exit Sub
+    If Not sourceForm.Controls("optScopeSelection").Value Then Exit Sub
+    If Not sourceForm.Controls("optScopeSelection").Enabled Then Exit Sub
+    If Selection.Type <> wdSelectionNormal And Selection.Type <> wdSelectionColumn Then Exit Sub
+
+    gPreviewScopeStart = Selection.Range.Start
+    gPreviewScopeEnd = Selection.Range.End
+    gPreviewScopeDocumentKey = ActiveDocument.FullName
+    If Len(gPreviewScopeDocumentKey) = 0 Then gPreviewScopeDocumentKey = ActiveDocument.Name
+    gPreviewScopeHasRange = (gPreviewScopeEnd > gPreviewScopeStart)
+End Sub
+
+Public Sub ClearPreviewScopeRange()
+    gPreviewScopeHasRange = False
+    gPreviewScopeStart = 0
+    gPreviewScopeEnd = 0
+    gPreviewScopeDocumentKey = ""
+End Sub
+
+Public Function BeginPreviewViewSession() As Boolean
+    Dim previewSelection As Selection
+
+    RestorePreviewViewSession
+    On Error GoTo BeginErr
+    If Documents.Count = 0 Then Exit Function
+    If Windows.Count = 0 Then Exit Function
+
+    Set gPreviewViewDocument = ActiveDocument
+    Set gPreviewViewWindow = ActiveWindow
+    Set previewSelection = gPreviewViewWindow.Selection
+    Set gPreviewViewSelection = previewSelection.Range.Duplicate
+    gPreviewViewType = gPreviewViewWindow.View.Type
+    gPreviewViewReadingLayout = gPreviewViewWindow.View.ReadingLayout
+    gPreviewViewZoom = gPreviewViewWindow.View.Zoom.Percentage
+    On Error Resume Next
+    Err.Clear
+    gPreviewViewVerticalScroll = gPreviewViewWindow.VerticalPercentScrolled
+    gPreviewViewHasVerticalScroll = (Err.Number = 0)
+    Err.Clear
+    On Error GoTo BeginErr
+    gPreviewViewSessionActive = True
+
+    If Not gPreviewViewReadingLayout Then
+        gPreviewViewWindow.View.ReadingLayout = True
+    End If
+    BeginPreviewViewSession = True
+    Exit Function
+BeginErr:
+    RestorePreviewViewSession
+End Function
+
+Public Sub RestorePreviewViewSession()
+    Dim previewDocumentIsLive As Boolean
+    Dim previewWindowIsLive As Boolean
+    Dim liveDocument As Document
+    Dim liveWindow As Window
+
+    On Error Resume Next
+    If Not gPreviewViewSessionActive Then
+        ClearPreviewViewSessionState
+        Exit Sub
+    End If
+
+    ' Clear the active flag first so restoration remains idempotent even if Word raises an error.
+    gPreviewViewSessionActive = False
+    For Each liveDocument In Application.Documents
+        If liveDocument Is gPreviewViewDocument Then
+            previewDocumentIsLive = True
+            Exit For
+        End If
+    Next liveDocument
+    If previewDocumentIsLive Then
+        For Each liveWindow In Application.Windows
+            If liveWindow Is gPreviewViewWindow Then
+                If liveWindow.Document Is gPreviewViewDocument Then previewWindowIsLive = True
+                Exit For
+            End If
+        Next liveWindow
+    End If
+
+    If previewWindowIsLive Then
+        With gPreviewViewWindow
+            If gPreviewViewReadingLayout Then
+                .View.ReadingLayout = True
+            Else
+                .View.ReadingLayout = False
+                .View.Type = gPreviewViewType
+            End If
+            .View.Zoom.Percentage = gPreviewViewZoom
+        End With
+
+        ' Do not steal focus if the user switched documents or windows while previewing.
+        If ActiveWindow Is gPreviewViewWindow Then
+            If Not gPreviewViewSelection Is Nothing Then gPreviewViewSelection.Select
+        End If
+        If gPreviewViewHasVerticalScroll Then gPreviewViewWindow.VerticalPercentScrolled = gPreviewViewVerticalScroll
+    End If
+
+    ClearPreviewViewSessionState
+    On Error GoTo 0
+End Sub
+
+Private Sub ClearPreviewViewSessionState()
+    gPreviewViewSessionActive = False
+    Set gPreviewViewSelection = Nothing
+    Set gPreviewViewWindow = Nothing
+    Set gPreviewViewDocument = Nothing
+    gPreviewViewType = wdPrintView
+    gPreviewViewReadingLayout = False
+    gPreviewViewZoom = 0
+    gPreviewViewVerticalScroll = 0
+    gPreviewViewHasVerticalScroll = False
+End Sub
+
+Public Function PreviewViewSessionIsActive() As Boolean
+    PreviewViewSessionIsActive = gPreviewViewSessionActive
+End Function
+
+Public Sub RemovePreviewHighlighting(ByVal previewDocument As Document)
+    Dim liveDocument As Document
+    Dim previewDocumentIsLive As Boolean
+
+    On Error Resume Next
+    RestorePreviewShading
+    If previewDocument Is Nothing Then Exit Sub
+    For Each liveDocument In Application.Documents
+        If liveDocument Is previewDocument Then
+            previewDocumentIsLive = True
+            Exit For
+        End If
+    Next liveDocument
+    If previewDocumentIsLive Then previewDocument.Content.HighlightColorIndex = wdNoHighlight
+    On Error GoTo 0
+End Sub
+
+Public Sub BeginCleanupProgress(ByVal toolName As String, Optional ByVal phaseText As String = "Starting")
+    EndCleanupProgress
+    gCleanupProgressToolName = Trim$(toolName)
+    On Error Resume Next
+    gCleanupProgressActive = True
+    PublishCleanupProgress CleanupProgressText(phaseText)
+    On Error GoTo 0
+End Sub
+
+Public Sub BeginPreviewActionIndicator(ByVal sourceForm As Object)
+    Dim previewButton As Object
+
+    EndPreviewActionIndicator
+    On Error GoTo SafeExit
+    If sourceForm Is Nothing Then Exit Sub
+    Set previewButton = sourceForm.Controls("cmdPreview")
+    Set gPreviewActionIndicatorForm = sourceForm
+    gPreviewActionIndicatorCaption = CStr(previewButton.Caption)
+    gPreviewActionIndicatorEnabled = CBool(previewButton.Enabled)
+    gPreviewActionIndicatorBackColor = CLng(previewButton.BackColor)
+    gPreviewActionIndicatorForeColor = CLng(previewButton.ForeColor)
+    gPreviewActionIndicatorActive = True
+    previewButton.Caption = "Previewing..."
+    previewButton.Enabled = False
+    previewButton.BackColor = RGB(221, 235, 247)
+    previewButton.ForeColor = RGB(31, 78, 121)
+    sourceForm.Repaint
+SafeExit:
+End Sub
+
+Public Sub EndPreviewActionIndicator()
+    Dim previewButton As Object
+
+    On Error Resume Next
+    If gPreviewActionIndicatorActive Then
+        Set previewButton = gPreviewActionIndicatorForm.Controls("cmdPreview")
+        previewButton.Caption = gPreviewActionIndicatorCaption
+        previewButton.Enabled = gPreviewActionIndicatorEnabled
+        previewButton.BackColor = gPreviewActionIndicatorBackColor
+        previewButton.ForeColor = gPreviewActionIndicatorForeColor
+        gPreviewActionIndicatorForm.Repaint
+    End If
+    gPreviewActionIndicatorActive = False
+    Set gPreviewActionIndicatorForm = Nothing
+    gPreviewActionIndicatorCaption = ""
+    On Error GoTo 0
+End Sub
+
+Public Sub UpdateCleanupProgress(ByVal phaseText As String, Optional ByVal currentCount As Long = -1, Optional ByVal totalCount As Long = -1)
+    If Not gCleanupProgressActive Then Exit Sub
+    On Error Resume Next
+    PublishCleanupProgress CleanupProgressText(phaseText, currentCount, totalCount)
+    On Error GoTo 0
+End Sub
+
+Public Sub EndCleanupProgress()
+    On Error Resume Next
+    If gCleanupProgressActive Then Application.StatusBar = ""
+    If Not gPreviewActionPanel Is Nothing Then CallByName gPreviewActionPanel, "ClearProgress", VbMethod
+    gCleanupProgressActive = False
+    gCleanupProgressToolName = ""
+    On Error GoTo 0
+End Sub
+
+Private Sub PublishCleanupProgress(ByVal statusText As String)
+    On Error Resume Next
+    Application.StatusBar = statusText
+    If Not gPreviewActionPanel Is Nothing Then CallByName gPreviewActionPanel, "ShowProgress", VbMethod, statusText
+    On Error GoTo 0
+End Sub
+
+Private Function CleanupProgressText(ByVal phaseText As String, Optional ByVal currentCount As Long = -1, Optional ByVal totalCount As Long = -1) As String
+    Dim statusText As String
+    statusText = gCleanupProgressToolName
+    If Len(Trim$(phaseText)) > 0 Then
+        If Len(statusText) > 0 Then statusText = statusText & ": "
+        statusText = statusText & Trim$(phaseText)
+    End If
+    If currentCount >= 0 Then
+        statusText = statusText & " - " & Format$(currentCount, "#,##0")
+        If totalCount > 0 Then statusText = statusText & " of " & Format$(totalCount, "#,##0")
+    End If
+    CleanupProgressText = statusText
+End Function
+
+Public Function CleanupProgressIsActive() As Boolean
+    CleanupProgressIsActive = gCleanupProgressActive
+End Function
+
+Public Sub RestoreCleanupSuiteTransientState()
+    EndPreviewActionIndicator
+    RestorePreviewViewSession
+    RestorePreviewShading
+    EndCleanupProgress
+End Sub
+
 Public Sub RemoveAllHighlighting(Optional scopeRange As Range = Nothing)
+    RestorePreviewShading
     Dim hlRange As Range
     If scopeRange Is Nothing Then
-        Set hlRange = ActiveDocument.Content
+        Set hlRange = ActiveDocument.Content.Duplicate
     Else
-        Set hlRange = scopeRange
+        Set hlRange = scopeRange.Duplicate
     End If
-    With hlRange.Find
-        .ClearFormatting
-        .Replacement.ClearFormatting
-        .Format = True
-        .Highlight = True
-        .Text = ""
-        .Replacement.Text = ""
-        .Replacement.Highlight = False
-        .Forward = True
-        .Wrap = wdFindStop
-        .Execute Replace:=wdReplaceAll
-    End With
+    hlRange.HighlightColorIndex = wdNoHighlight
+End Sub
+Public Sub ApplyPreviewShading(ByVal targetRange As Range, Optional ByVal shadeColor As Long = wdColorBrightGreen)
+    Dim paragraphItem As Paragraph
+    Dim paragraphRange As Range
+
+    On Error GoTo SafeExit
+    For Each paragraphItem In targetRange.Paragraphs
+        Set paragraphRange = paragraphItem.Range.Duplicate
+        ApplyPreviewShadingToParagraph paragraphRange, shadeColor
+    Next paragraphItem
+SafeExit:
+End Sub
+
+Private Sub ApplyPreviewShadingToParagraph(ByVal paragraphRange As Range, ByVal shadeColor As Long)
+    Dim shadingKey As String
+
+    On Error GoTo SafeExit
+    If gPreviewShadingDocuments Is Nothing Then
+        Set gPreviewShadingDocuments = New Collection
+        Set gPreviewShadingStarts = New Collection
+        Set gPreviewShadingEnds = New Collection
+        Set gPreviewShadingKeys = CreateObject("Scripting.Dictionary")
+        Set gPreviewShadingBackgrounds = New Collection
+        Set gPreviewShadingForegrounds = New Collection
+        Set gPreviewShadingTextures = New Collection
+    End If
+    shadingKey = PreviewShadingDocumentIdentity(paragraphRange.Document) & "|" & _
+                 CStr(paragraphRange.Start) & ":" & CStr(paragraphRange.End)
+    If gPreviewShadingKeys.Exists(shadingKey) Then
+        paragraphRange.ParagraphFormat.Shading.Texture = wdTextureNone
+        paragraphRange.ParagraphFormat.Shading.BackgroundPatternColor = shadeColor
+        Exit Sub
+    End If
+    gPreviewShadingKeys.Add shadingKey, True
+    gPreviewShadingDocuments.Add paragraphRange.Document
+    gPreviewShadingStarts.Add CLng(paragraphRange.Start)
+    gPreviewShadingEnds.Add CLng(paragraphRange.End)
+    gPreviewShadingBackgrounds.Add CLng(paragraphRange.ParagraphFormat.Shading.BackgroundPatternColor)
+    gPreviewShadingForegrounds.Add CLng(paragraphRange.ParagraphFormat.Shading.ForegroundPatternColor)
+    gPreviewShadingTextures.Add CLng(paragraphRange.ParagraphFormat.Shading.Texture)
+    paragraphRange.ParagraphFormat.Shading.Texture = wdTextureNone
+    paragraphRange.ParagraphFormat.Shading.BackgroundPatternColor = shadeColor
+SafeExit:
+End Sub
+
+Private Function PreviewShadingDocumentIdentity(ByVal previewDocument As Document) As String
+    On Error Resume Next
+    PreviewShadingDocumentIdentity = LCase$(previewDocument.FullName)
+    If Len(PreviewShadingDocumentIdentity) = 0 Then
+        PreviewShadingDocumentIdentity = LCase$(previewDocument.Name)
+    End If
+    On Error GoTo 0
+End Function
+
+Private Sub RestorePreviewShading()
+    Dim i As Long
+    Dim previewDocument As Document
+    Dim liveDocument As Document
+    Dim restoreRange As Range
+    Dim previewDocumentIsLive As Boolean
+    Dim rangeStart As Long
+    Dim rangeEnd As Long
+    Dim documentEnd As Long
+    Dim expectedBackground As Long
+    Dim expectedForeground As Long
+    Dim expectedTexture As Long
+    Dim allLiveRecordsRestored As Boolean
+
+    On Error Resume Next
+    allLiveRecordsRestored = True
+    If Not gPreviewShadingDocuments Is Nothing Then
+        For i = gPreviewShadingDocuments.Count To 1 Step -1
+            Set previewDocument = Nothing
+            Set previewDocument = gPreviewShadingDocuments(i)
+            previewDocumentIsLive = False
+            For Each liveDocument In Application.Documents
+                If liveDocument Is previewDocument Then
+                    previewDocumentIsLive = True
+                    Exit For
+                End If
+            Next liveDocument
+            If previewDocumentIsLive Then
+                rangeStart = CLng(gPreviewShadingStarts(i))
+                rangeEnd = CLng(gPreviewShadingEnds(i))
+                documentEnd = previewDocument.Content.End
+                If rangeStart < 0 Then rangeStart = 0
+                If rangeStart > documentEnd Then rangeStart = documentEnd
+                If rangeEnd < rangeStart Then rangeEnd = rangeStart
+                If rangeEnd > documentEnd Then rangeEnd = documentEnd
+                Set restoreRange = previewDocument.Range(rangeStart, rangeEnd)
+                expectedTexture = CLng(gPreviewShadingTextures(i))
+                expectedForeground = CLng(gPreviewShadingForegrounds(i))
+                expectedBackground = CLng(gPreviewShadingBackgrounds(i))
+                Err.Clear
+                restoreRange.Shading.Texture = expectedTexture
+                restoreRange.Shading.ForegroundPatternColor = expectedForeground
+                restoreRange.Shading.BackgroundPatternColor = expectedBackground
+                restoreRange.ParagraphFormat.Shading.Texture = expectedTexture
+                restoreRange.ParagraphFormat.Shading.ForegroundPatternColor = expectedForeground
+                restoreRange.ParagraphFormat.Shading.BackgroundPatternColor = expectedBackground
+                If Err.Number <> 0 Then
+                    allLiveRecordsRestored = False
+                ElseIf CLng(restoreRange.ParagraphFormat.Shading.Texture) <> expectedTexture Or _
+                       CLng(restoreRange.ParagraphFormat.Shading.ForegroundPatternColor) <> expectedForeground Or _
+                       CLng(restoreRange.ParagraphFormat.Shading.BackgroundPatternColor) <> expectedBackground Then
+                    allLiveRecordsRestored = False
+                End If
+                Err.Clear
+            End If
+        Next i
+    End If
+    If allLiveRecordsRestored Then
+        Set gPreviewShadingDocuments = Nothing
+        Set gPreviewShadingStarts = Nothing
+        Set gPreviewShadingEnds = Nothing
+        Set gPreviewShadingKeys = Nothing
+        Set gPreviewShadingBackgrounds = Nothing
+        Set gPreviewShadingForegrounds = Nothing
+        Set gPreviewShadingTextures = Nothing
+    End If
+    On Error GoTo 0
 End Sub
 Public Function DocumentHasVisibleContent(Optional scopeRange As Range = Nothing) As Boolean
     On Error GoTo SafeExit
@@ -514,114 +972,64 @@ Public Function IsRunningInMacroHostDocument() As Boolean
 End Function
 Public Sub MarkCleanupStart(toolName As String)
     On Error Resume Next
+    BeginCleanupProgress toolName, "Applying changes"
     If IsRunningInMacroHostDocument() Then Exit Sub
     ActiveDocument.CustomDocumentProperties("CleanupSuiteInProgress").Delete
     Err.Clear
     ActiveDocument.CustomDocumentProperties.Add Name:="CleanupSuiteInProgress", LinkToContent:=False, Type:=msoPropertyTypeString, Value:=toolName
-    If Len(ActiveDocument.Path) > 0 Then ActiveDocument.Save
     On Error GoTo 0
 End Sub
 Public Sub MarkCleanupEnd()
     On Error Resume Next
+    RestoreCleanupSuiteTransientState
     If IsRunningInMacroHostDocument() Then Exit Sub
     ActiveDocument.CustomDocumentProperties("CleanupSuiteInProgress").Delete
     On Error GoTo 0
 End Sub
 Public Function GetAutoSaveSetting() As Boolean
-    ' Returns True (auto-save ON) by default; False only if explicitly disabled
-    On Error Resume Next
-    Dim prop As Object
-    Set prop = ActiveDocument.CustomDocumentProperties("CleanupSuiteAutoSave")
-    If Err.Number <> 0 Then
-        GetAutoSaveSetting = True
-        Err.Clear
-    Else
-        GetAutoSaveSetting = (prop.Value = "True")
-    End If
-    On Error GoTo 0
+    GetAutoSaveSetting = GetGlobalBooleanSetting("AutoSave", True)
 End Function
 Public Sub SetAutoSaveSetting(enabled As Boolean)
-    On Error Resume Next
-    ActiveDocument.CustomDocumentProperties("CleanupSuiteAutoSave").Delete
-    Err.Clear
-    ActiveDocument.CustomDocumentProperties.Add Name:="CleanupSuiteAutoSave", _
-        LinkToContent:=False, Type:=msoPropertyTypeString, _
-        Value:=IIf(enabled, "True", "False")
-    On Error GoTo 0
+    SaveGlobalBooleanSetting "AutoSave", enabled
 End Sub
 Public Function GetReturnToMainAfterApplySetting() As Boolean
-    ' Returns True by default so Apply keeps the current workflow unless changed.
-    On Error Resume Next
-    Dim prop As Object
-    Set prop = ActiveDocument.CustomDocumentProperties("CleanupSuiteReturnToMainAfterApply")
-    If Err.Number <> 0 Then
-        GetReturnToMainAfterApplySetting = True
-        Err.Clear
-    Else
-        GetReturnToMainAfterApplySetting = (prop.Value = "True")
-    End If
-    On Error GoTo 0
+    GetReturnToMainAfterApplySetting = GetGlobalBooleanSetting("ReturnToMainAfterApply", True)
 End Function
 Public Sub SetReturnToMainAfterApplySetting(enabled As Boolean)
-    On Error Resume Next
-    ActiveDocument.CustomDocumentProperties("CleanupSuiteReturnToMainAfterApply").Delete
-    Err.Clear
-    ActiveDocument.CustomDocumentProperties.Add Name:="CleanupSuiteReturnToMainAfterApply", _
-        LinkToContent:=False, Type:=msoPropertyTypeString, _
-        Value:=IIf(enabled, "True", "False")
-    On Error GoTo 0
-End Sub
-Public Function GetShowCompletionReviewAfterApplySetting() As Boolean
-    ' Returns True by default so users see the completion summary unless they opt out.
-    On Error Resume Next
-    Dim prop As Object
-    Set prop = ActiveDocument.CustomDocumentProperties("CleanupSuiteShowCompletionReviewAfterApply")
-    If Err.Number <> 0 Then
-        GetShowCompletionReviewAfterApplySetting = True
-        Err.Clear
-    Else
-        GetShowCompletionReviewAfterApplySetting = (prop.Value = "True")
-    End If
-    On Error GoTo 0
-End Function
-Public Sub SetShowCompletionReviewAfterApplySetting(enabled As Boolean)
-    On Error Resume Next
-    ActiveDocument.CustomDocumentProperties("CleanupSuiteShowCompletionReviewAfterApply").Delete
-    Err.Clear
-    ActiveDocument.CustomDocumentProperties.Add Name:="CleanupSuiteShowCompletionReviewAfterApply", _
-        LinkToContent:=False, Type:=msoPropertyTypeString, _
-        Value:=IIf(enabled, "True", "False")
-    On Error GoTo 0
+    SaveGlobalBooleanSetting "ReturnToMainAfterApply", enabled
 End Sub
 Public Function GetReturnToMainAfterCloseSetting() As Boolean
-    ' Returns True by default so closing a tool menu restores the launcher.
-    On Error Resume Next
-    Dim prop As Object
-    Set prop = ActiveDocument.CustomDocumentProperties("CleanupSuiteReturnToMainAfterClose")
-    If Err.Number <> 0 Then
-        GetReturnToMainAfterCloseSetting = True
-        Err.Clear
-    Else
-        GetReturnToMainAfterCloseSetting = (prop.Value = "True")
-    End If
-    On Error GoTo 0
+    GetReturnToMainAfterCloseSetting = GetGlobalBooleanSetting("ReturnToMainAfterClose", True)
 End Function
 Public Sub SetReturnToMainAfterCloseSetting(enabled As Boolean)
+    SaveGlobalBooleanSetting "ReturnToMainAfterClose", enabled
+End Sub
+Private Function GetGlobalBooleanSetting(ByVal settingName As String, ByVal defaultValue As Boolean) As Boolean
+    Dim defaultText As String
+    Dim settingText As String
+    defaultText = IIf(defaultValue, "True", "False")
+    On Error GoTo UseDefault
+    settingText = GetSetting(CLEANUP_SETTINGS_APP, CLEANUP_SETTINGS_SECTION, settingName, defaultText)
+    GetGlobalBooleanSetting = (StrComp(Trim$(settingText), "True", vbTextCompare) = 0)
+    Exit Function
+UseDefault:
+    GetGlobalBooleanSetting = defaultValue
+End Function
+Private Sub SaveGlobalBooleanSetting(ByVal settingName As String, ByVal enabled As Boolean)
     On Error Resume Next
-    ActiveDocument.CustomDocumentProperties("CleanupSuiteReturnToMainAfterClose").Delete
-    Err.Clear
-    ActiveDocument.CustomDocumentProperties.Add Name:="CleanupSuiteReturnToMainAfterClose", _
-        LinkToContent:=False, Type:=msoPropertyTypeString, _
-        Value:=IIf(enabled, "True", "False")
+    SaveSetting CLEANUP_SETTINGS_APP, CLEANUP_SETTINGS_SECTION, settingName, IIf(enabled, "True", "False")
     On Error GoTo 0
 End Sub
 Public Sub BeginCleanupToolSession()
+    RestoreCleanupSuiteTransientState
     gCleanupToolExitReason = ""
 End Sub
 Public Sub MarkCleanupToolApplied()
+    RestoreCleanupSuiteTransientState
     gCleanupToolExitReason = CLEANUP_TOOL_EXIT_APPLY
 End Sub
 Public Sub MarkCleanupToolClosedByUser()
+    RestoreCleanupSuiteTransientState
     If Len(gCleanupToolExitReason) = 0 Then gCleanupToolExitReason = CLEANUP_TOOL_EXIT_CLOSE
 End Sub
 Public Function ShouldReturnToLauncherAfterToolSession() As Boolean
@@ -640,13 +1048,18 @@ Public Sub ReturnToMainAfterToolClose(ByVal closingForm As Object, ByRef Cancel 
         MarkCleanupToolClosedByUser
     End If
 End Sub
+Public Sub ReturnToLauncherAfterDetachedToolSession()
+    If ShouldReturnToLauncherAfterToolSession() Then ShowCleanupSuiteLauncher
+End Sub
 Public Sub ResetCleanupSuiteDefaults()
     On Error Resume Next
+    RestoreCleanupSuiteTransientState
     RemoveAllHighlighting ActiveDocument.Content
+    ClearPreviewScopeRange
     SetAutoSaveSetting True
     SetReturnToMainAfterApplySetting True
-    SetShowCompletionReviewAfterApplySetting True
     SetReturnToMainAfterCloseSetting True
+    SetCleanupSuiteUpdateChecksEnabled True
     BeginCleanupToolSession
     gPreviewActionPanelHasPosition = False
     If Not gPreviewActionPanel Is Nothing Then Unload gPreviewActionPanel
@@ -665,7 +1078,8 @@ Public Sub ResetCleanupSuiteDefaults()
     Unload frmFormattingStripper
     Unload frmHyperlinkRemover
     Unload frmSoftReturnConverter
-    Unload frmMetadataScrubber
+    Unload frmMetaDataSuite
+    Unload frmFinalReview
     Unload frmStyleCleanup
     Unload frmFootnoteRemover
     Unload frmHeaderFooterStandardizer
@@ -684,6 +1098,7 @@ Public Sub LayoutCleanupToolForm(ByVal toolForm As Object)
     toolForm.Width = FORM_W + 8
     toolForm.BackColor = RGB(248, 249, 251)
     ApplyMSFormTitleStrategy toolForm, True
+    RefreshScopeSelectionState toolForm
     toolForm.Controls("chkPreviewOnly").Visible = False
     toolForm.Controls("fraScopeSelection").Visible = False
 
@@ -694,12 +1109,13 @@ Public Sub LayoutCleanupToolForm(ByVal toolForm As Object)
 
     HideGuidedTitleChrome toolForm
     ResetGuidedGeneratedChrome toolForm
+    LayoutGuidedTitleReset toolForm, M, contentW
 
     Dim introH As Single
     introH = GuidedIntroHeight(GuidedToolIntro(toolForm.Name))
     With introLabel
         .Caption = GuidedToolIntro(toolForm.Name)
-        .Move M, 8, contentW, introH
+        .Move M, 8, contentW - 52, introH
         .Font.Name = "Segoe UI"
         .Font.Size = 9
         .Font.Bold = True
@@ -718,11 +1134,19 @@ Public Sub LayoutCleanupToolForm(ByVal toolForm As Object)
 
     If toolForm.Name = "frmHeaderFooterStandardizer" Then
         LayoutHeaderFooterChoices toolForm, M, y, contentW, GAP
+        ApplyGuidedRiskPlacementLayout toolForm
         LayoutGuidedInfoBox toolForm, M, y, contentW
-        LayoutGuidedPreviewButton toolForm, M, y, contentW
-        LayoutGuidedScopeRow toolForm, M, y, contentW
-        LayoutGuidedActionButtons toolForm, M, y, contentW
-        toolForm.Height = y + 24
+        LayoutGuidedPreviewAndScopeRow toolForm, M, y, contentW
+        toolForm.Height = y + 26
+        Exit Sub
+    End If
+
+    If toolForm.Name = "frmCapitalizationCleanup" Then
+        LayoutCapitalizationChoices toolForm, M, y, contentW, BH, GAP
+        ApplyGuidedRiskPlacementLayout toolForm
+        LayoutGuidedInfoBox toolForm, M, y, contentW
+        LayoutGuidedPreviewAndScopeRow toolForm, M, y, contentW
+        toolForm.Height = y + 26
         Exit Sub
     End If
 
@@ -809,10 +1233,55 @@ NextGuidedControl:
     y = y + 1
 
     LayoutGuidedInfoBox toolForm, M, y, contentW
-    LayoutGuidedPreviewButton toolForm, M, y, contentW
-    LayoutGuidedScopeRow toolForm, M, y, contentW
-    LayoutGuidedActionButtons toolForm, M, y, contentW
-    toolForm.Height = y + 24
+    LayoutGuidedPreviewAndScopeRow toolForm, M, y, contentW
+    toolForm.Height = y + 26
+    ApplyGuidedRiskPlacementLayout toolForm
+End Sub
+Public Sub LayoutCleanupToolFormForReconfigure(ByVal toolForm As Object)
+    LayoutCleanupToolForm toolForm
+End Sub
+Private Sub ApplyGuidedRiskPlacementLayout(ByVal toolForm As Object)
+    On Error Resume Next
+    Select Case toolForm.Name
+        Case "frmUnicodeCleanup"
+            LayoutUnicodeRiskChoiceChips toolForm
+        Case "frmPunctuationCleanup"
+            LayoutPunctuationRiskChoiceChips toolForm
+        Case "frmSpacingCleanup"
+            LayoutSpacingRiskChoiceChips toolForm
+        Case "frmCapitalizationCleanup"
+            LayoutCapitalizationRiskChoiceChips toolForm
+        Case "frmListCleanup"
+            LayoutListRiskChoiceChips toolForm
+        Case "frmParagraphCleanup"
+            LayoutParagraphRiskChoiceChips toolForm
+        Case "frmDuplicateDetector"
+            LayoutDuplicateRiskChoiceChips toolForm
+        Case "frmFormattingStripper"
+            LayoutFormattingRiskChoiceChips toolForm
+        Case "frmFontNormalizer"
+            LayoutFontRiskChoiceChips toolForm
+        Case "frmStyleCleanup"
+            LayoutStyleRiskChoiceChips toolForm
+        Case "frmTableCleaner"
+            LayoutTableRiskChoiceChips toolForm
+        Case "frmBreakNormalizer"
+            LayoutBreakRiskChoiceChips toolForm
+        Case "frmHeaderFooterStandardizer"
+            LayoutHeaderFooterRiskChoiceChips toolForm
+        Case "frmFootnoteRemover"
+            LayoutFootnoteRiskChoiceChips toolForm
+        Case "frmObjectRemover"
+            LayoutObjectRiskChoiceChips toolForm
+        Case "frmDocumentTrim"
+            LayoutDocumentTrimRiskSummary toolForm
+        Case "frmSoftReturnConverter"
+            LayoutSoftReturnRiskChoiceChips toolForm
+        Case "frmFinalReview"
+            LayoutFinalReviewRiskSummary toolForm
+        Case "frmHyperlinkRemover"
+            LayoutHyperlinkRiskChoiceChips toolForm
+    End Select
 End Sub
 Private Function EnsureGuidedLabel(ByVal toolForm As Object, ByVal controlName As String) As Object
     On Error Resume Next
@@ -836,6 +1305,7 @@ Private Sub ResetGuidedGeneratedChrome(ByVal toolForm As Object)
         HideGuidedGeneratedLabel toolForm, "lblGuidedInfoName" & CStr(i)
         HideGuidedGeneratedLabel toolForm, "lblGuidedInfoDetail" & CStr(i)
     Next i
+    HideRiskPlacementControls toolForm
 End Sub
 Private Sub RemoveGuidedGeneratedLabel(ByVal toolForm As Object, ByVal controlName As String)
     On Error Resume Next
@@ -852,6 +1322,10 @@ Private Sub HideGuidedExternalWarnings(ByVal toolForm As Object)
     HideGuidedControl toolForm.Controls("lblModeSummary")
 End Sub
 Private Function ShouldSkipGuidedLayoutControl(ByVal controlName As String) As Boolean
+    If InStr(1, controlName, "RiskPlacement", vbTextCompare) > 0 Then
+        ShouldSkipGuidedLayoutControl = True
+        Exit Function
+    End If
     If controlName = "lblTitle" Or controlName = "lblIntro" Or controlName = "lblModeSummary" Or controlName = "lblSpeedWarning" Or controlName = "lblFuzzyWarning" Or controlName = "lblGuidedDivider" Then
         ShouldSkipGuidedLayoutControl = True
         Exit Function
@@ -861,7 +1335,7 @@ Private Function ShouldSkipGuidedLayoutControl(ByVal controlName As String) As B
         Exit Function
     End If
     Select Case controlName
-        Case "lblGuidedIntro", "chkPreviewOnly", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp"
+        Case "lblGuidedIntro", "chkPreviewOnly", "chkHeadingParentheses", "fraScopeSelection", "optScopeDocument", "optScopeSelection", "cmdPreview", "cmdRun", "cmdReset", "cmdHelp"
             ShouldSkipGuidedLayoutControl = True
         Case Else
             ShouldSkipGuidedLayoutControl = False
@@ -871,6 +1345,327 @@ Private Sub HideGuidedControl(ByVal ctl As Object)
     On Error Resume Next
     ctl.Visible = False
     ctl.Move 0, 0, 0, 0
+End Sub
+Private Sub HideRiskPlacementControls(ByVal toolForm As Object)
+    On Error Resume Next
+    Dim ctl As Object
+    For Each ctl In toolForm.Controls
+        If InStr(1, ctl.Name, "RiskPlacement", vbTextCompare) > 0 Then HideGuidedControl ctl
+    Next ctl
+End Sub
+Private Function EnsureRiskPlacementLabel(ByVal toolForm As Object, ByVal controlName As String) As Object
+    On Error Resume Next
+    Set EnsureRiskPlacementLabel = toolForm.Controls(controlName)
+    On Error GoTo 0
+    If EnsureRiskPlacementLabel Is Nothing Then
+        On Error Resume Next
+        Set EnsureRiskPlacementLabel = toolForm.Controls.Add("Forms.Label.1", controlName, True)
+        On Error GoTo 0
+    End If
+End Function
+Private Function EnsureRiskPlacementChip(ByVal toolForm As Object, ByVal controlName As String) As Object
+    On Error Resume Next
+    Set EnsureRiskPlacementChip = toolForm.Controls(controlName)
+    On Error GoTo 0
+    If EnsureRiskPlacementChip Is Nothing Then
+        On Error Resume Next
+        Set EnsureRiskPlacementChip = toolForm.Controls.Add("Forms.CommandButton.1", controlName, True)
+        On Error GoTo 0
+    End If
+End Function
+Private Sub StyleToolRiskChip(ByVal chipCtl As Object, ByVal labelText As String)
+    On Error Resume Next
+    With chipCtl
+        .Caption = Replace(labelText, " ", vbCrLf)
+        .Font.Name = "Segoe UI"
+        .Font.Size = 7
+        .Font.Bold = True
+        .WordWrap = True
+        .TakeFocusOnClick = False
+        .BackColor = ToolRiskBackColor(labelText)
+        .ForeColor = ToolRiskForeColor(labelText)
+        .Visible = True
+        .ZOrder 0
+    End With
+End Sub
+Private Function ToolRiskBackColor(ByVal labelText As String) As Long
+    Select Case labelText
+        Case "Safe cleanup", "Safe": ToolRiskBackColor = RGB(229, 245, 235)
+        Case "Preview first", "Inspect first": ToolRiskBackColor = RGB(228, 239, 251)
+        Case "Text caution", "Formatting change": ToolRiskBackColor = RGB(255, 246, 218)
+        Case "Structure change", "Removes content": ToolRiskBackColor = RGB(255, 235, 218)
+        Case "Final action", "Privacy cleanup": ToolRiskBackColor = RGB(255, 226, 226)
+        Case Else: ToolRiskBackColor = RGB(240, 242, 245)
+    End Select
+End Function
+Private Function ToolRiskForeColor(ByVal labelText As String) As Long
+    Select Case labelText
+        Case "Safe cleanup", "Safe": ToolRiskForeColor = RGB(24, 105, 59)
+        Case "Preview first", "Inspect first": ToolRiskForeColor = RGB(31, 91, 145)
+        Case "Text caution", "Formatting change": ToolRiskForeColor = RGB(132, 89, 0)
+        Case "Structure change", "Removes content": ToolRiskForeColor = RGB(154, 73, 24)
+        Case "Final action", "Privacy cleanup": ToolRiskForeColor = RGB(171, 40, 40)
+        Case Else: ToolRiskForeColor = RGB(84, 91, 104)
+    End Select
+End Function
+Public Sub ShowToolRiskChoiceExplanation(ByVal actionName As String, ByVal riskLabel As String, ByVal reasonText As String)
+    Dim msg As String
+    msg = actionName & vbCrLf & vbCrLf & _
+          "Risk label: " & riskLabel & vbCrLf & vbCrLf & _
+          "Why this choice says that:" & vbCrLf & _
+          reasonText & vbCrLf & vbCrLf & _
+          "Preview first when you are not sure which result you want."
+    MsgBox msg, vbInformation, "Why This Risk?"
+End Sub
+Private Sub ShiftControlsBelow(ByVal toolForm As Object, ByVal cutoffTop As Single, ByVal deltaY As Single)
+    On Error Resume Next
+    Dim ctl As Object
+    For Each ctl In toolForm.Controls
+        If ctl.Visible And ctl.Top >= cutoffTop Then
+            If InStr(1, ctl.Name, "RiskPlacement", vbTextCompare) = 0 Then ctl.Top = ctl.Top + deltaY
+        End If
+    Next ctl
+    toolForm.Height = toolForm.Height + deltaY
+End Sub
+Private Sub PlaceRiskChipBesideChoice(ByVal toolForm As Object, ByVal choiceName As String, ByVal chipName As String, ByVal labelText As String)
+    On Error Resume Next
+    Dim choiceCtl As Object
+    Set choiceCtl = toolForm.Controls(choiceName)
+    If choiceCtl Is Nothing Or Not choiceCtl.Visible Then Exit Sub
+
+    Const CHIP_W As Single = 58
+    Const CHIP_H As Single = 20
+    Const GAP As Single = 4
+    Dim chipCtl As Object
+    Set chipCtl = EnsureRiskPlacementChip(toolForm, chipName)
+    StyleToolRiskChip chipCtl, labelText
+    If choiceCtl.Width > CHIP_W + 32 Then choiceCtl.Width = choiceCtl.Width - CHIP_W - GAP
+    chipCtl.Move choiceCtl.Left + choiceCtl.Width + GAP, choiceCtl.Top, CHIP_W, CHIP_H
+End Sub
+Public Sub LayoutUnicodeRiskChoiceChips(ByVal toolForm As Object)
+    PlaceRiskChipBesideChoice toolForm, "optAll", "cmdRiskPlacementUnicodeAll", "Safe cleanup"
+    PlaceRiskChipBesideChoice toolForm, "optNBSP", "cmdRiskPlacementUnicodeNBSP", "Safe cleanup"
+    PlaceRiskChipBesideChoice toolForm, "optZeroWidth", "cmdRiskPlacementUnicodeZeroWidth", "Safe cleanup"
+    PlaceRiskChipBesideChoice toolForm, "optCustom", "cmdRiskPlacementUnicodeCustom", "Inspect first"
+    PlaceRiskChipBesideChoice toolForm, "chkNBSP", "cmdRiskPlacementUnicodeChkNBSP", "Safe cleanup"
+    PlaceRiskChipBesideChoice toolForm, "chkZWSP", "cmdRiskPlacementUnicodeChkZWSP", "Safe cleanup"
+    PlaceRiskChipBesideChoice toolForm, "chkZWNJ", "cmdRiskPlacementUnicodeChkZWNJ", "Safe cleanup"
+    PlaceRiskChipBesideChoice toolForm, "chkZWJ", "cmdRiskPlacementUnicodeChkZWJ", "Safe cleanup"
+    PlaceRiskChipBesideChoice toolForm, "chkBOM", "cmdRiskPlacementUnicodeChkBOM", "Safe cleanup"
+    PlaceRiskChipBesideChoice toolForm, "chkSoftHyphen", "cmdRiskPlacementUnicodeChkSoftHyphen", "Formatting change"
+    PlaceRiskChipBesideChoice toolForm, "chkNBHyphen", "cmdRiskPlacementUnicodeChkNBHyphen", "Formatting change"
+End Sub
+Public Sub LayoutPunctuationRiskChoiceChips(ByVal toolForm As Object)
+    PlaceRiskChipBesideChoice toolForm, "optAll", "cmdRiskPlacementPunctuationAll", "Text caution"
+    PlaceRiskChipBesideChoice toolForm, "optQuotes", "cmdRiskPlacementPunctuationQuotes", "Text caution"
+    PlaceRiskChipBesideChoice toolForm, "optDashes", "cmdRiskPlacementPunctuationDashes", "Text caution"
+    PlaceRiskChipBesideChoice toolForm, "optEllipses", "cmdRiskPlacementPunctuationEllipses", "Text caution"
+    PlaceRiskChipBesideChoice toolForm, "optCustom", "cmdRiskPlacementPunctuationCustom", "Inspect first"
+    PlaceRiskChipBesideChoice toolForm, "chkCurlyDouble", "cmdRiskPlacementPunctuationChkCurlyDouble", "Text caution"
+    PlaceRiskChipBesideChoice toolForm, "chkCurlySingle", "cmdRiskPlacementPunctuationChkCurlySingle", "Text caution"
+    PlaceRiskChipBesideChoice toolForm, "chkEmDash", "cmdRiskPlacementPunctuationChkEmDash", "Text caution"
+    PlaceRiskChipBesideChoice toolForm, "chkEnDash", "cmdRiskPlacementPunctuationChkEnDash", "Text caution"
+    PlaceRiskChipBesideChoice toolForm, "chkEllipses", "cmdRiskPlacementPunctuationChkEllipses", "Text caution"
+End Sub
+Public Sub LayoutSpacingRiskChoiceChips(ByVal toolForm As Object)
+    PlaceRiskChipBesideChoice toolForm, "optAll", "cmdRiskPlacementSpacingAll", "Safe"
+    PlaceRiskChipBesideChoice toolForm, "optDoubleSpaces", "cmdRiskPlacementSpacingDouble", "Safe"
+    PlaceRiskChipBesideChoice toolForm, "optTrim", "cmdRiskPlacementSpacingTrim", "Safe"
+    PlaceRiskChipBesideChoice toolForm, "optCustom", "cmdRiskPlacementSpacingCustom", "Inspect first"
+    PlaceRiskChipBesideChoice toolForm, "chkDoubleSpaces", "cmdRiskPlacementSpacingChkDouble", "Safe"
+    PlaceRiskChipBesideChoice toolForm, "chkTrimSpaces", "cmdRiskPlacementSpacingChkTrim", "Safe"
+    PlaceRiskChipBesideChoice toolForm, "chkSpaceBeforePunct", "cmdRiskPlacementSpacingChkBefore", "Safe"
+    PlaceRiskChipBesideChoice toolForm, "chkNormalizeAfterPunct", "cmdRiskPlacementSpacingChkAfter", "Safe"
+    PlaceRiskChipBesideChoice toolForm, "chkExtraBlankLines", "cmdRiskPlacementSpacingChkBlank", "Structure change"
+End Sub
+Public Sub LayoutCapitalizationRiskChoiceChips(ByVal toolForm As Object)
+    PlaceRiskChipBesideChoice toolForm, "optAll", "cmdRiskPlacementCapitalizationRecommended", "Text caution"
+    PlaceRiskChipBesideChoice toolForm, "optCustom", "cmdRiskPlacementCapitalizationCustom", "Inspect first"
+    PlaceRiskChipBesideChoice toolForm, "chkSentence", "cmdRiskPlacementCapitalizationChkSentence", "Text caution"
+    PlaceRiskChipBesideChoice toolForm, "chkTitle", "cmdRiskPlacementCapitalizationChkTitle", "Text caution"
+    PlaceRiskChipBesideChoice toolForm, "chkUpper", "cmdRiskPlacementCapitalizationChkUpper", "Text caution"
+    PlaceRiskChipBesideChoice toolForm, "chkLower", "cmdRiskPlacementCapitalizationChkLower", "Text caution"
+    PlaceRiskChipBesideChoice toolForm, "chkSmartSentences", "cmdRiskPlacementCapitalizationChkSmartSentences", "Text caution"
+    PlaceRiskChipBesideChoice toolForm, "chkHeadingParentheses", "cmdRiskPlacementCapitalizationChkHeadingParentheses", "Text caution"
+End Sub
+Public Sub LayoutListRiskChoiceChips(ByVal toolForm As Object)
+    PlaceRiskChipBesideChoice toolForm, "optAll", "cmdRiskPlacementListAll", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "optBullets", "cmdRiskPlacementListBullets", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "optNumbering", "cmdRiskPlacementListNumbering", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "optIndent", "cmdRiskPlacementListIndent", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "optCustom", "cmdRiskPlacementListCustom", "Inspect first"
+    PlaceRiskChipBesideChoice toolForm, "chkNormalizeBullets", "cmdRiskPlacementListNormalizeBullets", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "chkNormalizeNumbering", "cmdRiskPlacementListNormalizeNumbering", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "chkFixIndent", "cmdRiskPlacementListFixIndent", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "chkHyphenToBullets", "cmdRiskPlacementListHyphenBullets", "Structure change"
+End Sub
+Private Function ParagraphChoiceRiskLabel(ByVal choiceName As String) As String
+    Select Case choiceName
+        Case "chkRemoveEmpty", "optRemoveEmpty": ParagraphChoiceRiskLabel = "Safe cleanup"
+        Case "chkCollapseBreaks": ParagraphChoiceRiskLabel = "Structure change"
+        Case "chkNormalizeParaSpacing", "optNormalizeSpacing": ParagraphChoiceRiskLabel = "Formatting change"
+        Case "chkFixIndent": ParagraphChoiceRiskLabel = "Structure change"
+        Case "optAll", "optCustom": ParagraphChoiceRiskLabel = "Structure change"
+        Case Else: ParagraphChoiceRiskLabel = "Inspect first"
+    End Select
+End Function
+Public Sub LayoutParagraphRiskChoiceChips(ByVal toolForm As Object)
+    PlaceRiskChipBesideChoice toolForm, "optAll", "cmdRiskPlacementParagraphAll", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "optRemoveEmpty", "cmdRiskPlacementParagraphRemoveEmpty", "Safe cleanup"
+    PlaceRiskChipBesideChoice toolForm, "optNormalizeSpacing", "cmdRiskPlacementParagraphSpacing", "Formatting change"
+    PlaceRiskChipBesideChoice toolForm, "optCustom", "cmdRiskPlacementParagraphCustom", "Inspect first"
+    PlaceRiskChipBesideChoice toolForm, "chkRemoveEmpty", "cmdRiskPlacementParagraphChkRemoveEmpty", "Safe cleanup"
+    PlaceRiskChipBesideChoice toolForm, "chkCollapseBreaks", "cmdRiskPlacementParagraphChkBreaks", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "chkNormalizeParaSpacing", "cmdRiskPlacementParagraphChkSpacing", "Formatting change"
+    PlaceRiskChipBesideChoice toolForm, "chkFixIndent", "cmdRiskPlacementParagraphChkIndent", "Structure change"
+End Sub
+Public Sub LayoutDuplicateRiskChoiceChips(ByVal toolForm As Object)
+    PlaceRiskChipBesideChoice toolForm, "optHighlightOnly", "cmdRiskPlacementDuplicatePreview", "Inspect first"
+    PlaceRiskChipBesideChoice toolForm, "optRemoveDupes", "cmdRiskPlacementDuplicateRemove", "Removes content"
+    PlaceRiskChipBesideChoice toolForm, "optMatchExact", "cmdRiskPlacementDuplicateExact", "Inspect first"
+    PlaceRiskChipBesideChoice toolForm, "optMatchNormalized", "cmdRiskPlacementDuplicateNormalized", "Inspect first"
+    PlaceRiskChipBesideChoice toolForm, "optMatchFuzzy", "cmdRiskPlacementDuplicateFuzzy", "Inspect first"
+    PlaceRiskChipBesideChoice toolForm, "optFuzzyLoose", "cmdRiskPlacementDuplicateFuzzyLoose", "Inspect first"
+    PlaceRiskChipBesideChoice toolForm, "optFuzzyMedium", "cmdRiskPlacementDuplicateFuzzyMedium", "Inspect first"
+    PlaceRiskChipBesideChoice toolForm, "optFuzzyStrict", "cmdRiskPlacementDuplicateFuzzyStrict", "Inspect first"
+End Sub
+Public Sub LayoutFormattingRiskChoiceChips(ByVal toolForm As Object)
+    PlaceRiskChipBesideChoice toolForm, "chkResetChar", "cmdRiskPlacementFormattingChar", "Formatting change"
+    PlaceRiskChipBesideChoice toolForm, "chkResetPara", "cmdRiskPlacementFormattingPara", "Formatting change"
+    PlaceRiskChipBesideChoice toolForm, "optEmphQuick", "cmdRiskPlacementFormattingQuick", "Inspect first"
+    PlaceRiskChipBesideChoice toolForm, "optEmphThorough", "cmdRiskPlacementFormattingThorough", "Inspect first"
+    PlaceRiskChipBesideChoice toolForm, "optEmphStrip", "cmdRiskPlacementFormattingStrip", "Formatting change"
+    PlaceRiskChipBesideChoice toolForm, "chkPreserveHighlight", "cmdRiskPlacementFormattingHighlight", "Safe cleanup"
+    PlaceRiskChipBesideChoice toolForm, "chkPreserveDropCaps", "cmdRiskPlacementFormattingDropCaps", "Safe cleanup"
+End Sub
+Public Sub LayoutFontRiskChoiceChips(ByVal toolForm As Object)
+    PlaceRiskChipBesideChoice toolForm, "chkFontFace", "cmdRiskPlacementFontFace", "Formatting change"
+    PlaceRiskChipBesideChoice toolForm, "chkFontSize", "cmdRiskPlacementFontSize", "Formatting change"
+    PlaceRiskChipBesideChoice toolForm, "chkBold", "cmdRiskPlacementFontBold", "Formatting change"
+    PlaceRiskChipBesideChoice toolForm, "chkItalic", "cmdRiskPlacementFontItalic", "Formatting change"
+    PlaceRiskChipBesideChoice toolForm, "chkFontColor", "cmdRiskPlacementFontColor", "Formatting change"
+End Sub
+Public Sub LayoutStyleRiskChoiceChips(ByVal toolForm As Object)
+    PlaceRiskChipBesideChoice toolForm, "chkRemoveUnused", "cmdRiskPlacementStyleRemoveUnused", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "chkRemapVariants", "cmdRiskPlacementStyleRemap", "Inspect first"
+End Sub
+Public Sub LayoutTableRiskChoiceChips(ByVal toolForm As Object)
+    PlaceRiskChipBesideChoice toolForm, "chkRemoveEmptyRows", "cmdRiskPlacementTableRows", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "chkRemoveEmptyCols", "cmdRiskPlacementTableCols", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "chkNormalizePadding", "cmdRiskPlacementTablePadding", "Formatting change"
+    PlaceRiskChipBesideChoice toolForm, "chkStripDirectFormat", "cmdRiskPlacementTableStripFormat", "Formatting change"
+    PlaceRiskChipBesideChoice toolForm, "chkNormalizeBorders", "cmdRiskPlacementTableBorders", "Formatting change"
+    PlaceRiskChipBesideChoice toolForm, "chkRemoveBorders", "cmdRiskPlacementTableRemoveBorders", "Formatting change"
+    PlaceRiskChipBesideChoice toolForm, "chkConvertToText", "cmdRiskPlacementTableConvertToText", "Structure change"
+End Sub
+Public Sub LayoutBreakRiskChoiceChips(ByVal toolForm As Object)
+    PlaceRiskChipBesideChoice toolForm, "chkCollapseSectionBreaks", "cmdRiskPlacementBreakSections", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "chkCollapsePageBreaks", "cmdRiskPlacementBreakPages", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "chkConvertSectionBreaks", "cmdRiskPlacementBreakConvert", "Inspect first"
+    PlaceRiskChipBesideChoice toolForm, "optConvertNextPage", "cmdRiskPlacementBreakNextPage", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "optConvertContinuous", "cmdRiskPlacementBreakContinuous", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "optConvertEvenPage", "cmdRiskPlacementBreakEvenPage", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "optConvertOddPage", "cmdRiskPlacementBreakOddPage", "Structure change"
+End Sub
+Public Sub LayoutHeaderFooterRiskChoiceChips(ByVal toolForm As Object)
+    PlaceRiskChipBesideChoice toolForm, "optStandardize", "cmdRiskPlacementHeaderFooterStandardize", "Formatting change"
+    PlaceRiskChipBesideChoice toolForm, "optClearAll", "cmdRiskPlacementHeaderFooterClear", "Removes content"
+    PlaceRiskChipBesideChoice toolForm, "chkHeaders", "cmdRiskPlacementHeaderFooterHeaders", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "chkFooters", "cmdRiskPlacementHeaderFooterFooters", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "chkFont", "cmdRiskPlacementHeaderFooterFont", "Formatting change"
+    PlaceRiskChipBesideChoice toolForm, "chkSpacing", "cmdRiskPlacementHeaderFooterSpacing", "Formatting change"
+    PlaceRiskChipBesideChoice toolForm, "chkBreakLinks", "cmdRiskPlacementHeaderFooterBreakLinks", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "chkAlignment", "cmdRiskPlacementHeaderFooterAlignment", "Formatting change"
+End Sub
+Public Sub LayoutFootnoteRiskChoiceChips(ByVal toolForm As Object)
+    PlaceRiskChipBesideChoice toolForm, "chkFootnotes", "cmdRiskPlacementFootnoteFootnotes", "Removes content"
+    PlaceRiskChipBesideChoice toolForm, "chkEndnotes", "cmdRiskPlacementFootnoteEndnotes", "Removes content"
+    PlaceRiskChipBesideChoice toolForm, "chkKeepTextInline", "cmdRiskPlacementFootnoteKeepText", "Text caution"
+End Sub
+Public Sub LayoutObjectRiskChoiceChips(ByVal toolForm As Object)
+    PlaceRiskChipBesideChoice toolForm, "chkPictures", "cmdRiskPlacementObjectPictures", "Removes content"
+    PlaceRiskChipBesideChoice toolForm, "chkTextBoxes", "cmdRiskPlacementObjectTextBoxes", "Removes content"
+    PlaceRiskChipBesideChoice toolForm, "chkFrames", "cmdRiskPlacementObjectFrames", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "chkHorizontalLines", "cmdRiskPlacementObjectLines", "Removes content"
+    PlaceRiskChipBesideChoice toolForm, "chkHtmlControls", "cmdRiskPlacementObjectControls", "Removes content"
+    PlaceRiskChipBesideChoice toolForm, "chkHiddenText", "cmdRiskPlacementObjectHiddenText", "Removes content"
+    PlaceRiskChipBesideChoice toolForm, "chkTables", "cmdRiskPlacementObjectTables", "Removes content"
+End Sub
+Public Sub LayoutDocumentTrimRiskSummary(ByVal toolForm As Object)
+    On Error Resume Next
+    Dim insertTop As Single
+    insertTop = toolForm.Controls("lblGuidedInfoBorder").Top
+    If insertTop <= 0 Then insertTop = toolForm.Controls("cmdPreview").Top
+    If insertTop <= 0 Then Exit Sub
+
+    Const SUMMARY_H As Single = 20
+    ShiftControlsBelow toolForm, insertTop, SUMMARY_H + 4
+
+    Dim summaryCtl As Object
+    Set summaryCtl = EnsureRiskPlacementLabel(toolForm, "lblRiskPlacementDocumentTrimSummary")
+    With summaryCtl
+        .Caption = "Risk label: Safe cleanup. Only trailing empty paragraphs are highlighted or removed."
+        .Font.Name = "Segoe UI"
+        .Font.Size = 8
+        .Font.Bold = True
+        .ForeColor = ToolRiskForeColor("Safe cleanup")
+        .BackColor = ToolRiskBackColor("Safe cleanup")
+        .BackStyle = 1
+        .BorderStyle = 1
+        .SpecialEffect = 0
+        .WordWrap = True
+        .Move 14, insertTop, toolForm.Width - 36, SUMMARY_H
+        .Visible = True
+        .ZOrder 0
+    End With
+End Sub
+Public Sub LayoutSoftReturnRiskChoiceChips(ByVal toolForm As Object)
+    PlaceRiskChipBesideChoice toolForm, "optSoftToPara", "cmdRiskPlacementSoftReturnToPara", "Structure change"
+    PlaceRiskChipBesideChoice toolForm, "optParaToSoft", "cmdRiskPlacementSoftReturnToSoft", "Structure change"
+End Sub
+Public Sub LayoutFinalReviewRiskSummary(ByVal toolForm As Object)
+    On Error Resume Next
+    Dim insertTop As Single
+    insertTop = toolForm.Controls("lblGuidedInfoBorder").Top
+    If insertTop <= 0 Then insertTop = toolForm.Controls("cmdPreview").Top
+    If insertTop <= 0 Then insertTop = toolForm.Controls("cmdRun").Top
+    If insertTop <= 0 Then Exit Sub
+
+    Const SUMMARY_H As Single = 34
+    ShiftControlsBelow toolForm, insertTop, SUMMARY_H + 4
+
+    Dim summaryText As String
+    If toolForm.Controls("chkComments").Value And toolForm.Controls("chkRevisions").Value Then
+        summaryText = "Current selection: Removes content + Final action. Comments will be removed and tracked changes accepted."
+    ElseIf toolForm.Controls("chkComments").Value Then
+        summaryText = "Current selection: Removes content. Comments will be deleted from the document."
+    ElseIf toolForm.Controls("chkRevisions").Value Then
+        summaryText = "Current selection: Final action. Tracked changes will be accepted and markup review will be finalized."
+    Else
+        summaryText = "Current selection: Nothing selected yet. Choose a review action to see its risk."
+    End If
+
+    Dim summaryCtl As Object
+    Set summaryCtl = EnsureRiskPlacementLabel(toolForm, "lblRiskPlacementFinalReviewSummary")
+    With summaryCtl
+        .Caption = summaryText
+        .Font.Name = "Segoe UI"
+        .Font.Size = 8
+        .Font.Bold = True
+        .ForeColor = ToolRiskForeColor(IIf(toolForm.Controls("chkRevisions").Value, "Final action", "Removes content"))
+        .BackColor = ToolRiskBackColor(IIf(toolForm.Controls("chkRevisions").Value, "Final action", "Removes content"))
+        .BackStyle = 1
+        .BorderStyle = 1
+        .SpecialEffect = 0
+        .WordWrap = True
+        .Move 14, insertTop, toolForm.Width - 36, SUMMARY_H
+        .Visible = True
+        .ZOrder 0
+    End With
+End Sub
+Public Sub LayoutHyperlinkRiskChoiceChips(ByVal toolForm As Object)
+    PlaceRiskChipBesideChoice toolForm, "optHideLinks", "cmdRiskPlacementHyperlinkHide", "Formatting change"
+    PlaceRiskChipBesideChoice toolForm, "optRemoveLinks", "cmdRiskPlacementHyperlinkRemove", "Removes content"
 End Sub
 Private Sub HideGuidedTitleChrome(ByVal toolForm As Object)
     On Error Resume Next
@@ -948,11 +1743,11 @@ Private Function ShouldHideGuidedControl(ByVal toolForm As Object, ByVal control
 
     If toolForm.Name = "frmCapitalizationCleanup" Then
         Select Case controlName
-            Case "optUpper", "optLower"
-                ShouldHideGuidedControl = True
-                Exit Function
-            Case "chkSentence", "chkTitle", "chkUpper", "chkLower", "chkSmartSentences"
+            Case "chkSentence", "chkTitle", "chkUpper", "chkLower", "chkSmartSentences", "cmdEditExceptions"
                 ShouldHideGuidedControl = Not GuidedCustomModeIsActive(toolForm)
+                Exit Function
+            Case "chkHeadingParentheses"
+                ShouldHideGuidedControl = Not GuidedCustomModeIsActive(toolForm) Or Not toolForm.Controls("chkLower").Value
                 Exit Function
         End Select
     End If
@@ -962,8 +1757,85 @@ Private Function GuidedCustomModeIsActive(ByVal toolForm As Object) As Boolean
     GuidedCustomModeIsActive = toolForm.Controls("optCustom").Value
 End Function
 Private Function IsCapitalizationAdvancedControl(ByVal controlName As String) As Boolean
-    IsCapitalizationAdvancedControl = (controlName = "chkSentence" Or controlName = "chkTitle" Or controlName = "chkUpper" Or controlName = "chkLower" Or controlName = "chkSmartSentences")
+    IsCapitalizationAdvancedControl = (controlName = "chkSentence" Or controlName = "chkTitle" Or controlName = "chkUpper" Or controlName = "chkLower" Or controlName = "chkHeadingParentheses" Or controlName = "chkSmartSentences" Or controlName = "cmdEditExceptions")
 End Function
+
+Private Sub LayoutCapitalizationChoices(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single, ByVal BH As Single, ByVal GAP As Single)
+    On Error Resume Next
+    PositionGuidedChoicePairByName toolForm, "optAll", "optCustom", M, y, contentW, GAP
+
+    If Not GuidedCustomModeIsActive(toolForm) Then
+        HideGuidedControl toolForm.Controls("chkSentence")
+        HideGuidedControl toolForm.Controls("chkTitle")
+        HideGuidedControl toolForm.Controls("chkUpper")
+        HideGuidedControl toolForm.Controls("chkLower")
+        HideGuidedControl toolForm.Controls("chkSmartSentences")
+        HideGuidedControl toolForm.Controls("chkHeadingParentheses")
+        HideGuidedControl toolForm.Controls("cmdSelectAll")
+        HideGuidedControl toolForm.Controls("cmdDeselectAll")
+        HideGuidedControl toolForm.Controls("cmdEditExceptions")
+        Exit Sub
+    End If
+
+    LayoutGuidedDivider toolForm, M, y, contentW
+    PositionCapitalizationGridRow toolForm, "chkSentence", "chkTitle", M, y, contentW, GAP
+    PositionCapitalizationGridRow toolForm, "chkUpper", "chkLower", M, y, contentW, GAP
+    PositionCapitalizationGridRow toolForm, "chkSmartSentences", "chkHeadingParentheses", M, y, contentW, GAP
+
+    StyleGuidedButton toolForm.Controls("cmdSelectAll"), False
+    StyleGuidedButton toolForm.Controls("cmdDeselectAll"), False
+    toolForm.Controls("cmdSelectAll").Move M, y, (contentW - GAP) / 2, BH
+    toolForm.Controls("cmdDeselectAll").Move M + ((contentW - GAP) / 2) + GAP, y, (contentW - GAP) / 2, BH
+    toolForm.Controls("cmdSelectAll").Visible = True
+    toolForm.Controls("cmdDeselectAll").Visible = True
+    y = y + BH + GAP
+
+    StyleGuidedButton toolForm.Controls("cmdEditExceptions"), False
+    toolForm.Controls("cmdEditExceptions").Move M, y, contentW, BH
+    toolForm.Controls("cmdEditExceptions").Visible = True
+    y = y + BH + GAP + 1
+End Sub
+
+Private Sub PositionCapitalizationGridRow(ByVal toolForm As Object, ByVal leftName As String, ByVal rightName As String, ByVal M As Single, ByRef y As Single, ByVal contentW As Single, ByVal GAP As Single)
+    On Error Resume Next
+    Dim leftCtl As Object
+    Dim rightCtl As Object
+    Dim leftVisible As Boolean
+    Dim rightVisible As Boolean
+    Dim choiceW As Single
+    Dim rowH As Single
+
+    Set leftCtl = toolForm.Controls(leftName)
+    Set rightCtl = toolForm.Controls(rightName)
+    leftVisible = Not ShouldHideGuidedControl(toolForm, leftName)
+    rightVisible = Not ShouldHideGuidedControl(toolForm, rightName)
+    If Not leftVisible And Not rightVisible Then Exit Sub
+
+    choiceW = (contentW - GAP) / 2
+    If leftVisible Then rowH = GuidedOptionHeight(leftCtl)
+    If rightVisible Then
+        If GuidedOptionHeight(rightCtl) > rowH Then rowH = GuidedOptionHeight(rightCtl)
+    End If
+
+    If leftVisible Then
+        StyleGuidedOption leftCtl
+        leftCtl.Move M + 8, y, choiceW - 8, rowH
+        leftCtl.Visible = True
+    Else
+        HideGuidedControl leftCtl
+    End If
+
+    If rightVisible Then
+        StyleGuidedOption rightCtl
+        rightCtl.Move M + choiceW + GAP + 8, y, choiceW - 8, rowH
+        rightCtl.Visible = True
+        rightCtl.Enabled = True
+    Else
+        HideGuidedControl rightCtl
+    End If
+
+    y = y + rowH + GAP
+End Sub
 Private Sub LayoutHeaderFooterChoices(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single, ByVal GAP As Single)
     On Error Resume Next
     HideGuidedControl toolForm.Controls("fraOptions")
@@ -1391,17 +2263,15 @@ Private Function GuidedInfoDisplayName(ByVal formName As String, ByVal controlNa
         Case "frmBreakNormalizer.chkCollapseSectionBreaks": GuidedInfoDisplayName = "Collapse section breaks"
         Case "frmBreakNormalizer.chkCollapsePageBreaks": GuidedInfoDisplayName = "Collapse page breaks"
         Case "frmBreakNormalizer.chkConvertSectionBreaks": GuidedInfoDisplayName = "Convert section breaks"
-        Case "frmCapitalizationCleanup.optAll": GuidedInfoDisplayName = "Conservative repair"
-        Case "frmCapitalizationCleanup.optSentence": GuidedInfoDisplayName = "Balanced (coming soon)"
-        Case "frmCapitalizationCleanup.optTitle": GuidedInfoDisplayName = "Aggressive (coming soon)"
-        Case "frmCapitalizationCleanup.optUpper": GuidedInfoDisplayName = "Legacy hidden option"
-        Case "frmCapitalizationCleanup.optLower": GuidedInfoDisplayName = "Legacy hidden option"
-        Case "frmCapitalizationCleanup.optCustom": GuidedInfoDisplayName = "Custom"
-        Case "frmCapitalizationCleanup.chkSentence": GuidedInfoDisplayName = "Abbreviation lists"
+        Case "frmCapitalizationCleanup.optAll": GuidedInfoDisplayName = "Recommended repair"
+        Case "frmCapitalizationCleanup.optCustom": GuidedInfoDisplayName = "Custom repair"
+        Case "frmCapitalizationCleanup.chkSentence": GuidedInfoDisplayName = "Abbreviation recognition"
         Case "frmCapitalizationCleanup.chkTitle": GuidedInfoDisplayName = "Acronym protection"
         Case "frmCapitalizationCleanup.chkUpper": GuidedInfoDisplayName = "Name and brand protection"
-        Case "frmCapitalizationCleanup.chkLower": GuidedInfoDisplayName = "Heading heuristics"
-        Case "frmCapitalizationCleanup.chkSmartSentences": GuidedInfoDisplayName = "Boundary context"
+        Case "frmCapitalizationCleanup.chkLower": GuidedInfoDisplayName = "Heading repair"
+        Case "frmCapitalizationCleanup.chkHeadingParentheses": GuidedInfoDisplayName = "Parenthetical heading repair"
+        Case "frmCapitalizationCleanup.chkSmartSentences": GuidedInfoDisplayName = "Sentence context"
+        Case "frmCapitalizationCleanup.cmdEditExceptions": GuidedInfoDisplayName = "Custom exceptions"
         Case "frmDuplicateDetector.optHighlightOnly": GuidedInfoDisplayName = "Preview duplicates"
         Case "frmDuplicateDetector.optRemoveDupes": GuidedInfoDisplayName = "Remove duplicates"
         Case "frmDuplicateDetector.optMatchExact": GuidedInfoDisplayName = "Exact match"
@@ -1433,7 +2303,8 @@ Private Function GuidedInfoDisplayName(ByVal formName As String, ByVal controlNa
         Case "frmHeaderFooterStandardizer.chkSpacing": GuidedInfoDisplayName = "Remove spacing"
         Case "frmHeaderFooterStandardizer.chkBreakLinks": GuidedInfoDisplayName = "Unlink sections"
         Case "frmHeaderFooterStandardizer.chkAlignment": GuidedInfoDisplayName = "Set alignment"
-        Case "frmHyperlinkRemover.chkRemoveFormat": GuidedInfoDisplayName = "Remove link style"
+        Case "frmHyperlinkRemover.optHideLinks": GuidedInfoDisplayName = "Hide link styling"
+        Case "frmHyperlinkRemover.optRemoveLinks": GuidedInfoDisplayName = "Remove hyperlinks"
         Case "frmListCleanup.optAll": GuidedInfoDisplayName = "All list fixes"
         Case "frmListCleanup.optBullets": GuidedInfoDisplayName = "Bullet conversion"
         Case "frmListCleanup.optNumbering": GuidedInfoDisplayName = "Number conversion"
@@ -1443,10 +2314,8 @@ Private Function GuidedInfoDisplayName(ByVal formName As String, ByVal controlNa
         Case "frmListCleanup.chkNormalizeNumbering": GuidedInfoDisplayName = "Number conversion"
         Case "frmListCleanup.chkFixIndent": GuidedInfoDisplayName = "Indentation"
         Case "frmListCleanup.chkHyphenToBullets": GuidedInfoDisplayName = "Hyphen lines"
-        Case "frmMetadataScrubber.chkProperties": GuidedInfoDisplayName = "Document properties"
-        Case "frmMetadataScrubber.chkPersonalInfo": GuidedInfoDisplayName = "Personal info"
-        Case "frmMetadataScrubber.chkComments": GuidedInfoDisplayName = "Comments"
-        Case "frmMetadataScrubber.chkRevisions": GuidedInfoDisplayName = "Tracked changes"
+        Case "frmFinalReview.chkComments": GuidedInfoDisplayName = "Comments"
+        Case "frmFinalReview.chkRevisions": GuidedInfoDisplayName = "Tracked changes"
         Case "frmObjectRemover.chkPictures": GuidedInfoDisplayName = "Pictures"
         Case "frmObjectRemover.chkTextBoxes": GuidedInfoDisplayName = "Text boxes"
         Case "frmObjectRemover.chkFrames": GuidedInfoDisplayName = "Frames"
@@ -1518,17 +2387,15 @@ Private Function GuidedInfoAdvisory(ByVal formName As String, ByVal controlName 
         Case "frmBreakNormalizer.optConvertContinuous": GuidedInfoAdvisory = "Preserves flow without forcing a new page."
         Case "frmBreakNormalizer.optConvertEvenPage": GuidedInfoAdvisory = "Forces converted content to begin on the next even page."
         Case "frmBreakNormalizer.optConvertOddPage": GuidedInfoAdvisory = "Forces converted content to begin on the next odd page."
-        Case "frmCapitalizationCleanup.optAll": GuidedInfoAdvisory = "Fixes only obvious capitalization damage and leaves already-reasonable wording alone."
-        Case "frmCapitalizationCleanup.optSentence": GuidedInfoAdvisory = "Planned for a later version."
-        Case "frmCapitalizationCleanup.optTitle": GuidedInfoAdvisory = "Planned for a later version."
-        Case "frmCapitalizationCleanup.optUpper": GuidedInfoAdvisory = "Legacy hidden option retained only for compatibility with existing forms."
-        Case "frmCapitalizationCleanup.optLower": GuidedInfoAdvisory = "Legacy hidden option retained only for compatibility with existing forms."
-        Case "frmCapitalizationCleanup.optCustom": GuidedInfoAdvisory = "Lets you turn the smart-repair protections on and off yourself."
+        Case "frmCapitalizationCleanup.optAll": GuidedInfoAdvisory = "Repairs sentence starts, obvious all-caps damage, headings, acronyms, names, and brands using every protection."
+        Case "frmCapitalizationCleanup.optCustom": GuidedInfoAdvisory = "Lets you turn individual capitalization protections on and off."
         Case "frmCapitalizationCleanup.chkSentence": GuidedInfoAdvisory = "Reduces false sentence starts after common abbreviations such as Dr. or Inc."
         Case "frmCapitalizationCleanup.chkTitle": GuidedInfoAdvisory = "Keeps terms such as API, PDF, or VBA uppercase after repair."
         Case "frmCapitalizationCleanup.chkUpper": GuidedInfoAdvisory = "Restores known mixed-case names and brands such as iPhone or GitHub."
-        Case "frmCapitalizationCleanup.chkLower": GuidedInfoAdvisory = "Avoids over-normalizing short heading-like lines."
-        Case "frmCapitalizationCleanup.chkSmartSentences": GuidedInfoAdvisory = "Treats quotes, bullets, and punctuation boundaries more carefully."
+        Case "frmCapitalizationCleanup.chkLower": GuidedInfoAdvisory = "Repairs likely headings in title case while preserving protected terms."
+        Case "frmCapitalizationCleanup.chkHeadingParentheses": GuidedInfoAdvisory = "Also title-cases balanced parenthetical wording as its own heading segment; it is off by default."
+        Case "frmCapitalizationCleanup.chkSmartSentences": GuidedInfoAdvisory = "Recognizes quotes, bullets, and punctuation while finding sentence starts."
+        Case "frmCapitalizationCleanup.cmdEditExceptions": GuidedInfoAdvisory = "Adds document-specific names, brands, and acronyms that should keep their exact capitalization."
         Case "frmDuplicateDetector.optHighlightOnly": GuidedInfoAdvisory = "Marks likely duplicates for review without deleting any text."
         Case "frmDuplicateDetector.optRemoveDupes": GuidedInfoAdvisory = "Deletes later duplicates and keeps the first surviving paragraph in each group."
         Case "frmDuplicateDetector.optMatchExact": GuidedInfoAdvisory = "Fastest check; punctuation and spacing must still match."
@@ -1563,7 +2430,8 @@ Private Function GuidedInfoAdvisory(ByVal formName As String, ByVal controlName 
         Case "frmHeaderFooterStandardizer.optAlignLeft": GuidedInfoAdvisory = "Sets the chosen header or footer paragraphs to left alignment."
         Case "frmHeaderFooterStandardizer.optAlignCenter": GuidedInfoAdvisory = "Sets the chosen header or footer paragraphs to centered alignment."
         Case "frmHeaderFooterStandardizer.optAlignRight": GuidedInfoAdvisory = "Sets the chosen header or footer paragraphs to right alignment."
-        Case "frmHyperlinkRemover.chkRemoveFormat": GuidedInfoAdvisory = "Also clears the blue underline styling after the link itself is removed."
+        Case "frmHyperlinkRemover.optHideLinks": GuidedInfoAdvisory = "Keeps hyperlink targets available while making the visible text look normal."
+        Case "frmHyperlinkRemover.optRemoveLinks": GuidedInfoAdvisory = "Removes hyperlink targets from the document while keeping the visible words."
         Case "frmListCleanup.optAll": GuidedInfoAdvisory = "Runs bullet conversion, number conversion, and indentation cleanup together."
         Case "frmListCleanup.optBullets": GuidedInfoAdvisory = "Converts manual bullet-like lines without changing numbered lists."
         Case "frmListCleanup.optNumbering": GuidedInfoAdvisory = "Converts typed number patterns into real Word numbering."
@@ -1573,10 +2441,8 @@ Private Function GuidedInfoAdvisory(ByVal formName As String, ByVal controlName 
         Case "frmListCleanup.chkNormalizeNumbering": GuidedInfoAdvisory = "Turns typed numbering into Word-managed numbered lists."
         Case "frmListCleanup.chkFixIndent": GuidedInfoAdvisory = "Straightens list left indents without changing bullet or number text."
         Case "frmListCleanup.chkHyphenToBullets": GuidedInfoAdvisory = "Promotes plain hyphen-led lines into proper bullet items."
-        Case "frmMetadataScrubber.chkProperties": GuidedInfoAdvisory = "Clears built-in file fields such as Title, Author, and Company."
-        Case "frmMetadataScrubber.chkPersonalInfo": GuidedInfoAdvisory = "Removes names tied to saves and tracked revisions."
-        Case "frmMetadataScrubber.chkComments": GuidedInfoAdvisory = "Deletes reviewer comments from the document."
-        Case "frmMetadataScrubber.chkRevisions": GuidedInfoAdvisory = "Accepts tracked changes first, so markup cannot be reviewed afterward."
+        Case "frmFinalReview.chkComments": GuidedInfoAdvisory = "Deletes reviewer comments from the document."
+        Case "frmFinalReview.chkRevisions": GuidedInfoAdvisory = "Accepts tracked changes first, so markup cannot be reviewed afterward."
         Case "frmObjectRemover.chkTables": GuidedInfoAdvisory = "Deletes whole tables and everything inside them, not just table formatting."
         Case "frmParagraphCleanup.optAll": GuidedInfoAdvisory = "Runs the tool's full paragraph cleanup pass."
         Case "frmParagraphCleanup.optCustom": GuidedInfoAdvisory = "Shows the individual paragraph repairs so you can combine them."
@@ -1667,24 +2533,43 @@ Private Function GuidedOptionHeight(ByVal ctl As Object) As Single
         GuidedOptionHeight = 18
     End If
 End Function
-Private Sub LayoutGuidedScopeRow(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single)
+Private Sub LayoutGuidedTitleReset(ByVal toolForm As Object, ByVal M As Single, ByVal contentW As Single)
     On Error Resume Next
-    Const GAP As Single = 4
-    Dim choiceW As Single
-    choiceW = (contentW - GAP) / 2
-    StyleGuidedOption toolForm.Controls("optScopeDocument")
-    StyleGuidedOption toolForm.Controls("optScopeSelection")
-    If Not ScopeSelectionIsAvailable(toolForm) Then
-        HideGuidedControl toolForm.Controls("optScopeDocument")
-        HideGuidedControl toolForm.Controls("optScopeSelection")
-        Exit Sub
-    End If
+    Dim resetW As Single
+    Dim resetH As Single
+    Dim resetLeft As Single
+    Dim resetTop As Single
+    resetW = 50
+    resetH = 18
+    resetLeft = M + contentW - resetW
+    resetTop = 8
 
-    toolForm.Controls("optScopeDocument").Move M + 8, y, choiceW - 8, 18
-    toolForm.Controls("optScopeSelection").Move M + choiceW + GAP + 8, y, choiceW - 8, 18
-    toolForm.Controls("optScopeDocument").Visible = True
-    toolForm.Controls("optScopeSelection").Visible = True
-    y = y + 22
+    StyleGuidedButton toolForm.Controls("cmdReset"), False
+    toolForm.Controls("cmdReset").Caption = "Reset"
+    toolForm.Controls("cmdReset").Font.Size = 7.5
+    toolForm.Controls("cmdReset").Font.Bold = False
+    toolForm.Controls("cmdReset").Move resetLeft, resetTop, resetW, resetH
+    toolForm.Controls("cmdReset").Visible = True
+    HideGuidedControl toolForm.Controls("cmdRun")
+    HideGuidedControl toolForm.Controls("cmdHelp")
+End Sub
+Public Sub RefreshScopeSelectionState(ByVal toolForm As Object, Optional ByVal preferSelectionWhenAvailable As Boolean = False)
+    On Error Resume Next
+    If Not ScopeSelectionIsAvailable(toolForm) Then Exit Sub
+
+    Dim selectionAvailable As Boolean
+    selectionAvailable = (Selection.Type = wdSelectionNormal Or Selection.Type = wdSelectionColumn)
+    toolForm.Controls("optScopeSelection").Enabled = selectionAvailable
+
+    If selectionAvailable Then
+        If preferSelectionWhenAvailable Then
+            toolForm.Controls("optScopeSelection").Value = True
+        ElseIf Not toolForm.Controls("optScopeSelection").Value And Not toolForm.Controls("optScopeDocument").Value Then
+            toolForm.Controls("optScopeDocument").Value = True
+        End If
+    ElseIf toolForm.Controls("optScopeSelection").Value Then
+        toolForm.Controls("optScopeDocument").Value = True
+    End If
 End Sub
 Private Function ScopeSelectionIsAvailable(ByVal toolForm As Object) As Boolean
     On Error Resume Next
@@ -1692,32 +2577,41 @@ Private Function ScopeSelectionIsAvailable(ByVal toolForm As Object) As Boolean
         InStr(1, toolForm.Controls("optScopeDocument").Caption, "(always)", vbTextCompare) = 0 _
         And Len(Trim$(toolForm.Controls("optScopeSelection").Caption)) > 0
 End Function
-Private Sub LayoutGuidedPreviewButton(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single)
+Private Sub LayoutGuidedPreviewAndScopeRow(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single)
     On Error Resume Next
-    Const GAP As Single = 4
-    Const BH As Single = 24
     StyleGuidedButton toolForm.Controls("cmdPreview"), True
     toolForm.Controls("cmdPreview").Caption = "Preview"
-    toolForm.Controls("cmdPreview").Move M, y, contentW, BH
-    toolForm.Controls("cmdPreview").Visible = True
-    y = y + BH + GAP
-End Sub
-Private Sub LayoutGuidedActionButtons(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single)
-    On Error Resume Next
-    Const GAP As Single = 4
-    Const BH As Single = 24
-    Dim halfW As Single
-    halfW = (contentW - GAP) / 2
-    StyleGuidedButton toolForm.Controls("cmdRun"), False
-    StyleGuidedButton toolForm.Controls("cmdReset"), False
-    toolForm.Controls("cmdRun").Caption = "Apply"
-    toolForm.Controls("cmdReset").Caption = "Reset"
-    toolForm.Controls("cmdRun").Move M, y, halfW, BH
-    toolForm.Controls("cmdReset").Move M + halfW + GAP, y, halfW, BH
-    toolForm.Controls("cmdRun").Visible = True
-    toolForm.Controls("cmdReset").Visible = True
+    HideGuidedControl toolForm.Controls("cmdRun")
     HideGuidedControl toolForm.Controls("cmdHelp")
-    y = y + BH + 10
+
+    If ScopeSelectionIsAvailable(toolForm) Then
+        Dim scopeW As Single
+        Dim previewW As Single
+        Dim previewLeft As Single
+        Dim scopeLeft As Single
+        scopeW = 154
+        previewW = contentW - scopeW - 10
+        scopeLeft = M
+        previewLeft = M + scopeW + 10
+
+        StyleGuidedOption toolForm.Controls("optScopeSelection")
+        StyleGuidedOption toolForm.Controls("optScopeDocument")
+        toolForm.Controls("optScopeSelection").Caption = "Selected text only"
+        toolForm.Controls("optScopeDocument").Caption = "Entire document"
+        toolForm.Controls("optScopeSelection").Move scopeLeft, y, scopeW, 18
+        toolForm.Controls("optScopeDocument").Move scopeLeft, y + 20, scopeW, 18
+        toolForm.Controls("optScopeSelection").Visible = True
+        toolForm.Controls("optScopeDocument").Visible = True
+        toolForm.Controls("cmdPreview").Move previewLeft, y, previewW, 42
+        toolForm.Controls("cmdPreview").Visible = True
+        y = y + 48
+    Else
+        HideGuidedControl toolForm.Controls("optScopeDocument")
+        HideGuidedControl toolForm.Controls("optScopeSelection")
+        toolForm.Controls("cmdPreview").Move M, y, contentW, 30
+        toolForm.Controls("cmdPreview").Visible = True
+        y = y + 36
+    End If
 End Sub
 Private Function GuidedToolName(ByVal formName As String) As String
     Select Case formName
@@ -1733,9 +2627,9 @@ Private Function GuidedToolName(ByVal formName As String) As String
         Case "frmBreakNormalizer": GuidedToolName = "Break Normalizer"
         Case "frmDocumentTrim": GuidedToolName = "Document Trim"
         Case "frmFormattingStripper": GuidedToolName = "Formatting Stripper"
-        Case "frmHyperlinkRemover": GuidedToolName = "Hyperlink Remover"
+        Case "frmHyperlinkRemover": GuidedToolName = "Hyperlink Cleaner"
         Case "frmSoftReturnConverter": GuidedToolName = "Soft Return Converter"
-        Case "frmMetadataScrubber": GuidedToolName = "Metadata Scrubber"
+        Case "frmFinalReview": GuidedToolName = "Final Review"
         Case "frmStyleCleanup": GuidedToolName = "Style Cleanup"
         Case "frmFootnoteRemover": GuidedToolName = "Footnote / Endnote Remover"
         Case "frmHeaderFooterStandardizer": GuidedToolName = "Header / Footer Standardizer"
@@ -1745,7 +2639,7 @@ Private Function GuidedToolName(ByVal formName As String) As String
 End Function
 Private Function GuidedToolIntro(ByVal formName As String) As String
     Select Case formName
-        Case "frmCapitalizationCleanup": GuidedToolIntro = "Choose how strongly capitalization should be repaired."
+        Case "frmCapitalizationCleanup": GuidedToolIntro = "Use the recommended repair, or customize its protections."
         Case "frmPunctuationCleanup": GuidedToolIntro = "Choose which punctuation patterns to normalize."
         Case "frmUnicodeCleanup": GuidedToolIntro = "Choose which invisible or problem characters to clean."
         Case "frmSpacingCleanup": GuidedToolIntro = "Choose which spacing problems to fix."
@@ -1757,9 +2651,9 @@ Private Function GuidedToolIntro(ByVal formName As String) As String
         Case "frmBreakNormalizer": GuidedToolIntro = "Choose how page and section breaks should be normalized."
         Case "frmDocumentTrim": GuidedToolIntro = "Remove extra empty paragraphs at the end of the document."
         Case "frmFormattingStripper": GuidedToolIntro = "Choose how direct formatting should be stripped while keeping content."
-        Case "frmHyperlinkRemover": GuidedToolIntro = "Choose whether link styling should be removed with the hyperlinks."
+        Case "frmHyperlinkRemover": GuidedToolIntro = "Choose whether to hide hyperlink styling or remove hyperlink targets."
         Case "frmSoftReturnConverter": GuidedToolIntro = "Choose which line-break conversion to apply."
-        Case "frmMetadataScrubber": GuidedToolIntro = "Choose which document metadata and review artifacts to remove."
+        Case "frmFinalReview": GuidedToolIntro = "Choose which review markup should be finalized before sharing."
         Case "frmStyleCleanup": GuidedToolIntro = "Choose which style cleanup actions to run."
         Case "frmFootnoteRemover": GuidedToolIntro = "Choose which notes to remove and whether to keep their text."
         Case "frmHeaderFooterStandardizer": GuidedToolIntro = "Choose how headers and footers should be standardized or cleared."
@@ -1771,8 +2665,11 @@ Public Sub ApplyMSFormTitleStrategy(ByVal toolForm As Object, Optional bodyOwnsT
     ' Method 1: if the form body already identifies the workflow, blank the native UserForm caption.
     ' Method 2: otherwise keep the native caption and hide only legacy body-title labels.
     On Error Resume Next
-    If bodyOwnsTitle Then toolForm.Caption = ""
-    HideLegacyTitleControls toolForm
+    If bodyOwnsTitle Then
+        toolForm.Caption = ""
+    Else
+        HideLegacyTitleControls toolForm
+    End If
     On Error GoTo 0
 End Sub
 Private Sub HideLegacyTitleControls(ByVal toolForm As Object)
@@ -1791,29 +2688,90 @@ Private Function IsLegacyTitleControlName(controlName As String) As Boolean
     IsLegacyTitleControlName = (nm = "lbltitle" Or Left$(nm, 8) = "lbltitle")
 End Function
 Public Function GetTargetRange() As Range
-    If Selection.Type = wdSelectionNormal Or Selection.Type = wdSelectionColumn Then
+    If gPreviewScopeHasRange Then
+        If ActiveDocument.FullName = gPreviewScopeDocumentKey Or ActiveDocument.Name = gPreviewScopeDocumentKey Then
+            Set GetTargetRange = ActiveDocument.Range(gPreviewScopeStart, gPreviewScopeEnd)
+        Else
+            Set GetTargetRange = ActiveDocument.Content
+        End If
+    ElseIf Selection.Type = wdSelectionNormal Or Selection.Type = wdSelectionColumn Then
         Set GetTargetRange = Selection.Range
     Else
         Set GetTargetRange = ActiveDocument.Content
     End If
 End Function
-Public Function ParagraphsInRange(scopeRange As Range) As Collection
-    Dim col As Collection: Set col = New Collection
-    Dim p As Paragraph
-    For Each p In ActiveDocument.Paragraphs
-        If p.Range.Start >= scopeRange.Start And p.Range.End <= scopeRange.End Then col.Add p
-    Next p
-    Set ParagraphsInRange = col
+Public Function ParagraphContainedInRange(ByVal paragraphItem As Paragraph, ByVal scopeRange As Range) As Boolean
+    Dim paragraphRange As Range
+    Set paragraphRange = paragraphItem.Range
+
+    ParagraphContainedInRange = (paragraphRange.Start >= scopeRange.Start And _
+                                 paragraphRange.End <= scopeRange.End)
 End Function
-Public Sub ShowCleanupReport(reportTitle As String, results As Collection)
-    If Not GetShowCompletionReviewAfterApplySetting() Then Exit Sub
-    If results.Count = 0 Then
-        MsgBox "No items were changed.", vbInformation, reportTitle: Exit Sub
-    End If
-    Dim reportText As String: reportText = reportTitle & vbCrLf & vbCrLf
-    Dim lineItem As Variant
-    For Each lineItem In results
-        reportText = reportText & "  " & lineItem & vbCrLf
-    Next lineItem
-    MsgBox reportText, vbInformation, reportTitle
+
+Public Function ParagraphOverlapsRange(ByVal paragraphItem As Paragraph, ByVal scopeRange As Range) As Boolean
+    Dim paragraphRange As Range
+    Set paragraphRange = paragraphItem.Range
+
+    ParagraphOverlapsRange = (paragraphRange.End > scopeRange.Start And _
+                              paragraphRange.Start < scopeRange.End)
+End Function
+
+Public Function ParagraphOverlapsRangeOutsideTable(ByVal paragraphItem As Paragraph, ByVal scopeRange As Range) As Boolean
+    If paragraphItem.Range.Information(wdWithInTable) Then Exit Function
+    ParagraphOverlapsRangeOutsideTable = ParagraphOverlapsRange(paragraphItem, scopeRange)
+End Function
+
+Public Function ParagraphBodyText(ByVal paragraphItem As Paragraph) As String
+    Dim fullText As String
+    fullText = paragraphItem.Range.Text
+    ParagraphBodyText = Left$(fullText, ParagraphBodyLength(fullText))
+End Function
+
+Public Function ParagraphBodyRange(ByVal paragraphItem As Paragraph) As Range
+    Dim bodyRange As Range
+    Dim fullText As String
+    Set bodyRange = paragraphItem.Range.Duplicate
+    fullText = bodyRange.Text
+    bodyRange.End = bodyRange.Start + ParagraphBodyLength(fullText)
+    Set ParagraphBodyRange = bodyRange
+End Function
+
+Public Sub ReplaceParagraphBodyText(ByVal paragraphItem As Paragraph, ByVal replacementText As String)
+    Dim bodyRange As Range
+    Set bodyRange = ParagraphBodyRange(paragraphItem)
+    bodyRange.Text = replacementText
 End Sub
+
+Private Function ParagraphBodyLength(ByVal fullText As String) As Long
+    Dim bodyLength As Long
+    bodyLength = Len(fullText)
+
+    Do While bodyLength > 0
+        If Mid$(fullText, bodyLength, 1) = vbCr Or Mid$(fullText, bodyLength, 1) = Chr$(7) Then
+            bodyLength = bodyLength - 1
+        Else
+            Exit Do
+        End If
+    Loop
+
+    ParagraphBodyLength = bodyLength
+End Function
+
+Public Function CountPreviewFindMatches(ByVal searchRange As Range, ByVal findText As String) As Long
+    Dim matchRange As Range
+    Set matchRange = searchRange.Duplicate
+
+    With matchRange.Find
+        .ClearFormatting
+        .Replacement.ClearFormatting
+        .Text = findText
+        .Forward = True
+        .Wrap = wdFindStop
+        .MatchWildcards = False
+
+        Do While .Execute
+            CountPreviewFindMatches = CountPreviewFindMatches + 1
+            matchRange.Collapse wdCollapseEnd
+        Loop
+    End With
+End Function

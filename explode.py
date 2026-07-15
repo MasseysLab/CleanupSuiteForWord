@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2026 Christopher Travis Massey
+# Copyright (c) 2026 MasseysLab
 # See LICENSE for full terms.
 
 """

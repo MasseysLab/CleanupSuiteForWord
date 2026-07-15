@@ -80,12 +80,22 @@ Private Sub chkBreakLinks_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub optAlignLeft_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub optAlignCenter_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub optAlignRight_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub cmdRiskPlacementHeaderFooterStandardize_Click(): ShowToolRiskChoiceExplanation "Standardize headers and footers", "Formatting change", "Keeps content while cleaning selected header and footer formatting." : End Sub
+Private Sub cmdRiskPlacementHeaderFooterClear_Click(): ShowToolRiskChoiceExplanation "Clear headers and footers", "Removes content", "Deletes selected header or footer content outright." : End Sub
+Private Sub cmdRiskPlacementHeaderFooterHeaders_Click(): ShowToolRiskChoiceExplanation "Include headers", "Structure change", "Applies the chosen action to document headers." : End Sub
+Private Sub cmdRiskPlacementHeaderFooterFooters_Click(): ShowToolRiskChoiceExplanation "Include footers", "Structure change", "Applies the chosen action to document footers." : End Sub
+Private Sub cmdRiskPlacementHeaderFooterFont_Click(): ShowToolRiskChoiceExplanation "Reset header/footer font", "Formatting change", "Returns header and footer text to the document default font." : End Sub
+Private Sub cmdRiskPlacementHeaderFooterSpacing_Click(): ShowToolRiskChoiceExplanation "Remove header/footer spacing", "Formatting change", "Clears paragraph spacing in header and footer lines." : End Sub
+Private Sub cmdRiskPlacementHeaderFooterBreakLinks_Click(): ShowToolRiskChoiceExplanation "Unlink sections", "Structure change", "Separates section headers and footers from previous sections." : End Sub
+Private Sub cmdRiskPlacementHeaderFooterAlignment_Click(): ShowToolRiskChoiceExplanation "Set alignment", "Formatting change", "Applies the selected alignment to header or footer paragraphs." : End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub
 Public Sub PreviewFromPanel()
     chkPreviewOnly.Value = True
+    BeginPreviewActionIndicator Me
     cmdRun_Click
+    EndPreviewActionIndicator
     chkPreviewOnly.Value = False
 End Sub
 Private Sub cmdReset_Click()
@@ -118,22 +128,44 @@ Private Sub cmdRun_Click()
     Dim baseSize As Single: baseSize = ActiveDocument.Styles(wdStyleNormal).Font.Size
     Dim sec As Section, hf As HeaderFooter
     If previewOnly Then
-        Dim pc As Long: pc = 0
+        Dim headerAreas As Long
+        Dim footerAreas As Long
         For Each sec In ActiveDocument.Sections
             If doHeaders Then
                 For Each hf In sec.Headers
-                    pc = pc + 1
+                    headerAreas = headerAreas + 1
                 Next hf
             End If
             If doFooters Then
                 For Each hf In sec.Footers
-                    pc = pc + 1
+                    footerAreas = footerAreas + 1
                 Next hf
             End If
         Next sec
-        Dim verb As String: verb = "standardized"
-        If doClear Then verb = "cleared"
-        ShowPreviewActions Me, "Header / Footer Standardizer", "Preview complete." & vbCrLf & pc & " header/footer areas across " & ActiveDocument.Sections.Count & " sections would be " & verb & "."
+        Dim areaCount As Long: areaCount = headerAreas + footerAreas
+        Dim standardizeFont As Boolean: standardizeFont = doFont And Not doClear
+        Dim standardizeSpacing As Boolean: standardizeSpacing = doSpacing And Not doClear
+        Dim standardizeAlignment As Boolean: standardizeAlignment = doAlign And Not doClear
+        Dim previewCleared As Long
+        Dim previewFont As Long
+        Dim previewSpacing As Long
+        Dim previewAlignment As Long
+        Dim previewUnlinked As Long
+        If doClear Then previewCleared = areaCount
+        If standardizeFont Then previewFont = areaCount
+        If standardizeSpacing Then previewSpacing = areaCount
+        If standardizeAlignment Then previewAlignment = areaCount
+        If breakLinks Then previewUnlinked = areaCount
+        Dim previewRows As Collection
+        Set previewRows = NewPreviewSummaryRows()
+        AddPreviewSummaryRow previewRows, "Header areas", headerAreas, True, (Not doHeaders)
+        AddPreviewSummaryRow previewRows, "Footer areas", footerAreas, True, (Not doFooters)
+        AddPreviewSummaryRow previewRows, "Cleared areas", previewCleared, True, (Not doClear)
+        AddPreviewSummaryRow previewRows, "Font reset areas", previewFont, True, (Not standardizeFont)
+        AddPreviewSummaryRow previewRows, "Spacing reset areas", previewSpacing, True, (Not standardizeSpacing)
+        AddPreviewSummaryRow previewRows, "Alignment areas", previewAlignment, True, (Not standardizeAlignment)
+        AddPreviewSummaryRow previewRows, "Unlinked sections", previewUnlinked, True, (Not breakLinks)
+        ShowPreviewActionsSummary Me, "Header / Footer Standardizer", previewRows
         Exit Sub
     End If
     MarkCleanupStart "Header / Footer Standardizer"
@@ -154,10 +186,6 @@ Private Sub cmdRun_Click()
             Next hf
         End If
     Next sec
-    Dim results As Collection: Set results = New Collection
-    results.Add "Header/footer areas processed: " & cntAreas
-    If doClear Then results.Add "Areas that had content cleared: " & cntCleared
-    ShowCleanupReport "Header / Footer Standardizer", results
     undoRec.EndCustomRecord
     MarkCleanupEnd
     MarkCleanupToolApplied

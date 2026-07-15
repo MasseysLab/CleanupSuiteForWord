@@ -1,11 +1,14 @@
 Option Explicit
-Public Const SUITE_VERSION As String = "0.8.5"
+Public Const SUITE_VERSION As String = "0.9.0-alpha"
 Public gRibbon As Object   ' IRibbonUI -- stored for optional Invalidate calls
 Sub ShowCleanupSuiteLauncher()
     frmCleanupSuiteLauncher.Show
 End Sub
 Public Sub RibbonOnLoad(ribbon As Object)
     Set gRibbon = ribbon
+End Sub
+Public Sub AutoExec()
+    ScheduleCleanupSuiteUpdateCheck
 End Sub
 Public Sub AutoOpen()
     ' Fires whenever any document is opened while this template is active.
@@ -24,4 +27,12 @@ Public Sub AutoOpen()
         cp.Delete
     End If
     On Error GoTo 0
+End Sub
+
+Public Sub AutoClose()
+    RestoreCleanupSuiteTransientState
+End Sub
+
+Public Sub AutoExit()
+    RestoreCleanupSuiteTransientState
 End Sub

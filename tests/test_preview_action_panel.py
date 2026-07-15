@@ -23,6 +23,7 @@ class PreviewActionPanelTests(unittest.TestCase):
     def test_preview_panel_helpers_manage_panel_lifecycle_and_state(self):
         helpers = read("src/modules/modCleanupHelpers.bas")
         panel = read("src/forms/frmPreviewActions.bas")
+        installer = read("src/installer/installer.bas")
 
         self.assertIn("Public gPreviewActionPanel As Object", helpers)
         self.assertIn("Private gPreviewActionPanelHasPosition As Boolean", helpers)
@@ -35,74 +36,116 @@ class PreviewActionPanelTests(unittest.TestCase):
         self.assertIn("panel.Left = gPreviewActionPanelLeft", helpers)
         self.assertIn("panel.Top = gPreviewActionPanelTop", helpers)
         self.assertIn("Public Sub ShowPreviewActions", helpers)
-        self.assertIn("gPreviewActionPanel.Show", helpers)
+        self.assertIn("Public Function NewPreviewSummaryRows() As Collection", helpers)
+        self.assertIn("Public Sub AddPreviewSummaryRow(ByVal rows As Collection, ByVal itemText As String, ByVal countValue As Variant, Optional ByVal isUnhighlighted As Boolean = False, Optional ByVal isInactive As Boolean = False)", helpers)
+        self.assertIn("Public Sub ShowPreviewActionsSummary(ByVal sourceForm As Object, ByVal toolName As String, ByVal rows As Collection)", helpers)
+        self.assertIn("rows.Add PreviewSummaryRowText(itemText, countValue, isUnhighlighted, isInactive)", helpers)
+        self.assertIn("PreviewSummaryRowText", helpers)
+        self.assertIn('If isUnhighlighted Then displayText = displayText & " (unhighlighted)"', helpers)
+        self.assertIn('displayText & vbTab & CStr(countValue) & vbTab & IIf(isInactive, "inactive", "")', helpers)
+        self.assertIn('"inactive"', helpers)
+        self.assertIn("isUnhighlighted", helpers)
+        self.assertIn("isInactive", helpers)
+        self.assertNotIn('"not previewed"', helpers)
+        self.assertIn("Private gPreviewScopeHasRange As Boolean", helpers)
+        self.assertIn("Private gPreviewScopeStart As Long", helpers)
+        self.assertIn("Private gPreviewScopeEnd As Long", helpers)
+        self.assertIn("Private gPreviewScopeDocumentKey As String", helpers)
+        self.assertIn("Private Sub CapturePreviewScopeRange(ByVal sourceForm As Object)", helpers)
+        self.assertIn("Public Sub ClearPreviewScopeRange()", helpers)
+        self.assertIn("CapturePreviewScopeRange sourceForm", helpers)
+        self.assertIn("ClearPreviewScopeRange", helpers)
+        self.assertIn("If gPreviewScopeHasRange Then", helpers)
+        self.assertIn("Set GetTargetRange = ActiveDocument.Range(gPreviewScopeStart, gPreviewScopeEnd)", helpers)
+        self.assertLess(
+            helpers.index("If gPreviewScopeHasRange Then"),
+            helpers.index("If Selection.Type = wdSelectionNormal Or Selection.Type = wdSelectionColumn Then"),
+        )
+        self.assertIn("gPreviewActionPanel.Show vbModal", helpers)
+        self.assertIn("gPreviewActionPanel.Show vbModeless", helpers)
+        self.assertIn("ResumePreviewActionPanelModelessIfRequested", helpers)
         self.assertLess(
             helpers.index("ApplyPreviewActionPanelPosition gPreviewActionPanel"),
             helpers.index("gPreviewActionPanel.Show"),
         )
-        self.assertNotIn("vbModeless", helpers)
+        self.assertIn("vbModeless", helpers)
         self.assertIn("Public Sub Configure", panel)
+        self.assertIn("Public Sub ConfigureSummary(sourceForm As Object, toolName As String, rows As Collection)", panel)
         self.assertIn("Me.Caption = \"\"", panel)
         self.assertIn('CallByName mSourceForm, "RunAfterPreview", VbMethod', panel)
-        self.assertIn('CallByName src, "PreviewFromPanel", VbMethod', panel)
-        self.assertIn("RemoveAllHighlighting ActiveDocument.Content", panel)
-        self.assertIn("Me.Show vbModeless", panel)
+        self.assertNotIn('CallByName src, "PreviewFromPanel", VbMethod', panel)
+        self.assertIn("RemovePreviewHighlighting mPreviewDocument", panel)
+        self.assertIn("ClearPreviewScopeRange", panel)
+        self.assertIn("ConsumeModelessResumeRequest", panel)
+        self.assertIn("Private Sub cmdPreviousPage_Click()", panel)
+        self.assertIn("Private Sub cmdNextPage_Click()", panel)
+        self.assertIn("Application.Browser.Target = wdBrowsePage", panel)
+        self.assertIn("Application.Browser.Previous", panel)
+        self.assertIn("Application.Browser.Next", panel)
         self.assertIn("Me.Hide", panel)
-        self.assertIn("mSourceForm.Show", panel)
+        self.assertIn("src.Show", panel)
+        self.assertIn("ReturnToLauncherAfterDetachedToolSession", panel)
         self.assertNotIn("ShowCleanupSuiteLauncher", panel)
         self.assertIn("Private Sub LayoutPanel()", panel)
         self.assertIn("LayoutPanel", panel)
-        self.assertIn("Private Sub ShowModelessAtCurrentPosition()", panel)
-        self.assertIn("Dim panelLeft As Single", panel)
-        self.assertIn("Dim panelTop As Single", panel)
-        self.assertIn("panelLeft = Me.Left", panel)
-        self.assertIn("panelTop = Me.Top", panel)
-        self.assertIn("Me.Left = panelLeft", panel)
-        self.assertIn("Me.Top = panelTop", panel)
+        self.assertIn("RenderSummaryTable rows", panel)
+        self.assertIn('RenderSummaryCell "lblSummaryHeaderItem", "Item"', panel)
+        self.assertIn('RenderSummaryCell "lblSummaryHeaderCount", "#"', panel)
+        self.assertNotIn("RenderSummaryStatusCell", panel)
+        self.assertIn('If UBound(rowParts) >= 2 Then isInactive = (CStr(rowParts(2)) = "inactive")', panel)
+        self.assertIn('tableLeft = M + ((CONTENT_W - TABLE_W) / 2)', panel)
+        self.assertIn('RenderSummaryCell "lblSummaryItem" & CStr(rowIndex), itemText, tableLeft, y, ITEM_W, ROW_H, False, isInactive', panel)
+        self.assertIn('RenderSummaryCell "lblSummaryCount" & CStr(rowIndex), countText, tableLeft + ITEM_W, y, COUNT_W, ROW_H, False, isInactive', panel)
+        self.assertIn("ctl.BorderStyle = fmBorderStyleSingle", panel)
+        self.assertIn("If isInactive Then", panel)
+        self.assertIn("ctl.ForeColor = RGB(145, 145, 145)", panel)
+        self.assertIn("ctl.BackColor = RGB(245, 245, 245)", panel)
+        self.assertIn('InStr(1, controlName, "Count", vbTextCompare) > 0', panel)
+        self.assertIn("ctl.TextAlign = 2", panel)
+        self.assertNotIn("lblSummaryStatus", panel)
+        self.assertIn("SummaryTableHeight", panel)
+        self.assertIn("Me.Height = MaxSingle(MIN_FORM_H, desiredInsideH)", panel)
+        self.assertIn("If Me.InsideHeight < desiredInsideH Then", panel)
+        self.assertIn("mResumeModelessAfterModal = True", panel)
         self.assertIn("RememberPreviewActionPanelPosition Me.Left, Me.Top", panel)
-        self.assertLess(
-            panel.index("RememberPreviewActionPanelPosition Me.Left, Me.Top"),
-            panel.index('CallByName src, "PreviewFromPanel", VbMethod'),
-        )
+        self.assertIn("If Not mPreviewOn Then Exit Sub", panel)
         self.assertIn("Private Sub StyleActionBar()", panel)
         self.assertIn("Private Sub StyleLabel", panel)
         self.assertIn("Private Sub StyleButton", panel)
         self.assertIn("StyleLabel lblHint, 8, True", panel)
-        self.assertIn("StyleLabel lblSummary, 7.5, False", panel)
-        self.assertIn("ctl.Font.Size = 7.5", panel)
+        self.assertIn("ctl.Font.Size = 8", panel)
         self.assertIn("Const FORM_W As Single = 283", panel)
         self.assertIn("Const MIN_FORM_H As Single = 90", panel)
-        self.assertIn("Const SUMMARY_LINE_H As Single = 11", panel)
-        self.assertIn("Const MAX_SUMMARY_H As Single = 88", panel)
         self.assertIn("Const CONTENT_W As Single = 257", panel)
         self.assertIn("Const BTN_W As Single = (CONTENT_W - (2 * GAP)) / 3", panel)
-        self.assertIn("Const BH As Single = 18", panel)
+        self.assertIn("Private Function MeasuredPreviewButtonHeight() As Single", panel)
+        self.assertIn("Private Sub FitPreviewButtonCaption", panel)
+        self.assertIn("MeasuredPreviewButtonHeight = MaxSingle(25, maximumTextHeight + 12)", panel)
         self.assertIn("Const GAP As Single = 5", panel)
         self.assertIn('lblTitle.Caption = ""', panel)
         self.assertIn("lblTitle.Visible = False", panel)
         self.assertIn("lblTitle.Move 0, 0, 0, 0", panel)
         self.assertIn("lblHint.Caption = toolName", panel)
-        self.assertIn("lblSummary.Caption = mSummaryText", panel)
+        self.assertNotIn("lblSummary.Caption = mSummaryText", panel)
         self.assertIn("lblHint.Move M, 2, CONTENT_W, 12", panel)
-        self.assertIn("cmdPreview.Move M, 17, BTN_W, BH", panel)
-        self.assertIn("cmdClear.Move M + BTN_W + GAP, 17, BTN_W, BH", panel)
-        self.assertIn("cmdApply.Move M + (2 * (BTN_W + GAP)), 17, BTN_W, BH", panel)
-        self.assertIn("Dim summaryH As Single", panel)
-        self.assertIn("summaryH = RequiredSummaryHeight(mSummaryText, CONTENT_W)", panel)
-        self.assertIn("Me.Height = MaxSingle(MIN_FORM_H, 74 + summaryH)", panel)
-        self.assertIn("lblSummary.Move M, 40, CONTENT_W, summaryH", panel)
+        self.assertIn("cmdPreview.Move M, ACTION_TOP, BTN_W, buttonHeight", panel)
+        self.assertIn("cmdClear.Move M + BTN_W + GAP, ACTION_TOP, BTN_W, buttonHeight", panel)
+        self.assertIn("cmdApply.Move M + (2 * (BTN_W + GAP)), ACTION_TOP, BTN_W, buttonHeight", panel)
+        self.assertIn("cmdPreviousPage.Move M, navigationTop, navigationWidth, buttonHeight", panel)
+        self.assertIn("cmdNextPage.Move M + navigationWidth + GAP, navigationTop, navigationWidth, buttonHeight", panel)
         self.assertIn("If Not DocumentHasVisibleContent() Then", panel)
         self.assertIn("This document appears to be blank. There is nothing to apply.", panel)
         self.assertIn('cmdPreview.Caption = "Preview is ON"', panel)
         self.assertIn("cmdPreview.Enabled = True", panel)
         self.assertIn('cmdPreview.Caption = "Preview is OFF"', panel)
-        self.assertIn('mSummaryText = "You may now edit your document if you wish."', panel)
-        self.assertIn("lblSummary.Caption = mSummaryText", panel)
+        self.assertIn("cmdPreview.Enabled = False", panel)
+        self.assertIn('AddPreviewSummaryRow offRows, "Edit if needed. Choose Reconfigure to preview again.", ""', panel)
+        self.assertIn("Set mSummaryRows = offRows", panel)
         self.assertLess(
             panel.index('cmdPreview.Caption = "Preview is OFF"'),
-            panel.index('mSummaryText = "You may now edit your document if you wish."'),
+            panel.index('AddPreviewSummaryRow offRows, "Edit if needed. Choose Reconfigure to preview again.", ""'),
         )
-        self.assertIn("ShowModelessAtCurrentPosition", panel)
+        self.assertIn("mResumeModelessAfterModal = True", panel)
         self.assertIn('cmdClear.Caption = "Reconfigure"', panel)
         self.assertNotIn('cmdClear.Caption = "Settings"', panel)
         self.assertNotIn('cmdClear.Caption = "Reset Preview"', panel)
@@ -110,22 +153,37 @@ class PreviewActionPanelTests(unittest.TestCase):
         self.assertNotIn("cmdBack", panel)
         self.assertNotIn("cmdClose", panel)
 
+    def test_remove_all_highlighting_clears_range_directly(self):
+        helpers = read("src/modules/modCleanupHelpers.bas")
+        start = helpers.index("Public Sub RemoveAllHighlighting")
+        end = helpers.index("Public Function DocumentHasVisibleContent")
+        helper = helpers[start:end]
+
+        self.assertIn("Set hlRange = scopeRange.Duplicate", helper)
+        self.assertIn("hlRange.HighlightColorIndex = wdNoHighlight", helper)
+        self.assertNotIn(".Replacement.Highlight = False", helper)
+
     def test_preview_panel_exposes_only_decisive_actions(self):
         installer = read("src/installer/installer.bas")
 
         self.assertIn(
-            'ControlsForForm = Array("lblTitle", "lblSummary", "lblHint", "cmdApply", "cmdPreview", "cmdClear")',
+            'ControlsForForm = Array("lblTitle", "lblSummary", "lblHint", "lblButtonMeasure", _',
             installer,
         )
+        self.assertIn('"cmdApply", "cmdPreview", "cmdClear", "cmdPreviousPage", "cmdNextPage")', installer)
+        preview_controls_start = installer.index('Case "frmPreviewActions"')
+        preview_controls_end = installer.index('Case "frmPunctuationCleanup"')
+        preview_controls = installer[preview_controls_start:preview_controls_end]
         self.assertNotIn('"cmdBack"', installer)
-        self.assertNotIn('"cmdClose"', installer)
+        self.assertNotIn('"cmdClose"', preview_controls)
 
     def test_launcher_hides_while_a_subtool_is_open(self):
         launcher = read("src/forms/frmCleanupSuiteLauncher.bas")
 
         self.assertIn("Private Sub OpenCleanupTool(ByVal formName As String)", launcher)
         self.assertIn("Me.Hide", launcher)
-        self.assertIn("Set toolForm = VBA.UserForms.Add(formName)", launcher)
+        self.assertIn("Set toolForm = CreateCleanupToolForm(formName)", launcher)
+        self.assertIn("Set CreateCleanupToolForm = VBA.UserForms.Add(formName)", launcher)
         self.assertIn("toolForm.Show", launcher)
         self.assertIn("If ShouldReturnToLauncherAfterToolSession() Then Me.Show", launcher)
         self.assertNotIn("toolForm.Hide", launcher)
@@ -148,29 +206,31 @@ class PreviewActionPanelTests(unittest.TestCase):
                 self.assertIn("Public Sub RunAfterPreview()", source)
                 self.assertIn("chkPreviewOnly.Value = False", source)
                 self.assertIn("cmdRun_Click", source)
-                self.assertIn("ShowPreviewActions Me", source)
+                self.assertIn("ShowPreviewActionsSummary Me", source)
                 self.assertIn("MarkCleanupToolApplied", source)
 
     def test_apply_and_preview_buttons_use_the_expected_labels(self):
         installer = read("src/installer/installer.bas")
+        panel = read("src/forms/frmPreviewActions.bas")
 
         self.assertIn('If CStr(cn) = "cmdPreview" Then', installer)
-        self.assertIn('PositionControl designer, "cmdPreview", MARGIN, y, contentW, BTN_H', installer)
         self.assertIn("Const FORM_W As Single = 283", installer)
-        self.assertIn("Const FORM_H As Single = 90", installer)
+        self.assertIn("Const FORM_H As Single = 126", installer)
         self.assertIn("Const CONTENT_W As Single = 257", installer)
         self.assertIn("Const BTN_W As Single = (CONTENT_W - (2 * GAP)) / 3", installer)
-        self.assertIn("Const BTN_H As Single = 18", installer)
+        self.assertIn("Const BTN_H As Single = 25", installer)
         self.assertIn("Const GAP As Single = 5", installer)
         self.assertIn('Case "frmPreviewActions.lblTitle": ControlCaptionText = ""', installer)
         self.assertIn('Case "frmPreviewActions.lblHint": ControlCaptionText = "Tool Name"', installer)
         self.assertIn('comp.Properties("Caption") = ""', installer)
         self.assertIn('designer.Caption = ""', installer)
         self.assertIn('Case "cmdClear": cap = "Reconfigure"', installer)
-        self.assertIn('Case "cmdRun": cap = "Apply"', installer)
+        self.assertIn('Case "cmdPreviousPage": cap = "Previous page"', installer)
+        self.assertIn('Case "cmdNextPage": cap = "Next page"', installer)
         self.assertIn('Case "cmdPreview": cap = "Preview"', installer)
         self.assertIn('Case "cmdReset": cap = "Reset"', installer)
         self.assertIn('Case "cmdResetAll": cap = "Reset All"', installer)
+        self.assertIn('cmdApply.Caption = "Apply"', panel)
         self.assertIn('Case "cmdPreview": ButtonTipText = "Preview with the current settings"', installer)
         self.assertIn('Case "cmdReset": ButtonTipText = "Reset this tool to its defaults"', installer)
         self.assertIn('Case "cmdResetAll": ButtonTipText = "Reset all tools and global settings to defaults"', installer)
@@ -182,12 +242,28 @@ class PreviewActionPanelTests(unittest.TestCase):
     def test_preview_panel_summary_height_resizes_with_content(self):
         panel = read("src/forms/frmPreviewActions.bas")
 
-        self.assertIn("Private Function RequiredSummaryHeight", panel)
-        self.assertIn("Private Function CountSummaryRows", panel)
-        self.assertIn("rows = rows + 1 + (Len(part) \\ charsPerLine)", panel)
-        self.assertIn("RequiredSummaryHeight = MinSingle(MAX_SUMMARY_H, CountSummaryRows(textValue, contentWidth) * SUMMARY_LINE_H)", panel)
-        self.assertIn("Private Function MinSingle", panel)
+        self.assertIn("Private Function SummaryTableHeight", panel)
+        self.assertIn("Private mSummaryTop As Single", panel)
+        self.assertIn("Private Const SUMMARY_BOTTOM_GAP As Single = 6", panel)
+        self.assertIn("Dim desiredInsideH As Single", panel)
+        self.assertIn("desiredInsideH = mSummaryTop + SummaryTableHeight(mSummaryRows) + SUMMARY_BOTTOM_GAP", panel)
+        self.assertIn("If Me.InsideHeight < desiredInsideH Then", panel)
+        self.assertIn("Me.Height = Me.Height + (desiredInsideH - Me.InsideHeight)", panel)
+        self.assertIn("Me.Height = Me.Height + (desiredInsideH - Me.InsideHeight) + 2", panel)
+        self.assertIn("y = mSummaryTop", panel)
+        self.assertIn("rowCount = rows.Count + 1", panel)
+        self.assertIn("SummaryTableHeight = rowCount * ROW_H", panel)
+        self.assertIn("If SummaryTableHeight < 22 Then SummaryTableHeight = 22", panel)
         self.assertIn("Private Function MaxSingle", panel)
+
+    def test_preview_toggle_event_declares_objects_before_executable_code(self):
+        panel = read("src/forms/frmPreviewActions.bas")
+        proc = panel[
+            panel.index("Private Sub cmdPreview_Click()"):
+            panel.index("Private Sub cmdClear_Click()")
+        ]
+
+        self.assertLess(proc.index("Dim errorDescription As String"), proc.index("On Error GoTo PreviewErr"))
 
     def test_blank_document_apply_is_short_circuited_before_any_tool_runs(self):
         helpers = read("src/modules/modCleanupHelpers.bas")
@@ -221,6 +297,8 @@ class PreviewActionPanelTests(unittest.TestCase):
                 self.assertIn("UserForm_Initialize", source)
                 self.assertIn("LayoutCleanupToolForm Me", source)
                 self.assertIn("chkPreviewOnly.Value = True", source)
+                self.assertIn("BeginPreviewActionIndicator Me", source)
+                self.assertIn("EndPreviewActionIndicator", source)
                 self.assertIn("cmdRun_Click", source)
                 preview_from_panel = source[
                     source.index("Public Sub PreviewFromPanel()"):
@@ -228,10 +306,18 @@ class PreviewActionPanelTests(unittest.TestCase):
                 ]
                 self.assertLess(
                     preview_from_panel.index("chkPreviewOnly.Value = True"),
+                    preview_from_panel.index("BeginPreviewActionIndicator Me"),
+                )
+                self.assertLess(
+                    preview_from_panel.index("BeginPreviewActionIndicator Me"),
                     preview_from_panel.index("cmdRun_Click"),
                 )
                 self.assertLess(
                     preview_from_panel.index("cmdRun_Click"),
+                    preview_from_panel.index("EndPreviewActionIndicator"),
+                )
+                self.assertLess(
+                    preview_from_panel.index("EndPreviewActionIndicator"),
                     preview_from_panel.rindex("chkPreviewOnly.Value = False"),
                 )
 
@@ -243,29 +329,42 @@ class PreviewActionPanelTests(unittest.TestCase):
 
         self.assertIn("chkReturnToMainAfterApply.Value = GetReturnToMainAfterApplySetting()", launcher)
         self.assertIn("SetReturnToMainAfterApplySetting chkReturnToMainAfterApply.Value", launcher)
-        self.assertIn("chkShowCompletionReviewAfterApply.Value = GetShowCompletionReviewAfterApplySetting()", launcher)
         self.assertIn("Public Function GetReturnToMainAfterApplySetting() As Boolean", helpers)
         self.assertIn("Public Sub SetReturnToMainAfterApplySetting(enabled As Boolean)", helpers)
-        self.assertIn("Public Function GetShowCompletionReviewAfterApplySetting() As Boolean", helpers)
-        self.assertIn("Public Sub SetShowCompletionReviewAfterApplySetting(enabled As Boolean)", helpers)
         self.assertIn("Public Sub ResetCleanupSuiteDefaults()", helpers)
         self.assertIn("SetAutoSaveSetting True", helpers)
         self.assertIn("SetReturnToMainAfterApplySetting True", helpers)
-        self.assertIn("SetShowCompletionReviewAfterApplySetting True", helpers)
-        self.assertIn("If Not GetShowCompletionReviewAfterApplySetting() Then Exit Sub", helpers)
+        self.assertIn('GetSetting(CLEANUP_SETTINGS_APP, CLEANUP_SETTINGS_SECTION, settingName, defaultText)', helpers)
+        self.assertIn('SaveSetting CLEANUP_SETTINGS_APP, CLEANUP_SETTINGS_SECTION, settingName', helpers)
+        self.assertNotIn('ActiveDocument.CustomDocumentProperties("CleanupSuiteAutoSave")', helpers)
+        self.assertNotIn("GetShowCompletionReviewAfterApplySetting", helpers)
+        self.assertNotIn("SetShowCompletionReviewAfterApplySetting", helpers)
+        self.assertNotIn("CleanupSuiteShowCompletionReviewAfterApply", helpers)
+        self.assertNotIn("ShowCleanupReport", helpers)
+        self.assertNotIn("chkShowCompletionReviewAfterApply", launcher)
+        self.assertNotIn("chkShowCompletionReviewAfterApply", installer)
+        self.assertIn('"Global default: return to main menu after apply"', launcher)
         self.assertIn("If ShouldReturnToLauncherAfterToolSession() Then Me.Show", launcher)
         self.assertNotIn("If GetReturnToMainAfterApplySetting() Then ShowCleanupSuiteLauncher", panel)
-        self.assertIn('"chkShowCompletionReviewAfterApply", "chkReturnToMainAfterApply", "chkReturnToMainAfterClose", "chkAutoSave", "cmdResetAll"', installer)
+        self.assertIn('"chkReturnToMainAfterApply", "chkReturnToMainAfterClose", "chkAutoSave", "lblAutoSaveWarning", "chkUpdateChecks", "cmdCheckUpdates", "cmdResetAll"', installer)
         self.assertIn(
-            'Case "frmCleanupSuiteLauncher.chkReturnToMainAfterApply": ControlCaptionText = "Return to main menu after completion review"',
-            installer,
-        )
-        self.assertIn(
-            'Case "frmCleanupSuiteLauncher.chkShowCompletionReviewAfterApply": ControlCaptionText = "Show completion review after apply"',
+            'Case "frmCleanupSuiteLauncher.chkReturnToMainAfterApply": ControlCaptionText = "Global default: return to main menu after apply"',
             installer,
         )
         self.assertIn("Private Sub cmdResetAll_Click()", launcher)
         self.assertIn("ResetCleanupSuiteDefaults", launcher)
+
+    def test_reconfigure_handles_return_to_main_after_preview_panel_goes_modeless(self):
+        helpers = read("src/modules/modCleanupHelpers.bas")
+        panel = read("src/forms/frmPreviewActions.bas")
+
+        self.assertIn("Public Sub ReturnToLauncherAfterDetachedToolSession()", helpers)
+        self.assertIn("If ShouldReturnToLauncherAfterToolSession() Then ShowCleanupSuiteLauncher", helpers)
+        self.assertIn("src.Show", panel)
+        self.assertLess(
+            panel.index("src.Show"),
+            panel.index("ReturnToLauncherAfterDetachedToolSession"),
+        )
 
     def test_installer_report_writing_is_unique_and_nonfatal(self):
         installer = read("src/installer/installer.bas")

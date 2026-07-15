@@ -18,11 +18,7 @@ Private Sub UserForm_Initialize()
     optScopeDocument.Caption = "Entire document"
     optScopeDocument.Value = True
     optScopeSelection.Caption = "Selected text only"
-    If Selection.Type = wdSelectionNormal Or Selection.Type = wdSelectionColumn Then
-        optScopeSelection.Enabled = True
-    Else
-        optScopeSelection.Enabled = False
-    End If
+    RefreshScopeSelectionState Me, True
     chkFontFace.Caption = "Normalize font face to document default"
     chkFontSize.Caption = "Normalize font size to style-defined size"
     chkBold.Caption = "Normalize direct bold overrides"
@@ -36,12 +32,19 @@ Private Sub chkFontSize_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub chkBold_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub chkItalic_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub chkFontColor_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub cmdRiskPlacementFontFace_Click(): ShowToolRiskChoiceExplanation "Normalize font face", "Formatting change", "Removes direct font-name overrides so styles can control font face." : End Sub
+Private Sub cmdRiskPlacementFontSize_Click(): ShowToolRiskChoiceExplanation "Normalize font size", "Formatting change", "Removes direct size overrides so styles can control size." : End Sub
+Private Sub cmdRiskPlacementFontBold_Click(): ShowToolRiskChoiceExplanation "Normalize bold", "Formatting change", "Removes manual bolding not supplied by the style." : End Sub
+Private Sub cmdRiskPlacementFontItalic_Click(): ShowToolRiskChoiceExplanation "Normalize italic", "Formatting change", "Removes manual italics not supplied by the style." : End Sub
+Private Sub cmdRiskPlacementFontColor_Click(): ShowToolRiskChoiceExplanation "Remove font color overrides", "Formatting change", "Clears direct font colors so style color can lead." : End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub
 Public Sub PreviewFromPanel()
     chkPreviewOnly.Value = True
+    BeginPreviewActionIndicator Me
     cmdRun_Click
+    EndPreviewActionIndicator
     chkPreviewOnly.Value = False
 End Sub
 Private Sub cmdReset_Click()
@@ -70,23 +73,45 @@ Private Sub cmdRun_Click()
     Dim doItalic As Boolean: doItalic = chkItalic.Value
     Dim doColor As Boolean: doColor = chkFontColor.Value
     If Not (doFace Or doSize Or doBold Or doItalic Or doColor) Then MsgBox "No font properties selected.", vbInformation: Exit Sub
-    ' Preview: highlight paragraphs with direct font overrides
-    Dim p As Paragraph, styleFont As Font, cnt As Long: cnt = 0
-    For Each p In ActiveDocument.Paragraphs
-        If p.Range.Start >= targetRange.Start And p.Range.End <= targetRange.End Then
-            On Error Resume Next
-            Set styleFont = ActiveDocument.Styles(p.Style).Font
-            On Error GoTo 0
-            If Not styleFont Is Nothing Then
-                Dim hasDirect As Boolean: hasDirect = False
-                If doFace And p.Range.Font.Name <> styleFont.Name Then hasDirect = True
-                If doSize And p.Range.Font.Size <> styleFont.Size And p.Range.Font.Size > 0 Then hasDirect = True
-                If hasDirect Then p.Range.HighlightColorIndex = wdYellow: cnt = cnt + 1
-            End If
-        End If
-    Next p
+    Dim p As Paragraph
+    Dim styleFont As Font
+    Dim cnt As Long
     If previewOnly Then
-        ShowPreviewActions Me, "Font Normalizer", "Preview complete. " & cnt & " paragraphs with direct font overrides highlighted."
+        Dim previewFace As Long
+        Dim previewSize As Long
+        Dim previewBold As Long
+        Dim previewItalic As Long
+        Dim previewColor As Long
+        For Each p In targetRange.Paragraphs
+            If ParagraphContainedInRange(p, targetRange) Then
+                Set styleFont = Nothing
+                On Error Resume Next
+                Set styleFont = ActiveDocument.Styles(p.Style).Font
+                On Error GoTo 0
+                If Not styleFont Is Nothing Then
+                    Dim hasDirect As Boolean
+                    hasDirect = False
+                    If doFace And p.Range.Font.Name <> styleFont.Name Then hasDirect = True: previewFace = previewFace + 1
+                    If doSize And p.Range.Font.Size <> styleFont.Size And p.Range.Font.Size > 0 Then hasDirect = True: previewSize = previewSize + 1
+                    If doBold And p.Range.Font.Bold <> styleFont.Bold Then hasDirect = True: previewBold = previewBold + 1
+                    If doItalic And p.Range.Font.Italic <> styleFont.Italic Then hasDirect = True: previewItalic = previewItalic + 1
+                    If doColor And p.Range.Font.Color <> styleFont.Color Then hasDirect = True: previewColor = previewColor + 1
+                    If hasDirect Then
+                        p.Range.HighlightColorIndex = wdYellow
+                        cnt = cnt + 1
+                    End If
+                End If
+            End If
+        Next p
+
+        Dim previewRows As Collection
+        Set previewRows = NewPreviewSummaryRows()
+        AddPreviewSummaryRow previewRows, "Font face", previewFace, False, (Not doFace)
+        AddPreviewSummaryRow previewRows, "Font size", previewSize, False, (Not doSize)
+        AddPreviewSummaryRow previewRows, "Bold", previewBold, False, (Not doBold)
+        AddPreviewSummaryRow previewRows, "Italic", previewItalic, False, (Not doItalic)
+        AddPreviewSummaryRow previewRows, "Font color", previewColor, False, (Not doColor)
+        ShowPreviewActionsSummary Me, "Font Normalizer", previewRows
         Exit Sub
     End If
     MarkCleanupStart "Font Normalizer"
@@ -95,8 +120,9 @@ Private Sub cmdRun_Click()
     undoRec.StartCustomRecord "Cleanup Suite - Font Normalizer"
     On Error GoTo RunErr
     Dim cntFixed As Long: cntFixed = 0
-    For Each p In ActiveDocument.Paragraphs
-        If p.Range.Start >= targetRange.Start And p.Range.End <= targetRange.End Then
+    For Each p In targetRange.Paragraphs
+        If ParagraphContainedInRange(p, targetRange) Then
+            Set styleFont = Nothing
             On Error Resume Next
             Set styleFont = ActiveDocument.Styles(p.Style).Font
             On Error GoTo 0
@@ -112,9 +138,6 @@ Private Sub cmdRun_Click()
         End If
     Next p
     RemoveAllHighlighting targetRange
-    Dim results As Collection: Set results = New Collection
-    results.Add "Paragraphs normalized: " & cntFixed
-    ShowCleanupReport "Font Normalizer", results
     undoRec.EndCustomRecord
     MarkCleanupEnd
     MarkCleanupToolApplied

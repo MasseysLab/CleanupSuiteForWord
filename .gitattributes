@@ -10,4 +10,7 @@ src/**/*.xml text eol=lf
 # Office documents and backups are binary artifacts.
 *.docx binary
 *.docm binary
+*.dotm binary
+*.exe binary
+*.pdf binary
 *.zip binary

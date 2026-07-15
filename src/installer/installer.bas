@@ -4,7 +4,7 @@
 '
 '  MIT License
 '
-'  Copyright (c) 2026 Christopher Travis Massey
+'  Copyright (c) 2026 MasseysLab
 '
 '  Permission is hereby granted, free of charge, to any person obtaining a copy
 '  of this software and associated documentation files (the "Software"), to deal
@@ -67,6 +67,8 @@ Public Sub InstallCleanupSuite()
     ' 1) Create standard modules (code-only)
     CreateOrReplaceModule vbProj, "modCleanupLauncher", modCleanupLauncher_Code, installLog
     CreateOrReplaceModule vbProj, "modCleanupHelpers", modCleanupHelpers_Code, installLog
+    CreateOrReplaceModule vbProj, "modMetaDataSuite", modMetaDataSuite_Code, installLog
+    CreateOrReplaceModule vbProj, "modUpdateChecker", modUpdateChecker_Code, installLog
 
     ' 2) Create full code UserForms (code injection)
     CreateOrReplaceForm vbProj, "frmPunctuationCleanup", frmPunctuationCleanup_Code, installLog
@@ -83,7 +85,9 @@ Public Sub InstallCleanupSuite()
     CreateOrReplaceForm vbProj, "frmFormattingStripper", frmFormattingStripper_Code, installLog
     CreateOrReplaceForm vbProj, "frmHyperlinkRemover", frmHyperlinkRemover_Code, installLog
     CreateOrReplaceForm vbProj, "frmSoftReturnConverter", frmSoftReturnConverter_Code, installLog
-    CreateOrReplaceForm vbProj, "frmMetadataScrubber", frmMetadataScrubber_Code, installLog
+    CreateOrReplaceForm vbProj, "frmMetaDataSuite", frmMetaDataSuite_Code, installLog
+    CreateOrReplaceForm vbProj, "frmSafeMetadataEditor", frmSafeMetadataEditor_Code, installLog
+    CreateOrReplaceForm vbProj, "frmFinalReview", frmFinalReview_Code, installLog
     CreateOrReplaceForm vbProj, "frmStyleCleanup", frmStyleCleanup_Code, installLog
     CreateOrReplaceForm vbProj, "frmFootnoteRemover", frmFootnoteRemover_Code, installLog
     CreateOrReplaceForm vbProj, "frmHeaderFooterStandardizer", frmHeaderFooterStandardizer_Code, installLog
@@ -110,7 +114,9 @@ Public Sub InstallCleanupSuite()
     AttemptCreateControls vbProj, "frmFormattingStripper", uiFailures
     AttemptCreateControls vbProj, "frmHyperlinkRemover", uiFailures
     AttemptCreateControls vbProj, "frmSoftReturnConverter", uiFailures
-    AttemptCreateControls vbProj, "frmMetadataScrubber", uiFailures
+    AttemptCreateControls vbProj, "frmMetaDataSuite", uiFailures
+    AttemptCreateControls vbProj, "frmSafeMetadataEditor", uiFailures
+    AttemptCreateControls vbProj, "frmFinalReview", uiFailures
     AttemptCreateControls vbProj, "frmStyleCleanup", uiFailures
     AttemptCreateControls vbProj, "frmFootnoteRemover", uiFailures
     AttemptCreateControls vbProj, "frmHeaderFooterStandardizer", uiFailures
@@ -307,10 +313,10 @@ Private Function IsSuiteComponent(compName As String) As Boolean
         "frmCapitalizationCleanup", "frmListCleanup", "frmParagraphCleanup", _
         "frmDuplicateDetector", "frmFontNormalizer", "frmTableCleaner", _
         "frmBreakNormalizer", "frmDocumentTrim", "frmFormattingStripper", _
-        "frmHyperlinkRemover", "frmSoftReturnConverter", "frmMetadataScrubber", _
+        "frmHyperlinkRemover", "frmSoftReturnConverter", "frmMetaDataSuite", "frmSafeMetadataEditor", "frmFinalReview", _
         "frmStyleCleanup", "frmFootnoteRemover", "frmHeaderFooterStandardizer", _
         "frmObjectRemover", "frmPreviewActions", "frmCleanupSuiteLauncher", "modCleanupLauncher", _
-        "modCleanupHelpers")
+        "modCleanupHelpers", "modMetaDataSuite", "modUpdateChecker")
 
     Dim i As Long
     For i = LBound(names) To UBound(names)
@@ -468,8 +474,18 @@ Private Sub LayoutGenericToolControls(comp As VBIDE.VBComponent, designer As Obj
     designer.Controls("lblTitle").Caption = ""
     designer.Controls("lblTitle").Visible = False
     HideGenericTitleLabels designer
+    PositionControl designer, "cmdReset", MARGIN + contentW - 50, 8, 50, 18
+    designer.Controls("cmdReset").Caption = "Reset"
+    designer.Controls("cmdReset").Font.Size = 7.5
+    PositionControl designer, "cmdRun", 0, 0, 0, 0
+    designer.Controls("cmdRun").Visible = False
 
     For Each cn In ctrlNames
+        If InStr(1, CStr(cn), "RiskPlacement", vbTextCompare) > 0 Then
+            designer.Controls(CStr(cn)).Visible = False
+            PositionControl designer, CStr(cn), 0, 0, 0, 0
+            GoTo NextControl
+        End If
         If CStr(cn) = "chkPreviewOnly" Or CStr(cn) = "fraScopeSelection" Then
             FlushGenericPendingChoice designer, pendingChoice, MARGIN, y, contentW, GAP
             FlushGenericPendingButton designer, pend, MARGIN, y, contentW, BTN_H, GAP
@@ -532,27 +548,41 @@ NextControl:
     FlushGenericPendingChoice designer, pendingChoice, MARGIN, y, contentW, GAP
     FlushGenericPendingButton designer, pend, MARGIN, y, contentW, BTN_H, GAP
     y = y + 2
-    PositionControl designer, "cmdPreview", MARGIN, y, contentW, BTN_H
-    y = y + BTN_H + GAP
+    LayoutGenericPreviewAndScopeRow designer, y, MARGIN, contentW, BTN_H
+    PositionControl designer, "cmdRun", 0, 0, 0, 0
+    designer.Controls("cmdRun").Visible = False
+    y = y + 20
+    comp.Properties("Width") = FORM_W + 8
+    comp.Properties("Height") = y + 40
+    designer.Width = FORM_W + 8
+    designer.Height = y + 40
+End Sub
+
+Private Sub LayoutGenericPreviewAndScopeRow(designer As Object, ByRef y As Single, ByVal MARGIN As Single, ByVal contentW As Single, ByVal BTN_H As Single)
+    On Error Resume Next
     If DesignerScopeSelectionAvailable(designer) Then
-        PositionControl designer, "optScopeDocument", MARGIN + 8, y, halfW - 8, 18
-        PositionControl designer, "optScopeSelection", MARGIN + halfW + GAP + 8, y, halfW - 8, 18
-        designer.Controls("optScopeDocument").Visible = True
-        designer.Controls("optScopeSelection").Visible = True
-        y = y + 28
+        Dim scopeW As Single
+        Dim previewW As Single
+        Dim previewLeft As Single
+        Dim scopeLeft As Single
+        scopeW = 154
+        previewW = contentW - scopeW - 10
+        scopeLeft = MARGIN
+        previewLeft = MARGIN + scopeW + 10
+        designer.Controls("optScopeSelection").Caption = "Selected text only"
+        designer.Controls("optScopeDocument").Caption = "Entire document"
+        PositionControl designer, "optScopeSelection", scopeLeft, y, scopeW, 18
+        PositionControl designer, "optScopeDocument", scopeLeft, y + 20, scopeW, 18
+        PositionControl designer, "cmdPreview", previewLeft, y, previewW, 42
+        y = y + 48
     Else
         PositionControl designer, "optScopeDocument", 0, 0, 0, 0
         PositionControl designer, "optScopeSelection", 0, 0, 0, 0
         designer.Controls("optScopeDocument").Visible = False
         designer.Controls("optScopeSelection").Visible = False
+        PositionControl designer, "cmdPreview", MARGIN, y, contentW, BTN_H + 6
+        y = y + BTN_H + 12
     End If
-    PositionControl designer, "cmdRun", MARGIN, y, halfW, BTN_H
-    PositionControl designer, "cmdReset", MARGIN + halfW + GAP, y, halfW, BTN_H
-    y = y + BTN_H + 28
-    comp.Properties("Width") = FORM_W + 8
-    comp.Properties("Height") = y + 40
-    designer.Width = FORM_W + 8
-    designer.Height = y + 40
 End Sub
 
 Private Sub FlushGenericPendingButton(designer As Object, ByRef pendingButton As String, ByVal MARGIN As Single, ByRef y As Single, ByVal contentW As Single, ByVal BTN_H As Single, ByVal GAP As Single)
@@ -661,46 +691,36 @@ Private Sub LayoutCapitalizationControls(comp As VBIDE.VBComponent, designer As 
 
     y = 36
     PositionControl designer, "optAll", MARGIN, y, optionW, 18
-    PositionControl designer, "optSentence", MARGIN + optionW + GAP, y, optionW, 18
-    y = y + 24
-    PositionControl designer, "optTitle", MARGIN, y, optionW, 18
     PositionControl designer, "optCustom", MARGIN + optionW + GAP, y, optionW, 18
-    PositionControl designer, "optUpper", 0, 0, 0, 0
-    PositionControl designer, "optLower", 0, 0, 0, 0
-    designer.Controls("optUpper").Visible = False
-    designer.Controls("optLower").Visible = False
-    designer.Controls("optSentence").Enabled = False
-    designer.Controls("optTitle").Enabled = False
     y = y + 28
 
     PositionControl designer, "lblModeSummary", MARGIN, y, contentW, 34
     designer.Controls("lblModeSummary").WordWrap = True
     y = y + 42
 
-    PositionControl designer, "fraCustom", 0, 0, 0, 0
-    designer.Controls("fraCustom").Visible = False
     PositionControl designer, "chkSentence", MARGIN + 8, y, contentW - 16, 18
     PositionControl designer, "chkTitle", MARGIN + 8, y + 22, contentW - 16, 18
     PositionControl designer, "chkUpper", MARGIN + 8, y + 44, contentW - 16, 18
     PositionControl designer, "chkLower", MARGIN + 8, y + 66, contentW - 16, 18
-    PositionControl designer, "chkSmartSentences", MARGIN + 8, y + 88, contentW - 16, 18
-    PositionControl designer, "cmdSelectAll", MARGIN, y + 94, (contentW - GAP) / 2, BTN_H
-    PositionControl designer, "cmdDeselectAll", MARGIN + ((contentW - GAP) / 2) + GAP, y + 94, (contentW - GAP) / 2, BTN_H
+    PositionControl designer, "chkHeadingParentheses", MARGIN + 28, y + 88, contentW - 40, 18
+    PositionControl designer, "chkSmartSentences", MARGIN + 8, y + 110, contentW - 16, 18
+    PositionControl designer, "cmdEditExceptions", MARGIN + 8, y + 132, contentW - 16, BTN_H
+    PositionControl designer, "cmdSelectAll", MARGIN, y + 162, (contentW - GAP) / 2, BTN_H
+    PositionControl designer, "cmdDeselectAll", MARGIN + ((contentW - GAP) / 2) + GAP, y + 162, (contentW - GAP) / 2, BTN_H
+    designer.Controls("cmdEditExceptions").Visible = False
     designer.Controls("cmdSelectAll").Visible = False
     designer.Controls("cmdDeselectAll").Visible = False
 
-    y = y + 114
-    PositionControl designer, "optScopeDocument", MARGIN, y, (contentW - GAP) / 2, 18
-    PositionControl designer, "optScopeSelection", MARGIN + ((contentW - GAP) / 2) + GAP, y, (contentW - GAP) / 2, 18
+    y = y + 182
     designer.Controls("fraScopeSelection").Visible = False
     designer.Controls("chkPreviewOnly").Visible = False
-    y = y + 28
-
-    PositionControl designer, "cmdPreview", MARGIN, y, contentW, BTN_H
-    y = y + BTN_H + GAP
-    PositionControl designer, "cmdRun", MARGIN, y, (contentW - GAP) / 2, BTN_H
-    PositionControl designer, "cmdReset", MARGIN + ((contentW - GAP) / 2) + GAP, y, (contentW - GAP) / 2, BTN_H
-    y = y + BTN_H + 28
+    PositionControl designer, "cmdReset", MARGIN + contentW - 50, 8, 50, 18
+    designer.Controls("cmdReset").Caption = "Reset"
+    designer.Controls("cmdReset").Font.Size = 7.5
+    LayoutGenericPreviewAndScopeRow designer, y, MARGIN, contentW, BTN_H
+    PositionControl designer, "cmdRun", 0, 0, 0, 0
+    designer.Controls("cmdRun").Visible = False
+    y = y + 20
 
     comp.Properties("Width") = FORM_W + 8
     comp.Properties("Height") = y + 34
@@ -711,24 +731,33 @@ End Sub
 Private Sub LayoutPreviewActionsControls(comp As VBIDE.VBComponent, designer As Object)
     On Error Resume Next
     Const FORM_W As Single = 283
-    Const FORM_H As Single = 90
+    Const FORM_H As Single = 126
     Const CONTENT_W As Single = 257
     Const MARGIN As Single = 8
     Const BTN_W As Single = (CONTENT_W - (2 * GAP)) / 3
-    Const BTN_H As Single = 18
+    Const BTN_H As Single = 25
     Const GAP As Single = 5
+    Const ACTION_TOP As Single = 17
+    Const NAV_TOP As Single = ACTION_TOP + BTN_H + GAP
+    Const SUMMARY_TOP As Single = NAV_TOP + BTN_H + GAP
+    Const NAV_W As Single = (CONTENT_W - GAP) / 2
 
     ' Keep the design-time MSForms canvas caption blank; Configure sets the native title bar.
     comp.Properties("Caption") = ""
     designer.Caption = ""
     PositionControl designer, "lblTitle", 0, 0, 0, 0
     PositionControl designer, "lblHint", MARGIN, 2, CONTENT_W, 12
-    PositionControl designer, "cmdPreview", MARGIN, 17, BTN_W, BTN_H
-    PositionControl designer, "cmdClear", MARGIN + BTN_W + GAP, 17, BTN_W, BTN_H
-    PositionControl designer, "cmdApply", MARGIN + (2 * (BTN_W + GAP)), 17, BTN_W, BTN_H
-    PositionControl designer, "lblSummary", MARGIN, 40, CONTENT_W, 26
+    PositionControl designer, "cmdPreview", MARGIN, ACTION_TOP, BTN_W, BTN_H
+    PositionControl designer, "cmdClear", MARGIN + BTN_W + GAP, ACTION_TOP, BTN_W, BTN_H
+    PositionControl designer, "cmdApply", MARGIN + (2 * (BTN_W + GAP)), ACTION_TOP, BTN_W, BTN_H
+    PositionControl designer, "cmdPreviousPage", MARGIN, NAV_TOP, NAV_W, BTN_H
+    PositionControl designer, "cmdNextPage", MARGIN + NAV_W + GAP, NAV_TOP, NAV_W, BTN_H
+    PositionControl designer, "lblButtonMeasure", 0, 0, 0, 0
+    PositionControl designer, "lblSummary", MARGIN, SUMMARY_TOP, CONTENT_W, 26
     designer.Controls("lblTitle").Caption = ""
     designer.Controls("lblTitle").Visible = False
+    designer.Controls("lblButtonMeasure").Caption = ""
+    designer.Controls("lblButtonMeasure").Visible = False
     designer.Controls("lblSummary").WordWrap = True
 
     comp.Properties("Width") = FORM_W + 8
@@ -741,71 +770,89 @@ Private Sub LayoutLauncherControls(comp As VBIDE.VBComponent, designer As Object
     On Error Resume Next
     Const FORM_W As Single = 760
     Const MARGIN As Single = 14
-    Const GAP As Single = 4
+    Const GAP As Single = 3
     Const COL_GAP As Single = 16
-    Dim contentW As Single: contentW = FORM_W - (2 * MARGIN)
     Const COL_W As Single = (FORM_W - (2 * MARGIN) - COL_GAP) / 2
     Const COL1_X As Single = MARGIN
     Const COL2_X As Single = MARGIN + COL_W + COL_GAP
-    Dim y As Single: y = 12
+    Const TOP_Y As Single = 8
+    Dim y As Single: y = TOP_Y
     Dim yCol1 As Single
     Dim yCol2 As Single
+    Dim calloutLeft As Single
+    Dim calloutTop As Single
+    Dim calloutWidth As Single
+    Dim calloutHeight As Single
 
     comp.Properties("Caption") = ""
     designer.Caption = ""
 
-    PositionControl designer, "lblLauncherTitle", MARGIN, y, contentW, 20
-    y = y + 22
-    PositionControl designer, "lblLauncherSubtitle", MARGIN, y, contentW, 22
-    y = y + 28
+    PositionControl designer, "lblLauncherTitle", COL1_X, y, COL_W, 18
+    PositionControl designer, "lblLauncherSubtitle", COL1_X, y + 20, COL_W, 28
+    designer.Controls("lblLauncherTitle").TextAlign = 1
+    designer.Controls("lblLauncherSubtitle").TextAlign = 1
 
-    yCol1 = y
+    yCol1 = y + 52
     yCol1 = LayoutLauncherCategory(designer, "lblCatText", COL1_X, yCol1, COL_W)
-    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpUnicode", "cmdUnicode", "lblDescUnicode", COL1_X, yCol1, COL_W)
-    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpPunct", "cmdPunctuation", "lblDescPunctuation", COL1_X, yCol1, COL_W)
-    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpSpacing", "cmdSpacing", "lblDescSpacing", COL1_X, yCol1, COL_W)
-    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpCap", "cmdCapitalization", "lblDescCapitalization", COL1_X, yCol1, COL_W)
+    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpUnicode", "cmdUnicode", "lblDescUnicode", "lblRiskUnicode", COL1_X, yCol1, COL_W)
+    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpPunct", "cmdPunctuation", "lblDescPunctuation", "lblRiskPunctuation", COL1_X, yCol1, COL_W)
+    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpSpacing", "cmdSpacing", "lblDescSpacing", "lblRiskSpacing", COL1_X, yCol1, COL_W)
+    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpCap", "cmdCapitalization", "lblDescCapitalization", "lblRiskCapitalization", COL1_X, yCol1, COL_W)
     yCol1 = yCol1 + GAP
     yCol1 = LayoutLauncherCategory(designer, "lblCatPara", COL1_X, yCol1, COL_W)
-    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpList", "cmdList", "lblDescList", COL1_X, yCol1, COL_W)
-    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpPara", "cmdParagraph", "lblDescParagraph", COL1_X, yCol1, COL_W)
-    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpSoftReturn", "cmdSoftReturn", "lblDescSoftReturn", COL1_X, yCol1, COL_W)
-    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpDuplicate", "cmdDuplicate", "lblDescDuplicate", COL1_X, yCol1, COL_W)
+    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpList", "cmdList", "lblDescList", "lblRiskList", COL1_X, yCol1, COL_W)
+    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpPara", "cmdParagraph", "lblDescParagraph", "lblRiskParagraph", COL1_X, yCol1, COL_W)
+    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpSoftReturn", "cmdSoftReturn", "lblDescSoftReturn", "lblRiskSoftReturn", COL1_X, yCol1, COL_W)
+    yCol1 = LayoutLauncherToolRow(designer, "cmdHelpTrim", "cmdDocTrim", "lblDescDocTrim", "lblRiskDocTrim", COL1_X, yCol1, COL_W)
 
-    yCol2 = y
+    yCol2 = TOP_Y
     yCol2 = LayoutLauncherCategory(designer, "lblCatLayout", COL2_X, yCol2, COL_W)
-    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpTable", "cmdTableClean", "lblDescTableClean", COL2_X, yCol2, COL_W)
-    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpBreak", "cmdBreakNorm", "lblDescBreakNorm", COL2_X, yCol2, COL_W)
-    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpHeaderFooter", "cmdHeaderFooter", "lblDescHeaderFooter", COL2_X, yCol2, COL_W)
-    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpTrim", "cmdDocTrim", "lblDescDocTrim", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpTable", "cmdTableClean", "lblDescTableClean", "lblRiskTableClean", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpHeaderFooter", "cmdHeaderFooter", "lblDescHeaderFooter", "lblRiskHeaderFooter", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", "lblRiskFootnote", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", "lblRiskObjectRemover", COL2_X, yCol2, COL_W)
     yCol2 = yCol2 + GAP
     yCol2 = LayoutLauncherCategory(designer, "lblCatFormat", COL2_X, yCol2, COL_W)
-    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpFont", "cmdFontNorm", "lblDescFontNorm", COL2_X, yCol2, COL_W)
-    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpFormat", "cmdFormatStrip", "lblDescFormatStrip", COL2_X, yCol2, COL_W)
-    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpStyle", "cmdStyleClean", "lblDescStyleClean", COL2_X, yCol2, COL_W)
-    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpHyperlink", "cmdHyperlink", "lblDescHyperlink", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpFont", "cmdFontNorm", "lblDescFontNorm", "lblRiskFontNorm", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpFormat", "cmdFormatStrip", "lblDescFormatStrip", "lblRiskFormatStrip", COL2_X, yCol2, COL_W)
     yCol2 = yCol2 + GAP
     yCol2 = LayoutLauncherCategory(designer, "lblCatReview", COL2_X, yCol2, COL_W)
-    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", COL2_X, yCol2, COL_W)
-    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", COL2_X, yCol2, COL_W)
-    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", COL2_X, yCol2, COL_W)
-    y = yCol1 + 8
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpDuplicate", "cmdDuplicate", "lblDescDuplicate", "lblRiskDuplicate", COL2_X, yCol2, COL_W)
+    yCol2 = yCol2 + GAP
+    yCol2 = LayoutLauncherCategory(designer, "lblCatShare", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", "lblRiskMetadata", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpFinalReview", "cmdFinalReview", "lblDescFinalReview", "lblRiskFinalReview", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpHyperlink", "cmdHyperlink", "lblDescHyperlink", "lblRiskHyperlink", COL2_X, yCol2, COL_W)
+    yCol2 = yCol2 + GAP
+    yCol2 = LayoutLauncherCategory(designer, "lblCatAlpha", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpStyle", "cmdStyleClean", "lblDescStyleClean", "lblRiskStyleClean", COL2_X, yCol2, COL_W)
+    yCol2 = LayoutLauncherToolRow(designer, "cmdHelpBreak", "cmdBreakNorm", "lblDescBreakNorm", "lblRiskBreakNorm", COL2_X, yCol2, COL_W)
+    y = yCol1 + GAP
 
-    PositionControl designer, "chkShowCompletionReviewAfterApply", MARGIN + 2, y, COL_W, 18
-    y = y + 20
+    PositionControl designer, "chkAutoSave", MARGIN + 2, y, 225, 18
+    PositionControl designer, "lblAutoSaveWarning", MARGIN + 18, y + 16, COL_W - 18, 14
+    y = y + 32
     PositionControl designer, "chkReturnToMainAfterApply", MARGIN + 2, y, COL_W, 18
-    y = y + 20
+    y = y + 18
     PositionControl designer, "chkReturnToMainAfterClose", MARGIN + 2, y, COL_W, 18
     y = y + 20
-    PositionControl designer, "chkAutoSave", MARGIN + 2, y, COL_W, 18
-    y = y + 24
-    PositionControl designer, "cmdResetAll", MARGIN + 2, y, 110, 24
-    PositionControl designer, "cmdUserManual", MARGIN + 118, y, 110, 24
+    PositionControl designer, "chkUpdateChecks", MARGIN + 2, y, 214, 18
+    PositionControl designer, "cmdCheckUpdates", MARGIN + 230, y - 3, 112, 24
+    y = y + 26
+    PositionControl designer, "cmdUserManual", MARGIN + 2, y, 96, 24
+    PositionControl designer, "cmdResetAll", MARGIN + 104, y, 96, 24
+    calloutLeft = MARGIN + 220
+    calloutTop = y - 2
+    calloutWidth = (MARGIN + COL_W) - calloutLeft
+    calloutHeight = 32
+    PositionControl designer, "lblResetAllArrow", MARGIN + 202, y + 7, 16, 16
+    PositionControl designer, "lblResetAllCalloutBox", calloutLeft, calloutTop, calloutWidth, calloutHeight
+    PositionControl designer, "lblResetAllCalloutText", calloutLeft + 5, calloutTop + 4, calloutWidth - 10, calloutHeight - 8
 
     comp.Properties("Width") = FORM_W + 8
-    comp.Properties("Height") = y + 58
+    comp.Properties("Height") = MaxSingle(calloutTop + calloutHeight, yCol2) + 40
     designer.Width = FORM_W + 8
-    designer.Height = y + 58
+    designer.Height = MaxSingle(calloutTop + calloutHeight, yCol2) + 40
 End Sub
 
 Private Function LayoutLauncherCategory(designer As Object, labelName As String, L As Single, T As Single, W As Single) As Single
@@ -814,19 +861,88 @@ Private Function LayoutLauncherCategory(designer As Object, labelName As String,
     LayoutLauncherCategory = T + 18
 End Function
 
-Private Function LayoutLauncherToolRow(designer As Object, helpName As String, buttonName As String, descName As String, L As Single, T As Single, W As Single) As Single
+Private Function LayoutLauncherToolRow(designer As Object, helpName As String, buttonName As String, descName As String, riskName As String, L As Single, T As Single, W As Single) As Single
     On Error Resume Next
-    Const ROW_H As Single = 26
-    Const BTN_W As Single = 98
+    Const ROW_H As Single = 30
+    Const ROW_STEP As Single = 30
+    Const BTN_W As Single = 108
     Const HELP_W As Single = 20
+    Const RISK_W As Single = 56
+    Const RISK_H As Single = 28
     Const INNER_GAP As Single = 6
     Dim descW As Single
-    descW = W - BTN_W - HELP_W - (2 * INNER_GAP)
+    descW = W - BTN_W - HELP_W - RISK_W - (3 * INNER_GAP)
 
-    PositionControl designer, helpName, L, T + 3, HELP_W, 20
-    PositionControl designer, buttonName, L + HELP_W + INNER_GAP, T, BTN_W, ROW_H
-    PositionControl designer, descName, L + HELP_W + BTN_W + (2 * INNER_GAP), T + 1, descW, ROW_H
-    LayoutLauncherToolRow = T + ROW_H + 3
+    PositionControl designer, helpName, L, T + 5, HELP_W, 20
+    PositionControl designer, buttonName, L + HELP_W + INNER_GAP, T + 3, BTN_W, 24
+    PositionControl designer, riskName, L + HELP_W + BTN_W + (2 * INNER_GAP), T + 1, RISK_W, RISK_H
+    PositionControl designer, descName, L + HELP_W + BTN_W + RISK_W + (3 * INNER_GAP), T + 1, descW, ROW_H
+    StyleLauncherRiskLabel designer, riskName
+    LayoutLauncherToolRow = T + ROW_STEP
+End Function
+
+Private Sub StyleLauncherRiskLabel(designer As Object, riskName As String)
+    On Error Resume Next
+    Dim labelText As String
+    With designer.Controls(riskName)
+        labelText = Replace(CStr(.Caption), vbCrLf, " ")
+        .Caption = LauncherRiskDisplayText(labelText)
+        .TextAlign = 2
+        .Font.Size = 7.5
+        .Font.Bold = True
+        .WordWrap = True
+        .TakeFocusOnClick = False
+        .BackStyle = 1
+        .SpecialEffect = 0
+        .BorderStyle = 1
+        .BackColor = LauncherRiskBackColor(labelText)
+        .ForeColor = LauncherRiskForeColor(labelText)
+        .BorderColor = .ForeColor
+        .ControlTipText = LauncherRiskTip(labelText)
+    End With
+End Sub
+
+Private Function LauncherRiskDisplayText(labelText As String) As String
+    LauncherRiskDisplayText = Replace(labelText, " ", vbCrLf)
+End Function
+
+Private Function LauncherRiskBackColor(labelText As String) As Long
+    Select Case labelText
+        Case "Safe cleanup": LauncherRiskBackColor = RGB(229, 245, 235)
+        Case "Inspect First": LauncherRiskBackColor = RGB(228, 239, 251)
+        Case "Text caution", "Formatting change": LauncherRiskBackColor = RGB(255, 246, 218)
+        Case "Structure change", "Removes content": LauncherRiskBackColor = RGB(255, 235, 218)
+        Case "Privacy cleanup", "Finalizes review": LauncherRiskBackColor = RGB(255, 226, 226)
+        Case "Alpha tool": LauncherRiskBackColor = RGB(235, 236, 240)
+        Case Else: LauncherRiskBackColor = RGB(240, 242, 245)
+    End Select
+End Function
+
+Private Function LauncherRiskForeColor(labelText As String) As Long
+    Select Case labelText
+        Case "Safe cleanup": LauncherRiskForeColor = RGB(24, 105, 59)
+        Case "Inspect First": LauncherRiskForeColor = RGB(31, 91, 145)
+        Case "Text caution", "Formatting change": LauncherRiskForeColor = RGB(132, 89, 0)
+        Case "Structure change", "Removes content": LauncherRiskForeColor = RGB(154, 73, 24)
+        Case "Privacy cleanup", "Finalizes review": LauncherRiskForeColor = RGB(171, 40, 40)
+        Case "Alpha tool": LauncherRiskForeColor = RGB(67, 72, 82)
+        Case Else: LauncherRiskForeColor = RGB(84, 91, 104)
+    End Select
+End Function
+
+Private Function LauncherRiskTip(labelText As String) As String
+    Select Case labelText
+        Case "Safe cleanup": LauncherRiskTip = "Common cleanup; preview is still recommended."
+        Case "Inspect First": LauncherRiskTip = "Finds or reports issues before changing the document."
+        Case "Text caution": LauncherRiskTip = "May change visible text; review the preview carefully."
+        Case "Formatting change": LauncherRiskTip = "Changes visible formatting, not intended text content."
+        Case "Structure change": LauncherRiskTip = "Changes document structure such as paragraphs, lists, tables, or sections."
+        Case "Removes content": LauncherRiskTip = "Removes links, notes, objects, or other content."
+        Case "Privacy cleanup": LauncherRiskTip = "Removes identity, metadata, or sharing-sensitive information."
+        Case "Finalizes review": LauncherRiskTip = "Finalizes comments or tracked changes."
+        Case "Alpha tool": LauncherRiskTip = "Specialist or not-yet-graduated tool; use on a copy."
+        Case Else: LauncherRiskTip = "Review before applying."
+    End Select
 End Function
 
 Private Function MaxSingle(a As Single, b As Single) As Single
@@ -937,12 +1053,12 @@ Private Sub ApplyControlStyle(designer As Object, formName As String, nm As Stri
                 ctl.WordWrap = True
                 ctl.AutoSize = False
                 If nm = "lblLauncherTitle" Then
-                    ctl.TextAlign = 2
+                    ctl.TextAlign = 1
                     ctl.Font.Size = 14
                     ctl.Font.Bold = True
                     ctl.ForeColor = RGB(28, 43, 58)
                 ElseIf nm = "lblLauncherSubtitle" Then
-                    ctl.TextAlign = 2
+                    ctl.TextAlign = 1
                     ctl.Font.Size = 8.5
                     ctl.ForeColor = RGB(88, 101, 116)
                 ElseIf Left$(nm, 6) = "lblCat" Then
@@ -952,6 +1068,31 @@ Private Sub ApplyControlStyle(designer As Object, formName As String, nm As Stri
                 ElseIf Left$(nm, 7) = "lblDesc" Then
                     ctl.Font.Size = 8
                     ctl.ForeColor = RGB(93, 105, 119)
+                ElseIf Left$(nm, 7) = "lblRisk" Then
+                    StyleLauncherRiskLabel designer, nm
+                ElseIf nm = "lblResetAllArrow" Then
+                    ctl.Caption = ChrW$(&H2190)
+                    ctl.TextAlign = 2
+                    ctl.Font.Size = 12
+                    ctl.Font.Bold = True
+                    ctl.BackStyle = 0
+                    ctl.ForeColor = RGB(220, 0, 0)
+                ElseIf nm = "lblResetAllCalloutBox" Then
+                    ctl.Caption = ""
+                    ctl.BackStyle = 0
+                    ctl.BorderStyle = 1
+                    ctl.SpecialEffect = 0
+                    ctl.ForeColor = RGB(220, 0, 0)
+                    ctl.BorderColor = RGB(220, 0, 0)
+                ElseIf nm = "lblResetAllCalloutText" Then
+                    ctl.Font.Size = 7.5
+                    ctl.BackStyle = 0
+                    ctl.ForeColor = RGB(32, 37, 45)
+                ElseIf nm = "lblAutoSaveWarning" Then
+                    ctl.Font.Size = 8
+                    ctl.Font.Bold = True
+                    ctl.BackStyle = 0
+                    ctl.ForeColor = RGB(220, 0, 0)
                 End If
             End If
             If formName = "frmCapitalizationCleanup" Then
@@ -987,41 +1128,44 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmBreakNormalizer.optConvertOddPage": ControlCaptionText = "Odd Page"
         Case "frmBreakNormalizer.optScopeDocument": ControlCaptionText = "Entire document"
         Case "frmBreakNormalizer.optScopeSelection": ControlCaptionText = "Selected text only"
-        Case "frmCapitalizationCleanup.chkLower": ControlCaptionText = "Treat likely headings carefully"
+        Case "frmCapitalizationCleanup.chkLower": ControlCaptionText = "Repair likely headings in title case"
+        Case "frmCapitalizationCleanup.chkHeadingParentheses": ControlCaptionText = "Also title-case words inside parentheses"
         Case "frmCapitalizationCleanup.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
-        Case "frmCapitalizationCleanup.chkSentence": ControlCaptionText = "Use abbreviation lists"
-        Case "frmCapitalizationCleanup.chkSmartSentences": ControlCaptionText = "Use quote, bullet, and boundary context"
+        Case "frmCapitalizationCleanup.chkSentence": ControlCaptionText = "Recognize common abbreviations"
+        Case "frmCapitalizationCleanup.chkSmartSentences": ControlCaptionText = "Recognize quotes, bullets, and sentence boundaries"
         Case "frmCapitalizationCleanup.chkTitle": ControlCaptionText = "Protect common acronyms"
         Case "frmCapitalizationCleanup.chkUpper": ControlCaptionText = "Protect names and brands"
-        Case "frmCapitalizationCleanup.lblIntro": ControlCaptionText = "Choose how strongly capitalization should be repaired."
-        Case "frmCapitalizationCleanup.lblModeSummary": ControlCaptionText = "Fixes only obvious capitalization damage and leaves already-reasonable wording alone."
-        Case "frmCapitalizationCleanup.optAll": ControlCaptionText = "Conservative"
-        Case "frmCapitalizationCleanup.optCustom": ControlCaptionText = "Custom"
-        Case "frmCapitalizationCleanup.optLower": ControlCaptionText = "Legacy hidden option"
+        Case "frmCapitalizationCleanup.cmdEditExceptions": ControlCaptionText = "Edit custom exceptions"
+        Case "frmCapitalizationCleanup.lblIntro": ControlCaptionText = "Use the recommended repair, or customize its protections."
+        Case "frmCapitalizationCleanup.lblModeSummary": ControlCaptionText = "Repairs sentence starts, obvious all-caps damage, headings, acronyms, names, and brands."
+        Case "frmCapitalizationCleanup.optAll": ControlCaptionText = "Recommended repair"
+        Case "frmCapitalizationCleanup.optCustom": ControlCaptionText = "Custom repair"
         Case "frmCapitalizationCleanup.optScopeDocument": ControlCaptionText = "Entire document"
         Case "frmCapitalizationCleanup.optScopeSelection": ControlCaptionText = "Selected text only"
-        Case "frmCapitalizationCleanup.optSentence": ControlCaptionText = "Balanced (coming soon)"
-        Case "frmCapitalizationCleanup.optTitle": ControlCaptionText = "Aggressive (coming soon)"
-        Case "frmCapitalizationCleanup.optUpper": ControlCaptionText = "Legacy hidden option"
-        Case "frmCleanupSuiteLauncher.chkAutoSave": ControlCaptionText = "Auto-save before running each tool"
-        Case "frmCleanupSuiteLauncher.chkReturnToMainAfterApply": ControlCaptionText = "Return to main menu after completion review"
-        Case "frmCleanupSuiteLauncher.chkShowCompletionReviewAfterApply": ControlCaptionText = "Show completion review after apply"
-        Case "frmCleanupSuiteLauncher.chkReturnToMainAfterClose": ControlCaptionText = "Return to main menu after closing individual tool menus"
+        Case "frmCleanupSuiteLauncher.chkAutoSave": ControlCaptionText = "Global default: auto-save before each tool"
+        Case "frmCleanupSuiteLauncher.chkReturnToMainAfterApply": ControlCaptionText = "Global default: return to main menu after apply"
+        Case "frmCleanupSuiteLauncher.chkReturnToMainAfterClose": ControlCaptionText = "Global default: return to main menu after closing individual tool menus"
+        Case "frmCleanupSuiteLauncher.chkUpdateChecks": ControlCaptionText = "Check periodically for updates"
+        Case "frmCleanupSuiteLauncher.lblAutoSaveWarning": ControlCaptionText = "Dangerous! Should be selected"
+        Case "frmMetaDataSuite.chkShowSuiteMetadata": ControlCaptionText = "Show CleanupSuite metadata"
         Case "frmCleanupSuiteLauncher.lblLauncherTitle": ControlCaptionText = "Cleanup Suite"
         Case "frmCleanupSuiteLauncher.lblLauncherSubtitle": ControlCaptionText = "Choose the kind of cleanup you need. Tools are grouped by what you are trying to fix."
-        Case "frmCleanupSuiteLauncher.lblCatText": ControlCaptionText = "Text and Characters"
-        Case "frmCleanupSuiteLauncher.lblCatPara": ControlCaptionText = "Paragraphs, Breaks, and Lists"
-        Case "frmCleanupSuiteLauncher.lblCatLayout": ControlCaptionText = "Layout and Document Structure"
-        Case "frmCleanupSuiteLauncher.lblCatFormat": ControlCaptionText = "Formatting, Links, and Styles"
-        Case "frmCleanupSuiteLauncher.lblCatReview": ControlCaptionText = "Review, Privacy, and Removals"
+        Case "frmCleanupSuiteLauncher.lblResetAllCalloutText": ControlCaptionText = "If highlights remain after an error, select Reset All."
+        Case "frmCleanupSuiteLauncher.lblCatText": ControlCaptionText = "Clean Pasted Text"
+        Case "frmCleanupSuiteLauncher.lblCatPara": ControlCaptionText = "Fix Paragraphs and Lists"
+        Case "frmCleanupSuiteLauncher.lblCatReview": ControlCaptionText = "Review and Inspect"
+        Case "frmCleanupSuiteLauncher.lblCatLayout": ControlCaptionText = "Clean Document Objects"
+        Case "frmCleanupSuiteLauncher.lblCatFormat": ControlCaptionText = "Clean Formatting"
+        Case "frmCleanupSuiteLauncher.lblCatShare": ControlCaptionText = "Prepare for Sharing"
+        Case "frmCleanupSuiteLauncher.lblCatAlpha": ControlCaptionText = "Risky Alpha Tools"
         Case "frmCleanupSuiteLauncher.lblDescUnicode": ControlCaptionText = "Remove invisible Unicode characters that break search, sorting, and export."
         Case "frmCleanupSuiteLauncher.lblDescPunctuation": ControlCaptionText = "Normalize smart quotes, dashes, ellipses, and plain-text punctuation."
         Case "frmCleanupSuiteLauncher.lblDescSpacing": ControlCaptionText = "Fix extra spaces, punctuation spacing, and repeated blank lines."
         Case "frmCleanupSuiteLauncher.lblDescCapitalization": ControlCaptionText = "Apply sentence, title, upper, lower, or smart capitalization cleanup."
         Case "frmCleanupSuiteLauncher.lblDescList": ControlCaptionText = "Normalize manual bullets, numbering, and list indentation."
         Case "frmCleanupSuiteLauncher.lblDescParagraph": ControlCaptionText = "Clean empty paragraphs, paragraph spacing, and manual indents."
-        Case "frmCleanupSuiteLauncher.lblDescSoftReturn": ControlCaptionText = "Convert Shift+Enter line breaks to paragraph marks, or reverse that conversion."
-        Case "frmCleanupSuiteLauncher.lblDescDuplicate": ControlCaptionText = "Find repeated or near-duplicate paragraphs before deciding what to remove."
+        Case "frmCleanupSuiteLauncher.lblDescSoftReturn": ControlCaptionText = "Convert Shift+Enter line breaks to paragraph marks, or the reverse of that."
+        Case "frmCleanupSuiteLauncher.lblDescDuplicate": ControlCaptionText = "Find repeated or near-duplicate paragraphs before removing them."
         Case "frmCleanupSuiteLauncher.lblDescTableClean": ControlCaptionText = "Clean table structure, padding, borders, direct formatting, or convert simple tables."
         Case "frmCleanupSuiteLauncher.lblDescBreakNorm": ControlCaptionText = "Collapse or convert section and page breaks from assembled documents."
         Case "frmCleanupSuiteLauncher.lblDescHeaderFooter": ControlCaptionText = "Standardize or clear headers and footers across document sections."
@@ -1029,10 +1173,31 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmCleanupSuiteLauncher.lblDescFontNorm": ControlCaptionText = "Reset direct font face, size, color, bold, and italic overrides."
         Case "frmCleanupSuiteLauncher.lblDescFormatStrip": ControlCaptionText = "Strip direct character and paragraph formatting while preserving styles."
         Case "frmCleanupSuiteLauncher.lblDescStyleClean": ControlCaptionText = "Remove unused custom styles or remap common style variants."
-        Case "frmCleanupSuiteLauncher.lblDescHyperlink": ControlCaptionText = "Remove links while keeping visible text, with optional hyperlink styling cleanup."
-        Case "frmCleanupSuiteLauncher.lblDescMetadata": ControlCaptionText = "Scrub document properties, personal info, comments, and tracked changes."
+        Case "frmCleanupSuiteLauncher.lblDescHyperlink": ControlCaptionText = "Keep links but Hide styling" & vbCrLf & "Keep text but remove links"
+        Case "frmCleanupSuiteLauncher.lblDescMetadata": ControlCaptionText = "Advanced metadata inspection, editing, and privacy management."
+        Case "frmCleanupSuiteLauncher.lblDescFinalReview": ControlCaptionText = "Remove review comments and accept tracked changes when markup is finalized."
         Case "frmCleanupSuiteLauncher.lblDescFootnote": ControlCaptionText = "Remove footnotes or endnotes, optionally keeping note text inline."
         Case "frmCleanupSuiteLauncher.lblDescObjectRemover": ControlCaptionText = "Remove embedded clutter such as images, text boxes, controls, hidden text, or tables."
+        Case "frmCleanupSuiteLauncher.lblRiskUnicode": ControlCaptionText = "Safe cleanup"
+        Case "frmCleanupSuiteLauncher.lblRiskPunctuation": ControlCaptionText = "Safe cleanup"
+        Case "frmCleanupSuiteLauncher.lblRiskSpacing": ControlCaptionText = "Safe cleanup"
+        Case "frmCleanupSuiteLauncher.lblRiskCapitalization": ControlCaptionText = "Text caution"
+        Case "frmCleanupSuiteLauncher.lblRiskList": ControlCaptionText = "Structure change"
+        Case "frmCleanupSuiteLauncher.lblRiskParagraph": ControlCaptionText = "Structure change"
+        Case "frmCleanupSuiteLauncher.lblRiskSoftReturn": ControlCaptionText = "Structure change"
+        Case "frmCleanupSuiteLauncher.lblRiskDuplicate": ControlCaptionText = "Inspect First"
+        Case "frmCleanupSuiteLauncher.lblRiskTableClean": ControlCaptionText = "Structure change"
+        Case "frmCleanupSuiteLauncher.lblRiskHeaderFooter": ControlCaptionText = "Structure change"
+        Case "frmCleanupSuiteLauncher.lblRiskFootnote": ControlCaptionText = "Removes content"
+        Case "frmCleanupSuiteLauncher.lblRiskObjectRemover": ControlCaptionText = "Removes content"
+        Case "frmCleanupSuiteLauncher.lblRiskFontNorm": ControlCaptionText = "Formatting change"
+        Case "frmCleanupSuiteLauncher.lblRiskFormatStrip": ControlCaptionText = "Formatting change"
+        Case "frmCleanupSuiteLauncher.lblRiskMetadata": ControlCaptionText = "Privacy cleanup"
+        Case "frmCleanupSuiteLauncher.lblRiskFinalReview": ControlCaptionText = "Finalizes review"
+        Case "frmCleanupSuiteLauncher.lblRiskHyperlink": ControlCaptionText = "Removes content"
+        Case "frmCleanupSuiteLauncher.lblRiskStyleClean": ControlCaptionText = "Alpha tool"
+        Case "frmCleanupSuiteLauncher.lblRiskBreakNorm": ControlCaptionText = "Alpha tool"
+        Case "frmCleanupSuiteLauncher.lblRiskDocTrim": ControlCaptionText = "Safe cleanup"
         Case "frmDocumentTrim.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
         Case "frmDocumentTrim.optScopeDocument": ControlCaptionText = "Entire document (always)"
         Case "frmDuplicateDetector.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
@@ -1086,7 +1251,8 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmHeaderFooterStandardizer.optScopeDocument": ControlCaptionText = "Entire document (always)"
         Case "frmHeaderFooterStandardizer.optStandardize": ControlCaptionText = "Standardize formatting"
         Case "frmHyperlinkRemover.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
-        Case "frmHyperlinkRemover.chkRemoveFormat": ControlCaptionText = "Also, remove hyperlink character style (blue underline)"
+        Case "frmHyperlinkRemover.optHideLinks": ControlCaptionText = "Hide hyperlink styling, keep links"
+        Case "frmHyperlinkRemover.optRemoveLinks": ControlCaptionText = "Remove hyperlinks, keep visible text"
         Case "frmHyperlinkRemover.optScopeDocument": ControlCaptionText = "Entire document"
         Case "frmHyperlinkRemover.optScopeSelection": ControlCaptionText = "Selected text only"
         Case "frmListCleanup.chkFixIndent": ControlCaptionText = "Fix list indentation"
@@ -1101,12 +1267,13 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmListCleanup.optNumbering": ControlCaptionText = "Convert manual numbered lists"
         Case "frmListCleanup.optScopeDocument": ControlCaptionText = "Entire document"
         Case "frmListCleanup.optScopeSelection": ControlCaptionText = "Selected text only"
-        Case "frmMetadataScrubber.chkComments": ControlCaptionText = "Remove all comments"
-        Case "frmMetadataScrubber.chkPersonalInfo": ControlCaptionText = "Clear personal information (Last Saved By, revision authors)"
-        Case "frmMetadataScrubber.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
-        Case "frmMetadataScrubber.chkProperties": ControlCaptionText = "Clear document properties (Title, Author, Company, etc.)"
-        Case "frmMetadataScrubber.chkRevisions": ControlCaptionText = "Accept tracked changes and clear revision marks"
-        Case "frmMetadataScrubber.optScopeDocument": ControlCaptionText = "Entire document (always)"
+        Case "frmFinalReview.chkComments": ControlCaptionText = "Remove all comments"
+        Case "frmFinalReview.cmdAuthorCleanupMinimal": ControlCaptionText = "Author Cleanup - Minimal"
+        Case "frmFinalReview.cmdAuthorCleanupNormal": ControlCaptionText = "Author Cleanup - Normal"
+        Case "frmFinalReview.cmdAuthorCleanupBroad": ControlCaptionText = "Author Cleanup - Broad"
+        Case "frmFinalReview.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
+        Case "frmFinalReview.chkRevisions": ControlCaptionText = "Accept tracked changes and clear revision marks"
+        Case "frmFinalReview.optScopeDocument": ControlCaptionText = "Entire document (always)"
         Case "frmObjectRemover.chkFrames": ControlCaptionText = "Frames (remove frame, keep the text)"
         Case "frmObjectRemover.chkHiddenText": ControlCaptionText = "Hidden text"
         Case "frmObjectRemover.chkHorizontalLines": ControlCaptionText = "Horizontal lines"
@@ -1141,8 +1308,9 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmPunctuationCleanup.optScopeDocument": ControlCaptionText = "Entire document"
         Case "frmPunctuationCleanup.optScopeSelection": ControlCaptionText = "Selected text only"
         Case "frmPreviewActions.lblTitle": ControlCaptionText = ""
-        Case "frmPreviewActions.lblSummary": ControlCaptionText = "Preview complete."
+        Case "frmPreviewActions.lblSummary": ControlCaptionText = ""
         Case "frmPreviewActions.lblHint": ControlCaptionText = "Tool Name"
+        Case "frmPreviewActions.lblButtonMeasure": ControlCaptionText = ""
         Case "frmSoftReturnConverter.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
         Case "frmSoftReturnConverter.optParaToSoft": ControlCaptionText = "Convert paragraph marks to soft returns"
         Case "frmSoftReturnConverter.optScopeDocument": ControlCaptionText = "Entire document"
@@ -1199,9 +1367,12 @@ Private Sub SetButtonCaption(designer As Object, nm As String)
         Case "cmdPreview": cap = "Preview"
         Case "cmdApply": cap = "Apply"
         Case "cmdClear": cap = "Reconfigure"
+        Case "cmdPreviousPage": cap = "Previous page"
+        Case "cmdNextPage": cap = "Next page"
         Case "cmdReset": cap = "Reset"
         Case "cmdResetAll": cap = "Reset All"
         Case "cmdUserManual": cap = "User Manual"
+        Case "cmdCheckUpdates": cap = "Check for Updates"
         Case "cmdSelectAll": cap = "Select All"
         Case "cmdDeselectAll": cap = "Deselect All"
         Case "cmdUnicode": cap = "Invisible Unicode"
@@ -1214,11 +1385,16 @@ Private Sub SetButtonCaption(designer As Object, nm As String)
         Case "cmdFontNorm": cap = "Fonts"
         Case "cmdTableClean": cap = "Tables"
         Case "cmdBreakNorm": cap = "Breaks"
-        Case "cmdDocTrim": cap = "Document Trim"
-        Case "cmdFormatStrip": cap = "Strip Formatting"
+        Case "cmdDocTrim": cap = "Trim End of Doc"
+        Case "cmdFormatStrip": cap = "Formatting Cleaner"
         Case "cmdHyperlink": cap = "Hyperlinks"
         Case "cmdSoftReturn": cap = "Soft Returns"
-        Case "cmdMetadata": cap = "Metadata"
+        Case "cmdMetadata": cap = "MetaDataSuite"
+        Case "cmdAuthorCleanupMinimal": cap = "Author Cleanup - Minimal"
+        Case "cmdAuthorCleanupNormal": cap = "Author Cleanup - Normal"
+        Case "cmdAuthorCleanupBroad": cap = "Author Cleanup - Broad"
+        Case "cmdClearSharingProperties": cap = "Clear Sharing Properties"
+        Case "cmdFinalReview": cap = "Final Review"
         Case "cmdStyleClean": cap = "Styles"
         Case "cmdFootnote": cap = "Footnote / Endnote"
         Case "cmdHeaderFooter": cap = "Header / Footer"
@@ -1244,9 +1420,11 @@ Private Function FriendlyFormCaption(formName As String) As String
         Case "frmBreakNormalizer": FriendlyFormCaption = "Break Normalizer"
         Case "frmDocumentTrim": FriendlyFormCaption = "Document Trim"
         Case "frmFormattingStripper": FriendlyFormCaption = "Formatting Stripper"
-        Case "frmHyperlinkRemover": FriendlyFormCaption = "Hyperlink Remover"
+        Case "frmHyperlinkRemover": FriendlyFormCaption = "Hyperlink Cleaner"
         Case "frmSoftReturnConverter": FriendlyFormCaption = "Soft Return Converter"
-        Case "frmMetadataScrubber": FriendlyFormCaption = "Metadata Scrubber"
+        Case "frmMetaDataSuite": FriendlyFormCaption = "MetaDataSuite"
+        Case "frmSafeMetadataEditor": FriendlyFormCaption = "Safe Metadata Editor"
+        Case "frmFinalReview": FriendlyFormCaption = "Final Review"
         Case "frmStyleCleanup": FriendlyFormCaption = "Style Cleanup"
         Case "frmFootnoteRemover": FriendlyFormCaption = "Footnote / Endnote Remover"
         Case "frmHeaderFooterStandardizer": FriendlyFormCaption = "Header / Footer Standardizer"
@@ -1275,9 +1453,12 @@ Private Function ButtonTipText(nm As String) As String
         Case "cmdPreview": ButtonTipText = "Preview with the current settings"
         Case "cmdApply": ButtonTipText = "Apply this preview using the same settings"
         Case "cmdClear": ButtonTipText = "Return to this tool without resetting its controls"
+        Case "cmdPreviousPage": ButtonTipText = "Turn to the previous preview page"
+        Case "cmdNextPage": ButtonTipText = "Turn to the next preview page"
         Case "cmdReset": ButtonTipText = "Reset this tool to its defaults"
         Case "cmdResetAll": ButtonTipText = "Reset all tools and global settings to defaults"
         Case "cmdUserManual": ButtonTipText = "Open the PDF User Manual"
+        Case "cmdCheckUpdates": ButtonTipText = "Check for a newer CleanupSuite release"
         Case "cmdSelectAll": ButtonTipText = "Select all custom options"
         Case "cmdDeselectAll": ButtonTipText = "Clear all custom options"
         Case "cmdUnicode": ButtonTipText = "Remove invisible Unicode characters"
@@ -1292,9 +1473,14 @@ Private Function ButtonTipText(nm As String) As String
         Case "cmdBreakNorm": ButtonTipText = "Normalize section and page breaks"
         Case "cmdDocTrim": ButtonTipText = "Trim document start and end whitespace"
         Case "cmdFormatStrip": ButtonTipText = "Strip direct formatting while preserving content"
-        Case "cmdHyperlink": ButtonTipText = "Remove hyperlinks"
+        Case "cmdHyperlink": ButtonTipText = "Clean or hide hyperlinks"
         Case "cmdSoftReturn": ButtonTipText = "Convert soft returns and paragraph breaks"
-        Case "cmdMetadata": ButtonTipText = "Scrub document metadata and review artifacts"
+        Case "cmdMetadata": ButtonTipText = "Open the advanced metadata inspection and management dashboard"
+        Case "cmdAuthorCleanupMinimal": ButtonTipText = "Clear the most common author-identifying metadata fields"
+        Case "cmdAuthorCleanupNormal": ButtonTipText = "Clear a broader set of author-identifying metadata fields"
+        Case "cmdAuthorCleanupBroad": ButtonTipText = "Apply the broadest author cleanup; treat saved results as effectively final"
+        Case "cmdClearSharingProperties": ButtonTipText = "Clear document info fields before sharing"
+        Case "cmdFinalReview": ButtonTipText = "Remove comments and finalize tracked changes"
         Case "cmdStyleClean": ButtonTipText = "Clean unused and duplicate styles"
         Case "cmdFootnote": ButtonTipText = "Remove or inline footnotes and endnotes"
         Case "cmdHeaderFooter": ButtonTipText = "Standardize headers and footers"
@@ -1311,87 +1497,135 @@ Private Function ControlsForForm(formName As String) As Variant
     Select Case formName
         Case "frmCleanupSuiteLauncher"
             ControlsForForm = Array("lblLauncherTitle", "lblLauncherSubtitle", _
-                                    "lblCatText", "cmdHelpUnicode", "cmdUnicode", "lblDescUnicode", "cmdHelpPunct", "cmdPunctuation", "lblDescPunctuation", "cmdHelpSpacing", "cmdSpacing", "lblDescSpacing", "cmdHelpCap", "cmdCapitalization", "lblDescCapitalization", _
-                                    "lblCatPara", "cmdHelpList", "cmdList", "lblDescList", "cmdHelpPara", "cmdParagraph", "lblDescParagraph", "cmdHelpSoftReturn", "cmdSoftReturn", "lblDescSoftReturn", "cmdHelpDuplicate", "cmdDuplicate", "lblDescDuplicate", _
-                                    "lblCatLayout", "cmdHelpTable", "cmdTableClean", "lblDescTableClean", "cmdHelpBreak", "cmdBreakNorm", "lblDescBreakNorm", "cmdHelpHeaderFooter", "cmdHeaderFooter", "lblDescHeaderFooter", "cmdHelpTrim", "cmdDocTrim", "lblDescDocTrim", _
-                                    "lblCatFormat", "cmdHelpFont", "cmdFontNorm", "lblDescFontNorm", "cmdHelpFormat", "cmdFormatStrip", "lblDescFormatStrip", "cmdHelpStyle", "cmdStyleClean", "lblDescStyleClean", "cmdHelpHyperlink", "cmdHyperlink", "lblDescHyperlink", _
-                                    "lblCatReview", "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", "chkShowCompletionReviewAfterApply", "chkReturnToMainAfterApply", "chkReturnToMainAfterClose", "chkAutoSave", "cmdResetAll", "cmdUserManual")
+                                    "lblCatText", "cmdHelpUnicode", "cmdUnicode", "lblDescUnicode", "lblRiskUnicode", "cmdHelpPunct", "cmdPunctuation", "lblDescPunctuation", "lblRiskPunctuation", "cmdHelpSpacing", "cmdSpacing", "lblDescSpacing", "lblRiskSpacing", "cmdHelpCap", "cmdCapitalization", "lblDescCapitalization", "lblRiskCapitalization", _
+                                    "lblCatPara", "cmdHelpList", "cmdList", "lblDescList", "lblRiskList", "cmdHelpPara", "cmdParagraph", "lblDescParagraph", "lblRiskParagraph", "cmdHelpSoftReturn", "cmdSoftReturn", "lblDescSoftReturn", "lblRiskSoftReturn", "cmdHelpTrim", "cmdDocTrim", "lblDescDocTrim", "lblRiskDocTrim", _
+                                    "lblCatReview", "cmdHelpDuplicate", "cmdDuplicate", "lblDescDuplicate", "lblRiskDuplicate", _
+                                    "lblCatLayout", "cmdHelpTable", "cmdTableClean", "lblDescTableClean", "lblRiskTableClean", "cmdHelpHeaderFooter", "cmdHeaderFooter", "lblDescHeaderFooter", "lblRiskHeaderFooter", "cmdHelpFootnote", "cmdFootnote", "lblDescFootnote", "lblRiskFootnote", "cmdHelpObject", "cmdObjectRemover", "lblDescObjectRemover", "lblRiskObjectRemover", _
+                                    "lblCatFormat", "cmdHelpFont", "cmdFontNorm", "lblDescFontNorm", "lblRiskFontNorm", "cmdHelpFormat", "cmdFormatStrip", "lblDescFormatStrip", "lblRiskFormatStrip", _
+                                    "lblCatShare", "cmdHelpMetadata", "cmdMetadata", "lblDescMetadata", "lblRiskMetadata", "cmdHelpFinalReview", "cmdFinalReview", "lblDescFinalReview", "lblRiskFinalReview", "cmdHelpHyperlink", "cmdHyperlink", "lblDescHyperlink", "lblRiskHyperlink", _
+                                    "lblCatAlpha", "cmdHelpStyle", "cmdStyleClean", "lblDescStyleClean", "lblRiskStyleClean", "cmdHelpBreak", "cmdBreakNorm", "lblDescBreakNorm", "lblRiskBreakNorm", _
+                                    "chkReturnToMainAfterApply", "chkReturnToMainAfterClose", "chkAutoSave", "lblAutoSaveWarning", "chkUpdateChecks", "cmdCheckUpdates", "cmdResetAll", "cmdUserManual", "lblResetAllArrow", "lblResetAllCalloutBox", "lblResetAllCalloutText")
         Case "frmPreviewActions"
-            ControlsForForm = Array("lblTitle", "lblSummary", "lblHint", "cmdApply", "cmdPreview", "cmdClear")
+            ControlsForForm = Array("lblTitle", "lblSummary", "lblHint", "lblButtonMeasure", _
+                                    "cmdApply", "cmdPreview", "cmdClear", "cmdPreviousPage", "cmdNextPage")
         Case "frmPunctuationCleanup"
-            ControlsForForm = Array("optAll", "optQuotes", "optDashes", "optEllipses", "optCustom", "fraCustom", _
+            ControlsForForm = Array("optAll", "optQuotes", "optDashes", "optEllipses", "optCustom", _
+                                    "cmdRiskPlacementPunctuationAll", "cmdRiskPlacementPunctuationQuotes", "cmdRiskPlacementPunctuationDashes", "cmdRiskPlacementPunctuationEllipses", "cmdRiskPlacementPunctuationCustom", "fraCustom", _
                                     "chkCurlyDouble", "chkCurlySingle", "chkEmDash", "chkEnDash", "chkEllipses", _
                                     "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmUnicodeCleanup"
-            ControlsForForm = Array("optAll", "optNBSP", "optZeroWidth", "optCustom", "fraCustom", _
+            ControlsForForm = Array("optAll", "optNBSP", "optZeroWidth", "optCustom", _
+                                    "cmdRiskPlacementUnicodeAll", "cmdRiskPlacementUnicodeNBSP", "cmdRiskPlacementUnicodeZeroWidth", "cmdRiskPlacementUnicodeCustom", "fraCustom", _
                                     "chkNBSP", "chkZWSP", "chkZWNJ", "chkZWJ", "chkBOM", "chkSoftHyphen", "chkNBHyphen", _
                                     "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmSpacingCleanup"
-            ControlsForForm = Array("optAll", "optDoubleSpaces", "optTrim", "optCustom", "fraCustom", _
+            ControlsForForm = Array("optAll", "optDoubleSpaces", "optTrim", "optCustom", _
+                                    "cmdRiskPlacementSpacingAll", "cmdRiskPlacementSpacingDouble", "cmdRiskPlacementSpacingTrim", "cmdRiskPlacementSpacingCustom", "fraCustom", _
                                     "chkDoubleSpaces", "chkTrimSpaces", "chkSpaceBeforePunct", "chkNormalizeAfterPunct", "chkExtraBlankLines", _
                                     "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmCapitalizationCleanup"
-            ControlsForForm = Array("lblIntro", "optAll", "optSentence", "optTitle", "optUpper", "optLower", "optCustom", "lblModeSummary", "fraCustom", _
-                                    "chkSentence", "chkTitle", "chkUpper", "chkLower", "chkSmartSentences", _
-                                    "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
+            ControlsForForm = Array("lblIntro", "optAll", "optCustom", _
+                                    "cmdRiskPlacementCapitalizationRecommended", "cmdRiskPlacementCapitalizationCustom", "lblModeSummary", _
+                                    "chkSentence", "chkTitle", "chkUpper", "chkLower", "chkHeadingParentheses", "chkSmartSentences", _
+                                    "cmdEditExceptions", "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmListCleanup"
-            ControlsForForm = Array("optAll", "optBullets", "optNumbering", "optIndent", "optCustom", "fraCustom", _
+            ControlsForForm = Array("optAll", "optBullets", "optNumbering", "optIndent", "optCustom", _
+                                    "cmdRiskPlacementListAll", "cmdRiskPlacementListBullets", "cmdRiskPlacementListNumbering", "cmdRiskPlacementListIndent", "cmdRiskPlacementListCustom", "fraCustom", _
+                                    "cmdRiskPlacementListNormalizeBullets", "cmdRiskPlacementListNormalizeNumbering", "cmdRiskPlacementListFixIndent", "cmdRiskPlacementListHyphenBullets", _
                                     "chkNormalizeBullets", "chkNormalizeNumbering", "chkFixIndent", "chkHyphenToBullets", _
                                     "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmParagraphCleanup"
-            ControlsForForm = Array("optAll", "optRemoveEmpty", "optNormalizeSpacing", "optCustom", "fraCustom", _
+            ControlsForForm = Array("optAll", "optRemoveEmpty", "optNormalizeSpacing", "optCustom", _
+                                    "cmdRiskPlacementParagraphAll", "cmdRiskPlacementParagraphRemoveEmpty", "cmdRiskPlacementParagraphSpacing", "cmdRiskPlacementParagraphCustom", "fraCustom", _
+                                    "cmdRiskPlacementParagraphChkRemoveEmpty", "cmdRiskPlacementParagraphChkBreaks", "cmdRiskPlacementParagraphChkSpacing", "cmdRiskPlacementParagraphChkIndent", _
                                     "chkRemoveEmpty", "chkCollapseBreaks", "chkNormalizeParaSpacing", "chkFixIndent", _
                                     "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmDuplicateDetector"
             ControlsForForm = Array("optHighlightOnly", "optRemoveDupes", "fraMatching", _
+                                    "cmdRiskPlacementDuplicatePreview", "cmdRiskPlacementDuplicateRemove", _
                                     "optMatchExact", "optMatchNormalized", "optMatchFuzzy", _
+                                    "cmdRiskPlacementDuplicateExact", "cmdRiskPlacementDuplicateNormalized", "cmdRiskPlacementDuplicateFuzzy", _
                                     "fraThreshold", "optFuzzyLoose", "optFuzzyMedium", "optFuzzyStrict", "lblFuzzyWarning", _
+                                    "cmdRiskPlacementDuplicateFuzzyLoose", "cmdRiskPlacementDuplicateFuzzyMedium", "cmdRiskPlacementDuplicateFuzzyStrict", _
                                     "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmFontNormalizer"
             ControlsForForm = Array("chkFontFace", "chkFontSize", "chkBold", "chkItalic", "chkFontColor", _
+                                    "cmdRiskPlacementFontFace", "cmdRiskPlacementFontSize", "cmdRiskPlacementFontBold", "cmdRiskPlacementFontItalic", "cmdRiskPlacementFontColor", _
                                     "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmTableCleaner"
             ControlsForForm = Array("chkRemoveEmptyRows", "chkRemoveEmptyCols", "chkNormalizePadding", _
                                     "chkStripDirectFormat", "chkNormalizeBorders", "chkRemoveBorders", "chkConvertToText", _
+                                    "cmdRiskPlacementTableRows", "cmdRiskPlacementTableCols", "cmdRiskPlacementTablePadding", "cmdRiskPlacementTableStripFormat", "cmdRiskPlacementTableBorders", "cmdRiskPlacementTableRemoveBorders", "cmdRiskPlacementTableConvertToText", _
                                     "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmBreakNormalizer"
             ControlsForForm = Array("chkCollapseSectionBreaks", "chkCollapsePageBreaks", _
                                     "chkConvertSectionBreaks", "fraConvertTo", _
                                     "optConvertNextPage", "optConvertContinuous", "optConvertEvenPage", "optConvertOddPage", _
+                                    "cmdRiskPlacementBreakSections", "cmdRiskPlacementBreakPages", "cmdRiskPlacementBreakConvert", "cmdRiskPlacementBreakNextPage", "cmdRiskPlacementBreakContinuous", "cmdRiskPlacementBreakEvenPage", "cmdRiskPlacementBreakOddPage", _
                                     "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmDocumentTrim"
-            ControlsForForm = Array("chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
+            ControlsForForm = Array("lblRiskPlacementDocumentTrimSummary", "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmFormattingStripper"
             ControlsForForm = Array("chkResetChar", "chkResetPara", "fraEmphasis", _
                                     "optEmphQuick", "optEmphThorough", "optEmphStrip", "lblSpeedWarning", _
+                                    "cmdRiskPlacementFormattingChar", "cmdRiskPlacementFormattingPara", "cmdRiskPlacementFormattingQuick", "cmdRiskPlacementFormattingThorough", "cmdRiskPlacementFormattingStrip", _
                                     "chkPreserveHighlight", "chkPreserveDropCaps", "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", _
+                                    "cmdRiskPlacementFormattingHighlight", "cmdRiskPlacementFormattingDropCaps", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmHyperlinkRemover"
-            ControlsForForm = Array("chkRemoveFormat", "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", _
+            ControlsForForm = Array("optHideLinks", "optRemoveLinks", "cmdRiskPlacementHyperlinkHide", "cmdRiskPlacementHyperlinkRemove", _
+                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmSoftReturnConverter"
-            ControlsForForm = Array("optSoftToPara", "optParaToSoft", "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", _
+            ControlsForForm = Array("optSoftToPara", "optParaToSoft", "cmdRiskPlacementSoftReturnToPara", "cmdRiskPlacementSoftReturnToSoft", "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
-        Case "frmMetadataScrubber"
-            ControlsForForm = Array("chkProperties", "chkPersonalInfo", "chkComments", "chkRevisions", _
+        Case "frmMetaDataSuite"
+            ControlsForForm = Array("lblTitle", "lblTargetTitle", "lblTargetPath", "lblOverallIndicator", "lblOverallStatus", "lblHint", _
+                                    "cmdRefreshCurrent", "cmdAuditAnother", "cmdOpenWordReport", "cmdSafeEditCurrent", "cmdGroupEditCurrent", "cmdClearSharingProperties", "cmdClose", "cmdExpandAll", "chkShowSuiteMetadata", _
+                                    "lblCoreHeader", "chkCoreDetails", "lblCoreIndicator", "lblCoreSummary", "txtCoreDetails", _
+                                    "lblAppHeader", "chkAppDetails", "lblAppIndicator", "lblAppSummary", "txtAppDetails", _
+                                    "lblCustomHeader", "chkCustomDetails", "lblCustomIndicator", "lblCustomSummary", "txtCustomDetails", _
+                                    "lblPackageHeader", "chkPackageDetails", "lblPackageIndicator", "lblPackageSummary", "txtPackageDetails", _
+                                    "lblMetadataHeader", "chkMetadataDetails", "lblMetadataIndicator", "lblMetadataSummary", "txtMetadataDetails", "cmdMetadataInvestigate", _
+                                    "lblCryptoHeader", "chkCryptoDetails", "lblCryptoIndicator", "lblCryptoSummary", "txtCryptoDetails", "cmdCryptoInvestigate")
+        Case "frmSafeMetadataEditor"
+            ControlsForForm = Array("lblEditorTitle", "lblDocumentPath", "lblSummaryHeader", _
+                                    "lblTitle", "txtTitle", "lblSubject", "txtSubject", "lblAuthor", "txtAuthor", _
+                                    "lblKeywords", "txtKeywords", "lblComments", "txtComments", "lblCategory", "txtCategory", _
+                                    "lblCompany", "txtCompany", "lblManager", "txtManager", _
+                                    "lblStatusHeader", "lblLastAuthor", "txtLastAuthor", "lblContentStatus", "txtContentStatus", _
+                                    "lblContentType", "txtContentType", "lblLanguage", "txtLanguage", _
+                                    "lblCustomHeader", "lblCustomHint", "lblCustomNameHeader", "lblCustomTypeHeader", "lblCustomValueHeader", _
+                                    "lstCustomProperties", "lblCustomName", "txtCustomName", "lblCustomType", "cboCustomType", _
+                                    "lblCustomValue", "txtCustomValue", "cmdCustomAddUpdate", "cmdCustomDelete", _
+                                    "lblAuditOnlyNote", "cmdSave", "cmdCancel")
+        Case "frmFinalReview"
+            ControlsForForm = Array("chkComments", "chkRevisions", "cmdAuthorCleanupMinimal", "cmdAuthorCleanupNormal", "cmdAuthorCleanupBroad", _
+                                    "lblRiskPlacementFinalReviewSummary", _
                                     "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmStyleCleanup"
-            ControlsForForm = Array("chkRemoveUnused", "chkRemapVariants", "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", _
+            ControlsForForm = Array("chkRemoveUnused", "chkRemapVariants", _
+                                    "cmdRiskPlacementStyleRemoveUnused", "cmdRiskPlacementStyleRemap", _
+                                    "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmFootnoteRemover"
             ControlsForForm = Array("chkFootnotes", "chkEndnotes", "chkKeepTextInline", _
+                                    "cmdRiskPlacementFootnoteFootnotes", "cmdRiskPlacementFootnoteEndnotes", "cmdRiskPlacementFootnoteKeepText", _
                                     "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmHeaderFooterStandardizer"
             ControlsForForm = Array("optStandardize", "optClearAll", "fraOptions", _
+                                    "cmdRiskPlacementHeaderFooterStandardize", "cmdRiskPlacementHeaderFooterClear", _
                                     "chkHeaders", "chkFooters", "chkFont", "chkSpacing", "chkBreakLinks", "chkAlignment", _
+                                    "cmdRiskPlacementHeaderFooterHeaders", "cmdRiskPlacementHeaderFooterFooters", "cmdRiskPlacementHeaderFooterFont", "cmdRiskPlacementHeaderFooterSpacing", "cmdRiskPlacementHeaderFooterBreakLinks", "cmdRiskPlacementHeaderFooterAlignment", _
                                     "fraAlign", "optAlignLeft", "optAlignRight", "optAlignCenter", _
                                     "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmObjectRemover"
             ControlsForForm = Array("chkPictures", "chkTextBoxes", "chkFrames", "chkHorizontalLines", _
                                     "chkHtmlControls", "chkHiddenText", "chkTables", _
+                                    "cmdRiskPlacementObjectPictures", "cmdRiskPlacementObjectTextBoxes", "cmdRiskPlacementObjectFrames", "cmdRiskPlacementObjectLines", "cmdRiskPlacementObjectControls", "cmdRiskPlacementObjectHiddenText", "cmdRiskPlacementObjectTables", _
                                     "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", _
                                     "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case Else
@@ -1403,7 +1637,9 @@ End Function
 ' Helper: choose MSForms control ProgID by name prefix
 ' ---------------------------
 Private Function ControlTypeByName(ctrlName As String) As String
-    If Left$(ctrlName, 3) = "opt" Then
+    If Left$(ctrlName, 7) = "lblRisk" Then
+        ControlTypeByName = "Forms.CommandButton.1"
+    ElseIf Left$(ctrlName, 3) = "opt" Then
         ControlTypeByName = "Forms.OptionButton.1"
     ElseIf Left$(ctrlName, 3) = "chk" Then
         ControlTypeByName = "Forms.CheckBox.1"
@@ -1411,6 +1647,10 @@ Private Function ControlTypeByName(ctrlName As String) As String
         ControlTypeByName = "Forms.CommandButton.1"
     ElseIf Left$(ctrlName, 3) = "fra" Then
         ControlTypeByName = "Forms.Frame.1"
+    ElseIf Left$(ctrlName, 3) = "lst" Then
+        ControlTypeByName = "Forms.ListBox.1"
+    ElseIf Left$(ctrlName, 3) = "cbo" Then
+        ControlTypeByName = "Forms.ComboBox.1"
     ElseIf Left$(ctrlName, 3) = "lbl" Then
         ControlTypeByName = "Forms.Label.1"
     Else

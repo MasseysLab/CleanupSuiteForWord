@@ -1,218 +1,81 @@
 <!-- SPDX-License-Identifier: MIT -->
-<!-- Copyright (c) 2026 Christopher Travis Massey — see LICENSE for full terms. -->
+<!-- Copyright (c) 2026 MasseysLab -->
 
-# VBA Cleanup Suite — Build Pipeline
+# CleanupSuite For Word
 
-## Overview
+CleanupSuite For Word is a set of preview-first tools for cleaning pasted text, paragraphs, lists, formatting, document objects, links, review content, and editable metadata in Microsoft Word; it is for speeding up careful document cleanup, not for replacing human review or repairing every document automatically.
 
-The distributable (`VBA_Cleanup_tool.txt`) is a single CRLF file the user pastes
-into a VBA module and runs.  This pipeline gives you a proper authoring workflow:
-readable per-component source files, a build step that assembles them, and a
-validation gate that fails loudly on errors.
+Close Word, download and run [CleanupSuiteForWord-Setup.exe](https://github.com/MasseysLab/CleanupSuiteForWord/raw/refs/heads/main/release/CleanupSuiteForWord-Setup.exe), then reopen Word and select **CleanupSuite** on the ribbon.
 
-```
-src/                   ← authorable source tree
-  manifest.txt         ← assembly order (generated once by explode, then maintained)
-  installer/
-    installer.bas      ← host module: install/uninstall/wiring subs (one VBComponent)
-    checklist.bas      ← ManualChecklistText content (plain text, no builder strings)
-  modules/
-    modCleanupHelpers.bas
-    modCleanupLauncher.bas
-  forms/
-    frmPunctuationCleanup.bas
-    frmUnicodeCleanup.bas
-    ... (one .bas per UserForm)
-    frmCleanupSuiteLauncher.bas
-  ribbon/
-    ribbon.xml         ← plain XML injected at ribbon install time
-    inject.bas         ← InjectRibbonXml sub + Wait helper
+## Start using it
 
-VBA_Cleanup_tool.txt   ← assembled distributable (do not edit by hand)
-explode.py             ← splits an existing .txt into src/
-assemble.py            ← rebuilds the .txt from src/ + runs build-gate
-vbaeval.py             ← validation library + CLI (used by assemble.py)
-```
+1. Open the document you want to clean.
+2. Select **CleanupSuite** on Word's ribbon.
+3. Choose a tool, keep **Preview ON**, and review the highlighted changes.
+4. Select **Apply** only when the preview is correct.
 
----
+Work on a copy of important documents. CleanupSuite's recommended auto-save setting is on by default, but it does not replace your own backups.
 
-## Normal workflow
+The [CleanupSuite User Manual](documents/CleanupSuite_User_Manual.pdf) explains every tool and the preview workflow.
 
-**Edit a form or module:**
+## Installation choices
 
-1. Open its `.bas` file in `src/forms/` or `src/modules/` and edit.
-2. Run `python assemble.py` (or `powershell -File .\build.ps1`). If validation passes,
-   `VBA_Cleanup_tool.txt` is updated and
-   `Practice - Try CleanupSuite Here\VBA_Cleanup_tool.txt` is refreshed to match.
-3. Paste the updated `.txt` into Word and test.
+### Preferred: per-user installer
 
-**Quick contributor loop:**
+The installer places `CleanupSuite.dotm` in your own Word Startup folder. It does not require administrator rights, edit `Normal.dotm`, change Word's macro-security policy, or install for other Windows accounts. Existing installations are backed up first; only the newest three installer backups are retained.
 
-- Edit source in `src/`
-- Build with `powershell -File .\build.ps1`
-- Run the sanity check with `powershell -File .\check.ps1`
-- Test the generated `.txt` in Word
-- Commit the source changes and the rebuilt output together
+The installer and app check the stable release manifest for a newer version. CleanupSuite asks before opening an update and its launcher lets you disable periodic checks; when disabled, it explains how to turn them back on. Because the Alpha installer is not yet code-signed, Windows may show a publisher/reputation warning even though the publisher recorded by the installer is MasseysLab.
 
-**Contributor checklist:**
+### Alternative: manual installation
 
-1. Keep edits in `src/` and avoid hand-editing the generated `.txt` files.
-2. Rebuild after every meaningful change.
-3. Verify the generated bundle in Word before considering the work done.
-4. Commit source and rebuilt output together when the output changed.
+Close Word, download `CleanupSuite.dotm` from the newest [GitHub release](https://github.com/MasseysLab/CleanupSuiteForWord/releases), copy it to `%APPDATA%\Microsoft\Word\STARTUP`, and reopen Word. If Windows blocked the downloaded file, open its **Properties**, select **Unblock**, and copy it again.
 
-**Edit the installer (wiring, control layout, etc.):**
+To uninstall manually, close Word and remove `%APPDATA%\Microsoft\Word\STARTUP\CleanupSuite.dotm`. The installer also registers a normal per-user uninstall entry in Windows Settings.
 
-1. Edit `src/installer/installer.bas`.
-2. Run `python assemble.py`.
+## Release
 
-**Add a new tool** (see `CONTRIBUTING.md` for the full wiring checklist):
+- Current release: **0.9.0 Alpha**
+- Git tag: `v0.9.0-alpha`
+- Publisher: **MasseysLab**
 
-1. Create `src/forms/frmMyTool.bas` with the form's VBA.
-2. Wire the remaining touch-points in `installer.bas` and `frmCleanupSuiteLauncher.bas`.
-3. Add the new builder entry to `manifest.txt` (copy the pattern of an adjacent form).
-4. Follow the shared two-column guided layout rule for generic tool choices and Custom choices, keep the forms intro-first, and make sure single leftover choices are centered.
-5. Run `python assemble.py`.
-6. If a repo artifact has a matching practice copy, sync that practice file in the same pass.
+See the [0.9.0 Alpha release notes](docs/Release_Notes_v0.9.0-alpha.md) for
+highlights, known Alpha limits, and the verified template hash.
 
----
+Software and documentation are licensed under the [MIT License](LICENSE).
 
-## Versioning
+## Contributor quick start
 
-The current working release is `0.8.5` Alpha.
+The project is source-first. Edit readable files under `src/`; do not hand-edit the generated `VBA_Cleanup_tool.txt`.
 
-See [`VERSIONING.md`](VERSIONING.md) for the `0.5.0` through `1.0.0` roadmap and the rule for when `SUITE_VERSION` should change.
+Generated tool forms use the shared two-column guided layout documented in `CONTRIBUTING.md`; single leftover choices are centered.
 
----
-
-## Scripts
-
-### `explode.py` — one-time migration from an existing `.txt`
-
-Splits a distributable `.txt` into the `src/` tree and generates `manifest.txt`.
-Run this once when bootstrapping; after that, maintain the source files directly.
-
-```
-python explode.py [--file=VBA_Cleanup_tool.txt] [--src=src]
+```powershell
+python assemble.py
+python -m pytest -q
+powershell -ExecutionPolicy Bypass -File .\scripts\sync_docm_code_only.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\refresh_startup_dotm.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\run_word_alpha_smoke.ps1
 ```
 
-What it produces:
+Run the Word alpha smoke runner before release and complete its remaining visual review in Word.
 
-- `installer/installer.bas` — the outer host module verbatim (lines 1 through
-  end of `ControlTypeByName`, the last helper function before the builders).
-- `installer/checklist.bas` — emitted text of `ManualChecklistText` (plain, readable).
-- `modules/*.bas` and `forms/*.bas` — emitted VBA for each injected component.
-- `ribbon/ribbon.xml` — plain XML from the `RIBBON_XML` builder.
-- `ribbon/inject.bas` — verbatim ribbon module sections.
-- `manifest.txt` — the assembly-order file consumed by `assemble.py`.
+Build the per-user release installer only after the Startup template is refreshed:
 
-All `.bas` and `.xml` source files use **LF line endings**.  `assemble.py` converts
-to CRLF when building the distributable.
-
-### `assemble.py` — rebuild the distributable
-
-Reads `manifest.txt`, assembles chunks in order, validates, and writes the output.
-
-```
-python assemble.py [--src=src] [--out=VBA_Cleanup_tool.txt] [--no-validate]
+```powershell
+powershell -ExecutionPolicy Bypass -File .\installer\build-installer.ps1
 ```
 
-Exits 0 on success, exits 1 if any validator fails.  The output file is **not
-written** when validation fails.
+Important paths:
 
-### `vbaeval.py` — validation library + CLI
+| Path | Purpose |
+| --- | --- |
+| `src/manifest.txt` | Source assembly order |
+| `src/installer/installer.bas` | VBA component/control installer and layout mirror |
+| `src/modules/` | Shared VBA services and launcher entry points |
+| `src/forms/` | UserForm code |
+| `scripts/sync_docm_code_only.ps1` | Sync source into macro-enabled Word artifacts |
+| `installer/` | Per-user Windows Setup source and build script |
+| `release/` | Setup EXE, global template, and stable release manifest |
+| `tests/` | Python regression suite |
 
-Run the build-gate validators directly against any `.txt`:
-
-```
-python vbaeval.py validate [--file=VBA_Cleanup_tool.txt]
-python vbaeval.py list
-python vbaeval.py show frmSpacingCleanup_Code
-```
-
-`validate` exits 0 if clean, 1 on any failure.  Wire it into CI or a pre-commit
-hook to catch problems before pushing:
-
-```yaml
-# .github/workflows/build.yml (example)
-- run: python assemble.py --src=src --out=VBA_Cleanup_tool.txt
-```
-
----
-
-## `manifest.txt` format
-
-The manifest is the assembly order for `assemble.py`.  Each non-blank,
-non-comment line has the form:
-
-```
-TYPE  path  [func_name]
-```
-
-| Type | Meaning |
-|------|---------|
-| `VERBATIM` | Read the file, convert LF→CRLF, paste into distributable as-is. |
-| `BUILDER` | Read the file (plain VBA), run `vba_to_builder` to produce the `Private Function func_name() As String` block. |
-| `XML_BUILDER` | Same as `BUILDER` but source is plain XML (used for `ribbon.xml`). |
-| `SEP` | Literal CRLF separator block (base64-encoded), pasted verbatim. Carries the comment lines between builders. |
-
-`SEP` entries are generated by `explode.py` and should not be edited by hand.
-To add a new tool, copy the `SEP` + `BUILDER` pair from an adjacent entry and
-update the path and function name.
-
----
-
-## Build-gate validators (run automatically by `assemble.py`)
-
-All five run on every `assemble.py` invocation:
-
-| Check | What it catches |
-|-------|----------------|
-| **Balance** | `Sub`/`Function`/`With`/`If`/`For`/`Do`/`Select` nesting doesn't return to 0, or goes negative. Uses a string-aware tokeniser that ignores `:` and `"` inside literals. |
-| **If-traps** | Single-line `If x Then <block>` where the block contains `With`, `For`, `Do`, `End If`, etc. These compile-fail in VBA. |
-| **Control wiring** | Every `opt`/`chk`/`cmd`/`fra`/`lbl` control referenced in a form's code is declared in that form's `ControlsForForm` case. |
-| **Unterminated strings** | Lines with an odd quote count (excluding comment lines). |
-| **Round-trip** | Re-extracting the emitted code from a rebuilt builder is byte-identical to the original extract. Catches non-literal concatenation in builder source. |
-
-Run validators without assembling:
-
-```
-python vbaeval.py validate
-```
-
----
-
-## Line-ending discipline
-
-| File | Endings | Why |
-|------|---------|-----|
-| Source `.bas` / `.xml` in `src/` | **LF** | Readable in any editor, normal for version control. |
-| `VBA_Cleanup_tool.txt` (distributable) | **CRLF** | Required: VBA editor on Windows expects CRLF; the self-injector reads the file with `newline=''`. |
-| `vbaeval.py`, `explode.py`, `assemble.py` | LF | Normal Python scripts. |
-
-`assemble.py` handles the LF→CRLF conversion automatically.  Never edit the
-distributable `.txt` directly — always edit source and reassemble.
-
----
-
-## What the diff means after the first explode/assemble
-
-The assembled distributable is **not byte-identical** to the original `.txt` in
-two intentional ways:
-
-1. **Bare CRs in `IsSuiteComponent`** — the original had `\r\r\n` line-continuation
-   artifacts (8 occurrences) from an earlier editor session.  The assembled file
-   normalises these to `\r\n`.  VBA ignores the difference.
-
-2. **`ManualChecklistText` builder** — the original used a `checklistText`-named
-   accumulator; the assembled version uses the canonical `s` accumulator.
-   The emitted string at runtime is byte-identical.
-
-All 23 builders emit identical VBA.  The distributable compiles and runs correctly.
-
----
-
-## License
-
-MIT License — see [`LICENSE`](LICENSE) for full terms.  
-Copyright (c) 2026 Christopher Travis Massey
+See [CONTRIBUTING.md](CONTRIBUTING.md), [VERSIONING.md](VERSIONING.md), and the [CleanupSuite Programmer's Guide For Adding Tools](docs/CleanupSuite_Programmers_Guide_For_Adding_Tools_v0.9.0-alpha.md) for the full development workflow.

@@ -29,11 +29,7 @@ Private Sub UserForm_Initialize()
     optScopeDocument.Caption = "Entire document"
     optScopeDocument.Value = True
     optScopeSelection.Caption = "Selected text only"
-    If Selection.Type = wdSelectionNormal Or Selection.Type = wdSelectionColumn Then
-        optScopeSelection.Enabled = True
-    Else
-        optScopeSelection.Enabled = False
-    End If
+    RefreshScopeSelectionState Me, True
     optHighlightOnly.Caption = "Highlight duplicates (preview only)"
     optRemoveDupes.Caption = "Remove duplicate paragraphs"
     optMatchExact.Caption = "Exact match"
@@ -97,20 +93,20 @@ Private Function BuildWordSet(ByVal t As String) As Object
     Set BuildWordSet = d
 End Function
 Private Function JaccardSimilarity(ByVal a As Object, ByVal b As Object) As Double
-    If a.Count = 0 And b.Count = 0 Then JaccardSimilarity = 1: Exit Function
+    If a.Count = 0 And b.Count = 0 Then JaccardSimilarity = 0: Exit Function
     If a.Count = 0 Or b.Count = 0 Then JaccardSimilarity = 0: Exit Function
-    Dim shared As Long: shared = 0
+    Dim sharedCount As Long: sharedCount = 0
     Dim k As Variant
     If a.Count <= b.Count Then
         For Each k In a.Keys
-            If b.Exists(k) Then shared = shared + 1
+            If b.Exists(k) Then sharedCount = sharedCount + 1
         Next k
     Else
         For Each k In b.Keys
-            If a.Exists(k) Then shared = shared + 1
+            If a.Exists(k) Then sharedCount = sharedCount + 1
         Next k
     End If
-    JaccardSimilarity = shared / (a.Count + b.Count - shared)
+    JaccardSimilarity = sharedCount / (a.Count + b.Count - sharedCount)
 End Function
 Private Function FindRoot(ByRef par() As Long, ByVal x As Long) As Long
     Do While par(x) <> x
@@ -124,12 +120,22 @@ Private Sub optRemoveDupes_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub optFuzzyLoose_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub optFuzzyMedium_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub optFuzzyStrict_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub cmdRiskPlacementDuplicatePreview_Click(): ShowToolRiskChoiceExplanation "Highlight duplicates", "Inspect first", "Marks likely duplicates for review without deleting text." : End Sub
+Private Sub cmdRiskPlacementDuplicateRemove_Click(): ShowToolRiskChoiceExplanation "Remove duplicate paragraphs", "Removes content", "Deletes later duplicate paragraphs and keeps the first match." : End Sub
+Private Sub cmdRiskPlacementDuplicateExact_Click(): ShowToolRiskChoiceExplanation "Exact match", "Inspect first", "Finds only paragraphs that match exactly." : End Sub
+Private Sub cmdRiskPlacementDuplicateNormalized_Click(): ShowToolRiskChoiceExplanation "Normalized match", "Inspect first", "Ignores punctuation and spacing differences when finding repeats." : End Sub
+Private Sub cmdRiskPlacementDuplicateFuzzy_Click(): ShowToolRiskChoiceExplanation "Fuzzy match", "Inspect first", "Finds near-duplicates by word overlap and needs human review." : End Sub
+Private Sub cmdRiskPlacementDuplicateFuzzyLoose_Click(): ShowToolRiskChoiceExplanation "Loose fuzzy threshold", "Inspect first", "Finds more possible matches and more false positives." : End Sub
+Private Sub cmdRiskPlacementDuplicateFuzzyMedium_Click(): ShowToolRiskChoiceExplanation "Medium fuzzy threshold", "Inspect first", "Balances catch rate and false positives." : End Sub
+Private Sub cmdRiskPlacementDuplicateFuzzyStrict_Click(): ShowToolRiskChoiceExplanation "Strict fuzzy threshold", "Inspect first", "Finds fewer candidates but reduces false positives." : End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub
 Public Sub PreviewFromPanel()
     chkPreviewOnly.Value = True
+    BeginPreviewActionIndicator Me
     cmdRun_Click
+    EndPreviewActionIndicator
     chkPreviewOnly.Value = False
 End Sub
 Private Sub cmdReset_Click()
@@ -161,9 +167,9 @@ Private Sub cmdRun_Click()
     If optFuzzyStrict.Value Then threshold = 0.9
     Dim paras As Collection: Set paras = New Collection
     Dim p As Paragraph
-    For Each p In ActiveDocument.Paragraphs
-        If p.Range.Start >= targetRange.Start And p.Range.End <= targetRange.End Then
-            If Len(Trim$(p.Range.Text)) > 1 Then paras.Add p
+    For Each p In targetRange.Paragraphs
+        If ParagraphContainedInRange(p, targetRange) Then
+            If Len(DuplicateCandidateVisibleText(p.Range.Text)) > 0 Then paras.Add p
         End If
     Next p
     If matchMode = 2 And paras.Count > 1500 Then
@@ -197,6 +203,9 @@ Private Sub cmdRun_Click()
                 Else
                     dict.Add key, i
                 End If
+            End If
+            If i Mod 100 = 0 Or i = paras.Count Then
+                UpdateCleanupProgress "Checking duplicates", i, paras.Count
             End If
         Next i
     Else
@@ -234,7 +243,9 @@ Private Sub cmdRun_Click()
                         End If
                     Next j
                 End If
-                If (i Mod 25 = 0) Then Application.StatusBar = "Duplicate Detector: comparing " & i & " of " & n & "..."
+                If i Mod 25 = 0 Or i = n - 1 Then
+                    UpdateCleanupProgress "Comparing near duplicates", i, n
+                End If
             Next i
             Dim rootMin As Object: Set rootMin = CreateObject("Scripting.Dictionary")
             Dim rt As String
@@ -256,15 +267,16 @@ Private Sub cmdRun_Click()
             Next i
         End If
     End If
-    Application.StatusBar = False
     Application.ScreenUpdating = True
     If previewOnly Then
         undoRec.EndCustomRecord
         MarkCleanupEnd
-        ShowPreviewActions Me, "Duplicate Detector", "Preview complete. " & dupCount & " duplicate paragraphs highlighted."
+        Dim previewRows As Collection
+        Set previewRows = NewPreviewSummaryRows()
+        AddPreviewSummaryRow previewRows, "Duplicate paragraphs", dupCount
+        ShowPreviewActionsSummary Me, "Duplicate Detector", previewRows
         Exit Sub
     End If
-    Dim results As Collection: Set results = New Collection
     If doRemove Then
         ' Remove ONLY paragraphs detected as duplicates, identified by the
         ' start positions captured during detection -- never by highlight
@@ -288,16 +300,7 @@ Private Sub cmdRun_Click()
                 removed = removed + 1
             Next di
         End If
-        results.Add "Duplicate paragraphs removed: " & removed
-    Else
-        results.Add "Duplicate paragraphs highlighted: " & dupCount
     End If
-    Select Case matchMode
-        Case 0: results.Add "Match method: exact (case-insensitive)"
-        Case 1: results.Add "Match method: normalized"
-        Case 2: results.Add "Match method: fuzzy (" & CLng(threshold * 100) & "%, grouped)"
-    End Select
-    ShowCleanupReport "Duplicate Detector", results
     undoRec.EndCustomRecord
     MarkCleanupEnd
     MarkCleanupToolApplied
@@ -309,7 +312,6 @@ RunErr:
     originalErrNumber = Err.Number
     originalErrDescription = Err.Description
     Application.ScreenUpdating = True
-    Application.StatusBar = False
     On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0
     MarkCleanupEnd
     Dim errMsg As String
@@ -319,3 +321,9 @@ RunErr:
              "Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back."
     MsgBox errMsg, vbCritical, "Cleanup Error"
 End Sub
+Private Function DuplicateCandidateVisibleText(ByVal paragraphText As String) As String
+    paragraphText = Replace(paragraphText, vbCr, "")
+    paragraphText = Replace(paragraphText, Chr$(1), "")
+    paragraphText = Replace(paragraphText, Chr$(7), "")
+    DuplicateCandidateVisibleText = Trim$(paragraphText)
+End Function

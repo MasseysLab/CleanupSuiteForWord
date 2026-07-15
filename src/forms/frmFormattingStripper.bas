@@ -28,11 +28,7 @@ Private Sub UserForm_Initialize()
     optScopeDocument.Caption = "Entire document"
     optScopeDocument.Value = True
     optScopeSelection.Caption = "Selected text only"
-    If Selection.Type = wdSelectionNormal Or Selection.Type = wdSelectionColumn Then
-        optScopeSelection.Enabled = True
-    Else
-        optScopeSelection.Enabled = False
-    End If
+    RefreshScopeSelectionState Me, True
     chkResetChar.Caption = "Strip direct character formatting"
     chkResetPara.Caption = "Strip direct paragraph formatting"
     optEmphQuick.Caption = "Quick  (preserve paragraph-level emphasis)"
@@ -57,12 +53,21 @@ Private Sub chkResetChar_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub chkResetPara_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub chkPreserveHighlight_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub chkPreserveDropCaps_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub cmdRiskPlacementFormattingChar_Click(): ShowToolRiskChoiceExplanation "Strip character formatting", "Formatting change", "Removes direct font-level formatting while leaving styles in charge." : End Sub
+Private Sub cmdRiskPlacementFormattingPara_Click(): ShowToolRiskChoiceExplanation "Strip paragraph formatting", "Formatting change", "Removes direct paragraph spacing, indents, and alignment." : End Sub
+Private Sub cmdRiskPlacementFormattingQuick_Click(): ShowToolRiskChoiceExplanation "Quick emphasis preservation", "Inspect first", "Preserves emphasis that applies to whole paragraphs." : End Sub
+Private Sub cmdRiskPlacementFormattingThorough_Click(): ShowToolRiskChoiceExplanation "Thorough emphasis preservation", "Inspect first", "Checks smaller text runs and may take longer." : End Sub
+Private Sub cmdRiskPlacementFormattingStrip_Click(): ShowToolRiskChoiceExplanation "Strip all direct emphasis", "Formatting change", "Removes manual emphasis such as direct bold and italic." : End Sub
+Private Sub cmdRiskPlacementFormattingHighlight_Click(): ShowToolRiskChoiceExplanation "Preserve highlighting", "Safe cleanup", "Leaves highlighting in place while other direct formatting is stripped." : End Sub
+Private Sub cmdRiskPlacementFormattingDropCaps_Click(): ShowToolRiskChoiceExplanation "Preserve drop caps", "Safe cleanup", "Leaves decorative drop caps in place." : End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub
 Public Sub PreviewFromPanel()
     chkPreviewOnly.Value = True
+    BeginPreviewActionIndicator Me
     cmdRun_Click
+    EndPreviewActionIndicator
     chkPreviewOnly.Value = False
 End Sub
 Private Sub cmdReset_Click()
@@ -91,14 +96,27 @@ Private Sub cmdRun_Click()
     Dim preserveDC As Boolean: preserveDC = chkPreserveDropCaps.Value
     If Not (doResetChar Or doResetPara) Then MsgBox "Nothing selected to reset. Tick at least one reset option.", vbInformation: Exit Sub
     Dim p As Paragraph
+    Dim previewChar As Long
+    Dim previewPara As Long
     If previewOnly Then
-        Dim pcnt As Long: pcnt = 0
-        For Each p In ActiveDocument.Paragraphs
-            If p.Range.Start >= targetRange.Start And p.Range.End <= targetRange.End Then
-                If HasDirectFormatting(p, doResetChar, doResetPara) Then p.Range.HighlightColorIndex = wdYellow: pcnt = pcnt + 1
+        For Each p In targetRange.Paragraphs
+            If ParagraphContainedInRange(p, targetRange) Then
+                Dim hasDirectCharacterFormatting As Boolean
+                Dim hasDirectParagraphFormatting As Boolean
+                GetDirectFormattingFlags p, doResetChar, doResetPara, _
+                                         hasDirectCharacterFormatting, hasDirectParagraphFormatting
+                If hasDirectCharacterFormatting Then previewChar = previewChar + 1
+                If hasDirectParagraphFormatting Then previewPara = previewPara + 1
+                If hasDirectCharacterFormatting Or hasDirectParagraphFormatting Then
+                    p.Range.HighlightColorIndex = wdYellow
+                End If
             End If
         Next p
-        ShowPreviewActions Me, "Formatting Stripper", "Preview complete. " & pcnt & " paragraphs with direct formatting highlighted."
+        Dim previewRows As Collection
+        Set previewRows = NewPreviewSummaryRows()
+        AddPreviewSummaryRow previewRows, "Character formatting", previewChar, False, (Not doResetChar)
+        AddPreviewSummaryRow previewRows, "Paragraph formatting", previewPara, False, (Not doResetPara)
+        ShowPreviewActionsSummary Me, "Formatting Stripper", previewRows
         Exit Sub
     End If
     Dim emphMode As Integer: emphMode = 0
@@ -106,8 +124,10 @@ Private Sub cmdRun_Click()
     If optEmphStrip.Value Then emphMode = 2
     If emphMode = 1 Then
         Dim totalChars As Long: totalChars = 0
-        For Each p In ActiveDocument.Paragraphs
-            If p.Range.Start >= targetRange.Start And p.Range.End <= targetRange.End Then totalChars = totalChars + p.Range.Characters.Count
+        For Each p In targetRange.Paragraphs
+            If ParagraphContainedInRange(p, targetRange) Then
+                totalChars = totalChars + p.Range.Characters.Count
+            End If
         Next p
         If totalChars > 20000 Then
             If MsgBox("This document has " & totalChars & " characters in scope." & vbCrLf & "Thorough cleaning may take a while. Continue?", vbQuestion + vbYesNo, "Thorough Clean") = vbNo Then Exit Sub
@@ -121,26 +141,19 @@ Private Sub cmdRun_Click()
     Application.ScreenUpdating = False
     Dim cntReset As Long: cntReset = 0
     Dim processed As Long: processed = 0
-    For Each p In ActiveDocument.Paragraphs
-        If p.Range.Start >= targetRange.Start And p.Range.End <= targetRange.End Then
+    Dim paragraphsToProcess As Long
+    paragraphsToProcess = targetRange.Paragraphs.Count
+    For Each p In targetRange.Paragraphs
+        If ParagraphContainedInRange(p, targetRange) Then
             ApplyStripToParagraph p, doResetChar, doResetPara, emphMode, preserveHL, preserveDC
             cntReset = cntReset + 1
             processed = processed + 1
-            If emphMode = 1 And (processed Mod 25 = 0) Then Application.StatusBar = "Formatting Stripper: " & processed & " paragraphs processed..."
+            If emphMode = 1 And (processed Mod 25 = 0 Or processed = paragraphsToProcess) Then
+                UpdateCleanupProgress "Cleaning formatting", processed, paragraphsToProcess
+            End If
         End If
     Next p
     Application.ScreenUpdating = True
-    Application.StatusBar = False
-    Dim results As Collection: Set results = New Collection
-    results.Add "Paragraphs processed: " & cntReset
-    If doResetChar Then results.Add "Character formatting reset"
-    If doResetPara Then results.Add "Paragraph formatting reset"
-    Select Case emphMode
-        Case 0: results.Add "Emphasis: whole-paragraph preserved"
-        Case 1: results.Add "Emphasis: word-level preserved"
-        Case 2: results.Add "Emphasis: removed"
-    End Select
-    ShowCleanupReport "Formatting Stripper", results
     undoRec.EndCustomRecord
     MarkCleanupEnd
     MarkCleanupToolApplied
@@ -152,7 +165,6 @@ RunErr:
     originalErrNumber = Err.Number
     originalErrDescription = Err.Description
     Application.ScreenUpdating = True
-    Application.StatusBar = False
     On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0
     MarkCleanupEnd
     Dim errMsg As String
@@ -162,27 +174,41 @@ RunErr:
              "Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back."
     MsgBox errMsg, vbCritical, "Cleanup Error"
 End Sub
-Private Function HasDirectFormatting(p As Paragraph, doChar As Boolean, doPara As Boolean) As Boolean
-    HasDirectFormatting = False
-    On Error Resume Next
-    Dim st As Style
-    Set st = ActiveDocument.Styles(p.Style)
-    If st Is Nothing Then Exit Function
-    If doChar Then
-        If p.Range.Font.Name <> st.Font.Name Then HasDirectFormatting = True
-        If p.Range.Font.Size <> st.Font.Size And p.Range.Font.Size > 0 Then HasDirectFormatting = True
-        If p.Range.Font.Bold <> st.Font.Bold Then HasDirectFormatting = True
-        If p.Range.Font.Italic <> st.Font.Italic Then HasDirectFormatting = True
-        If p.Range.Font.Color <> st.Font.Color Then HasDirectFormatting = True
+Private Sub GetDirectFormattingFlags(ByVal p As Paragraph, _
+                                     ByVal checkCharacterFormatting As Boolean, _
+                                     ByVal checkParagraphFormatting As Boolean, _
+                                     ByRef hasCharacterFormatting As Boolean, _
+                                     ByRef hasParagraphFormatting As Boolean)
+    Dim paragraphRange As Range
+    Dim paragraphFormat As ParagraphFormat
+    Dim styleItem As Style
+
+    hasCharacterFormatting = False
+    hasParagraphFormatting = False
+    On Error GoTo SafeExit
+
+    Set paragraphRange = p.Range
+    Set paragraphFormat = paragraphRange.ParagraphFormat
+    Set styleItem = ActiveDocument.Styles(p.Style)
+    If styleItem Is Nothing Then Exit Sub
+
+    If checkCharacterFormatting Then
+        If paragraphRange.Font.Name <> styleItem.Font.Name Then hasCharacterFormatting = True
+        If paragraphRange.Font.Size <> styleItem.Font.Size And paragraphRange.Font.Size > 0 Then hasCharacterFormatting = True
+        If paragraphRange.Font.Bold <> styleItem.Font.Bold Then hasCharacterFormatting = True
+        If paragraphRange.Font.Italic <> styleItem.Font.Italic Then hasCharacterFormatting = True
+        If paragraphRange.Font.Color <> styleItem.Font.Color Then hasCharacterFormatting = True
     End If
-    If doPara And Not HasDirectFormatting Then
-        If p.LeftIndent <> st.ParagraphFormat.LeftIndent Then HasDirectFormatting = True
-        If p.SpaceBefore <> st.ParagraphFormat.SpaceBefore Then HasDirectFormatting = True
-        If p.SpaceAfter <> st.ParagraphFormat.SpaceAfter Then HasDirectFormatting = True
-        If p.Alignment <> st.ParagraphFormat.Alignment Then HasDirectFormatting = True
+
+    If checkParagraphFormatting Then
+        If paragraphFormat.LeftIndent <> styleItem.ParagraphFormat.LeftIndent Then hasParagraphFormatting = True
+        If paragraphFormat.SpaceBefore <> styleItem.ParagraphFormat.SpaceBefore Then hasParagraphFormatting = True
+        If paragraphFormat.SpaceAfter <> styleItem.ParagraphFormat.SpaceAfter Then hasParagraphFormatting = True
+        If paragraphFormat.Alignment <> styleItem.ParagraphFormat.Alignment Then hasParagraphFormatting = True
     End If
-    On Error GoTo 0
-End Function
+
+SafeExit:
+End Sub
 Private Sub ApplyStripToParagraph(p As Paragraph, doChar As Boolean, doPara As Boolean, emphMode As Integer, preserveHL As Boolean, preserveDropCaps As Boolean)
     If Not preserveDropCaps Then
         On Error Resume Next
@@ -190,19 +216,19 @@ Private Sub ApplyStripToParagraph(p As Paragraph, doChar As Boolean, doPara As B
         On Error GoTo 0
     End If
     If Not doChar Then
-        If doPara Then p.Range.ClearParagraphDirectFormatting
+        If doPara Then p.Range.ParagraphFormat.Reset
         Exit Sub
     End If
     If emphMode = 2 Then
-        p.Range.ClearCharacterDirectFormatting
-        If doPara Then p.Range.ClearParagraphDirectFormatting
+        p.Range.Font.Reset
+        If doPara Then p.Range.ParagraphFormat.Reset
     ElseIf emphMode = 0 Then
         Dim wasBold As Variant, wasItalic As Variant, savedHL As Variant
         wasBold = p.Range.Font.Bold
         wasItalic = p.Range.Font.Italic
         savedHL = p.Range.HighlightColorIndex
-        p.Range.ClearCharacterDirectFormatting
-        If doPara Then p.Range.ClearParagraphDirectFormatting
+        p.Range.Font.Reset
+        If doPara Then p.Range.ParagraphFormat.Reset
         If wasBold = True Then p.Range.Font.Bold = True
         If wasItalic = True Then p.Range.Font.Italic = True
         If preserveHL And savedHL <> wdUndefined And savedHL <> wdNoHighlight Then p.Range.HighlightColorIndex = savedHL
@@ -223,8 +249,8 @@ Private Sub ApplyStripToParagraph(p As Paragraph, doChar As Boolean, doPara As B
             End If
         Next ch
         Dim baseStart As Long: baseStart = p.Range.Start
-        p.Range.ClearCharacterDirectFormatting
-        If doPara Then p.Range.ClearParagraphDirectFormatting
+        p.Range.Font.Reset
+        If doPara Then p.Range.ParagraphFormat.Reset
         ApplyRuns baseStart, bArr, iArr, hArr, n, preserveHL
     End If
 End Sub

@@ -39,7 +39,7 @@ These are the safety tasks to keep the project recoverable before heavier UI cha
 - Keep the existing backup zip and practice folder intact.
 - Before major VBA edits, make a fresh backup zip of the project folder.
 - Do not clean up or revert unrelated working-tree changes unless they are deliberately reviewed.
-- Continue testing on normal target documents, not on `CleanupSuite_Workspace.docm` itself, whenever possible.
+- Continue testing on normal target documents, not on `CleanupSuite.docm` itself, whenever possible.
 - Keep the crash/reset mitigation in `modCleanupHelpers.bas`: do not auto-save or stamp custom document properties when the active document is the macro host.
 
 Why this matters:
@@ -273,6 +273,9 @@ Considerations:
 - Confirm startup/ribbon behavior works cleanly from Word's Startup folder or trusted add-in location.
 - Make sure the suite acts on the active document, not the add-in/template file.
 - Keep the current source pipeline as the canonical authoring path.
+- Include a preview-mode selection choice to show invisible characters and let the user scroll through the document while preview is on and editing is off.
+- Maintain a separate documentation project that is tied to the same release version as CleanupSuite.
+- Provide a clear way inside CleanupSuite to open that version-matched documentation.
 
 Acceptance checks:
 

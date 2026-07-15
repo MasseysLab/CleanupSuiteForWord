@@ -70,11 +70,11 @@ That layout polish changes presentation, but the tool guidance below is still ab
 
 ### Capitalization Fixer
 
-**What it fixes:** sentence case, title case, uppercase, lowercase, and smart paragraph capitalization.
+**What it fixes:** obvious capitalization damage while protecting abbreviations, acronyms, names, brands, Word heading styles, and user-entered custom exceptions.
 
 **Use it when:** text has inconsistent paragraph capitalization or headings need a consistent style.
 
-**Preview guidance:** Preview carefully because capitalization can affect names, acronyms, product names, legal terms, and deliberately styled headings.
+**Preview guidance:** Preview carefully because capitalization can affect names, acronyms, product names, legal terms, and deliberately styled headings. In Custom mode, enter exception pairs before previewing.
 
 **Best workflow:** Use on a selection first. For long documents, fix obvious problem sections rather than running broad modes on the whole document.
 
@@ -178,15 +178,15 @@ That layout polish changes presentation, but the tool guidance below is still ab
 
 **Best workflow:** Most cleanup uses Soft returns to paragraphs. Use Paragraphs to soft returns only on small, intentional selections.
 
-### Metadata Scrubber
+### MetaDataSuite
 
-**What it fixes:** document properties, author information, comments, and tracked changes.
+**What it fixes:** document properties, application properties, custom properties, package metadata, embedded items, and sharing-sensitive metadata signals.
 
 **Use it when:** a document is being shared outside the trusted editing group.
 
-**Preview guidance:** Preview/report what will be removed. Some privacy actions may not be meaningfully reversible after saving.
+**Preview guidance:** Refresh Quick Checks first. Use Clear Sharing Properties to preview and clear populated document info fields before sharing. Comments and tracked changes belong in Final Review.
 
-**Best workflow:** Save a private original first. Run before external sharing, not during active collaborative editing.
+**Best workflow:** Save a private original first. Safe Edit Current creates a timestamped backup and provides grouped fields for Title, Subject, Author, Keywords, Comments, Category, Company, Manager, Last Author, Content Status, Content Type, Language, and unlinked user custom properties. Linked properties, CleanupSuite settings, timestamps, revision counters, security/signatures, package structure, and generated statistics remain read-only. Use Clear Sharing Properties for privacy cleanup before sending.
 
 ### Style Cleanup
 

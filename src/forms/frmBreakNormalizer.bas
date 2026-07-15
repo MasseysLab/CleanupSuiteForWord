@@ -24,11 +24,7 @@ Private Sub UserForm_Initialize()
     optScopeDocument.Caption = "Entire document"
     optScopeDocument.Value = True
     optScopeSelection.Caption = "Selected text only"
-    If Selection.Type = wdSelectionNormal Or Selection.Type = wdSelectionColumn Then
-        optScopeSelection.Enabled = True
-    Else
-        optScopeSelection.Enabled = False
-    End If
+    RefreshScopeSelectionState Me, True
     chkCollapseSectionBreaks.Caption = "Collapse consecutive section breaks"
     chkCollapsePageBreaks.Caption = "Collapse consecutive page breaks"
     chkConvertSectionBreaks.Caption = "Convert section breaks to page breaks"
@@ -49,12 +45,21 @@ Private Sub optConvertNextPage_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub optConvertContinuous_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub optConvertEvenPage_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub optConvertOddPage_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub cmdRiskPlacementBreakSections_Click(): ShowToolRiskChoiceExplanation "Collapse consecutive section breaks", "Structure change", "Merges repeated section boundaries and can affect section-level layout." : End Sub
+Private Sub cmdRiskPlacementBreakPages_Click(): ShowToolRiskChoiceExplanation "Collapse consecutive page breaks", "Structure change", "Merges repeated manual page breaks and can change pagination." : End Sub
+Private Sub cmdRiskPlacementBreakConvert_Click(): ShowToolRiskChoiceExplanation "Convert section breaks", "Inspect first", "Changes section breaks to page-break behavior and may affect section formatting." : End Sub
+Private Sub cmdRiskPlacementBreakNextPage_Click(): ShowToolRiskChoiceExplanation "Next Page conversion", "Structure change", "Starts converted sections on a new page." : End Sub
+Private Sub cmdRiskPlacementBreakContinuous_Click(): ShowToolRiskChoiceExplanation "Continuous conversion", "Structure change", "Keeps converted breaks in the current page flow." : End Sub
+Private Sub cmdRiskPlacementBreakEvenPage_Click(): ShowToolRiskChoiceExplanation "Even Page conversion", "Structure change", "Forces converted sections to begin on an even page." : End Sub
+Private Sub cmdRiskPlacementBreakOddPage_Click(): ShowToolRiskChoiceExplanation "Odd Page conversion", "Structure change", "Forces converted sections to begin on an odd page." : End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub
 Public Sub PreviewFromPanel()
     chkPreviewOnly.Value = True
+    BeginPreviewActionIndicator Me
     cmdRun_Click
+    EndPreviewActionIndicator
     chkPreviewOnly.Value = False
 End Sub
 Private Sub cmdReset_Click()
@@ -87,17 +92,27 @@ Private Sub cmdRun_Click()
     If optConvertContinuous.Value Then targetSectStart = wdSectionContinuous
     If optConvertEvenPage.Value Then targetSectStart = wdSectionEvenPage
     If optConvertOddPage.Value Then targetSectStart = wdSectionOddPage
-    ' Preview: highlight consecutive section/page breaks
-    Dim cnt As Long: cnt = 0
-    If doCollSect Or doCollPage Then
-        With targetRange.Find
-            .ClearFormatting: .Replacement.ClearFormatting
-            If doCollSect Then .Text = "^b^b": .Replacement.Text = "^&": .Replacement.Highlight = True: .Execute Replace:=wdReplaceAll: cnt = cnt + 1
-            If doCollPage Then .Text = "^m^m": .Replacement.Text = "^&": .Replacement.Highlight = True: .Execute Replace:=wdReplaceAll: cnt = cnt + 1
-        End With
-    End If
     If previewOnly Then
-        ShowPreviewActions Me, "Break Normalizer", "Preview complete. Break sequences highlighted."
+        Dim previewSectionBreaks As Long
+        Dim previewPageBreaks As Long
+        Dim previewConversions As Long
+        If doCollSect Then previewSectionBreaks = CountPreviewFindMatches(targetRange, "^b^b")
+        If doCollPage Then previewPageBreaks = CountPreviewFindMatches(targetRange, "^m^m")
+        If doConvert Then
+            Dim previewSec As Section
+            For Each previewSec In ActiveDocument.Sections
+                If previewSec.Range.Start >= targetRange.Start And previewSec.Range.End <= targetRange.End Then
+                    If previewSec.Index > 1 Then previewConversions = previewConversions + 1
+                End If
+            Next previewSec
+        End If
+
+        Dim previewRows As Collection
+        Set previewRows = NewPreviewSummaryRows()
+        AddPreviewSummaryRow previewRows, "Consecutive section breaks", previewSectionBreaks, True, (Not doCollSect)
+        AddPreviewSummaryRow previewRows, "Consecutive page breaks", previewPageBreaks, True, (Not doCollPage)
+        AddPreviewSummaryRow previewRows, "Section break conversions", previewConversions, True, (Not doConvert)
+        ShowPreviewActionsSummary Me, "Break Normalizer", previewRows
         Exit Sub
     End If
     MarkCleanupStart "Break Normalizer"
@@ -107,16 +122,15 @@ Private Sub cmdRun_Click()
     On Error GoTo RunErr
     Dim cntSect As Long, cntPage As Long, cntConv As Long
     If doCollSect Then
-        Do
-            With targetRange.Find: .ClearFormatting: .Replacement.ClearFormatting: .Text = "^b^b": .Replacement.Text = "^b": Do While .Execute(Replace:=wdReplaceOne): cntSect = cntSect + 1: Loop: End With
-        Loop While targetRange.Find.Execute(FindText:="^b^b", Forward:=True)
+        UpdateCleanupProgress "Collapsing section breaks"
+        cntSect = CollapseRepeatedBreaks(targetRange, "^b^b")
     End If
     If doCollPage Then
-        Do
-            With targetRange.Find: .ClearFormatting: .Replacement.ClearFormatting: .Text = "^m^m": .Replacement.Text = "^m": Do While .Execute(Replace:=wdReplaceOne): cntPage = cntPage + 1: Loop: End With
-        Loop While targetRange.Find.Execute(FindText:="^m^m", Forward:=True)
+        UpdateCleanupProgress "Collapsing page breaks"
+        cntPage = CollapseRepeatedBreaks(targetRange, "^m^m")
     End If
     If doConvert Then
+        UpdateCleanupProgress "Converting section breaks"
         Dim sec As Section
         For Each sec In ActiveDocument.Sections
             If sec.Range.Start >= targetRange.Start And sec.Range.End <= targetRange.End Then
@@ -128,11 +142,6 @@ Private Sub cmdRun_Click()
         Next sec
     End If
     RemoveAllHighlighting targetRange
-    Dim results As Collection: Set results = New Collection
-    If doCollSect Then results.Add "Consecutive section breaks collapsed: " & cntSect
-    If doCollPage Then results.Add "Consecutive page breaks collapsed: " & cntPage
-    If doConvert Then results.Add "Section break types converted: " & cntConv
-    ShowCleanupReport "Break Normalizer", results
     undoRec.EndCustomRecord
     MarkCleanupEnd
     MarkCleanupToolApplied
@@ -152,3 +161,22 @@ RunErr:
              "Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back."
     MsgBox errMsg, vbCritical, "Cleanup Error"
 End Sub
+Private Function CollapseRepeatedBreaks(ByVal searchRange As Range, ByVal findText As String) As Long
+    Dim matchRange As Range
+    Dim deleteRange As Range
+    Do
+        Set matchRange = searchRange.Duplicate
+        With matchRange.Find
+            .ClearFormatting
+            .Text = findText
+            .Forward = True
+            .Wrap = wdFindStop
+            .MatchWildcards = False
+            If Not .Execute Then Exit Do
+        End With
+        Set deleteRange = matchRange.Duplicate
+        deleteRange.Start = deleteRange.End - 1
+        deleteRange.Delete
+        CollapseRepeatedBreaks = CollapseRepeatedBreaks + 1
+    Loop
+End Function

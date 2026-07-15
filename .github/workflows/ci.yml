@@ -1,0 +1,29 @@
+name: Build and test
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  source-validation:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Assemble and validate the VBA bundle
+        run: python assemble.py
+
+      - name: Run regression tests
+        run: python -m unittest discover -s tests
+
+      - name: Confirm generated bundles are current
+        run: git diff --exit-code -- VBA_Cleanup_tool.txt "Practice - Try CleanupSuite Here/VBA_Cleanup_tool.txt"

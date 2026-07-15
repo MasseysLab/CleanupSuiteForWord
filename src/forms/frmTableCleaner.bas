@@ -21,11 +21,7 @@ Private Sub UserForm_Initialize()
     optScopeDocument.Caption = "Entire document"
     optScopeDocument.Value = True
     optScopeSelection.Caption = "Selected text only"
-    If Selection.Type = wdSelectionNormal Or Selection.Type = wdSelectionColumn Then
-        optScopeSelection.Enabled = True
-    Else
-        optScopeSelection.Enabled = False
-    End If
+    RefreshScopeSelectionState Me, True
     chkRemoveEmptyRows.Caption = "Remove empty rows"
     chkRemoveEmptyCols.Caption = "Remove empty columns"
     chkNormalizePadding.Caption = "Normalize cell padding"
@@ -62,12 +58,21 @@ Private Sub chkStripDirectFormat_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub chkNormalizeBorders_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub chkRemoveBorders_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub chkConvertToText_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub cmdRiskPlacementTableRows_Click(): ShowToolRiskChoiceExplanation "Remove empty rows", "Structure change", "Deletes rows with no visible cell content." : End Sub
+Private Sub cmdRiskPlacementTableCols_Click(): ShowToolRiskChoiceExplanation "Remove empty columns", "Structure change", "Deletes columns with no visible cell content." : End Sub
+Private Sub cmdRiskPlacementTablePadding_Click(): ShowToolRiskChoiceExplanation "Normalize cell padding", "Formatting change", "Resets table cell margins to the suite defaults." : End Sub
+Private Sub cmdRiskPlacementTableStripFormat_Click(): ShowToolRiskChoiceExplanation "Strip cell formatting", "Formatting change", "Removes direct formatting inside table cells." : End Sub
+Private Sub cmdRiskPlacementTableBorders_Click(): ShowToolRiskChoiceExplanation "Normalize borders", "Formatting change", "Turns table borders back on using standard border behavior." : End Sub
+Private Sub cmdRiskPlacementTableRemoveBorders_Click(): ShowToolRiskChoiceExplanation "Remove borders", "Formatting change", "Removes visible table borders." : End Sub
+Private Sub cmdRiskPlacementTableConvertToText_Click(): ShowToolRiskChoiceExplanation "Convert table to text", "Structure change", "Replaces single-column tables with plain text." : End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub
 Public Sub PreviewFromPanel()
     chkPreviewOnly.Value = True
+    BeginPreviewActionIndicator Me
     cmdRun_Click
+    EndPreviewActionIndicator
     chkPreviewOnly.Value = False
 End Sub
 Private Sub cmdReset_Click()
@@ -105,20 +110,69 @@ Private Sub cmdRun_Click()
         If tbl.Range.Start >= targetRange.Start And tbl.Range.End <= targetRange.End Then tablesInScope.Add tbl
     Next tbl
     If tablesInScope.Count = 0 Then MsgBox "No tables found in the selected scope.", vbInformation: Unload Me: Exit Sub
-    ' Preview: highlight empty rows and cells
-    Dim cnt As Long: cnt = 0
     If previewOnly Then
+        Dim cnt As Long
+        Dim previewEmptyRows As Long
+        Dim previewCols As Long
+        Dim previewPadding As Long
+        Dim previewDirectFmt As Long
+        Dim previewNormalizeBorders As Long
+        Dim previewRemoveBorders As Long
+        Dim previewConvertText As Long
         Dim t As Variant
+        For Each t In tablesInScope
+            Set tbl = t
+            If doEmptyRows Then
+                Dim previewRow As Row
+                For Each previewRow In tbl.Rows
+                    If IsRowEmpty(previewRow) Then previewEmptyRows = previewEmptyRows + 1
+                Next previewRow
+            End If
+            If doEmptyCols Then
+                Dim previewColIndex As Long
+                For previewColIndex = 1 To tbl.Columns.Count
+                    If IsColEmpty(tbl, previewColIndex) Then previewCols = previewCols + 1
+                Next previewColIndex
+            End If
+            If doPadding Then previewPadding = previewPadding + 1
+            If doDirectFmt Then previewDirectFmt = previewDirectFmt + 1
+            If doBorders Then previewNormalizeBorders = previewNormalizeBorders + 1
+            If doRemoveBorders Then previewRemoveBorders = previewRemoveBorders + 1
+            If doConvertText And tbl.Columns.Count = 1 Then previewConvertText = previewConvertText + 1
+        Next t
+
         For Each t In tablesInScope
             Set tbl = t
             If doEmptyRows Then
                 Dim rw As Row
                 For Each rw In tbl.Rows
-                    If IsRowEmpty(rw) Then rw.Range.HighlightColorIndex = wdYellow: cnt = cnt + 1
+                    If IsRowEmpty(rw) Then ApplyPreviewShading rw.Range: cnt = cnt + 1
                 Next rw
             End If
+            If doEmptyCols Then
+                Dim previewShadeCol As Long
+                Dim previewShadeRow As Long
+                For previewShadeCol = 1 To tbl.Columns.Count
+                    If IsColEmpty(tbl, previewShadeCol) Then
+                        For previewShadeRow = 1 To tbl.Rows.Count
+                            On Error Resume Next
+                            ApplyPreviewShading tbl.Cell(previewShadeRow, previewShadeCol).Range
+                            On Error GoTo 0
+                        Next previewShadeRow
+                    End If
+                Next previewShadeCol
+            End If
         Next t
-        ShowPreviewActions Me, "Table Cleaner", "Preview complete. " & cnt & " empty rows highlighted across " & tablesInScope.Count & " tables."
+        Dim previewRows As Collection
+        Set previewRows = NewPreviewSummaryRows()
+        AddPreviewSummaryRow previewRows, "Empty rows", previewEmptyRows, False, (Not doEmptyRows)
+        AddPreviewSummaryRow previewRows, "Empty columns", previewCols, False, (Not doEmptyCols)
+        AddPreviewSummaryRow previewRows, "Cell padding", previewPadding, True, (Not doPadding)
+        AddPreviewSummaryRow previewRows, "Direct cell formatting", previewDirectFmt, True, (Not doDirectFmt)
+        AddPreviewSummaryRow previewRows, "Border normalization", previewNormalizeBorders, True, (Not doBorders)
+        AddPreviewSummaryRow previewRows, "Border removal", previewRemoveBorders, True, (Not doRemoveBorders)
+        AddPreviewSummaryRow previewRows, "Tables to text", previewConvertText, True, (Not doConvertText)
+        ShowPreviewActionsSummary Me, "Table Cleaner", previewRows
         Exit Sub
     End If
     MarkCleanupStart "Table Cleaner"
@@ -129,6 +183,7 @@ Private Sub cmdRun_Click()
     Dim cntRows As Long, cntCols As Long, cntTables As Long, cntConverted As Long
     Dim tVar As Variant
     For Each tVar In tablesInScope
+        UpdateCleanupProgress "Cleaning tables", cntTables + 1, tablesInScope.Count
         Set tbl = tVar
         If doEmptyRows Then
             Dim ri As Long
@@ -164,12 +219,6 @@ Private Sub cmdRun_Click()
             cntConverted = cntConverted + 1
         End If
     Next tVar
-    Dim results As Collection: Set results = New Collection
-    results.Add "Tables processed: " & cntTables
-    If doEmptyRows Then results.Add "Empty rows removed: " & cntRows
-    If doEmptyCols Then results.Add "Empty columns removed: " & cntCols
-    If doConvertText Then results.Add "Tables converted to text: " & cntConverted
-    ShowCleanupReport "Table Cleaner", results
     undoRec.EndCustomRecord
     MarkCleanupEnd
     MarkCleanupToolApplied

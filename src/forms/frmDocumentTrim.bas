@@ -23,7 +23,9 @@ Private Sub cmdPreview_Click()
 End Sub
 Public Sub PreviewFromPanel()
     chkPreviewOnly.Value = True
+    BeginPreviewActionIndicator Me
     cmdRun_Click
+    EndPreviewActionIndicator
     chkPreviewOnly.Value = False
 End Sub
 Private Sub cmdReset_Click()
@@ -54,15 +56,28 @@ Private Sub cmdRun_Click()
     Next i
     ' Always leave at least one paragraph at the end
     Dim toRemove As Long: toRemove = trailingCount - 1
-    If toRemove <= 0 Then MsgBox "No trailing empty paragraphs found.", vbInformation: Unload Me: Exit Sub
+    If previewOnly Then
+        Dim previewRows As Collection
+        Set previewRows = NewPreviewSummaryRows()
+        AddPreviewSummaryRow previewRows, "Trailing empty paragraphs", IIf(toRemove > 0, toRemove, 0)
+        If toRemove > 0 Then
+            For i = totalParas To totalParas - toRemove + 1 Step -1
+                ActiveDocument.Paragraphs(i).Range.HighlightColorIndex = wdYellow
+            Next i
+        End If
+        ShowPreviewActionsSummary Me, "Document Trim", previewRows
+        Exit Sub
+    End If
+    If toRemove <= 0 Then
+        MarkCleanupToolApplied
+        MsgBox "No trailing empty paragraphs found.", vbInformation
+        Unload Me
+        Exit Sub
+    End If
     ' Highlight the ones that will be removed
     For i = totalParas To totalParas - toRemove + 1 Step -1
         ActiveDocument.Paragraphs(i).Range.HighlightColorIndex = wdYellow
     Next i
-    If previewOnly Then
-        ShowPreviewActions Me, "Document Trim", "Preview complete. " & toRemove & " trailing empty paragraphs highlighted."
-        Exit Sub
-    End If
     MarkCleanupStart "Document Trim"
     Dim undoRec As UndoRecord
     Set undoRec = Application.UndoRecord
@@ -74,9 +89,6 @@ Private Sub cmdRun_Click()
         ActiveDocument.Paragraphs(i).Range.Delete
         removed = removed + 1
     Next i
-    Dim results As Collection: Set results = New Collection
-    results.Add "Trailing empty paragraphs removed: " & removed
-    ShowCleanupReport "Document Trim", results
     undoRec.EndCustomRecord
     MarkCleanupEnd
     MarkCleanupToolApplied

@@ -6,9 +6,9 @@ The project uses a simple SemVer-style ladder, but with `0.x.0` milestones until
 
 ## Current Version
 
-`0.8.5`
+`0.9.0-alpha`
 
-This is the current Alpha milestone for the `0.8.x` line.
+This is the first packaged Alpha: the global Word template, preferred per-user installer, update checks, and user-facing documentation are prepared together under tag `v0.9.0-alpha`.
 
 ## Roadmap
 
@@ -23,9 +23,9 @@ This is the current Alpha milestone for the `0.8.x` line.
 | `0.7.4.5` | Small bugfix bridge for release-blocking Preview Actions and compile issues before `0.7.5`. |
 | `0.7.5` | Documentation-complete release using the same codebase as `0.7.4`, except for documentation-blocking bug fixes if required. |
 | `0.8.0` | Complex tool form redesigns using the approved modern panel style. |
-| `0.8.5` | Official Alpha release. |
-| `0.9.0` | Alpha plus full documentation; clean house after this documentation state is complete. |
-| `0.9.5` | Official Beta release. |
+| `0.8.5` | Internal pre-release milestone used while the Alpha was being completed. |
+| `0.9.0-alpha` | Official Alpha with the global template, installer, update checks, and full documentation. Git tag: `v0.9.0-alpha`. |
+| `0.9.5-beta` | Official Beta release after Alpha feedback, full MetaData-project incorporation, and the planned Capitalization follow-up upgrades. |
 | `1.0.0` | Global `.dotm` Word add-in/template release suitable for normal use on any document. |
 
 ## Version Rules
@@ -36,8 +36,8 @@ This is the current Alpha milestone for the `0.8.x` line.
 - Keep Git commits small enough that each milestone can be understood later.
 - After `0.6.4` is pushed, no feature or code changes go into `0.6.5` unless required to correct documentation-blocking bugs.
 - After `0.7.4` is pushed, no feature or code changes go into `0.7.5` unless required to correct documentation-blocking bugs.
-- Treat `0.8.5` as Alpha and `0.9.0` as Alpha plus full documentation.
-- Do not clean house, remove old historical docs, or prune old release history until the `0.9.0` documentation state is complete unless Chris explicitly asks for earlier cleanup.
+- Treat `0.9.0-alpha` as Alpha and reserve the entire `0.9.5` milestone for Beta.
+- Do not remove historical documentation or release history without an explicit maintenance decision.
 - Do not call the project `1.0.0` until the global add-in/template workflow is stable.
 
 ## Naming Examples

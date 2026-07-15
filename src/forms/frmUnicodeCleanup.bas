@@ -23,11 +23,7 @@ Private Sub UserForm_Initialize()
     optScopeDocument.Caption = "Entire document"
     optScopeDocument.Value = True
     optScopeSelection.Caption = "Selected text only"
-    If Selection.Type = wdSelectionNormal Or Selection.Type = wdSelectionColumn Then
-        optScopeSelection.Enabled = True
-    Else
-        optScopeSelection.Enabled = False
-    End If
+    RefreshScopeSelectionState Me, True
     optAll.Caption = "All invisible / problem characters"
     optNBSP.Caption = "Non-breaking spaces only"
     optZeroWidth.Caption = "Zero-width characters only"
@@ -40,15 +36,22 @@ Private Sub UserForm_Initialize()
     chkSoftHyphen.Caption = "Soft hyphens (U+00AD)"
     chkNBHyphen.Caption = "Non-breaking hyphens (U+2011)"
     chkPreviewOnly.Caption = "Preview only (highlight, do not change)"
+    LayoutUnicodeForm
+End Sub
+Private Sub LayoutUnicodeForm()
     LayoutCleanupToolForm Me
 End Sub
 Private Sub UpdateCustomVisibility()
     fraCustom.Visible = False
 End Sub
-Private Sub optAll_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
-Private Sub optNBSP_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
-Private Sub optZeroWidth_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
-Private Sub optCustom_Click(): UpdateCustomVisibility: LayoutCleanupToolForm Me: End Sub
+Private Sub optAll_Click(): UpdateCustomVisibility: LayoutUnicodeForm: End Sub
+Private Sub optNBSP_Click(): UpdateCustomVisibility: LayoutUnicodeForm: End Sub
+Private Sub optZeroWidth_Click(): UpdateCustomVisibility: LayoutUnicodeForm: End Sub
+Private Sub optCustom_Click(): UpdateCustomVisibility: LayoutUnicodeForm: End Sub
+Private Sub cmdRiskPlacementUnicodeAll_Click(): ShowToolRiskChoiceExplanation "All invisible / problem characters", "Safe cleanup", "Sweeps the common invisible characters that interfere with search, wrapping, copying, and export.": End Sub
+Private Sub cmdRiskPlacementUnicodeNBSP_Click(): ShowToolRiskChoiceExplanation "Non-breaking spaces only", "Safe cleanup", "Replaces non-breaking spaces with regular spaces while leaving other hidden characters alone.": End Sub
+Private Sub cmdRiskPlacementUnicodeZeroWidth_Click(): ShowToolRiskChoiceExplanation "Zero-width characters only", "Safe cleanup", "Removes hidden zero-width characters that can split words and confuse search or cleanup.": End Sub
+Private Sub cmdRiskPlacementUnicodeCustom_Click(): ShowToolRiskChoiceExplanation "Custom Unicode cleanup", "Inspect first", "Lets you combine individual invisible-character repairs. Preview first when you are not sure which hidden characters are present.": End Sub
 Private Sub ClearCustomChecks()
     chkNBSP.Value = False: chkZWSP.Value = False: chkZWNJ.Value = False: chkZWJ.Value = False
     chkBOM.Value = False: chkSoftHyphen.Value = False: chkNBHyphen.Value = False
@@ -63,13 +66,13 @@ Private Sub cmdSelectAll_Click()
     chkBOM.Value = True
     chkSoftHyphen.Value = True
     chkNBHyphen.Value = True
-    LayoutCleanupToolForm Me
+    LayoutUnicodeForm
 End Sub
 Private Sub cmdDeselectAll_Click()
     optCustom.Value = True
     UpdateCustomVisibility
     ClearCustomChecks
-    LayoutCleanupToolForm Me
+    LayoutUnicodeForm
 End Sub
 Private Function UnicodeChar(ByVal codePoint As Long) As String
     If codePoint > &H7FFF Then
@@ -78,19 +81,21 @@ Private Function UnicodeChar(ByVal codePoint As Long) As String
         UnicodeChar = ChrW$(codePoint)
     End If
 End Function
-Private Sub chkNBSP_Click(): LayoutCleanupToolForm Me: End Sub
-Private Sub chkZWSP_Click(): LayoutCleanupToolForm Me: End Sub
-Private Sub chkZWNJ_Click(): LayoutCleanupToolForm Me: End Sub
-Private Sub chkZWJ_Click(): LayoutCleanupToolForm Me: End Sub
-Private Sub chkBOM_Click(): LayoutCleanupToolForm Me: End Sub
-Private Sub chkSoftHyphen_Click(): LayoutCleanupToolForm Me: End Sub
-Private Sub chkNBHyphen_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkNBSP_Click(): LayoutUnicodeForm: End Sub
+Private Sub chkZWSP_Click(): LayoutUnicodeForm: End Sub
+Private Sub chkZWNJ_Click(): LayoutUnicodeForm: End Sub
+Private Sub chkZWJ_Click(): LayoutUnicodeForm: End Sub
+Private Sub chkBOM_Click(): LayoutUnicodeForm: End Sub
+Private Sub chkSoftHyphen_Click(): LayoutUnicodeForm: End Sub
+Private Sub chkNBHyphen_Click(): LayoutUnicodeForm: End Sub
 Private Sub cmdPreview_Click()
     PreviewFromPanel
 End Sub
 Public Sub PreviewFromPanel()
     chkPreviewOnly.Value = True
+    BeginPreviewActionIndicator Me
     cmdRun_Click
+    EndPreviewActionIndicator
     chkPreviewOnly.Value = False
 End Sub
 Private Sub cmdReset_Click()
@@ -137,14 +142,50 @@ Private Sub cmdRun_Click()
     End If
     If findList.Count = 0 Then MsgBox "No Unicode options selected.", vbInformation: Exit Sub
     ReDim counts(1 To findList.Count): For i = 1 To findList.Count: counts(i) = 0: Next i
-    For idx = 1 To findList.Count
-        With targetRange.Find
-            .ClearFormatting: .Replacement.ClearFormatting: .Text = findList(idx): .Replacement.Text = "^&": .Replacement.Highlight = True
-            .Forward = True: .Wrap = wdFindStop: .MatchWildcards = False: .Execute Replace:=wdReplaceAll
-        End With
-    Next idx
     If previewOnly Then
-        ShowPreviewActions Me, "Unicode Cleaner", "Preview complete. Matches highlighted."
+        Dim previewRows As Collection
+        Dim previewNBSP As Long
+        Dim previewZWSP As Long
+        Dim previewZWNJ As Long
+        Dim previewZWJ As Long
+        Dim previewBOM As Long
+        Dim previewSoftHyphen As Long
+        Dim previewNBHyphen As Long
+        Dim includeNBSP As Boolean
+        Dim includeZWSP As Boolean
+        Dim includeZWNJ As Boolean
+        Dim includeZWJ As Boolean
+        Dim includeBOM As Boolean
+        Dim includeSoftHyphen As Boolean
+        Dim includeNBHyphen As Boolean
+        includeNBSP = optAll.Value Or optNBSP.Value Or (optCustom.Value And chkNBSP.Value)
+        includeZWSP = optAll.Value Or optZeroWidth.Value Or (optCustom.Value And chkZWSP.Value)
+        includeZWNJ = optAll.Value Or optZeroWidth.Value Or (optCustom.Value And chkZWNJ.Value)
+        includeZWJ = optAll.Value Or optZeroWidth.Value Or (optCustom.Value And chkZWJ.Value)
+        includeBOM = optAll.Value Or optZeroWidth.Value Or (optCustom.Value And chkBOM.Value)
+        includeSoftHyphen = optAll.Value Or (optCustom.Value And chkSoftHyphen.Value)
+        includeNBHyphen = optAll.Value Or (optCustom.Value And chkNBHyphen.Value)
+
+        If includeNBSP Then previewNBSP = CountPreviewFindMatches(targetRange, UnicodeChar(&HA0))
+        If includeZWSP Then previewZWSP = CountPreviewFindMatches(targetRange, UnicodeChar(&H200B))
+        If includeZWNJ Then previewZWNJ = CountPreviewFindMatches(targetRange, UnicodeChar(&H200C))
+        If includeZWJ Then previewZWJ = CountPreviewFindMatches(targetRange, UnicodeChar(&H200D))
+        If includeBOM Then previewBOM = CountPreviewFindMatches(targetRange, UnicodeChar(&HFEFF))
+        If includeSoftHyphen Then previewSoftHyphen = CountPreviewFindMatches(targetRange, UnicodeChar(&HAD))
+        If includeNBHyphen Then previewNBHyphen = CountPreviewFindMatches(targetRange, UnicodeChar(&H2011))
+        For idx = 1 To findList.Count
+            HighlightUnicodeMatches targetRange, CStr(findList(idx)), UnicodePreviewNeedsAdjacentFallback(CStr(findList(idx)))
+        Next idx
+
+        Set previewRows = NewPreviewSummaryRows()
+        AddPreviewSummaryRow previewRows, "Non-breaking spaces", previewNBSP, False, (Not includeNBSP)
+        AddPreviewSummaryRow previewRows, "Zero-width spaces", previewZWSP, False, (Not includeZWSP)
+        AddPreviewSummaryRow previewRows, "Zero-width non-joiners", previewZWNJ, False, (Not includeZWNJ)
+        AddPreviewSummaryRow previewRows, "Zero-width joiners", previewZWJ, False, (Not includeZWJ)
+        AddPreviewSummaryRow previewRows, "Byte order marks", previewBOM, False, (Not includeBOM)
+        AddPreviewSummaryRow previewRows, "Soft hyphens", previewSoftHyphen, False, (Not includeSoftHyphen)
+        AddPreviewSummaryRow previewRows, "Non-breaking hyphens", previewNBHyphen, False, (Not includeNBHyphen)
+        ShowPreviewActionsSummary Me, "Unicode Cleaner", previewRows
         Exit Sub
     End If
     MarkCleanupStart "Unicode Cleaner"
@@ -153,15 +194,9 @@ Private Sub cmdRun_Click()
     undoRec.StartCustomRecord "Cleanup Suite - Unicode Cleaner"
     On Error GoTo RunErr
     For idx = 1 To findList.Count
-        With targetRange.Find
-            .ClearFormatting: .Replacement.ClearFormatting: .Text = findList(idx): .Replacement.Text = replaceList(idx): .Forward = True: .Wrap = wdFindStop
-            While .Execute(Replace:=wdReplaceOne): counts(idx) = counts(idx) + 1: Wend
-        End With
+        counts(idx) = ReplaceUnicodeMatches(targetRange, CStr(findList(idx)), CStr(replaceList(idx)))
     Next idx
     RemoveAllHighlighting targetRange
-    Dim results As Collection: Set results = New Collection
-    For idx = 1 To findList.Count: results.Add itemLabels(idx) & ": " & counts(idx) & " replaced": Next idx
-    ShowCleanupReport "Unicode Cleanup", results
     undoRec.EndCustomRecord
     MarkCleanupEnd
     MarkCleanupToolApplied
@@ -180,4 +215,68 @@ RunErr:
              "Some changes may have been made to the document." & vbCrLf & _
              "Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back."
     MsgBox errMsg, vbCritical, "Cleanup Error"
+End Sub
+
+Private Function ReplaceUnicodeMatches(ByVal searchRange As Range, ByVal findText As String, ByVal replacementText As String) As Long
+    Dim matchRange As Range
+    Set matchRange = searchRange.Duplicate
+
+    With matchRange.Find
+        .ClearFormatting
+        .Replacement.ClearFormatting
+        .Text = findText
+        .Forward = True
+        .Wrap = wdFindStop
+        .MatchWildcards = False
+
+        Do While .Execute
+            matchRange.Text = replacementText
+            ReplaceUnicodeMatches = ReplaceUnicodeMatches + 1
+            matchRange.Collapse wdCollapseEnd
+        Loop
+    End With
+End Function
+Private Function UnicodePreviewNeedsAdjacentFallback(ByVal findText As String) As Boolean
+    If findText = UnicodeChar(&H200C) Then
+        UnicodePreviewNeedsAdjacentFallback = True
+    ElseIf Not UnicodeFormattingMarksVisible() Then
+        UnicodePreviewNeedsAdjacentFallback = (findText = UnicodeChar(&H200B) Or findText = UnicodeChar(&HFEFF))
+    End If
+End Function
+Private Function UnicodeFormattingMarksVisible() As Boolean
+    On Error Resume Next
+    UnicodeFormattingMarksVisible = ActiveWindow.View.ShowAll
+    On Error GoTo 0
+End Function
+Private Sub HighlightUnicodeMatches(ByVal searchRange As Range, ByVal findText As String, ByVal useAdjacentFallback As Boolean)
+    Dim matchRange As Range
+    Dim searchEnd As Long
+    searchEnd = searchRange.End
+    Set matchRange = searchRange.Duplicate
+    Do
+        With matchRange.Find
+            .ClearFormatting
+            .Text = findText
+            .Forward = True
+            .Wrap = wdFindStop
+            .MatchWildcards = False
+            If Not .Execute Then Exit Do
+        End With
+        matchRange.HighlightColorIndex = wdBrightGreen
+        If useAdjacentFallback Then HighlightUnicodeAdjacentCharacter matchRange, searchRange
+        matchRange.Collapse wdCollapseEnd
+        If matchRange.Start >= searchEnd Then Exit Do
+        matchRange.End = searchEnd
+    Loop
+End Sub
+Private Sub HighlightUnicodeAdjacentCharacter(ByVal matchRange As Range, ByVal scopeRange As Range)
+    Dim markerRange As Range
+    If matchRange.End < scopeRange.End Then
+        Set markerRange = ActiveDocument.Range(matchRange.End, matchRange.End + 1)
+    ElseIf matchRange.Start > scopeRange.Start Then
+        Set markerRange = ActiveDocument.Range(matchRange.Start - 1, matchRange.Start)
+    Else
+        Exit Sub
+    End If
+    markerRange.HighlightColorIndex = wdBrightGreen
 End Sub

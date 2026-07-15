@@ -1,6 +1,22 @@
 __pycache__/
+.pytest_cache/
 *.py[cod]
 *.pyo
 Thumbs.db
 .superpowers/
 backups/
+
+# Local build, rendering, smoke-test, and handoff artifacts.
+/build/
+/output/
+/tmp/
+/docs/test-results/
+/WHERE_WE_LEFT_OFF.md
+*.backup.docm
+
+# Local planning packets for future milestones; release-facing docs stay tracked.
+/docs/superpowers/
+/docs/0.9.5-*.md
+/docs/capitalization-0.9.5-checklist.md
+/docs/launcher-risk-map.md
+/docs/metadata-incorporation-map.md
