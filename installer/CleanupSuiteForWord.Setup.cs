@@ -14,15 +14,15 @@ using Microsoft.Win32;
 [assembly: AssemblyCompany("MasseysLab")]
 [assembly: AssemblyProduct("CleanupSuite For Word")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 MasseysLab")]
-[assembly: AssemblyVersion("0.9.0.0")]
-[assembly: AssemblyFileVersion("0.9.0.0")]
+[assembly: AssemblyVersion("0.9.1.0")]
+[assembly: AssemblyFileVersion("0.9.1.0")]
 
 namespace MasseysLab.CleanupSuiteForWord.Setup
 {
     internal static class Program
     {
         internal const string ProductName = "CleanupSuite For Word";
-        internal const string DisplayVersion = "0.9.0-alpha";
+        internal const string DisplayVersion = "0.9.1-alpha";
         internal const string ManifestUrl = "https://raw.githubusercontent.com/MasseysLab/CleanupSuiteForWord/main/release/latest-release.ini";
         internal const int BackupLimit = 3;
 

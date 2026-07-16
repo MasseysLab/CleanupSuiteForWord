@@ -6,9 +6,9 @@ The project uses a simple SemVer-style ladder, but with `0.x.0` milestones until
 
 ## Current Version
 
-`0.9.0-alpha`
+`0.9.1-alpha`
 
-This is the first packaged Alpha: the global Word template, preferred per-user installer, update checks, and user-facing documentation are prepared together under tag `v0.9.0-alpha`.
+This Alpha hotfix preserves the packaged 0.9.0 feature set and corrects MetaDataSuite path resolution for synchronized personal OneDrive documents. Git tag: `v0.9.1-alpha`.
 
 ## Roadmap
 
@@ -25,6 +25,7 @@ This is the first packaged Alpha: the global Word template, preferred per-user i
 | `0.8.0` | Complex tool form redesigns using the approved modern panel style. |
 | `0.8.5` | Internal pre-release milestone used while the Alpha was being completed. |
 | `0.9.0-alpha` | Official Alpha with the global template, installer, update checks, and full documentation. Git tag: `v0.9.0-alpha`. |
+| `0.9.1-alpha` | Alpha hotfix for MetaDataSuite on synchronized personal OneDrive documents. Git tag: `v0.9.1-alpha`. |
 | `0.9.5-beta` | Official Beta release after Alpha feedback, full MetaData-project incorporation, and the planned Capitalization follow-up upgrades. |
 | `1.0.0` | Global `.dotm` Word add-in/template release suitable for normal use on any document. |
 
@@ -36,7 +37,7 @@ This is the first packaged Alpha: the global Word template, preferred per-user i
 - Keep Git commits small enough that each milestone can be understood later.
 - After `0.6.4` is pushed, no feature or code changes go into `0.6.5` unless required to correct documentation-blocking bugs.
 - After `0.7.4` is pushed, no feature or code changes go into `0.7.5` unless required to correct documentation-blocking bugs.
-- Treat `0.9.0-alpha` as Alpha and reserve the entire `0.9.5` milestone for Beta.
+- Treat the `0.9.x-alpha` line as Alpha and reserve the entire `0.9.5` milestone for Beta.
 - Do not remove historical documentation or release history without an explicit maintenance decision.
 - Do not call the project `1.0.0` until the global add-in/template workflow is stable.
 

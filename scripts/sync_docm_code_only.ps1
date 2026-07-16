@@ -1,5 +1,6 @@
 param(
-    [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+    [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
+    [string[]]$TargetDocPaths = @()
 )
 
 $ErrorActionPreference = "Stop"
@@ -539,10 +540,14 @@ $sourceItems = foreach ($item in $sourceItems) {
     }
 }
 
-$targetDocs = @(
-    (Join-Path $RepoRoot "CleanupSuite.docm"),
-    (Join-Path $RepoRoot "Practice - Try CleanupSuite Here\CleanupSuite.docm")
-)
+if ($TargetDocPaths.Count -gt 0) {
+    $targetDocs = $TargetDocPaths
+} else {
+    $targetDocs = @(
+        (Join-Path $RepoRoot "CleanupSuite.docm"),
+        (Join-Path $RepoRoot "Practice - Try CleanupSuite Here\CleanupSuite.docm")
+    )
+}
 
 $word = $null
 try {

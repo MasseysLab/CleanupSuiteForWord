@@ -26,8 +26,8 @@ def test_release_artifacts_and_manifest_are_consistent():
 
     assert setup.stat().st_size > 100_000
     assert template.stat().st_size > 100_000
-    assert values["version"] == "0.9.0-alpha"
-    assert values["tag"] == "v0.9.0-alpha"
+    assert values["version"] == "0.9.1-alpha"
+    assert values["tag"] == "v0.9.1-alpha"
     assert values["template_sha256"] == hashlib.sha256(template.read_bytes()).hexdigest()
     assert values["setup_url"].endswith("/main/release/CleanupSuiteForWord-Setup.exe")
 

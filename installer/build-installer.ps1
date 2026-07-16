@@ -8,8 +8,8 @@ $ErrorActionPreference = "Stop"
 if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
     $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 }
-$version = "0.9.0-alpha"
-$tag = "v0.9.0-alpha"
+$version = "0.9.1-alpha"
+$tag = "v0.9.1-alpha"
 $releaseDirectory = Join-Path $RepoRoot "release"
 $releaseTemplate = Join-Path $releaseDirectory "CleanupSuite.dotm"
 $setupSource = Join-Path $PSScriptRoot "CleanupSuiteForWord.Setup.cs"

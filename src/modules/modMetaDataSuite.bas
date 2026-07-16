@@ -2051,13 +2051,15 @@ End Sub
 Private Function ResolvePreferredDocxTarget(Optional ByVal fallbackPath As String = vbNullString, _
                                             Optional ByVal allowFilePicker As Boolean = True) As String
     Dim doc As Object
+    Dim resolvedPath As String
     Dim promptResult As VbMsgBoxResult
 
     Set doc = GetPreferredOpenDocument()
     If Not doc Is Nothing Then
         If Len(doc.Path) > 0 Then
-            If IsSupportedDocxPath(doc.FullName) Then
-                ResolvePreferredDocxTarget = doc.FullName
+            resolvedPath = GetDocumentPhysicalPath(doc)
+            If IsSupportedDocxPath(resolvedPath) Then
+                ResolvePreferredDocxTarget = resolvedPath
                 Exit Function
             End If
         Else
@@ -2067,8 +2069,9 @@ Private Function ResolvePreferredDocxTarget(Optional ByVal fallbackPath As Strin
             If promptResult = vbYes Then
                 doc.Activate
                 doc.Save
-                If Len(doc.Path) > 0 And IsSupportedDocxPath(doc.FullName) Then
-                    ResolvePreferredDocxTarget = doc.FullName
+                resolvedPath = GetDocumentPhysicalPath(doc)
+                If Len(doc.Path) > 0 And IsSupportedDocxPath(resolvedPath) Then
+                    ResolvePreferredDocxTarget = resolvedPath
                     Exit Function
                 End If
                 MsgBox "Save the document as a .docx or .docm file before auditing it.", vbExclamation, "DOCX Metadata Audit"
@@ -2114,16 +2117,20 @@ End Function
 
 Private Function PeekPreferredDocxTarget() As String
     Dim doc As Object
+    Dim resolvedPath As String
 
     Set doc = GetPreferredOpenDocument()
     If doc Is Nothing Then Exit Function
     If Len(doc.Path) = 0 Then Exit Function
-    If IsSupportedDocxPath(doc.FullName) Then
-        PeekPreferredDocxTarget = doc.FullName
+    resolvedPath = GetDocumentPhysicalPath(doc)
+    If IsSupportedDocxPath(resolvedPath) Then
+        PeekPreferredDocxTarget = resolvedPath
     End If
 End Function
 
 Private Function IsCandidateSourceDocument(ByVal doc As Object, Optional ByVal allowHostDocument As Boolean = False) As Boolean
+    Dim resolvedPath As String
+
     If doc Is Nothing Then Exit Function
     If Not allowHostDocument Then
         If IsHostMacroDocument(doc) Then Exit Function
@@ -2133,7 +2140,8 @@ Private Function IsCandidateSourceDocument(ByVal doc As Object, Optional ByVal a
     If Len(doc.Path) = 0 Then
         IsCandidateSourceDocument = True
     Else
-        IsCandidateSourceDocument = IsSupportedDocxPath(doc.FullName)
+        resolvedPath = GetDocumentPhysicalPath(doc)
+        IsCandidateSourceDocument = IsSupportedDocxPath(resolvedPath)
     End If
 End Function
 
@@ -3050,14 +3058,12 @@ End Sub
 Private Function ResolveDocumentForMetadataEdit(ByVal filePath As String, ByRef closeWhenDone As Boolean, _
                                                 Optional ByVal readOnly As Boolean = False) As Object
     Dim doc As Object
-    Dim targetPath As String
 
-    targetPath = LCase$(Trim$(filePath))
     closeWhenDone = False
 
     On Error Resume Next
     For Each doc In Application.Documents
-        If LCase$(doc.FullName) = targetPath Then
+        If DocumentMatchesPhysicalPath(doc, filePath) Then
             Set ResolveDocumentForMetadataEdit = doc
             Exit Function
         End If
@@ -3215,6 +3221,79 @@ Private Function IsSupportedDocxPath(ByVal filePath As String) As Boolean
     IsSupportedDocxPath = (Right$(lowerPath, 5) = ".docx" Or Right$(lowerPath, 5) = ".docm")
 End Function
 
+Private Function GetDocumentPhysicalPath(ByVal doc As Object) As String
+    Dim fullName As String
+
+    If doc Is Nothing Then Exit Function
+
+    On Error Resume Next
+    fullName = Trim$(CStr(doc.FullName))
+    On Error GoTo 0
+
+    GetDocumentPhysicalPath = ResolveExistingPathVariant(fullName)
+    If Len(GetDocumentPhysicalPath) = 0 Then
+        GetDocumentPhysicalPath = ResolvePersonalOneDriveUrl(fullName)
+    End If
+End Function
+
+Private Function ResolveExistingPathVariant(ByVal candidatePath As String) As String
+    Dim repairedPath As String
+
+    candidatePath = Trim$(candidatePath)
+    If Len(candidatePath) = 0 Then Exit Function
+
+    If FileExists(candidatePath) Then
+        ResolveExistingPathVariant = candidatePath
+        Exit Function
+    End If
+
+    ' Word represents a dot immediately before the extension as a caret in some
+    ' cloud document URLs. Only accept the repaired form when it exists on disk.
+    If InStr(candidatePath, "^") > 0 Then
+        repairedPath = Replace(candidatePath, "^", ".")
+        If FileExists(repairedPath) Then ResolveExistingPathVariant = repairedPath
+    End If
+End Function
+
+Private Function ResolvePersonalOneDriveUrl(ByVal fileUrl As String) As String
+    Const PERSONAL_URL_PREFIX As String = "https://d.docs.live.net/"
+    Dim relativeStart As Long
+    Dim relativePath As String
+    Dim roots As Variant
+    Dim rootValue As Variant
+    Dim candidatePath As String
+
+    fileUrl = Trim$(fileUrl)
+    If LCase$(Left$(fileUrl, Len(PERSONAL_URL_PREFIX))) <> PERSONAL_URL_PREFIX Then Exit Function
+
+    relativeStart = InStr(Len(PERSONAL_URL_PREFIX) + 1, fileUrl, "/")
+    If relativeStart = 0 Then Exit Function
+
+    relativePath = Mid$(fileUrl, relativeStart + 1)
+    relativePath = Replace(relativePath, "/", Application.PathSeparator)
+    roots = Array(Environ$("OneDriveConsumer"), Environ$("OneDrive"), _
+                  Environ$("OneDriveCommercial"), Environ$("UserProfile") & "\OneDrive")
+
+    For Each rootValue In roots
+        If Len(Trim$(CStr(rootValue))) > 0 Then
+            candidatePath = CStr(rootValue) & Application.PathSeparator & relativePath
+            ResolvePersonalOneDriveUrl = ResolveExistingPathVariant(candidatePath)
+            If Len(ResolvePersonalOneDriveUrl) > 0 Then Exit Function
+        End If
+    Next rootValue
+End Function
+
+Private Function DocumentMatchesPhysicalPath(ByVal doc As Object, ByVal filePath As String) As Boolean
+    Dim documentPath As String
+    Dim targetPath As String
+
+    documentPath = GetDocumentPhysicalPath(doc)
+    targetPath = ResolveExistingPathVariant(filePath)
+    If Len(documentPath) = 0 Or Len(targetPath) = 0 Then Exit Function
+
+    DocumentMatchesPhysicalPath = (LCase$(documentPath) = LCase$(targetPath))
+End Function
+
 Private Function PickDocxFile() As String
     Dim fd As Object
     Set fd = Application.FileDialog(msoFileDialogFilePicker)
@@ -3257,14 +3336,12 @@ End Function
 
 Private Function IsOpenDocumentPath(ByVal filePath As String) As Boolean
     Dim doc As Object
-    Dim targetPath As String
 
-    targetPath = LCase$(Trim$(filePath))
-    If Len(targetPath) = 0 Then Exit Function
+    If Len(Trim$(filePath)) = 0 Then Exit Function
 
     For Each doc In Documents
         On Error Resume Next
-        If LCase$(Trim$(doc.FullName)) = targetPath Then
+        If DocumentMatchesPhysicalPath(doc, filePath) Then
             IsOpenDocumentPath = True
             On Error GoTo 0
             Exit Function

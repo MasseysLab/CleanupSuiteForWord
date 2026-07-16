@@ -4479,7 +4479,7 @@ End Function
 Private Function modCleanupLauncher_Code() As String
     Dim s As String
     s = s & "Option Explicit" & vbCrLf
-    s = s & "Public Const SUITE_VERSION As String = ""0.9.0-alpha""" & vbCrLf
+    s = s & "Public Const SUITE_VERSION As String = ""0.9.1-alpha""" & vbCrLf
     s = s & "Public gRibbon As Object   ' IRibbonUI -- stored for optional Invalidate calls" & vbCrLf
     s = s & "Sub ShowCleanupSuiteLauncher()" & vbCrLf
     s = s & "    frmCleanupSuiteLauncher.Show" & vbCrLf
@@ -7582,13 +7582,15 @@ Private Function modMetaDataSuite_Code() As String
     s = s & "Private Function ResolvePreferredDocxTarget(Optional ByVal fallbackPath As String = vbNullString, _" & vbCrLf
     s = s & "                                            Optional ByVal allowFilePicker As Boolean = True) As String" & vbCrLf
     s = s & "    Dim doc As Object" & vbCrLf
+    s = s & "    Dim resolvedPath As String" & vbCrLf
     s = s & "    Dim promptResult As VbMsgBoxResult" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "    Set doc = GetPreferredOpenDocument()" & vbCrLf
     s = s & "    If Not doc Is Nothing Then" & vbCrLf
     s = s & "        If Len(doc.Path) > 0 Then" & vbCrLf
-    s = s & "            If IsSupportedDocxPath(doc.FullName) Then" & vbCrLf
-    s = s & "                ResolvePreferredDocxTarget = doc.FullName" & vbCrLf
+    s = s & "            resolvedPath = GetDocumentPhysicalPath(doc)" & vbCrLf
+    s = s & "            If IsSupportedDocxPath(resolvedPath) Then" & vbCrLf
+    s = s & "                ResolvePreferredDocxTarget = resolvedPath" & vbCrLf
     s = s & "                Exit Function" & vbCrLf
     s = s & "            End If" & vbCrLf
     s = s & "        Else" & vbCrLf
@@ -7598,8 +7600,9 @@ Private Function modMetaDataSuite_Code() As String
     s = s & "            If promptResult = vbYes Then" & vbCrLf
     s = s & "                doc.Activate" & vbCrLf
     s = s & "                doc.Save" & vbCrLf
-    s = s & "                If Len(doc.Path) > 0 And IsSupportedDocxPath(doc.FullName) Then" & vbCrLf
-    s = s & "                    ResolvePreferredDocxTarget = doc.FullName" & vbCrLf
+    s = s & "                resolvedPath = GetDocumentPhysicalPath(doc)" & vbCrLf
+    s = s & "                If Len(doc.Path) > 0 And IsSupportedDocxPath(resolvedPath) Then" & vbCrLf
+    s = s & "                    ResolvePreferredDocxTarget = resolvedPath" & vbCrLf
     s = s & "                    Exit Function" & vbCrLf
     s = s & "                End If" & vbCrLf
     s = s & "                MsgBox ""Save the document as a .docx or .docm file before auditing it."", vbExclamation, ""DOCX Metadata Audit""" & vbCrLf
@@ -7645,16 +7648,20 @@ Private Function modMetaDataSuite_Code() As String
     s = s & "" & vbCrLf
     s = s & "Private Function PeekPreferredDocxTarget() As String" & vbCrLf
     s = s & "    Dim doc As Object" & vbCrLf
+    s = s & "    Dim resolvedPath As String" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "    Set doc = GetPreferredOpenDocument()" & vbCrLf
     s = s & "    If doc Is Nothing Then Exit Function" & vbCrLf
     s = s & "    If Len(doc.Path) = 0 Then Exit Function" & vbCrLf
-    s = s & "    If IsSupportedDocxPath(doc.FullName) Then" & vbCrLf
-    s = s & "        PeekPreferredDocxTarget = doc.FullName" & vbCrLf
+    s = s & "    resolvedPath = GetDocumentPhysicalPath(doc)" & vbCrLf
+    s = s & "    If IsSupportedDocxPath(resolvedPath) Then" & vbCrLf
+    s = s & "        PeekPreferredDocxTarget = resolvedPath" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "End Function" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "Private Function IsCandidateSourceDocument(ByVal doc As Object, Optional ByVal allowHostDocument As Boolean = False) As Boolean" & vbCrLf
+    s = s & "    Dim resolvedPath As String" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "    If doc Is Nothing Then Exit Function" & vbCrLf
     s = s & "    If Not allowHostDocument Then" & vbCrLf
     s = s & "        If IsHostMacroDocument(doc) Then Exit Function" & vbCrLf
@@ -7664,7 +7671,8 @@ Private Function modMetaDataSuite_Code() As String
     s = s & "    If Len(doc.Path) = 0 Then" & vbCrLf
     s = s & "        IsCandidateSourceDocument = True" & vbCrLf
     s = s & "    Else" & vbCrLf
-    s = s & "        IsCandidateSourceDocument = IsSupportedDocxPath(doc.FullName)" & vbCrLf
+    s = s & "        resolvedPath = GetDocumentPhysicalPath(doc)" & vbCrLf
+    s = s & "        IsCandidateSourceDocument = IsSupportedDocxPath(resolvedPath)" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "End Function" & vbCrLf
     s = s & "" & vbCrLf
@@ -8581,14 +8589,12 @@ Private Function modMetaDataSuite_Code() As String
     s = s & "Private Function ResolveDocumentForMetadataEdit(ByVal filePath As String, ByRef closeWhenDone As Boolean, _" & vbCrLf
     s = s & "                                                Optional ByVal readOnly As Boolean = False) As Object" & vbCrLf
     s = s & "    Dim doc As Object" & vbCrLf
-    s = s & "    Dim targetPath As String" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "    targetPath = LCase$(Trim$(filePath))" & vbCrLf
     s = s & "    closeWhenDone = False" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "    On Error Resume Next" & vbCrLf
     s = s & "    For Each doc In Application.Documents" & vbCrLf
-    s = s & "        If LCase$(doc.FullName) = targetPath Then" & vbCrLf
+    s = s & "        If DocumentMatchesPhysicalPath(doc, filePath) Then" & vbCrLf
     s = s & "            Set ResolveDocumentForMetadataEdit = doc" & vbCrLf
     s = s & "            Exit Function" & vbCrLf
     s = s & "        End If" & vbCrLf
@@ -8746,6 +8752,79 @@ Private Function modMetaDataSuite_Code() As String
     s = s & "    IsSupportedDocxPath = (Right$(lowerPath, 5) = "".docx"" Or Right$(lowerPath, 5) = "".docm"")" & vbCrLf
     s = s & "End Function" & vbCrLf
     s = s & "" & vbCrLf
+    s = s & "Private Function GetDocumentPhysicalPath(ByVal doc As Object) As String" & vbCrLf
+    s = s & "    Dim fullName As String" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If doc Is Nothing Then Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    fullName = Trim$(CStr(doc.FullName))" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    GetDocumentPhysicalPath = ResolveExistingPathVariant(fullName)" & vbCrLf
+    s = s & "    If Len(GetDocumentPhysicalPath) = 0 Then" & vbCrLf
+    s = s & "        GetDocumentPhysicalPath = ResolvePersonalOneDriveUrl(fullName)" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function ResolveExistingPathVariant(ByVal candidatePath As String) As String" & vbCrLf
+    s = s & "    Dim repairedPath As String" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    candidatePath = Trim$(candidatePath)" & vbCrLf
+    s = s & "    If Len(candidatePath) = 0 Then Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If FileExists(candidatePath) Then" & vbCrLf
+    s = s & "        ResolveExistingPathVariant = candidatePath" & vbCrLf
+    s = s & "        Exit Function" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    ' Word represents a dot immediately before the extension as a caret in some" & vbCrLf
+    s = s & "    ' cloud document URLs. Only accept the repaired form when it exists on disk." & vbCrLf
+    s = s & "    If InStr(candidatePath, ""^"") > 0 Then" & vbCrLf
+    s = s & "        repairedPath = Replace(candidatePath, ""^"", ""."")" & vbCrLf
+    s = s & "        If FileExists(repairedPath) Then ResolveExistingPathVariant = repairedPath" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function ResolvePersonalOneDriveUrl(ByVal fileUrl As String) As String" & vbCrLf
+    s = s & "    Const PERSONAL_URL_PREFIX As String = ""https://d.docs.live.net/""" & vbCrLf
+    s = s & "    Dim relativeStart As Long" & vbCrLf
+    s = s & "    Dim relativePath As String" & vbCrLf
+    s = s & "    Dim roots As Variant" & vbCrLf
+    s = s & "    Dim rootValue As Variant" & vbCrLf
+    s = s & "    Dim candidatePath As String" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    fileUrl = Trim$(fileUrl)" & vbCrLf
+    s = s & "    If LCase$(Left$(fileUrl, Len(PERSONAL_URL_PREFIX))) <> PERSONAL_URL_PREFIX Then Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    relativeStart = InStr(Len(PERSONAL_URL_PREFIX) + 1, fileUrl, ""/"")" & vbCrLf
+    s = s & "    If relativeStart = 0 Then Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    relativePath = Mid$(fileUrl, relativeStart + 1)" & vbCrLf
+    s = s & "    relativePath = Replace(relativePath, ""/"", Application.PathSeparator)" & vbCrLf
+    s = s & "    roots = Array(Environ$(""OneDriveConsumer""), Environ$(""OneDrive""), _" & vbCrLf
+    s = s & "                  Environ$(""OneDriveCommercial""), Environ$(""UserProfile"") & ""\OneDrive"")" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    For Each rootValue In roots" & vbCrLf
+    s = s & "        If Len(Trim$(CStr(rootValue))) > 0 Then" & vbCrLf
+    s = s & "            candidatePath = CStr(rootValue) & Application.PathSeparator & relativePath" & vbCrLf
+    s = s & "            ResolvePersonalOneDriveUrl = ResolveExistingPathVariant(candidatePath)" & vbCrLf
+    s = s & "            If Len(ResolvePersonalOneDriveUrl) > 0 Then Exit Function" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "    Next rootValue" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function DocumentMatchesPhysicalPath(ByVal doc As Object, ByVal filePath As String) As Boolean" & vbCrLf
+    s = s & "    Dim documentPath As String" & vbCrLf
+    s = s & "    Dim targetPath As String" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    documentPath = GetDocumentPhysicalPath(doc)" & vbCrLf
+    s = s & "    targetPath = ResolveExistingPathVariant(filePath)" & vbCrLf
+    s = s & "    If Len(documentPath) = 0 Or Len(targetPath) = 0 Then Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    DocumentMatchesPhysicalPath = (LCase$(documentPath) = LCase$(targetPath))" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "Private Function PickDocxFile() As String" & vbCrLf
     s = s & "    Dim fd As Object" & vbCrLf
     s = s & "    Set fd = Application.FileDialog(msoFileDialogFilePicker)" & vbCrLf
@@ -8788,14 +8867,12 @@ Private Function modMetaDataSuite_Code() As String
     s = s & "" & vbCrLf
     s = s & "Private Function IsOpenDocumentPath(ByVal filePath As String) As Boolean" & vbCrLf
     s = s & "    Dim doc As Object" & vbCrLf
-    s = s & "    Dim targetPath As String" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "    targetPath = LCase$(Trim$(filePath))" & vbCrLf
-    s = s & "    If Len(targetPath) = 0 Then Exit Function" & vbCrLf
+    s = s & "    If Len(Trim$(filePath)) = 0 Then Exit Function" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "    For Each doc In Documents" & vbCrLf
     s = s & "        On Error Resume Next" & vbCrLf
-    s = s & "        If LCase$(Trim$(doc.FullName)) = targetPath Then" & vbCrLf
+    s = s & "        If DocumentMatchesPhysicalPath(doc, filePath) Then" & vbCrLf
     s = s & "            IsOpenDocumentPath = True" & vbCrLf
     s = s & "            On Error GoTo 0" & vbCrLf
     s = s & "            Exit Function" & vbCrLf

@@ -4,9 +4,9 @@ Use these rules before changing a CleanupSuite tool form. Shared layout changes
 need careful reasoning because a small control-placement change can affect every
 installed form and the supported 1024 x 768 pixel display size.
 
-**Current 0.9.0 Alpha Course**
+**Current 0.9.1 Alpha Course**
 
-1. Treat `0.9.0-alpha` as the current release and reserve `0.9.5-beta` for the
+1. Treat `0.9.1-alpha` as the current release and reserve `0.9.5-beta` for the
    next public milestone.
 2. Current release documentation consists of:
    `CleanupSuite_User_Manual_v0.9.0-alpha.md`,

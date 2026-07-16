@@ -1,6 +1,8 @@
-# CleanupSuite 0.9.0 Alpha Documentation Package
+# CleanupSuite 0.9.1 Alpha Documentation Package
 
-Current documentation package for tag `v0.9.0-alpha`.
+Current documentation package for tag `v0.9.1-alpha`. The user manual and
+programmer guide remain applicable from 0.9.0 Alpha because the 0.9.1 hotfix
+changes document-path resolution rather than the interface.
 
 ## User documentation
 
@@ -11,6 +13,7 @@ Current documentation package for tag `v0.9.0-alpha`.
 ## Maintainer documentation
 
 - `docs/CleanupSuite_Programmers_Guide_For_Adding_Tools_v0.9.0-alpha.md`
+- `docs/Release_Notes_v0.9.1-alpha.md`
 - `docs/Release_Notes_v0.9.0-alpha.md`
 - `docs/Tool_Reference_Refined_v0.8.5.md` — retained tool-reference baseline pending its later Beta revision
 - `CONTRIBUTING.md`
