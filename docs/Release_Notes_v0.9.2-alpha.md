@@ -18,6 +18,8 @@ and safety model while correcting preview performance and presentation.
   extra full-document repaints and flicker.
 - Paragraph Fixer now marks only the affected paragraph boundary when previewing
   paragraph spacing, rather than shading the entire text area.
+- Setup bypasses cached release metadata so the stable installer immediately
+  retrieves the newly published hotfix template.
 
 The punctuation fixes were reproduced against the large synchronized OneDrive
 document `Arguement for and against God..docx`. The all-types preview completed
@@ -35,6 +37,8 @@ backups retained.
 - Source assembly: 29 builders clean.
 - Regression suite: 200 passed, 3 skipped.
 - Live punctuation preview: stable Reading View with yellow highlights.
+- Isolated installer install/uninstall: exit codes 0; installed template hash
+  matched the release template and uninstall removed it.
 - Release template and installer-embedded template SHA-256:
   `a256a27bb58583c163687c45dc70dcb9074212d73a85d027b33521be48cf9cc0`.
 

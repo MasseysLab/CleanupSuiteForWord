@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Net;
+using System.Net.Cache;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Threading;
@@ -282,11 +283,13 @@ namespace MasseysLab.CleanupSuiteForWord.Setup
             {
                 using (WebClient client = NewWebClient())
                 {
-                    string manifest = client.DownloadString(Program.ManifestUrl);
+                    string manifestUrl = Program.ManifestUrl + "?v=" + Uri.EscapeDataString(Program.DisplayVersion);
+                    string manifest = client.DownloadString(manifestUrl);
                     Dictionary<string, string> values = ParseManifest(manifest);
                     string templateUrl = Require(values, "template_url");
                     if (!templateUrl.StartsWith("https://github.com/MasseysLab/CleanupSuiteForWord/", StringComparison.OrdinalIgnoreCase))
                         throw new InvalidDataException("The release manifest contained an unexpected download location.");
+                    templateUrl += "?v=" + Uri.EscapeDataString(Program.DisplayVersion);
                     byte[] bytes = client.DownloadData(templateUrl);
                     return new TemplatePayload(bytes, Require(values, "template_sha256"), Require(values, "version"));
                 }
@@ -301,6 +304,7 @@ namespace MasseysLab.CleanupSuiteForWord.Setup
         private static WebClient NewWebClient()
         {
             WebClient client = new WebClient();
+            client.CachePolicy = new RequestCachePolicy(RequestCacheLevel.NoCacheNoStore);
             client.Headers[HttpRequestHeader.UserAgent] = "CleanupSuiteForWord-Setup/" + Program.DisplayVersion;
             return client;
         }

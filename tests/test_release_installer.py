@@ -52,6 +52,9 @@ def test_installer_uses_stable_manifest_hash_and_embedded_fallback():
     build = read("installer/build-installer.ps1")
 
     assert "Program.ManifestUrl" in source
+    assert "RequestCacheLevel.NoCacheNoStore" in source
+    assert 'Program.ManifestUrl + "?v=" + Uri.EscapeDataString(Program.DisplayVersion)' in source
+    assert 'templateUrl += "?v=" + Uri.EscapeDataString(Program.DisplayVersion)' in source
     assert 'Require(values, "template_sha256")' in source
     assert "SHA256.Create()" in source
     assert 'GetManifestResourceStream("CleanupSuite.dotm")' in source
