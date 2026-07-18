@@ -1716,6 +1716,7 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "Private gPreviewViewSelection As Range" & vbCrLf
     s = s & "Private gPreviewViewType As WdViewType" & vbCrLf
     s = s & "Private gPreviewViewReadingLayout As Boolean" & vbCrLf
+    s = s & "Private gPreviewViewShowHighlight As Boolean" & vbCrLf
     s = s & "Private gPreviewViewZoom As Long" & vbCrLf
     s = s & "Private gPreviewViewVerticalScroll As Long" & vbCrLf
     s = s & "Private gPreviewViewHasVerticalScroll As Boolean" & vbCrLf
@@ -2271,6 +2272,7 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "    Set gPreviewViewSelection = previewSelection.Range.Duplicate" & vbCrLf
     s = s & "    gPreviewViewType = gPreviewViewWindow.View.Type" & vbCrLf
     s = s & "    gPreviewViewReadingLayout = gPreviewViewWindow.View.ReadingLayout" & vbCrLf
+    s = s & "    gPreviewViewShowHighlight = gPreviewViewWindow.View.ShowHighlight" & vbCrLf
     s = s & "    gPreviewViewZoom = gPreviewViewWindow.View.Zoom.Percentage" & vbCrLf
     s = s & "    On Error Resume Next" & vbCrLf
     s = s & "    Err.Clear" & vbCrLf
@@ -2280,6 +2282,10 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "    On Error GoTo BeginErr" & vbCrLf
     s = s & "    gPreviewViewSessionActive = True" & vbCrLf
     s = s & "" & vbCrLf
+    s = s & "    ' Reading View can inherit a window setting that hides highlight formatting." & vbCrLf
+    s = s & "    ' Set highlight visibility before the final view transition; setting it" & vbCrLf
+    s = s & "    ' afterward can make Word return to Print Layout." & vbCrLf
+    s = s & "    gPreviewViewWindow.View.ShowHighlight = True" & vbCrLf
     s = s & "    If Not gPreviewViewReadingLayout Then" & vbCrLf
     s = s & "        gPreviewViewWindow.View.ReadingLayout = True" & vbCrLf
     s = s & "    End If" & vbCrLf
@@ -2326,6 +2332,7 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "                .View.ReadingLayout = False" & vbCrLf
     s = s & "                .View.Type = gPreviewViewType" & vbCrLf
     s = s & "            End If" & vbCrLf
+    s = s & "            .View.ShowHighlight = gPreviewViewShowHighlight" & vbCrLf
     s = s & "            .View.Zoom.Percentage = gPreviewViewZoom" & vbCrLf
     s = s & "        End With" & vbCrLf
     s = s & "" & vbCrLf
@@ -2347,6 +2354,7 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "    Set gPreviewViewDocument = Nothing" & vbCrLf
     s = s & "    gPreviewViewType = wdPrintView" & vbCrLf
     s = s & "    gPreviewViewReadingLayout = False" & vbCrLf
+    s = s & "    gPreviewViewShowHighlight = True" & vbCrLf
     s = s & "    gPreviewViewZoom = 0" & vbCrLf
     s = s & "    gPreviewViewVerticalScroll = 0" & vbCrLf
     s = s & "    gPreviewViewHasVerticalScroll = False" & vbCrLf
@@ -2369,7 +2377,10 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "            Exit For" & vbCrLf
     s = s & "        End If" & vbCrLf
     s = s & "    Next liveDocument" & vbCrLf
-    s = s & "    If previewDocumentIsLive Then previewDocument.Content.HighlightColorIndex = wdNoHighlight" & vbCrLf
+    s = s & "    If previewDocumentIsLive Then" & vbCrLf
+    s = s & "        previewDocument.Content.Find.ClearHitHighlight" & vbCrLf
+    s = s & "        previewDocument.Content.HighlightColorIndex = wdNoHighlight" & vbCrLf
+    s = s & "    End If" & vbCrLf
     s = s & "    On Error GoTo 0" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
@@ -2477,7 +2488,32 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "    Else" & vbCrLf
     s = s & "        Set hlRange = scopeRange.Duplicate" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "    hlRange.Find.ClearHitHighlight" & vbCrLf
     s = s & "    hlRange.HighlightColorIndex = wdNoHighlight" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Sub ApplyPreviewSpacingBoundary(ByVal paragraphRange As Range, Optional ByVal markerColor As WdColorIndex = wdBrightGreen)" & vbCrLf
+    s = s & "    Dim markerRange As Range" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    On Error GoTo SafeExit" & vbCrLf
+    s = s & "    Set markerRange = paragraphRange.Duplicate" & vbCrLf
+    s = s & "    If markerRange.End <= markerRange.Start Then Exit Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    ' Word cannot apply text highlight to the empty Space Before/Space After" & vbCrLf
+    s = s & "    ' region. Mark the paragraph boundary instead: include the paragraph mark" & vbCrLf
+    s = s & "    ' and, where available, the final visible character so the strip remains" & vbCrLf
+    s = s & "    ' visible even when nonprinting marks are hidden." & vbCrLf
+    s = s & "    If Right$(markerRange.Text, 1) = vbCr Then" & vbCrLf
+    s = s & "        If markerRange.End - markerRange.Start >= 2 Then" & vbCrLf
+    s = s & "            markerRange.Start = markerRange.End - 2" & vbCrLf
+    s = s & "        Else" & vbCrLf
+    s = s & "            markerRange.Start = markerRange.End - 1" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        markerRange.Start = markerRange.End - 1" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    markerRange.HighlightColorIndex = markerColor" & vbCrLf
+    s = s & "SafeExit:" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Public Sub ApplyPreviewShading(ByVal targetRange As Range, Optional ByVal shadeColor As Long = wdColorBrightGreen)" & vbCrLf
     s = s & "    Dim paragraphItem As Paragraph" & vbCrLf
@@ -4469,6 +4505,20 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "        Loop" & vbCrLf
     s = s & "    End With" & vbCrLf
     s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Sub HighlightPreviewFindCharacters(ByVal searchRange As Range, ByVal findCharacters As String, Optional ByVal highlightColor As WdColor = wdColorYellow)" & vbCrLf
+    s = s & "    Dim highlightRange As Range" & vbCrLf
+    s = s & "    Dim highlightApplied As Boolean" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If Len(findCharacters) = 0 Then Exit Sub" & vbCrLf
+    s = s & "    Set highlightRange = searchRange.Duplicate" & vbCrLf
+    s = s & "    highlightApplied = highlightRange.Find.HitHighlight( _" & vbCrLf
+    s = s & "        FindText:=""["" & findCharacters & ""]"", _" & vbCrLf
+    s = s & "        HighlightColor:=highlightColor, _" & vbCrLf
+    s = s & "        MatchWildcards:=True)" & vbCrLf
+    s = s & "    ' HitHighlight returns False when the selected punctuation does not occur." & vbCrLf
+    s = s & "    ' That is a valid zero-match preview, not an error." & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & ""
     modCleanupHelpers_Code = s
 End Function
@@ -4479,7 +4529,7 @@ End Function
 Private Function modCleanupLauncher_Code() As String
     Dim s As String
     s = s & "Option Explicit" & vbCrLf
-    s = s & "Public Const SUITE_VERSION As String = ""0.9.1-alpha""" & vbCrLf
+    s = s & "Public Const SUITE_VERSION As String = ""0.9.2-alpha""" & vbCrLf
     s = s & "Public gRibbon As Object   ' IRibbonUI -- stored for optional Invalidate calls" & vbCrLf
     s = s & "Sub ShowCleanupSuiteLauncher()" & vbCrLf
     s = s & "    frmCleanupSuiteLauncher.Show" & vbCrLf
@@ -4796,6 +4846,7 @@ Private Function modAlphaSmokeRunner_Code() As String
     s = s & "    Dim rows As Collection" & vbCrLf
     s = s & "    Dim contentText As String" & vbCrLf
     s = s & "    Dim originalViewType As WdViewType" & vbCrLf
+    s = s & "    Dim originalShowHighlight As Boolean" & vbCrLf
     s = s & "    Dim originalZoom As Long" & vbCrLf
     s = s & "    Dim originalScroll As Long" & vbCrLf
     s = s & "    Dim originalSelectionStart As Long" & vbCrLf
@@ -4828,6 +4879,8 @@ Private Function modAlphaSmokeRunner_Code() As String
     s = s & "    Err.Clear" & vbCrLf
     s = s & "    On Error GoTo SmokeFail" & vbCrLf
     s = s & "    originalViewType = previewWindow.View.Type" & vbCrLf
+    s = s & "    previewWindow.View.ShowHighlight = False" & vbCrLf
+    s = s & "    originalShowHighlight = previewWindow.View.ShowHighlight" & vbCrLf
     s = s & "    originalZoom = previewWindow.View.Zoom.Percentage" & vbCrLf
     s = s & "    If scrollAvailable Then originalScroll = previewWindow.VerticalPercentScrolled" & vbCrLf
     s = s & "    originalSelectionStart = previewWindow.Selection.Start" & vbCrLf
@@ -4836,11 +4889,13 @@ Private Function modAlphaSmokeRunner_Code() As String
     s = s & "    SmokeRequireValue BeginPreviewViewSession(), ""Preview ON did not start a view session.""" & vbCrLf
     s = s & "    SmokeRequireValue PreviewViewSessionIsActive(), ""Preview ON did not mark the view session active.""" & vbCrLf
     s = s & "    SmokeRequireValue previewWindow.View.ReadingLayout, ""Preview ON did not enter Reading View.""" & vbCrLf
+    s = s & "    SmokeRequireValue previewWindow.View.ShowHighlight, ""Preview ON did not make highlight formatting visible.""" & vbCrLf
     s = s & "    previewWindow.Selection.SetRange 30, 30" & vbCrLf
     s = s & "    RestorePreviewViewSession" & vbCrLf
     s = s & "    SmokeRequireValue Not PreviewViewSessionIsActive(), ""Preview OFF left the view session active.""" & vbCrLf
     s = s & "    SmokeRequireValue Not previewWindow.View.ReadingLayout, ""Preview OFF did not leave Reading View.""" & vbCrLf
     s = s & "    SmokeRequireValue previewWindow.View.Type = originalViewType, ""Preview OFF did not restore the original view type.""" & vbCrLf
+    s = s & "    SmokeRequireValue previewWindow.View.ShowHighlight = originalShowHighlight, ""Preview OFF did not restore highlight visibility.""" & vbCrLf
     s = s & "    SmokeRequireValue previewWindow.View.Zoom.Percentage = originalZoom, ""Preview OFF did not restore zoom.""" & vbCrLf
     s = s & "    If scrollAvailable Then SmokeRequireValue previewWindow.VerticalPercentScrolled = originalScroll, ""Preview OFF did not restore scroll position.""" & vbCrLf
     s = s & "    SmokeRequireValue previewWindow.Selection.Start = originalSelectionStart And previewWindow.Selection.End = originalSelectionEnd, ""Preview OFF did not restore the selection.""" & vbCrLf
@@ -9606,15 +9661,29 @@ Private Function frmPunctuationCleanup_Code() As String
     s = s & "    End If" & vbCrLf
     s = s & "    If Not GuardBeforeCleanup(""Punctuation Normalizer"") Then Unload Me: Exit Sub" & vbCrLf
     s = s & "    Dim findList As Collection, replaceList As Collection, itemLabels As Collection" & vbCrLf
-    s = s & "    Dim counts() As Long, idx As Long, i As Long" & vbCrLf
+    s = s & "    Dim idx As Long" & vbCrLf
     s = s & "    Dim previewOnly As Boolean" & vbCrLf
+    s = s & "    Dim screenUpdatingWasOn As Boolean" & vbCrLf
+    s = s & "    Dim autoFormatAsYouTypeQuotesWasOn As Boolean" & vbCrLf
+    s = s & "    Dim autoFormatQuotesWasOn As Boolean" & vbCrLf
     s = s & "    previewOnly = chkPreviewOnly.Value" & vbCrLf
+    s = s & "    screenUpdatingWasOn = Application.ScreenUpdating" & vbCrLf
     s = s & "    Dim targetRange As Range" & vbCrLf
     s = s & "    If optScopeSelection.Value And optScopeSelection.Enabled Then" & vbCrLf
     s = s & "        Set targetRange = GetTargetRange()" & vbCrLf
     s = s & "    Else" & vbCrLf
     s = s & "        Set targetRange = ActiveDocument.Content" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "    Dim includeCurlyDouble As Boolean" & vbCrLf
+    s = s & "    Dim includeCurlySingle As Boolean" & vbCrLf
+    s = s & "    Dim includeEmDash As Boolean" & vbCrLf
+    s = s & "    Dim includeEnDash As Boolean" & vbCrLf
+    s = s & "    Dim includeEllipses As Boolean" & vbCrLf
+    s = s & "    includeCurlyDouble = optAll.Value Or optQuotes.Value Or (optCustom.Value And chkCurlyDouble.Value)" & vbCrLf
+    s = s & "    includeCurlySingle = optAll.Value Or optQuotes.Value Or (optCustom.Value And chkCurlySingle.Value)" & vbCrLf
+    s = s & "    includeEmDash = optAll.Value Or optDashes.Value Or (optCustom.Value And chkEmDash.Value)" & vbCrLf
+    s = s & "    includeEnDash = optAll.Value Or optDashes.Value Or (optCustom.Value And chkEnDash.Value)" & vbCrLf
+    s = s & "    includeEllipses = optAll.Value Or optEllipses.Value Or (optCustom.Value And chkEllipses.Value)" & vbCrLf
     s = s & "    Set findList = New Collection: Set replaceList = New Collection: Set itemLabels = New Collection" & vbCrLf
     s = s & "    If optAll.Value Or optQuotes.Value Then" & vbCrLf
     s = s & "        findList.Add ChrW(&H201C): replaceList.Add """"""""" & vbCrLf
@@ -9642,45 +9711,25 @@ Private Function frmPunctuationCleanup_Code() As String
     s = s & "        If chkEllipses.Value Then findList.Add ChrW(&H2026): replaceList.Add ""..."" : itemLabels.Add ""Ellipses (U+2026)""" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    If findList.Count = 0 Then MsgBox ""No punctuation options selected."", vbInformation: Exit Sub" & vbCrLf
-    s = s & "    ReDim counts(1 To findList.Count)" & vbCrLf
-    s = s & "    For i = 1 To findList.Count: counts(i) = 0: Next i" & vbCrLf
     s = s & "    If previewOnly Then" & vbCrLf
+    s = s & "        On Error GoTo PreviewErr" & vbCrLf
     s = s & "        Dim previewRows As Collection" & vbCrLf
     s = s & "        Dim previewCurlyDouble As Long" & vbCrLf
     s = s & "        Dim previewCurlySingle As Long" & vbCrLf
     s = s & "        Dim previewEmDash As Long" & vbCrLf
     s = s & "        Dim previewEnDash As Long" & vbCrLf
     s = s & "        Dim previewEllipses As Long" & vbCrLf
-    s = s & "        Dim includeCurlyDouble As Boolean" & vbCrLf
-    s = s & "        Dim includeCurlySingle As Boolean" & vbCrLf
-    s = s & "        Dim includeEmDash As Boolean" & vbCrLf
-    s = s & "        Dim includeEnDash As Boolean" & vbCrLf
-    s = s & "        Dim includeEllipses As Boolean" & vbCrLf
-    s = s & "        includeCurlyDouble = optAll.Value Or optQuotes.Value Or (optCustom.Value And chkCurlyDouble.Value)" & vbCrLf
-    s = s & "        includeCurlySingle = optAll.Value Or optQuotes.Value Or (optCustom.Value And chkCurlySingle.Value)" & vbCrLf
-    s = s & "        includeEmDash = optAll.Value Or optDashes.Value Or (optCustom.Value And chkEmDash.Value)" & vbCrLf
-    s = s & "        includeEnDash = optAll.Value Or optDashes.Value Or (optCustom.Value And chkEnDash.Value)" & vbCrLf
-    s = s & "        includeEllipses = optAll.Value Or optEllipses.Value Or (optCustom.Value And chkEllipses.Value)" & vbCrLf
-    s = s & "" & vbCrLf
     s = s & "        If includeCurlyDouble Then previewCurlyDouble = CountPreviewFindMatches(targetRange, ChrW(&H201C)) + CountPreviewFindMatches(targetRange, ChrW(&H201D))" & vbCrLf
     s = s & "        If includeCurlySingle Then previewCurlySingle = CountPreviewFindMatches(targetRange, ChrW(&H2018)) + CountPreviewFindMatches(targetRange, ChrW(&H2019))" & vbCrLf
     s = s & "        If includeEmDash Then previewEmDash = CountPreviewFindMatches(targetRange, ChrW(&H2014))" & vbCrLf
     s = s & "        If includeEnDash Then previewEnDash = CountPreviewFindMatches(targetRange, ChrW(&H2013))" & vbCrLf
     s = s & "        If includeEllipses Then previewEllipses = CountPreviewFindMatches(targetRange, ChrW(&H2026))" & vbCrLf
-    s = s & "" & vbCrLf
+    s = s & "        Dim previewCharacters As String" & vbCrLf
     s = s & "        For idx = 1 To findList.Count" & vbCrLf
-    s = s & "            With targetRange.Find" & vbCrLf
-    s = s & "                .ClearFormatting" & vbCrLf
-    s = s & "                .Replacement.ClearFormatting" & vbCrLf
-    s = s & "                .Text = findList(idx)" & vbCrLf
-    s = s & "                .Replacement.Text = ""^&""" & vbCrLf
-    s = s & "                .Replacement.Highlight = True" & vbCrLf
-    s = s & "                .Forward = True" & vbCrLf
-    s = s & "                .Wrap = wdFindStop" & vbCrLf
-    s = s & "                .MatchWildcards = False" & vbCrLf
-    s = s & "                .Execute Replace:=wdReplaceAll" & vbCrLf
-    s = s & "            End With" & vbCrLf
+    s = s & "            previewCharacters = previewCharacters & CStr(findList(idx))" & vbCrLf
     s = s & "        Next idx" & vbCrLf
+    s = s & "        HighlightPreviewFindCharacters targetRange, previewCharacters" & vbCrLf
+    s = s & "        On Error GoTo 0" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "        Set previewRows = NewPreviewSummaryRows()" & vbCrLf
     s = s & "        AddPreviewSummaryRow previewRows, ""Curly double quotes"", previewCurlyDouble, False, (Not includeCurlyDouble)" & vbCrLf
@@ -9696,12 +9745,22 @@ Private Function frmPunctuationCleanup_Code() As String
     s = s & "    Set undoRec = Application.UndoRecord" & vbCrLf
     s = s & "    undoRec.StartCustomRecord ""Cleanup Suite - Punctuation Normalizer""" & vbCrLf
     s = s & "    On Error GoTo RunErr" & vbCrLf
-    s = s & "    ' Replace and count." & vbCrLf
-    s = s & "    ' Use direct range text assignment so Word does not auto-convert inserted" & vbCrLf
-    s = s & "    ' straight quotes back into smart quotes during the replacement loop." & vbCrLf
-    s = s & "    For idx = 1 To findList.Count" & vbCrLf
-    s = s & "        counts(idx) = ReplacePunctuationMatches(targetRange, CStr(findList(idx)), CStr(replaceList(idx)))" & vbCrLf
-    s = s & "    Next idx" & vbCrLf
+    s = s & "    autoFormatAsYouTypeQuotesWasOn = Options.AutoFormatAsYouTypeReplaceQuotes" & vbCrLf
+    s = s & "    autoFormatQuotesWasOn = Options.AutoFormatReplaceQuotes" & vbCrLf
+    s = s & "    Options.AutoFormatAsYouTypeReplaceQuotes = False" & vbCrLf
+    s = s & "    Options.AutoFormatReplaceQuotes = False" & vbCrLf
+    s = s & "    Application.ScreenUpdating = False" & vbCrLf
+    s = s & "    ' Replace each conversion family in one bulk pass." & vbCrLf
+    s = s & "    If includeCurlyDouble Then ReplacePunctuationCharacterSet targetRange, ChrW(&H201C) & ChrW(&H201D), """"""""" & vbCrLf
+    s = s & "    If includeCurlySingle Then ReplacePunctuationCharacterSet targetRange, ChrW(&H2018) & ChrW(&H2019), ""'""" & vbCrLf
+    s = s & "    Dim dashCharacters As String" & vbCrLf
+    s = s & "    If includeEmDash Then dashCharacters = dashCharacters & ChrW(&H2014)" & vbCrLf
+    s = s & "    If includeEnDash Then dashCharacters = dashCharacters & ChrW(&H2013)" & vbCrLf
+    s = s & "    If Len(dashCharacters) > 0 Then ReplacePunctuationCharacterSet targetRange, dashCharacters, ""-""" & vbCrLf
+    s = s & "    If includeEllipses Then ReplacePunctuationCharacterSet targetRange, ChrW(&H2026), ""...""" & vbCrLf
+    s = s & "    Application.ScreenUpdating = screenUpdatingWasOn" & vbCrLf
+    s = s & "    Options.AutoFormatAsYouTypeReplaceQuotes = autoFormatAsYouTypeQuotesWasOn" & vbCrLf
+    s = s & "    Options.AutoFormatReplaceQuotes = autoFormatQuotesWasOn" & vbCrLf
     s = s & "    ' Remove highlighting" & vbCrLf
     s = s & "    RemoveAllHighlighting targetRange" & vbCrLf
     s = s & "    undoRec.EndCustomRecord" & vbCrLf
@@ -9709,11 +9768,18 @@ Private Function frmPunctuationCleanup_Code() As String
     s = s & "    MarkCleanupToolApplied" & vbCrLf
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
+    s = s & "PreviewErr:" & vbCrLf
+    s = s & "    Application.ScreenUpdating = screenUpdatingWasOn" & vbCrLf
+    s = s & "    MsgBox ""Could not build the punctuation preview: "" & Err.Description, vbExclamation, ""Punctuation Preview""" & vbCrLf
+    s = s & "    Exit Sub" & vbCrLf
     s = s & "RunErr:" & vbCrLf
     s = s & "    Dim originalErrNumber As Long" & vbCrLf
     s = s & "    Dim originalErrDescription As String" & vbCrLf
     s = s & "    originalErrNumber = Err.Number" & vbCrLf
     s = s & "    originalErrDescription = Err.Description" & vbCrLf
+    s = s & "    Application.ScreenUpdating = screenUpdatingWasOn" & vbCrLf
+    s = s & "    Options.AutoFormatAsYouTypeReplaceQuotes = autoFormatAsYouTypeQuotesWasOn" & vbCrLf
+    s = s & "    Options.AutoFormatReplaceQuotes = autoFormatQuotesWasOn" & vbCrLf
     s = s & "    On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    Dim errMsg As String" & vbCrLf
@@ -9724,23 +9790,26 @@ Private Function frmPunctuationCleanup_Code() As String
     s = s & "    MsgBox errMsg, vbCritical, ""Cleanup Error""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "Private Function ReplacePunctuationMatches(ByVal searchRange As Range, ByVal findText As String, ByVal replacementText As String) As Long" & vbCrLf
-    s = s & "    Dim matchRange As Range" & vbCrLf
-    s = s & "    Set matchRange = searchRange.Duplicate" & vbCrLf
+    s = s & "Private Function ReplacePunctuationCharacterSet(ByVal searchRange As Range, ByVal findCharacters As String, ByVal replacementText As String) As Long" & vbCrLf
+    s = s & "    Dim replaceRange As Range" & vbCrLf
+    s = s & "    Dim characterIndex As Long" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "    With matchRange.Find" & vbCrLf
+    s = s & "    For characterIndex = 1 To Len(findCharacters)" & vbCrLf
+    s = s & "        ReplacePunctuationCharacterSet = ReplacePunctuationCharacterSet + CountPreviewFindMatches(searchRange, Mid$(findCharacters, characterIndex, 1))" & vbCrLf
+    s = s & "    Next characterIndex" & vbCrLf
+    s = s & "    If ReplacePunctuationCharacterSet = 0 Then Exit Function" & vbCrLf
+    s = s & "    Set replaceRange = searchRange.Duplicate" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    With replaceRange.Find" & vbCrLf
     s = s & "        .ClearFormatting" & vbCrLf
     s = s & "        .Replacement.ClearFormatting" & vbCrLf
-    s = s & "        .Text = findText" & vbCrLf
+    s = s & "        .Text = ""["" & findCharacters & ""]""" & vbCrLf
+    s = s & "        .Replacement.Text = replacementText" & vbCrLf
     s = s & "        .Forward = True" & vbCrLf
     s = s & "        .Wrap = wdFindStop" & vbCrLf
-    s = s & "        .MatchWildcards = False" & vbCrLf
-    s = s & "" & vbCrLf
-    s = s & "        Do While .Execute" & vbCrLf
-    s = s & "            matchRange.Text = replacementText" & vbCrLf
-    s = s & "            ReplacePunctuationMatches = ReplacePunctuationMatches + 1" & vbCrLf
-    s = s & "            matchRange.Collapse wdCollapseEnd" & vbCrLf
-    s = s & "        Loop" & vbCrLf
+    s = s & "        .Format = False" & vbCrLf
+    s = s & "        .MatchWildcards = True" & vbCrLf
+    s = s & "        .Execute Replace:=wdReplaceAll" & vbCrLf
     s = s & "    End With" & vbCrLf
     s = s & "End Function" & vbCrLf
     s = s & ""
@@ -12088,7 +12157,7 @@ Private Function frmParagraphCleanup_Code() As String
     s = s & "            For Each p In targetRange.Paragraphs" & vbCrLf
     s = s & "                If ParagraphOverlapsRange(p, targetRange) Then" & vbCrLf
     s = s & "                    If p.Format.SpaceBefore <> 0 Or p.Format.SpaceAfter <> 0 Then" & vbCrLf
-    s = s & "                        ApplyPreviewShading p.Range" & vbCrLf
+    s = s & "                        ApplyPreviewSpacingBoundary p.Range" & vbCrLf
     s = s & "                        cntNormalize = cntNormalize + 1" & vbCrLf
     s = s & "                    End If" & vbCrLf
     s = s & "                End If" & vbCrLf

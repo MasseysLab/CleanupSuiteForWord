@@ -161,6 +161,7 @@ class PreviewActionPanelTests(unittest.TestCase):
 
         self.assertIn("Set hlRange = scopeRange.Duplicate", helper)
         self.assertIn("hlRange.HighlightColorIndex = wdNoHighlight", helper)
+        self.assertIn("hlRange.Find.ClearHitHighlight", helper)
         self.assertNotIn(".Replacement.Highlight = False", helper)
 
     def test_preview_panel_exposes_only_decisive_actions(self):

@@ -18,14 +18,23 @@ class PreviewReadingViewAndProgressTests(unittest.TestCase):
         self.assertIn("Private gPreviewViewSelection As Range", helpers)
         self.assertIn("Private gPreviewViewType As WdViewType", helpers)
         self.assertIn("Private gPreviewViewReadingLayout As Boolean", helpers)
+        self.assertIn("Private gPreviewViewShowHighlight As Boolean", helpers)
         self.assertIn("Private gPreviewViewZoom As Long", helpers)
         self.assertIn("Private gPreviewViewVerticalScroll As Long", helpers)
         self.assertIn("Private gPreviewViewHasVerticalScroll As Boolean", helpers)
         self.assertIn("Set gPreviewViewSelection = previewSelection.Range.Duplicate", helpers)
         self.assertIn("gPreviewViewWindow.View.ReadingLayout = True", helpers)
+        self.assertIn("gPreviewViewShowHighlight = gPreviewViewWindow.View.ShowHighlight", helpers)
+        self.assertIn("gPreviewViewWindow.View.ShowHighlight = True", helpers)
         self.assertIn(".View.Type = gPreviewViewType", helpers)
+        self.assertIn(".View.ShowHighlight = gPreviewViewShowHighlight", helpers)
         self.assertIn(".View.Zoom.Percentage = gPreviewViewZoom", helpers)
         self.assertIn("If gPreviewViewHasVerticalScroll Then gPreviewViewWindow.VerticalPercentScrolled = gPreviewViewVerticalScroll", helpers)
+        begin = helpers[helpers.index("Public Function BeginPreviewViewSession()"):helpers.index("Public Sub RestorePreviewViewSession()")]
+        self.assertLess(
+            begin.index("gPreviewViewWindow.View.ShowHighlight = True"),
+            begin.index("gPreviewViewWindow.View.ReadingLayout = True"),
+        )
 
     def test_preview_restoration_is_idempotent_and_window_specific(self):
         helpers = read("src/modules/modCleanupHelpers.bas")

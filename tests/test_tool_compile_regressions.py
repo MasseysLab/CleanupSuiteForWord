@@ -133,13 +133,56 @@ class ToolCompileRegressionTests(unittest.TestCase):
         self.assertIn('"Clear Sharing Properties preview:" & vbCrLf & vbCrLf', source)
         self.assertNotIn('"Clear Sharing Properties preview:" & vbCrLf & vbCrLf & vbCrLf', source)
 
-    def test_punctuation_tool_uses_direct_text_replacement_for_matches(self):
+    def test_punctuation_tool_uses_bulk_replacement_with_smart_quotes_disabled(self):
         source = read("src/forms/frmPunctuationCleanup.bas")
 
-        self.assertIn("counts(idx) = ReplacePunctuationMatches(targetRange, CStr(findList(idx)), CStr(replaceList(idx)))", source)
-        self.assertIn("Private Function ReplacePunctuationMatches(", source)
-        self.assertIn("matchRange.Text = replacementText", source)
-        self.assertNotIn("While .Execute(Replace:=wdReplaceOne)", source)
+        self.assertIn("Private Function ReplacePunctuationCharacterSet(", source)
+        self.assertIn("Options.AutoFormatAsYouTypeReplaceQuotes = False", source)
+        self.assertIn("Options.AutoFormatReplaceQuotes = False", source)
+        self.assertIn("ReplacePunctuationCharacterSet = ReplacePunctuationCharacterSet + CountPreviewFindMatches", source)
+        self.assertIn('.Text = "[" & findCharacters & "]"', source)
+        self.assertIn(".MatchWildcards = True", source)
+        self.assertIn(".Execute Replace:=wdReplaceAll", source)
+        self.assertNotIn("matchRange.Text = replacementText", source)
+
+    def test_punctuation_preview_uses_bulk_formatted_replace_all(self):
+        source = read("src/forms/frmPunctuationCleanup.bas")
+        helpers = read("src/modules/modCleanupHelpers.bas")
+        preview_start = source.index("If previewOnly Then")
+        preview_end = source.index('MarkCleanupStart "Punctuation Normalizer"', preview_start)
+        preview_block = source[preview_start:preview_end]
+        helper_start = helpers.index("Public Sub HighlightPreviewFindCharacters")
+        helper_end = helpers.index("End Sub", helper_start)
+        highlight_helper = helpers[helper_start:helper_end]
+
+        self.assertIn("HighlightPreviewFindCharacters targetRange, previewCharacters", preview_block)
+        self.assertNotIn(".Replacement.Highlight = True", preview_block)
+        self.assertNotIn("Replace:=wdReplaceAll", preview_block)
+        self.assertIn("highlightRange.Find.HitHighlight", highlight_helper)
+        self.assertIn('FindText:="[" & findCharacters & "]"', highlight_helper)
+        self.assertIn("HighlightColor:=highlightColor", highlight_helper)
+        self.assertIn("MatchWildcards:=True", highlight_helper)
+        self.assertNotIn(".Execute Replace:=wdReplaceAll", highlight_helper)
+        self.assertIn("highlightColor As WdColor = wdColorYellow", highlight_helper)
+        self.assertNotIn("Application.ScreenUpdating = False", preview_block)
+
+    def test_paragraph_spacing_preview_marks_boundaries_without_shading_text(self):
+        source = read("src/forms/frmParagraphCleanup.bas")
+        helpers = read("src/modules/modCleanupHelpers.bas")
+        preview_start = source.index("If previewOnly Then")
+        preview_end = source.index('MarkCleanupStart "Paragraph Fixer"', preview_start)
+        preview_block = source[preview_start:preview_end]
+        spacing_start = preview_block.index("If doNormalize Then")
+        spacing_end = preview_block.index("If doIndent Then", spacing_start)
+        spacing_block = preview_block[spacing_start:spacing_end]
+
+        self.assertIn("ApplyPreviewSpacingBoundary p.Range", spacing_block)
+        self.assertNotIn("ApplyPreviewShading p.Range", spacing_block)
+        self.assertIn("Public Sub ApplyPreviewSpacingBoundary", helpers)
+        self.assertIn("markerColor As WdColorIndex = wdBrightGreen", helpers)
+        self.assertIn("markerRange.Start = markerRange.End - 2", helpers)
+        self.assertIn("markerRange.HighlightColorIndex = markerColor", helpers)
+        self.assertNotIn("RestorePreviewSpacingBoundaries", helpers)
 
     def test_unicode_tool_uses_direct_text_replacement_for_matches(self):
         source = read("src/forms/frmUnicodeCleanup.bas")

@@ -6,9 +6,9 @@ The project uses a simple SemVer-style ladder, but with `0.x.0` milestones until
 
 ## Current Version
 
-`0.9.1-alpha`
+`0.9.2-alpha`
 
-This Alpha hotfix preserves the packaged 0.9.0 feature set and corrects MetaDataSuite path resolution for synchronized personal OneDrive documents. Git tag: `v0.9.1-alpha`.
+This Alpha hotfix preserves the packaged tool set while correcting preview performance and presentation: punctuation previews use a fast display-only highlight path, bulk punctuation Apply avoids per-match replacement loops, Reading View remains stable, and paragraph-spacing previews mark only the affected boundary. Git tag: `v0.9.2-alpha`.
 
 ## Roadmap
 
@@ -26,6 +26,7 @@ This Alpha hotfix preserves the packaged 0.9.0 feature set and corrects MetaData
 | `0.8.5` | Internal pre-release milestone used while the Alpha was being completed. |
 | `0.9.0-alpha` | Official Alpha with the global template, installer, update checks, and full documentation. Git tag: `v0.9.0-alpha`. |
 | `0.9.1-alpha` | Alpha hotfix for MetaDataSuite on synchronized personal OneDrive documents. Git tag: `v0.9.1-alpha`. |
+| `0.9.2-alpha` | Alpha hotfix for punctuation performance and Preview/Reading View presentation. Git tag: `v0.9.2-alpha`. |
 | `0.9.5-beta` | Official Beta release after Alpha feedback, full MetaData-project incorporation, and the planned Capitalization follow-up upgrades. |
 | `1.0.0` | Global `.dotm` Word add-in/template release suitable for normal use on any document. |
 

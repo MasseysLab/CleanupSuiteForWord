@@ -20,7 +20,7 @@ try {
     if (-not $Quick) {
         Write-Host ''
         Write-Host 'Reminder: test the rebuilt distributable in Word before merging.'
-Write-Host 'Run the Word alpha smoke runner with powershell -ExecutionPolicy Bypass -File .\scripts\run_word_alpha_smoke.ps1 for the 0.9.1-alpha release gate.'
+Write-Host 'Run the Word alpha smoke runner with powershell -ExecutionPolicy Bypass -File .\scripts\run_word_alpha_smoke.ps1 for the 0.9.2-alpha release gate.'
     }
 }
 finally {

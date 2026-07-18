@@ -114,7 +114,7 @@ Private Sub cmdRun_Click()
             For Each p In targetRange.Paragraphs
                 If ParagraphOverlapsRange(p, targetRange) Then
                     If p.Format.SpaceBefore <> 0 Or p.Format.SpaceAfter <> 0 Then
-                        ApplyPreviewShading p.Range
+                        ApplyPreviewSpacingBoundary p.Range
                         cntNormalize = cntNormalize + 1
                     End If
                 End If

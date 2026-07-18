@@ -53,6 +53,7 @@ Public Function RunPreviewLifecycleSmokeChecks() As String
     Dim rows As Collection
     Dim contentText As String
     Dim originalViewType As WdViewType
+    Dim originalShowHighlight As Boolean
     Dim originalZoom As Long
     Dim originalScroll As Long
     Dim originalSelectionStart As Long
@@ -85,6 +86,8 @@ Public Function RunPreviewLifecycleSmokeChecks() As String
     Err.Clear
     On Error GoTo SmokeFail
     originalViewType = previewWindow.View.Type
+    previewWindow.View.ShowHighlight = False
+    originalShowHighlight = previewWindow.View.ShowHighlight
     originalZoom = previewWindow.View.Zoom.Percentage
     If scrollAvailable Then originalScroll = previewWindow.VerticalPercentScrolled
     originalSelectionStart = previewWindow.Selection.Start
@@ -93,11 +96,13 @@ Public Function RunPreviewLifecycleSmokeChecks() As String
     SmokeRequireValue BeginPreviewViewSession(), "Preview ON did not start a view session."
     SmokeRequireValue PreviewViewSessionIsActive(), "Preview ON did not mark the view session active."
     SmokeRequireValue previewWindow.View.ReadingLayout, "Preview ON did not enter Reading View."
+    SmokeRequireValue previewWindow.View.ShowHighlight, "Preview ON did not make highlight formatting visible."
     previewWindow.Selection.SetRange 30, 30
     RestorePreviewViewSession
     SmokeRequireValue Not PreviewViewSessionIsActive(), "Preview OFF left the view session active."
     SmokeRequireValue Not previewWindow.View.ReadingLayout, "Preview OFF did not leave Reading View."
     SmokeRequireValue previewWindow.View.Type = originalViewType, "Preview OFF did not restore the original view type."
+    SmokeRequireValue previewWindow.View.ShowHighlight = originalShowHighlight, "Preview OFF did not restore highlight visibility."
     SmokeRequireValue previewWindow.View.Zoom.Percentage = originalZoom, "Preview OFF did not restore zoom."
     If scrollAvailable Then SmokeRequireValue previewWindow.VerticalPercentScrolled = originalScroll, "Preview OFF did not restore scroll position."
     SmokeRequireValue previewWindow.Selection.Start = originalSelectionStart And previewWindow.Selection.End = originalSelectionEnd, "Preview OFF did not restore the selection."

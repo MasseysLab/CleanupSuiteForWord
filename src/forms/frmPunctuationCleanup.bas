@@ -105,15 +105,29 @@ Private Sub cmdRun_Click()
     End If
     If Not GuardBeforeCleanup("Punctuation Normalizer") Then Unload Me: Exit Sub
     Dim findList As Collection, replaceList As Collection, itemLabels As Collection
-    Dim counts() As Long, idx As Long, i As Long
+    Dim idx As Long
     Dim previewOnly As Boolean
+    Dim screenUpdatingWasOn As Boolean
+    Dim autoFormatAsYouTypeQuotesWasOn As Boolean
+    Dim autoFormatQuotesWasOn As Boolean
     previewOnly = chkPreviewOnly.Value
+    screenUpdatingWasOn = Application.ScreenUpdating
     Dim targetRange As Range
     If optScopeSelection.Value And optScopeSelection.Enabled Then
         Set targetRange = GetTargetRange()
     Else
         Set targetRange = ActiveDocument.Content
     End If
+    Dim includeCurlyDouble As Boolean
+    Dim includeCurlySingle As Boolean
+    Dim includeEmDash As Boolean
+    Dim includeEnDash As Boolean
+    Dim includeEllipses As Boolean
+    includeCurlyDouble = optAll.Value Or optQuotes.Value Or (optCustom.Value And chkCurlyDouble.Value)
+    includeCurlySingle = optAll.Value Or optQuotes.Value Or (optCustom.Value And chkCurlySingle.Value)
+    includeEmDash = optAll.Value Or optDashes.Value Or (optCustom.Value And chkEmDash.Value)
+    includeEnDash = optAll.Value Or optDashes.Value Or (optCustom.Value And chkEnDash.Value)
+    includeEllipses = optAll.Value Or optEllipses.Value Or (optCustom.Value And chkEllipses.Value)
     Set findList = New Collection: Set replaceList = New Collection: Set itemLabels = New Collection
     If optAll.Value Or optQuotes.Value Then
         findList.Add ChrW(&H201C): replaceList.Add """"
@@ -141,45 +155,25 @@ Private Sub cmdRun_Click()
         If chkEllipses.Value Then findList.Add ChrW(&H2026): replaceList.Add "..." : itemLabels.Add "Ellipses (U+2026)"
     End If
     If findList.Count = 0 Then MsgBox "No punctuation options selected.", vbInformation: Exit Sub
-    ReDim counts(1 To findList.Count)
-    For i = 1 To findList.Count: counts(i) = 0: Next i
     If previewOnly Then
+        On Error GoTo PreviewErr
         Dim previewRows As Collection
         Dim previewCurlyDouble As Long
         Dim previewCurlySingle As Long
         Dim previewEmDash As Long
         Dim previewEnDash As Long
         Dim previewEllipses As Long
-        Dim includeCurlyDouble As Boolean
-        Dim includeCurlySingle As Boolean
-        Dim includeEmDash As Boolean
-        Dim includeEnDash As Boolean
-        Dim includeEllipses As Boolean
-        includeCurlyDouble = optAll.Value Or optQuotes.Value Or (optCustom.Value And chkCurlyDouble.Value)
-        includeCurlySingle = optAll.Value Or optQuotes.Value Or (optCustom.Value And chkCurlySingle.Value)
-        includeEmDash = optAll.Value Or optDashes.Value Or (optCustom.Value And chkEmDash.Value)
-        includeEnDash = optAll.Value Or optDashes.Value Or (optCustom.Value And chkEnDash.Value)
-        includeEllipses = optAll.Value Or optEllipses.Value Or (optCustom.Value And chkEllipses.Value)
-
         If includeCurlyDouble Then previewCurlyDouble = CountPreviewFindMatches(targetRange, ChrW(&H201C)) + CountPreviewFindMatches(targetRange, ChrW(&H201D))
         If includeCurlySingle Then previewCurlySingle = CountPreviewFindMatches(targetRange, ChrW(&H2018)) + CountPreviewFindMatches(targetRange, ChrW(&H2019))
         If includeEmDash Then previewEmDash = CountPreviewFindMatches(targetRange, ChrW(&H2014))
         If includeEnDash Then previewEnDash = CountPreviewFindMatches(targetRange, ChrW(&H2013))
         If includeEllipses Then previewEllipses = CountPreviewFindMatches(targetRange, ChrW(&H2026))
-
+        Dim previewCharacters As String
         For idx = 1 To findList.Count
-            With targetRange.Find
-                .ClearFormatting
-                .Replacement.ClearFormatting
-                .Text = findList(idx)
-                .Replacement.Text = "^&"
-                .Replacement.Highlight = True
-                .Forward = True
-                .Wrap = wdFindStop
-                .MatchWildcards = False
-                .Execute Replace:=wdReplaceAll
-            End With
+            previewCharacters = previewCharacters & CStr(findList(idx))
         Next idx
+        HighlightPreviewFindCharacters targetRange, previewCharacters
+        On Error GoTo 0
 
         Set previewRows = NewPreviewSummaryRows()
         AddPreviewSummaryRow previewRows, "Curly double quotes", previewCurlyDouble, False, (Not includeCurlyDouble)
@@ -195,12 +189,22 @@ Private Sub cmdRun_Click()
     Set undoRec = Application.UndoRecord
     undoRec.StartCustomRecord "Cleanup Suite - Punctuation Normalizer"
     On Error GoTo RunErr
-    ' Replace and count.
-    ' Use direct range text assignment so Word does not auto-convert inserted
-    ' straight quotes back into smart quotes during the replacement loop.
-    For idx = 1 To findList.Count
-        counts(idx) = ReplacePunctuationMatches(targetRange, CStr(findList(idx)), CStr(replaceList(idx)))
-    Next idx
+    autoFormatAsYouTypeQuotesWasOn = Options.AutoFormatAsYouTypeReplaceQuotes
+    autoFormatQuotesWasOn = Options.AutoFormatReplaceQuotes
+    Options.AutoFormatAsYouTypeReplaceQuotes = False
+    Options.AutoFormatReplaceQuotes = False
+    Application.ScreenUpdating = False
+    ' Replace each conversion family in one bulk pass.
+    If includeCurlyDouble Then ReplacePunctuationCharacterSet targetRange, ChrW(&H201C) & ChrW(&H201D), """"
+    If includeCurlySingle Then ReplacePunctuationCharacterSet targetRange, ChrW(&H2018) & ChrW(&H2019), "'"
+    Dim dashCharacters As String
+    If includeEmDash Then dashCharacters = dashCharacters & ChrW(&H2014)
+    If includeEnDash Then dashCharacters = dashCharacters & ChrW(&H2013)
+    If Len(dashCharacters) > 0 Then ReplacePunctuationCharacterSet targetRange, dashCharacters, "-"
+    If includeEllipses Then ReplacePunctuationCharacterSet targetRange, ChrW(&H2026), "..."
+    Application.ScreenUpdating = screenUpdatingWasOn
+    Options.AutoFormatAsYouTypeReplaceQuotes = autoFormatAsYouTypeQuotesWasOn
+    Options.AutoFormatReplaceQuotes = autoFormatQuotesWasOn
     ' Remove highlighting
     RemoveAllHighlighting targetRange
     undoRec.EndCustomRecord
@@ -208,11 +212,18 @@ Private Sub cmdRun_Click()
     MarkCleanupToolApplied
     Unload Me
     Exit Sub
+PreviewErr:
+    Application.ScreenUpdating = screenUpdatingWasOn
+    MsgBox "Could not build the punctuation preview: " & Err.Description, vbExclamation, "Punctuation Preview"
+    Exit Sub
 RunErr:
     Dim originalErrNumber As Long
     Dim originalErrDescription As String
     originalErrNumber = Err.Number
     originalErrDescription = Err.Description
+    Application.ScreenUpdating = screenUpdatingWasOn
+    Options.AutoFormatAsYouTypeReplaceQuotes = autoFormatAsYouTypeQuotesWasOn
+    Options.AutoFormatReplaceQuotes = autoFormatQuotesWasOn
     On Error Resume Next: undoRec.EndCustomRecord: On Error GoTo 0
     MarkCleanupEnd
     Dim errMsg As String
@@ -223,22 +234,25 @@ RunErr:
     MsgBox errMsg, vbCritical, "Cleanup Error"
 End Sub
 
-Private Function ReplacePunctuationMatches(ByVal searchRange As Range, ByVal findText As String, ByVal replacementText As String) As Long
-    Dim matchRange As Range
-    Set matchRange = searchRange.Duplicate
+Private Function ReplacePunctuationCharacterSet(ByVal searchRange As Range, ByVal findCharacters As String, ByVal replacementText As String) As Long
+    Dim replaceRange As Range
+    Dim characterIndex As Long
 
-    With matchRange.Find
+    For characterIndex = 1 To Len(findCharacters)
+        ReplacePunctuationCharacterSet = ReplacePunctuationCharacterSet + CountPreviewFindMatches(searchRange, Mid$(findCharacters, characterIndex, 1))
+    Next characterIndex
+    If ReplacePunctuationCharacterSet = 0 Then Exit Function
+    Set replaceRange = searchRange.Duplicate
+
+    With replaceRange.Find
         .ClearFormatting
         .Replacement.ClearFormatting
-        .Text = findText
+        .Text = "[" & findCharacters & "]"
+        .Replacement.Text = replacementText
         .Forward = True
         .Wrap = wdFindStop
-        .MatchWildcards = False
-
-        Do While .Execute
-            matchRange.Text = replacementText
-            ReplacePunctuationMatches = ReplacePunctuationMatches + 1
-            matchRange.Collapse wdCollapseEnd
-        Loop
+        .Format = False
+        .MatchWildcards = True
+        .Execute Replace:=wdReplaceAll
     End With
 End Function

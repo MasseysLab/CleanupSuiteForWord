@@ -22,6 +22,7 @@ Private gPreviewViewWindow As Window
 Private gPreviewViewSelection As Range
 Private gPreviewViewType As WdViewType
 Private gPreviewViewReadingLayout As Boolean
+Private gPreviewViewShowHighlight As Boolean
 Private gPreviewViewZoom As Long
 Private gPreviewViewVerticalScroll As Long
 Private gPreviewViewHasVerticalScroll As Boolean
@@ -577,6 +578,7 @@ Public Function BeginPreviewViewSession() As Boolean
     Set gPreviewViewSelection = previewSelection.Range.Duplicate
     gPreviewViewType = gPreviewViewWindow.View.Type
     gPreviewViewReadingLayout = gPreviewViewWindow.View.ReadingLayout
+    gPreviewViewShowHighlight = gPreviewViewWindow.View.ShowHighlight
     gPreviewViewZoom = gPreviewViewWindow.View.Zoom.Percentage
     On Error Resume Next
     Err.Clear
@@ -586,6 +588,10 @@ Public Function BeginPreviewViewSession() As Boolean
     On Error GoTo BeginErr
     gPreviewViewSessionActive = True
 
+    ' Reading View can inherit a window setting that hides highlight formatting.
+    ' Set highlight visibility before the final view transition; setting it
+    ' afterward can make Word return to Print Layout.
+    gPreviewViewWindow.View.ShowHighlight = True
     If Not gPreviewViewReadingLayout Then
         gPreviewViewWindow.View.ReadingLayout = True
     End If
@@ -632,6 +638,7 @@ Public Sub RestorePreviewViewSession()
                 .View.ReadingLayout = False
                 .View.Type = gPreviewViewType
             End If
+            .View.ShowHighlight = gPreviewViewShowHighlight
             .View.Zoom.Percentage = gPreviewViewZoom
         End With
 
@@ -653,6 +660,7 @@ Private Sub ClearPreviewViewSessionState()
     Set gPreviewViewDocument = Nothing
     gPreviewViewType = wdPrintView
     gPreviewViewReadingLayout = False
+    gPreviewViewShowHighlight = True
     gPreviewViewZoom = 0
     gPreviewViewVerticalScroll = 0
     gPreviewViewHasVerticalScroll = False
@@ -675,7 +683,10 @@ Public Sub RemovePreviewHighlighting(ByVal previewDocument As Document)
             Exit For
         End If
     Next liveDocument
-    If previewDocumentIsLive Then previewDocument.Content.HighlightColorIndex = wdNoHighlight
+    If previewDocumentIsLive Then
+        previewDocument.Content.Find.ClearHitHighlight
+        previewDocument.Content.HighlightColorIndex = wdNoHighlight
+    End If
     On Error GoTo 0
 End Sub
 
@@ -783,7 +794,32 @@ Public Sub RemoveAllHighlighting(Optional scopeRange As Range = Nothing)
     Else
         Set hlRange = scopeRange.Duplicate
     End If
+    hlRange.Find.ClearHitHighlight
     hlRange.HighlightColorIndex = wdNoHighlight
+End Sub
+
+Public Sub ApplyPreviewSpacingBoundary(ByVal paragraphRange As Range, Optional ByVal markerColor As WdColorIndex = wdBrightGreen)
+    Dim markerRange As Range
+
+    On Error GoTo SafeExit
+    Set markerRange = paragraphRange.Duplicate
+    If markerRange.End <= markerRange.Start Then Exit Sub
+
+    ' Word cannot apply text highlight to the empty Space Before/Space After
+    ' region. Mark the paragraph boundary instead: include the paragraph mark
+    ' and, where available, the final visible character so the strip remains
+    ' visible even when nonprinting marks are hidden.
+    If Right$(markerRange.Text, 1) = vbCr Then
+        If markerRange.End - markerRange.Start >= 2 Then
+            markerRange.Start = markerRange.End - 2
+        Else
+            markerRange.Start = markerRange.End - 1
+        End If
+    Else
+        markerRange.Start = markerRange.End - 1
+    End If
+    markerRange.HighlightColorIndex = markerColor
+SafeExit:
 End Sub
 Public Sub ApplyPreviewShading(ByVal targetRange As Range, Optional ByVal shadeColor As Long = wdColorBrightGreen)
     Dim paragraphItem As Paragraph
@@ -2775,3 +2811,17 @@ Public Function CountPreviewFindMatches(ByVal searchRange As Range, ByVal findTe
         Loop
     End With
 End Function
+
+Public Sub HighlightPreviewFindCharacters(ByVal searchRange As Range, ByVal findCharacters As String, Optional ByVal highlightColor As WdColor = wdColorYellow)
+    Dim highlightRange As Range
+    Dim highlightApplied As Boolean
+
+    If Len(findCharacters) = 0 Then Exit Sub
+    Set highlightRange = searchRange.Duplicate
+    highlightApplied = highlightRange.Find.HitHighlight( _
+        FindText:="[" & findCharacters & "]", _
+        HighlightColor:=highlightColor, _
+        MatchWildcards:=True)
+    ' HitHighlight returns False when the selected punctuation does not occur.
+    ' That is a valid zero-match preview, not an error.
+End Sub

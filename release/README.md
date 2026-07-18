@@ -14,17 +14,17 @@ powershell -ExecutionPolicy Bypass -File .\installer\build-installer.ps1
 
 Publisher: MasseysLab. Software and documentation: MIT License.
 
-See the repository's `docs/Release_Notes_v0.9.1-alpha.md` for release highlights,
+See the repository's `docs/Release_Notes_v0.9.2-alpha.md` for release highlights,
 known Alpha limits, and verification details.
 
 ## Publishing order
 
 1. Merge the verified release commit into `main` and confirm the Build and Test
    workflow passes.
-2. Create and push tag `v0.9.1-alpha` at that exact commit.
+2. Create and push tag `v0.9.2-alpha` at that exact commit.
 3. Create a GitHub Release for the tag and attach `CleanupSuite.dotm` with that
    exact filename. The update manifest and manual-install path depend on the
-   resulting `/releases/download/v0.9.1-alpha/CleanupSuite.dotm` URL.
+   resulting `/releases/download/v0.9.2-alpha/CleanupSuite.dotm` URL.
 4. Also attach `CleanupSuiteForWord-Setup.exe` and the versioned user-manual PDF
    so the release page is self-contained.
 5. Verify the stable Setup link, `latest-release.ini`, template download, and a

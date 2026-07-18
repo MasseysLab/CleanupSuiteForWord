@@ -34,11 +34,11 @@ To uninstall manually, close Word and remove `%APPDATA%\Microsoft\Word\STARTUP\C
 
 ## Release
 
-- Current release: **0.9.1 Alpha**
-- Git tag: `v0.9.1-alpha`
+- Current release: **0.9.2 Alpha**
+- Git tag: `v0.9.2-alpha`
 - Publisher: **MasseysLab**
 
-See the [0.9.1 Alpha release notes](docs/Release_Notes_v0.9.1-alpha.md) for
+See the [0.9.2 Alpha release notes](docs/Release_Notes_v0.9.2-alpha.md) for
 highlights, known Alpha limits, and the verified template hash.
 
 Software and documentation are licensed under the [MIT License](LICENSE).
