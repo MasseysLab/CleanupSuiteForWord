@@ -527,6 +527,8 @@ $sourceItems = @(
     @{ Path = (Join-Path $RepoRoot "src\modules\modAlphaSmokeRunner.bas"); ComponentName = "modAlphaSmokeRunner" },
     @{ Path = (Join-Path $RepoRoot "src\modules\modCleanupHelpers.bas"); ComponentName = "modCleanupHelpers" },
     @{ Path = (Join-Path $RepoRoot "src\modules\modCleanupLauncher.bas"); ComponentName = "modCleanupLauncher" },
+    @{ Path = (Join-Path $RepoRoot "src\modules\modHybridBridge.bas"); ComponentName = "modHybridBridge" },
+    @{ Path = (Join-Path $RepoRoot "src\modules\modHybridJson.bas"); ComponentName = "modHybridJson" },
     @{ Path = (Join-Path $RepoRoot "src\modules\modMetaDataSuite.bas"); ComponentName = "modMetaDataSuite" },
     @{ Path = (Join-Path $RepoRoot "src\modules\modUpdateChecker.bas"); ComponentName = "modUpdateChecker" },
     @{ Path = (Join-Path $RepoRoot "src\installer\installer.bas"); ComponentName = "modCleanupSuiteInstaller" }

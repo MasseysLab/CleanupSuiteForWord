@@ -1,7 +1,8 @@
 # CleanupSuite Analysis Engine
 
-This directory contains the isolated Task 5 foundation for the future C#/VBA
-hybrid. It is not installed, shipped, or connected to Word.
+This directory contains the Task 5 foundation and Task 6 pilot for the future
+C#/VBA hybrid. It is not installed or shipped as an official CleanupSuite
+component.
 
 `CleanupSuite.Engine`:
 
@@ -18,9 +19,14 @@ hybrid. It is not installed, shipped, or connected to Word.
 - produces content-free diagnostic logs;
 - never references Word, a network API, a shell, or elevation.
 
-The only analyzer in Task 5 is `contract-fixture/replace-literal`. It exists to
-prove deterministic candidates and fingerprints. It is not a migrated CleanupSuite
-tool and is not available from Word.
+Task 5 began with `contract-fixture/replace-literal`, which exists only to prove
+deterministic candidates and fingerprints. Task 6 adds
+`invisible-unicode-cleaner/selected-characters` as the first real pilot analyzer.
+The source implementation is connected through the VBA bridge and has passed
+automated Word Preview-data, Apply, single-Undo, stale-document rejection, and
+large-document performance probes. It remains unavailable to ordinary users until
+the matched self-contained engine is signed, installed, and visually validated
+through the later release gates.
 
 Run the standalone gate:
 

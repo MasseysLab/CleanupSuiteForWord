@@ -4,11 +4,14 @@ public static class ContractConstants
 {
     public const string ContractVersion = "1.0";
     public const string EngineId = "com.masseyslab.cleanupsuite.engine";
-    public const string EngineVersion = "0.1.0";
+    public const string EngineVersion = "0.2.0";
     public const string ProtocolVersion = "1.0";
     public const string FixtureToolId = "contract-fixture";
     public const string FixtureToolDefinitionVersion = "1.0.0";
     public const string FixtureAnalysisMode = "replace-literal";
+    public const string UnicodeToolId = "invisible-unicode-cleaner";
+    public const string UnicodeToolDefinitionVersion = "1.0.0";
+    public const string UnicodeAnalysisMode = "selected-characters";
 
     public const string RequestFileName = "request.json";
     public const string ContentFileName = "document.utf8.txt";

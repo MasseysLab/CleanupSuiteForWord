@@ -19,17 +19,24 @@ def manifest_values() -> dict[str, str]:
     return values
 
 
-def test_release_artifacts_and_manifest_are_consistent():
+def test_stable_installer_pointer_and_special_vba_template_are_consistent():
     setup = ROOT / "release" / "CleanupSuiteForWord-Setup.exe"
     template = ROOT / "release" / "CleanupSuite.dotm"
+    special_release_notes = read("docs/Release_Notes_v0.9.3-beta-vba-final.md")
     values = manifest_values()
 
     assert setup.stat().st_size > 100_000
     assert template.stat().st_size > 100_000
     assert values["version"] == "0.9.2-alpha"
     assert values["tag"] == "v0.9.2-alpha"
-    assert values["template_sha256"] == hashlib.sha256(template.read_bytes()).hexdigest()
+    assert values["template_sha256"] == (
+        "a256a27bb58583c163687c45dc70dcb9074212d73a85d027b33521be48cf9cc0"
+    )
     assert values["setup_url"].endswith("/main/release/CleanupSuiteForWord-Setup.exe")
+    assert (
+        hashlib.sha256(template.read_bytes()).hexdigest().upper()
+        in special_release_notes
+    )
 
 
 def test_installer_is_per_user_bounded_and_does_not_weaken_word():

@@ -28,12 +28,15 @@ internal static class ContractTestRunner
             "1");
         RunTest("Capabilities are safe and contract compatible", TestCapabilities);
         RunTest("Valid analysis returns deterministic candidates", TestValidAnalysis);
+        RunTest("Unicode pilot returns ordered deterministic candidates", TestUnicodeAnalysis);
+        RunTest("Unicode pilot rejects empty selections", TestUnicodeEmptySelection);
         RunTest("Cancellation returns no candidates", TestCancellation);
         RunTest("Hash mismatch returns no candidates", TestHashMismatch);
         RunTest("Malformed UTF-8 returns no candidates", TestMalformedUtf8);
         RunTest("Version mismatch returns no candidates", TestVersionMismatch);
         RunTest("Unknown request fields are rejected", TestUnknownField);
         RunTest("Outside-root jobs are rejected", TestOutsideRoot);
+        RunTest("Engine prepares only an empty approved job directory", TestPrepareJob);
         RunTest("Inherited job permissions are rejected", TestInheritedPermissions);
         RunTest("Existing result files are never overwritten", TestExistingResult);
         RunTest("UTF-16 context never splits a surrogate pair", TestSurrogateContext);
@@ -83,6 +86,91 @@ internal static class ContractTestRunner
         AssertFalse(security.GetProperty("runsAsService").GetBoolean(), "service");
         AssertFalse(security.GetProperty("requiresElevation").GetBoolean(), "elevation");
         AssertFalse(security.GetProperty("logsDocumentContent").GetBoolean(), "content logging");
+        JsonElement supportedTools = root.GetProperty("supportedTools");
+        AssertTrue(
+            supportedTools.EnumerateArray().Any(
+                tool => tool.GetProperty("id").GetString()
+                    == ContractConstants.UnicodeToolId),
+            "Unicode pilot capability");
+    }
+
+    private static void TestUnicodeAnalysis()
+    {
+        string text = "A\u00A0B\u200BC\u200CD\u200DE\uFEFFF\u00ADG\u2011H\r";
+        using JobFixture fixture = JobFixture.CreateUnicode(
+            text,
+            nonBreakingSpace: true,
+            zeroWidthSpace: true,
+            zeroWidthNonJoiner: true,
+            zeroWidthJoiner: true,
+            byteOrderMark: true,
+            softHyphen: true,
+            nonBreakingHyphen: true);
+        int exitCode = RunWithCapturedError(
+            ["--analyze", fixture.DirectoryPath]);
+        AssertEqual(0, exitCode, "Unicode analysis exit code");
+        using JsonDocument result = fixture.ReadResult();
+        JsonElement root = result.RootElement;
+        AssertEqual("completed", root.GetProperty("status").GetString(), "Unicode status");
+        JsonElement candidates = root.GetProperty("candidates");
+        AssertEqual(7, candidates.GetArrayLength(), "Unicode candidate count");
+
+        string[] expectedReasons =
+        [
+            "unicode.non-breaking-space",
+            "unicode.zero-width-space",
+            "unicode.zero-width-nonjoiner",
+            "unicode.zero-width-joiner",
+            "unicode.byte-order-mark",
+            "unicode.soft-hyphen",
+            "unicode.non-breaking-hyphen"
+        ];
+        string[] expectedReplacements = [" ", "", "", "", "", "-", "-"];
+        for (int index = 0; index < candidates.GetArrayLength(); index++)
+        {
+            JsonElement candidate = candidates[index];
+            AssertEqual(
+                expectedReasons[index],
+                candidate.GetProperty("reasonCode").GetString(),
+                $"Unicode reason {index}");
+            AssertEqual(
+                expectedReplacements[index],
+                candidate.GetProperty("operation")
+                    .GetProperty("parameters")
+                    .GetProperty("replacementText")
+                    .GetString(),
+                $"Unicode replacement {index}");
+            AssertEqual(
+                1,
+                candidate.GetProperty("location").GetProperty("endUtf16").GetInt32()
+                    - candidate.GetProperty("location").GetProperty("startUtf16").GetInt32(),
+                $"Unicode range length {index}");
+            AssertStrictRevalidation(candidate);
+        }
+    }
+
+    private static void TestUnicodeEmptySelection()
+    {
+        using JobFixture fixture = JobFixture.CreateUnicode(
+            "A\u00A0B\r",
+            nonBreakingSpace: false,
+            zeroWidthSpace: false,
+            zeroWidthNonJoiner: false,
+            zeroWidthJoiner: false,
+            byteOrderMark: false,
+            softHyphen: false,
+            nonBreakingHyphen: false);
+        int exitCode = RunWithCapturedError(
+            ["--analyze", fixture.DirectoryPath]);
+        AssertEqual(
+            ContractConstants.ExitInvalidRequest,
+            exitCode,
+            "empty Unicode selection exit");
+        using JsonDocument result = fixture.ReadResult();
+        AssertEqual(
+            0,
+            result.RootElement.GetProperty("candidates").GetArrayLength(),
+            "empty Unicode selection candidates");
     }
 
     private static void TestValidAnalysis()
@@ -189,8 +277,8 @@ internal static class ContractTestRunner
         using JobFixture fixture = JobFixture.Create("alpha\r", "alpha", "omega");
         fixture.ReplaceRequestText(
             fixture.RequestText.Replace(
-                "\"protocolVersion\": \"1.0\"",
-                "\"protocolVersion\": \"2.0\"",
+                "\"protocolVersion\":\"1.0\"",
+                "\"protocolVersion\":\"2.0\"",
                 StringComparison.Ordinal));
         int exitCode = RunWithCapturedError(
             ["--analyze", fixture.DirectoryPath]);
@@ -236,6 +324,49 @@ internal static class ContractTestRunner
             ["--analyze", fixture.DirectoryPath]);
         AssertEqual(ContractConstants.ExitSecurityError, exitCode, "existing result exit");
         AssertSequenceEqual(sentinel, File.ReadAllBytes(fixture.ResultPath), "existing result bytes");
+    }
+
+    private static void TestPrepareJob()
+    {
+        string jobId = Guid.NewGuid().ToString("D");
+        Directory.CreateDirectory(JobPathPolicy.ExpectedJobsRoot);
+        string directory = Path.Combine(
+            JobPathPolicy.ExpectedJobsRoot,
+            jobId);
+        Directory.CreateDirectory(directory);
+        try
+        {
+            int exitCode = RunWithCapturedError(
+                ["--prepare-job", directory]);
+            AssertEqual(0, exitCode, "prepare-job exit");
+            JobAccessPolicy.ValidateOwnerOnly(directory);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+
+        string nonEmptyId = Guid.NewGuid().ToString("D");
+        string nonEmpty = Path.Combine(
+            JobPathPolicy.ExpectedJobsRoot,
+            nonEmptyId);
+        Directory.CreateDirectory(nonEmpty);
+        File.WriteAllText(
+            Path.Combine(nonEmpty, "unexpected.txt"),
+            "not allowed");
+        try
+        {
+            int exitCode = RunWithCapturedError(
+                ["--prepare-job", nonEmpty]);
+            AssertEqual(
+                ContractConstants.ExitSecurityError,
+                exitCode,
+                "nonempty prepare-job exit");
+        }
+        finally
+        {
+            Directory.Delete(nonEmpty, recursive: true);
+        }
     }
 
     private static void TestInheritedPermissions()
@@ -448,6 +579,96 @@ internal sealed class JobFixture : IDisposable
             requestedCapabilities = new[]
             {
                 "analysis.contract-fixture",
+                "fingerprint.sha256-utf8-exact"
+            },
+            privacy = new
+            {
+                documentPathIncluded = false,
+                documentNameIncluded = false
+            }
+        };
+        string requestText = JsonSerializer.Serialize(
+            request,
+            JsonSupport.WriteOptions);
+        File.WriteAllText(
+            Path.Combine(directory, "request.json"),
+            requestText,
+            JsonSupport.StrictUtf8);
+        return new JobFixture(directory, requestText, snapshotHash);
+    }
+
+    public static JobFixture CreateUnicode(
+        string snapshotText,
+        bool nonBreakingSpace,
+        bool zeroWidthSpace,
+        bool zeroWidthNonJoiner,
+        bool zeroWidthJoiner,
+        bool byteOrderMark,
+        bool softHyphen,
+        bool nonBreakingHyphen)
+    {
+        string jobId = Guid.NewGuid().ToString("D");
+        string root = JobPathPolicy.ExpectedJobsRoot;
+        Directory.CreateDirectory(root);
+        string directory = Path.Combine(root, jobId);
+        Directory.CreateDirectory(directory);
+        JobAccessPolicy.HardenForCurrentUser(directory);
+        byte[] snapshotBytes = JsonSupport.StrictUtf8.GetBytes(snapshotText);
+        string snapshotHash = Hashing.Sha256Hex(snapshotBytes);
+        File.WriteAllBytes(
+            Path.Combine(directory, "document.utf8.txt"),
+            snapshotBytes);
+
+        object request = new
+        {
+            contractVersion = "1.0",
+            messageType = "analysis-request",
+            jobId,
+            createdUtc = DateTimeOffset.UtcNow,
+            client = new
+            {
+                suiteVersion = "0.9.5-beta",
+                protocolVersion = "1.0",
+                processId = Environment.ProcessId,
+                sessionId = Guid.NewGuid().ToString("D")
+            },
+            tool = new
+            {
+                id = ContractConstants.UnicodeToolId,
+                definitionVersion = ContractConstants.UnicodeToolDefinitionVersion,
+                analysisMode = ContractConstants.UnicodeAnalysisMode
+            },
+            scope = new
+            {
+                documentSessionId = Guid.NewGuid().ToString("D"),
+                storyType = "main-text",
+                startUtf16 = 0,
+                endUtf16 = snapshotText.Length,
+                selectionOnly = false
+            },
+            snapshot = new
+            {
+                snapshotId = snapshotHash,
+                contentFile = "document.utf8.txt",
+                encoding = "utf-8",
+                byteLength = snapshotBytes.LongLength,
+                utf16Length = snapshotText.Length,
+                sha256 = snapshotHash,
+                lineEndingPolicy = "preserve-word-story-text"
+            },
+            options = new
+            {
+                nonBreakingSpace,
+                zeroWidthSpace,
+                zeroWidthNonJoiner,
+                zeroWidthJoiner,
+                byteOrderMark,
+                softHyphen,
+                nonBreakingHyphen
+            },
+            requestedCapabilities = new[]
+            {
+                "analysis.invisible-unicode",
                 "fingerprint.sha256-utf8-exact"
             },
             privacy = new

@@ -67,6 +67,8 @@ Public Sub InstallCleanupSuite()
     ' 1) Create standard modules (code-only)
     CreateOrReplaceModule vbProj, "modCleanupLauncher", modCleanupLauncher_Code, installLog
     CreateOrReplaceModule vbProj, "modCleanupHelpers", modCleanupHelpers_Code, installLog
+    CreateOrReplaceModule vbProj, "modHybridJson", modHybridJson_Code, installLog
+    CreateOrReplaceModule vbProj, "modHybridBridge", modHybridBridge_Code, installLog
     CreateOrReplaceModule vbProj, "modMetaDataSuite", modMetaDataSuite_Code, installLog
     CreateOrReplaceModule vbProj, "modUpdateChecker", modUpdateChecker_Code, installLog
 
@@ -316,7 +318,8 @@ Private Function IsSuiteComponent(compName As String) As Boolean
         "frmHyperlinkRemover", "frmSoftReturnConverter", "frmMetaDataSuite", "frmSafeMetadataEditor", "frmFinalReview", _
         "frmStyleCleanup", "frmFootnoteRemover", "frmHeaderFooterStandardizer", _
         "frmObjectRemover", "frmPreviewActions", "frmCleanupSuiteLauncher", "modCleanupLauncher", _
-        "modCleanupHelpers", "modMetaDataSuite", "modUpdateChecker")
+        "modCleanupHelpers", "modHybridJson", "modHybridBridge", _
+        "modMetaDataSuite", "modUpdateChecker")
 
     Dim i As Long
     For i = LBound(names) To UBound(names)
@@ -5449,6 +5452,1674 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "End Sub" & vbCrLf
     s = s & ""
     modCleanupHelpers_Code = s
+End Function
+
+Private Function modHybridJson_Code() As String
+    Dim s As String
+    s = s & "Option Explicit" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "' Minimal strict JSON support for the local hybrid protocol. The parser accepts" & vbCrLf
+    s = s & "' JSON objects/arrays/primitives, rejects duplicate object keys and trailing" & vbCrLf
+    s = s & "' content, and never evaluates script." & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private mHybridJsonText As String" & vbCrLf
+    s = s & "Private mHybridJsonPosition As Long" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Function HybridJsonParseObject(ByVal jsonText As String) As Object" & vbCrLf
+    s = s & "    mHybridJsonText = jsonText" & vbCrLf
+    s = s & "    mHybridJsonPosition = 1" & vbCrLf
+    s = s & "    HybridJsonSkipWhitespace" & vbCrLf
+    s = s & "    If HybridJsonPeek() <> ""{"" Then Err.Raise 5, ""HybridJsonParseObject"", ""The JSON root must be an object.""" & vbCrLf
+    s = s & "    Set HybridJsonParseObject = HybridJsonReadObject()" & vbCrLf
+    s = s & "    HybridJsonSkipWhitespace" & vbCrLf
+    s = s & "    If mHybridJsonPosition <= Len(mHybridJsonText) Then Err.Raise 5, ""HybridJsonParseObject"", ""Unexpected content follows the JSON value.""" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Function HybridJsonEscape(ByVal value As String) As String" & vbCrLf
+    s = s & "    Dim i As Long" & vbCrLf
+    s = s & "    Dim codeUnit As Long" & vbCrLf
+    s = s & "    Dim ch As String" & vbCrLf
+    s = s & "    Dim result As String" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    result = """"""""" & vbCrLf
+    s = s & "    For i = 1 To Len(value)" & vbCrLf
+    s = s & "        ch = Mid$(value, i, 1)" & vbCrLf
+    s = s & "        codeUnit = AscW(ch)" & vbCrLf
+    s = s & "        If codeUnit < 0 Then codeUnit = codeUnit + &H10000" & vbCrLf
+    s = s & "        Select Case ch" & vbCrLf
+    s = s & "            Case """""""": result = result & ""\""""""" & vbCrLf
+    s = s & "            Case ""\"": result = result & ""\\""" & vbCrLf
+    s = s & "            Case vbBack: result = result & ""\b""" & vbCrLf
+    s = s & "            Case vbFormFeed: result = result & ""\f""" & vbCrLf
+    s = s & "            Case vbLf: result = result & ""\n""" & vbCrLf
+    s = s & "            Case vbCr: result = result & ""\r""" & vbCrLf
+    s = s & "            Case vbTab: result = result & ""\t""" & vbCrLf
+    s = s & "            Case Else" & vbCrLf
+    s = s & "                If codeUnit < 32 Then" & vbCrLf
+    s = s & "                    result = result & ""\u"" & Right$(""0000"" & Hex$(codeUnit), 4)" & vbCrLf
+    s = s & "                Else" & vbCrLf
+    s = s & "                    result = result & ch" & vbCrLf
+    s = s & "                End If" & vbCrLf
+    s = s & "        End Select" & vbCrLf
+    s = s & "    Next i" & vbCrLf
+    s = s & "    HybridJsonEscape = result & """"""""" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridJsonReadObject() As Object" & vbCrLf
+    s = s & "    Dim result As Object" & vbCrLf
+    s = s & "    Dim key As String" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set result = CreateObject(""Scripting.Dictionary"")" & vbCrLf
+    s = s & "    result.CompareMode = vbBinaryCompare" & vbCrLf
+    s = s & "    HybridJsonExpect ""{""" & vbCrLf
+    s = s & "    HybridJsonSkipWhitespace" & vbCrLf
+    s = s & "    If HybridJsonPeek() = ""}"" Then" & vbCrLf
+    s = s & "        mHybridJsonPosition = mHybridJsonPosition + 1" & vbCrLf
+    s = s & "        Set HybridJsonReadObject = result" & vbCrLf
+    s = s & "        Exit Function" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Do" & vbCrLf
+    s = s & "        HybridJsonSkipWhitespace" & vbCrLf
+    s = s & "        If HybridJsonPeek() <> """""""" Then Err.Raise 5, ""HybridJsonReadObject"", ""A JSON object key must be a string.""" & vbCrLf
+    s = s & "        key = HybridJsonReadString()" & vbCrLf
+    s = s & "        If result.Exists(key) Then Err.Raise 5, ""HybridJsonReadObject"", ""A JSON object contains a duplicate key.""" & vbCrLf
+    s = s & "        HybridJsonSkipWhitespace" & vbCrLf
+    s = s & "        HybridJsonExpect "":""" & vbCrLf
+    s = s & "        HybridJsonSkipWhitespace" & vbCrLf
+    s = s & "        HybridJsonAddDictionaryValue result, key" & vbCrLf
+    s = s & "        HybridJsonSkipWhitespace" & vbCrLf
+    s = s & "        Select Case HybridJsonPeek()" & vbCrLf
+    s = s & "            Case ""}""" & vbCrLf
+    s = s & "                mHybridJsonPosition = mHybridJsonPosition + 1" & vbCrLf
+    s = s & "                Exit Do" & vbCrLf
+    s = s & "            Case "",""" & vbCrLf
+    s = s & "                mHybridJsonPosition = mHybridJsonPosition + 1" & vbCrLf
+    s = s & "            Case Else" & vbCrLf
+    s = s & "                Err.Raise 5, ""HybridJsonReadObject"", ""A JSON object is missing a comma or closing brace.""" & vbCrLf
+    s = s & "        End Select" & vbCrLf
+    s = s & "    Loop" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set HybridJsonReadObject = result" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridJsonReadArray() As Collection" & vbCrLf
+    s = s & "    Dim result As Collection" & vbCrLf
+    s = s & "    Set result = New Collection" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    HybridJsonExpect ""[""" & vbCrLf
+    s = s & "    HybridJsonSkipWhitespace" & vbCrLf
+    s = s & "    If HybridJsonPeek() = ""]"" Then" & vbCrLf
+    s = s & "        mHybridJsonPosition = mHybridJsonPosition + 1" & vbCrLf
+    s = s & "        Set HybridJsonReadArray = result" & vbCrLf
+    s = s & "        Exit Function" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Do" & vbCrLf
+    s = s & "        HybridJsonSkipWhitespace" & vbCrLf
+    s = s & "        HybridJsonAddCollectionValue result" & vbCrLf
+    s = s & "        HybridJsonSkipWhitespace" & vbCrLf
+    s = s & "        Select Case HybridJsonPeek()" & vbCrLf
+    s = s & "            Case ""]""" & vbCrLf
+    s = s & "                mHybridJsonPosition = mHybridJsonPosition + 1" & vbCrLf
+    s = s & "                Exit Do" & vbCrLf
+    s = s & "            Case "",""" & vbCrLf
+    s = s & "                mHybridJsonPosition = mHybridJsonPosition + 1" & vbCrLf
+    s = s & "            Case Else" & vbCrLf
+    s = s & "                Err.Raise 5, ""HybridJsonReadArray"", ""A JSON array is missing a comma or closing bracket.""" & vbCrLf
+    s = s & "        End Select" & vbCrLf
+    s = s & "    Loop" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set HybridJsonReadArray = result" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub HybridJsonAddDictionaryValue(ByVal target As Object, ByVal key As String)" & vbCrLf
+    s = s & "    Dim marker As String" & vbCrLf
+    s = s & "    Dim child As Object" & vbCrLf
+    s = s & "    marker = HybridJsonPeek()" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If marker = ""{"" Then" & vbCrLf
+    s = s & "        Set child = HybridJsonReadObject()" & vbCrLf
+    s = s & "        target.Add key, child" & vbCrLf
+    s = s & "    ElseIf marker = ""["" Then" & vbCrLf
+    s = s & "        Set child = HybridJsonReadArray()" & vbCrLf
+    s = s & "        target.Add key, child" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        target.Add key, HybridJsonReadPrimitive()" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub HybridJsonAddCollectionValue(ByVal target As Collection)" & vbCrLf
+    s = s & "    Dim marker As String" & vbCrLf
+    s = s & "    Dim child As Object" & vbCrLf
+    s = s & "    marker = HybridJsonPeek()" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If marker = ""{"" Then" & vbCrLf
+    s = s & "        Set child = HybridJsonReadObject()" & vbCrLf
+    s = s & "        target.Add child" & vbCrLf
+    s = s & "    ElseIf marker = ""["" Then" & vbCrLf
+    s = s & "        Set child = HybridJsonReadArray()" & vbCrLf
+    s = s & "        target.Add child" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        target.Add HybridJsonReadPrimitive()" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridJsonReadPrimitive() As Variant" & vbCrLf
+    s = s & "    Select Case HybridJsonPeek()" & vbCrLf
+    s = s & "        Case """"""""" & vbCrLf
+    s = s & "            HybridJsonReadPrimitive = HybridJsonReadString()" & vbCrLf
+    s = s & "        Case ""t""" & vbCrLf
+    s = s & "            HybridJsonExpectLiteral ""true""" & vbCrLf
+    s = s & "            HybridJsonReadPrimitive = True" & vbCrLf
+    s = s & "        Case ""f""" & vbCrLf
+    s = s & "            HybridJsonExpectLiteral ""false""" & vbCrLf
+    s = s & "            HybridJsonReadPrimitive = False" & vbCrLf
+    s = s & "        Case ""n""" & vbCrLf
+    s = s & "            HybridJsonExpectLiteral ""null""" & vbCrLf
+    s = s & "            HybridJsonReadPrimitive = Null" & vbCrLf
+    s = s & "        Case ""-"", ""0"" To ""9""" & vbCrLf
+    s = s & "            HybridJsonReadPrimitive = HybridJsonReadNumber()" & vbCrLf
+    s = s & "        Case Else" & vbCrLf
+    s = s & "            Err.Raise 5, ""HybridJsonReadPrimitive"", ""The JSON value is invalid.""" & vbCrLf
+    s = s & "    End Select" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridJsonReadString() As String" & vbCrLf
+    s = s & "    Dim result As String" & vbCrLf
+    s = s & "    Dim ch As String" & vbCrLf
+    s = s & "    Dim escaped As String" & vbCrLf
+    s = s & "    Dim codeUnit As Long" & vbCrLf
+    s = s & "    Dim lowCodeUnit As Long" & vbCrLf
+    s = s & "    Dim nextCharacter As String" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    HybridJsonExpect """"""""" & vbCrLf
+    s = s & "    Do While mHybridJsonPosition <= Len(mHybridJsonText)" & vbCrLf
+    s = s & "        ch = Mid$(mHybridJsonText, mHybridJsonPosition, 1)" & vbCrLf
+    s = s & "        mHybridJsonPosition = mHybridJsonPosition + 1" & vbCrLf
+    s = s & "        If ch = """""""" Then" & vbCrLf
+    s = s & "            HybridJsonReadString = result" & vbCrLf
+    s = s & "            Exit Function" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "        codeUnit = HybridJsonUnsignedCodeUnit(ch)" & vbCrLf
+    s = s & "        If codeUnit < 32 Then Err.Raise 5, ""HybridJsonReadString"", ""A JSON string contains an unescaped control character.""" & vbCrLf
+    s = s & "        If ch <> ""\"" Then" & vbCrLf
+    s = s & "            If codeUnit >= 55296 And codeUnit <= 56319 Then" & vbCrLf
+    s = s & "                If mHybridJsonPosition > Len(mHybridJsonText) Then Err.Raise 5, ""HybridJsonReadString"", ""A JSON string contains an unpaired high surrogate.""" & vbCrLf
+    s = s & "                nextCharacter = Mid$(mHybridJsonText, mHybridJsonPosition, 1)" & vbCrLf
+    s = s & "                lowCodeUnit = HybridJsonUnsignedCodeUnit(nextCharacter)" & vbCrLf
+    s = s & "                If lowCodeUnit < 56320 Or lowCodeUnit > 57343 Then Err.Raise 5, ""HybridJsonReadString"", ""A JSON string contains an unpaired high surrogate.""" & vbCrLf
+    s = s & "                result = result & ch & nextCharacter" & vbCrLf
+    s = s & "                mHybridJsonPosition = mHybridJsonPosition + 1" & vbCrLf
+    s = s & "            ElseIf codeUnit >= 56320 And codeUnit <= 57343 Then" & vbCrLf
+    s = s & "                Err.Raise 5, ""HybridJsonReadString"", ""A JSON string contains an unpaired low surrogate.""" & vbCrLf
+    s = s & "            Else" & vbCrLf
+    s = s & "                result = result & ch" & vbCrLf
+    s = s & "            End If" & vbCrLf
+    s = s & "        Else" & vbCrLf
+    s = s & "            If mHybridJsonPosition > Len(mHybridJsonText) Then Err.Raise 5, ""HybridJsonReadString"", ""A JSON escape is incomplete.""" & vbCrLf
+    s = s & "            escaped = Mid$(mHybridJsonText, mHybridJsonPosition, 1)" & vbCrLf
+    s = s & "            mHybridJsonPosition = mHybridJsonPosition + 1" & vbCrLf
+    s = s & "            Select Case escaped" & vbCrLf
+    s = s & "                Case """""""", ""\"", ""/"": result = result & escaped" & vbCrLf
+    s = s & "                Case ""b"": result = result & vbBack" & vbCrLf
+    s = s & "                Case ""f"": result = result & vbFormFeed" & vbCrLf
+    s = s & "                Case ""n"": result = result & vbLf" & vbCrLf
+    s = s & "                Case ""r"": result = result & vbCr" & vbCrLf
+    s = s & "                Case ""t"": result = result & vbTab" & vbCrLf
+    s = s & "                Case ""u""" & vbCrLf
+    s = s & "                    codeUnit = HybridJsonReadHexCodeUnit()" & vbCrLf
+    s = s & "                    If codeUnit >= 55296 And codeUnit <= 56319 Then" & vbCrLf
+    s = s & "                        If Mid$(mHybridJsonText, mHybridJsonPosition, 2) <> ""\u"" Then Err.Raise 5, ""HybridJsonReadString"", ""A Unicode escape contains an unpaired high surrogate.""" & vbCrLf
+    s = s & "                        mHybridJsonPosition = mHybridJsonPosition + 2" & vbCrLf
+    s = s & "                        lowCodeUnit = HybridJsonReadHexCodeUnit()" & vbCrLf
+    s = s & "                        If lowCodeUnit < 56320 Or lowCodeUnit > 57343 Then Err.Raise 5, ""HybridJsonReadString"", ""A Unicode escape contains an unpaired high surrogate.""" & vbCrLf
+    s = s & "                        result = result & HybridJsonCodeUnit(codeUnit) & HybridJsonCodeUnit(lowCodeUnit)" & vbCrLf
+    s = s & "                    ElseIf codeUnit >= 56320 And codeUnit <= 57343 Then" & vbCrLf
+    s = s & "                        Err.Raise 5, ""HybridJsonReadString"", ""A Unicode escape contains an unpaired low surrogate.""" & vbCrLf
+    s = s & "                    Else" & vbCrLf
+    s = s & "                        result = result & HybridJsonCodeUnit(codeUnit)" & vbCrLf
+    s = s & "                    End If" & vbCrLf
+    s = s & "                Case Else" & vbCrLf
+    s = s & "                    Err.Raise 5, ""HybridJsonReadString"", ""A JSON string contains an invalid escape.""" & vbCrLf
+    s = s & "            End Select" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "    Loop" & vbCrLf
+    s = s & "    Err.Raise 5, ""HybridJsonReadString"", ""A JSON string is unterminated.""" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridJsonUnsignedCodeUnit(ByVal character As String) As Long" & vbCrLf
+    s = s & "    HybridJsonUnsignedCodeUnit = AscW(character)" & vbCrLf
+    s = s & "    If HybridJsonUnsignedCodeUnit < 0 Then HybridJsonUnsignedCodeUnit = HybridJsonUnsignedCodeUnit + &H10000" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridJsonReadHexCodeUnit() As Long" & vbCrLf
+    s = s & "    Dim hexText As String" & vbCrLf
+    s = s & "    Dim i As Long" & vbCrLf
+    s = s & "    Dim ch As String" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If mHybridJsonPosition + 3 > Len(mHybridJsonText) Then Err.Raise 5, ""HybridJsonReadHexCodeUnit"", ""A Unicode escape is incomplete.""" & vbCrLf
+    s = s & "    hexText = Mid$(mHybridJsonText, mHybridJsonPosition, 4)" & vbCrLf
+    s = s & "    For i = 1 To 4" & vbCrLf
+    s = s & "        ch = Mid$(hexText, i, 1)" & vbCrLf
+    s = s & "        If InStr(1, ""0123456789abcdefABCDEF"", ch, vbBinaryCompare) = 0 Then Err.Raise 5, ""HybridJsonReadHexCodeUnit"", ""A Unicode escape is invalid.""" & vbCrLf
+    s = s & "    Next i" & vbCrLf
+    s = s & "    mHybridJsonPosition = mHybridJsonPosition + 4" & vbCrLf
+    s = s & "    HybridJsonReadHexCodeUnit = CLng(""&H"" & hexText)" & vbCrLf
+    s = s & "    If HybridJsonReadHexCodeUnit < 0 Then HybridJsonReadHexCodeUnit = HybridJsonReadHexCodeUnit + &H10000" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridJsonCodeUnit(ByVal codeUnit As Long) As String" & vbCrLf
+    s = s & "    If codeUnit > &H7FFF Then" & vbCrLf
+    s = s & "        HybridJsonCodeUnit = ChrW$(codeUnit - &H10000)" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        HybridJsonCodeUnit = ChrW$(codeUnit)" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridJsonReadNumber() As Variant" & vbCrLf
+    s = s & "    Dim startPosition As Long" & vbCrLf
+    s = s & "    Dim token As String" & vbCrLf
+    s = s & "    Dim ch As String" & vbCrLf
+    s = s & "    Dim isFloating As Boolean" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    startPosition = mHybridJsonPosition" & vbCrLf
+    s = s & "    If HybridJsonPeek() = ""-"" Then mHybridJsonPosition = mHybridJsonPosition + 1" & vbCrLf
+    s = s & "    If HybridJsonPeek() = ""0"" Then" & vbCrLf
+    s = s & "        mHybridJsonPosition = mHybridJsonPosition + 1" & vbCrLf
+    s = s & "        If HybridJsonPeek() Like ""[0-9]"" Then Err.Raise 5, ""HybridJsonReadNumber"", ""A JSON number has a leading zero.""" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        HybridJsonRequireDigit" & vbCrLf
+    s = s & "        Do While HybridJsonPeek() Like ""[0-9]""" & vbCrLf
+    s = s & "            mHybridJsonPosition = mHybridJsonPosition + 1" & vbCrLf
+    s = s & "        Loop" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    If HybridJsonPeek() = ""."" Then" & vbCrLf
+    s = s & "        isFloating = True" & vbCrLf
+    s = s & "        mHybridJsonPosition = mHybridJsonPosition + 1" & vbCrLf
+    s = s & "        HybridJsonRequireDigit" & vbCrLf
+    s = s & "        Do While HybridJsonPeek() Like ""[0-9]""" & vbCrLf
+    s = s & "            mHybridJsonPosition = mHybridJsonPosition + 1" & vbCrLf
+    s = s & "        Loop" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    ch = HybridJsonPeek()" & vbCrLf
+    s = s & "    If ch = ""e"" Or ch = ""E"" Then" & vbCrLf
+    s = s & "        isFloating = True" & vbCrLf
+    s = s & "        mHybridJsonPosition = mHybridJsonPosition + 1" & vbCrLf
+    s = s & "        ch = HybridJsonPeek()" & vbCrLf
+    s = s & "        If ch = ""+"" Or ch = ""-"" Then mHybridJsonPosition = mHybridJsonPosition + 1" & vbCrLf
+    s = s & "        HybridJsonRequireDigit" & vbCrLf
+    s = s & "        Do While HybridJsonPeek() Like ""[0-9]""" & vbCrLf
+    s = s & "            mHybridJsonPosition = mHybridJsonPosition + 1" & vbCrLf
+    s = s & "        Loop" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    token = Mid$(mHybridJsonText, startPosition, mHybridJsonPosition - startPosition)" & vbCrLf
+    s = s & "    If isFloating Then" & vbCrLf
+    s = s & "        HybridJsonReadNumber = CDbl(token)" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        HybridJsonReadNumber = CLng(token)" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub HybridJsonRequireDigit()" & vbCrLf
+    s = s & "    If Not (HybridJsonPeek() Like ""[0-9]"") Then Err.Raise 5, ""HybridJsonRequireDigit"", ""A JSON number is incomplete.""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub HybridJsonExpectLiteral(ByVal literal As String)" & vbCrLf
+    s = s & "    If Mid$(mHybridJsonText, mHybridJsonPosition, Len(literal)) <> literal Then Err.Raise 5, ""HybridJsonExpectLiteral"", ""A JSON literal is invalid.""" & vbCrLf
+    s = s & "    mHybridJsonPosition = mHybridJsonPosition + Len(literal)" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub HybridJsonExpect(ByVal expected As String)" & vbCrLf
+    s = s & "    If HybridJsonPeek() <> expected Then Err.Raise 5, ""HybridJsonExpect"", ""Unexpected JSON character.""" & vbCrLf
+    s = s & "    mHybridJsonPosition = mHybridJsonPosition + 1" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub HybridJsonSkipWhitespace()" & vbCrLf
+    s = s & "    Dim ch As String" & vbCrLf
+    s = s & "    Do While mHybridJsonPosition <= Len(mHybridJsonText)" & vbCrLf
+    s = s & "        ch = Mid$(mHybridJsonText, mHybridJsonPosition, 1)" & vbCrLf
+    s = s & "        If ch <> "" "" And ch <> vbTab And ch <> vbCr And ch <> vbLf Then Exit Do" & vbCrLf
+    s = s & "        mHybridJsonPosition = mHybridJsonPosition + 1" & vbCrLf
+    s = s & "    Loop" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridJsonPeek() As String" & vbCrLf
+    s = s & "    If mHybridJsonPosition <= Len(mHybridJsonText) Then HybridJsonPeek = Mid$(mHybridJsonText, mHybridJsonPosition, 1)" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & ""
+    modHybridJson_Code = s
+End Function
+
+Private Function modHybridBridge_Code() As String
+    Dim s As String
+    s = s & "Option Explicit" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "' Contract 1.0 bridge. The engine analyzes immutable text; Word/VBA retains" & vbCrLf
+    s = s & "' Preview, revalidation, Apply, and Undo ownership." & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "#If VBA7 Then" & vbCrLf
+    s = s & "Private Declare PtrSafe Function CoCreateGuid Lib ""ole32"" (ByRef pguid As HYBRID_GUID) As Long" & vbCrLf
+    s = s & "Private Declare PtrSafe Function StringFromGUID2 Lib ""ole32"" (ByRef rguid As HYBRID_GUID, ByVal lpsz As LongPtr, ByVal cchMax As Long) As Long" & vbCrLf
+    s = s & "Private Declare PtrSafe Function GetCurrentProcessId Lib ""kernel32"" () As Long" & vbCrLf
+    s = s & "Private Declare PtrSafe Sub GetSystemTime Lib ""kernel32"" (ByRef lpSystemTime As HYBRID_SYSTEMTIME)" & vbCrLf
+    s = s & "Private Declare PtrSafe Function CreateProcessW Lib ""kernel32"" (ByVal lpApplicationName As LongPtr, ByVal lpCommandLine As LongPtr, ByVal lpProcessAttributes As LongPtr, ByVal lpThreadAttributes As LongPtr, ByVal bInheritHandles As Long, ByVal dwCreationFlags As Long, ByVal lpEnvironment As LongPtr, ByVal lpCurrentDirectory As LongPtr, ByRef lpStartupInfo As HYBRID_STARTUPINFO, ByRef lpProcessInformation As HYBRID_PROCESS_INFORMATION) As Long" & vbCrLf
+    s = s & "Private Declare PtrSafe Function CreatePipe Lib ""kernel32"" (ByRef hReadPipe As LongPtr, ByRef hWritePipe As LongPtr, ByRef lpPipeAttributes As HYBRID_SECURITY_ATTRIBUTES, ByVal nSize As Long) As Long" & vbCrLf
+    s = s & "Private Declare PtrSafe Function SetHandleInformation Lib ""kernel32"" (ByVal hObject As LongPtr, ByVal dwMask As Long, ByVal dwFlags As Long) As Long" & vbCrLf
+    s = s & "Private Declare PtrSafe Function PeekNamedPipe Lib ""kernel32"" (ByVal hNamedPipe As LongPtr, ByRef lpBuffer As Any, ByVal nBufferSize As Long, ByRef lpBytesRead As Long, ByRef lpTotalBytesAvail As Long, ByRef lpBytesLeftThisMessage As Long) As Long" & vbCrLf
+    s = s & "Private Declare PtrSafe Function ReadFile Lib ""kernel32"" (ByVal hFile As LongPtr, ByRef lpBuffer As Any, ByVal nNumberOfBytesToRead As Long, ByRef lpNumberOfBytesRead As Long, ByVal lpOverlapped As LongPtr) As Long" & vbCrLf
+    s = s & "Private Declare PtrSafe Function WaitForSingleObject Lib ""kernel32"" (ByVal hHandle As LongPtr, ByVal dwMilliseconds As Long) As Long" & vbCrLf
+    s = s & "Private Declare PtrSafe Function GetExitCodeProcess Lib ""kernel32"" (ByVal hProcess As LongPtr, ByRef lpExitCode As Long) As Long" & vbCrLf
+    s = s & "Private Declare PtrSafe Function TerminateProcess Lib ""kernel32"" (ByVal hProcess As LongPtr, ByVal uExitCode As Long) As Long" & vbCrLf
+    s = s & "Private Declare PtrSafe Function CloseHandle Lib ""kernel32"" (ByVal hObject As LongPtr) As Long" & vbCrLf
+    s = s & "Private Declare PtrSafe Function WideCharToMultiByte Lib ""kernel32"" (ByVal CodePage As Long, ByVal dwFlags As Long, ByVal lpWideCharStr As LongPtr, ByVal cchWideChar As Long, ByRef lpMultiByteStr As Any, ByVal cbMultiByte As Long, ByVal lpDefaultChar As LongPtr, ByVal lpUsedDefaultChar As LongPtr) As Long" & vbCrLf
+    s = s & "Private Declare PtrSafe Function MultiByteToWideChar Lib ""kernel32"" (ByVal CodePage As Long, ByVal dwFlags As Long, ByRef lpMultiByteStr As Any, ByVal cbMultiByte As Long, ByVal lpWideCharStr As LongPtr, ByVal cchWideChar As Long) As Long" & vbCrLf
+    s = s & "Private Declare PtrSafe Function BCryptOpenAlgorithmProvider Lib ""bcrypt"" (ByRef phAlgorithm As LongPtr, ByVal pszAlgId As LongPtr, ByVal pszImplementation As LongPtr, ByVal dwFlags As Long) As Long" & vbCrLf
+    s = s & "Private Declare PtrSafe Function BCryptGetProperty Lib ""bcrypt"" (ByVal hObject As LongPtr, ByVal pszProperty As LongPtr, ByRef pbOutput As Any, ByVal cbOutput As Long, ByRef pcbResult As Long, ByVal dwFlags As Long) As Long" & vbCrLf
+    s = s & "Private Declare PtrSafe Function BCryptCreateHash Lib ""bcrypt"" (ByVal hAlgorithm As LongPtr, ByRef phHash As LongPtr, ByRef pbHashObject As Any, ByVal cbHashObject As Long, ByVal pbSecret As LongPtr, ByVal cbSecret As Long, ByVal dwFlags As Long) As Long" & vbCrLf
+    s = s & "Private Declare PtrSafe Function BCryptHashData Lib ""bcrypt"" (ByVal hHash As LongPtr, ByRef pbInput As Any, ByVal cbInput As Long, ByVal dwFlags As Long) As Long" & vbCrLf
+    s = s & "Private Declare PtrSafe Function BCryptFinishHash Lib ""bcrypt"" (ByVal hHash As LongPtr, ByRef pbOutput As Any, ByVal cbOutput As Long, ByVal dwFlags As Long) As Long" & vbCrLf
+    s = s & "Private Declare PtrSafe Function BCryptDestroyHash Lib ""bcrypt"" (ByVal hHash As LongPtr) As Long" & vbCrLf
+    s = s & "Private Declare PtrSafe Function BCryptCloseAlgorithmProvider Lib ""bcrypt"" (ByVal hAlgorithm As LongPtr, ByVal dwFlags As Long) As Long" & vbCrLf
+    s = s & "#Else" & vbCrLf
+    s = s & "Private Declare Function CoCreateGuid Lib ""ole32"" (ByRef pguid As HYBRID_GUID) As Long" & vbCrLf
+    s = s & "Private Declare Function StringFromGUID2 Lib ""ole32"" (ByRef rguid As HYBRID_GUID, ByVal lpsz As Long, ByVal cchMax As Long) As Long" & vbCrLf
+    s = s & "Private Declare Function GetCurrentProcessId Lib ""kernel32"" () As Long" & vbCrLf
+    s = s & "Private Declare Sub GetSystemTime Lib ""kernel32"" (ByRef lpSystemTime As HYBRID_SYSTEMTIME)" & vbCrLf
+    s = s & "Private Declare Function CreateProcessW Lib ""kernel32"" (ByVal lpApplicationName As Long, ByVal lpCommandLine As Long, ByVal lpProcessAttributes As Long, ByVal lpThreadAttributes As Long, ByVal bInheritHandles As Long, ByVal dwCreationFlags As Long, ByVal lpEnvironment As Long, ByVal lpCurrentDirectory As Long, ByRef lpStartupInfo As HYBRID_STARTUPINFO, ByRef lpProcessInformation As HYBRID_PROCESS_INFORMATION) As Long" & vbCrLf
+    s = s & "Private Declare Function CreatePipe Lib ""kernel32"" (ByRef hReadPipe As Long, ByRef hWritePipe As Long, ByRef lpPipeAttributes As HYBRID_SECURITY_ATTRIBUTES, ByVal nSize As Long) As Long" & vbCrLf
+    s = s & "Private Declare Function SetHandleInformation Lib ""kernel32"" (ByVal hObject As Long, ByVal dwMask As Long, ByVal dwFlags As Long) As Long" & vbCrLf
+    s = s & "Private Declare Function PeekNamedPipe Lib ""kernel32"" (ByVal hNamedPipe As Long, ByRef lpBuffer As Any, ByVal nBufferSize As Long, ByRef lpBytesRead As Long, ByRef lpTotalBytesAvail As Long, ByRef lpBytesLeftThisMessage As Long) As Long" & vbCrLf
+    s = s & "Private Declare Function ReadFile Lib ""kernel32"" (ByVal hFile As Long, ByRef lpBuffer As Any, ByVal nNumberOfBytesToRead As Long, ByRef lpNumberOfBytesRead As Long, ByVal lpOverlapped As Long) As Long" & vbCrLf
+    s = s & "Private Declare Function WaitForSingleObject Lib ""kernel32"" (ByVal hHandle As Long, ByVal dwMilliseconds As Long) As Long" & vbCrLf
+    s = s & "Private Declare Function GetExitCodeProcess Lib ""kernel32"" (ByVal hProcess As Long, ByRef lpExitCode As Long) As Long" & vbCrLf
+    s = s & "Private Declare Function TerminateProcess Lib ""kernel32"" (ByVal hProcess As Long, ByVal uExitCode As Long) As Long" & vbCrLf
+    s = s & "Private Declare Function CloseHandle Lib ""kernel32"" (ByVal hObject As Long) As Long" & vbCrLf
+    s = s & "Private Declare Function WideCharToMultiByte Lib ""kernel32"" (ByVal CodePage As Long, ByVal dwFlags As Long, ByVal lpWideCharStr As Long, ByVal cchWideChar As Long, ByRef lpMultiByteStr As Any, ByVal cbMultiByte As Long, ByVal lpDefaultChar As Long, ByVal lpUsedDefaultChar As Long) As Long" & vbCrLf
+    s = s & "Private Declare Function MultiByteToWideChar Lib ""kernel32"" (ByVal CodePage As Long, ByVal dwFlags As Long, ByRef lpMultiByteStr As Any, ByVal cbMultiByte As Long, ByVal lpWideCharStr As Long, ByVal cchWideChar As Long) As Long" & vbCrLf
+    s = s & "Private Declare Function BCryptOpenAlgorithmProvider Lib ""bcrypt"" (ByRef phAlgorithm As Long, ByVal pszAlgId As Long, ByVal pszImplementation As Long, ByVal dwFlags As Long) As Long" & vbCrLf
+    s = s & "Private Declare Function BCryptGetProperty Lib ""bcrypt"" (ByVal hObject As Long, ByVal pszProperty As Long, ByRef pbOutput As Any, ByVal cbOutput As Long, ByRef pcbResult As Long, ByVal dwFlags As Long) As Long" & vbCrLf
+    s = s & "Private Declare Function BCryptCreateHash Lib ""bcrypt"" (ByVal hAlgorithm As Long, ByRef phHash As Long, ByRef pbHashObject As Any, ByVal cbHashObject As Long, ByVal pbSecret As Long, ByVal cbSecret As Long, ByVal dwFlags As Long) As Long" & vbCrLf
+    s = s & "Private Declare Function BCryptHashData Lib ""bcrypt"" (ByVal hHash As Long, ByRef pbInput As Any, ByVal cbInput As Long, ByVal dwFlags As Long) As Long" & vbCrLf
+    s = s & "Private Declare Function BCryptFinishHash Lib ""bcrypt"" (ByVal hHash As Long, ByRef pbOutput As Any, ByVal cbOutput As Long, ByVal dwFlags As Long) As Long" & vbCrLf
+    s = s & "Private Declare Function BCryptDestroyHash Lib ""bcrypt"" (ByVal hHash As Long) As Long" & vbCrLf
+    s = s & "Private Declare Function BCryptCloseAlgorithmProvider Lib ""bcrypt"" (ByVal hAlgorithm As Long, ByVal dwFlags As Long) As Long" & vbCrLf
+    s = s & "#End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Type HYBRID_GUID" & vbCrLf
+    s = s & "    Data1 As Long" & vbCrLf
+    s = s & "    Data2 As Integer" & vbCrLf
+    s = s & "    Data3 As Integer" & vbCrLf
+    s = s & "    Data4(0 To 7) As Byte" & vbCrLf
+    s = s & "End Type" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "#If VBA7 Then" & vbCrLf
+    s = s & "Private Type HYBRID_SECURITY_ATTRIBUTES" & vbCrLf
+    s = s & "    nLength As Long" & vbCrLf
+    s = s & "    lpSecurityDescriptor As LongPtr" & vbCrLf
+    s = s & "    bInheritHandle As Long" & vbCrLf
+    s = s & "End Type" & vbCrLf
+    s = s & "#Else" & vbCrLf
+    s = s & "Private Type HYBRID_SECURITY_ATTRIBUTES" & vbCrLf
+    s = s & "    nLength As Long" & vbCrLf
+    s = s & "    lpSecurityDescriptor As Long" & vbCrLf
+    s = s & "    bInheritHandle As Long" & vbCrLf
+    s = s & "End Type" & vbCrLf
+    s = s & "#End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "#If VBA7 Then" & vbCrLf
+    s = s & "Private Type HYBRID_STARTUPINFO" & vbCrLf
+    s = s & "    cb As Long" & vbCrLf
+    s = s & "    lpReserved As LongPtr" & vbCrLf
+    s = s & "    lpDesktop As LongPtr" & vbCrLf
+    s = s & "    lpTitle As LongPtr" & vbCrLf
+    s = s & "    dwX As Long" & vbCrLf
+    s = s & "    dwY As Long" & vbCrLf
+    s = s & "    dwXSize As Long" & vbCrLf
+    s = s & "    dwYSize As Long" & vbCrLf
+    s = s & "    dwXCountChars As Long" & vbCrLf
+    s = s & "    dwYCountChars As Long" & vbCrLf
+    s = s & "    dwFillAttribute As Long" & vbCrLf
+    s = s & "    dwFlags As Long" & vbCrLf
+    s = s & "    wShowWindow As Integer" & vbCrLf
+    s = s & "    cbReserved2 As Integer" & vbCrLf
+    s = s & "    lpReserved2 As LongPtr" & vbCrLf
+    s = s & "    hStdInput As LongPtr" & vbCrLf
+    s = s & "    hStdOutput As LongPtr" & vbCrLf
+    s = s & "    hStdError As LongPtr" & vbCrLf
+    s = s & "End Type" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Type HYBRID_PROCESS_INFORMATION" & vbCrLf
+    s = s & "    hProcess As LongPtr" & vbCrLf
+    s = s & "    hThread As LongPtr" & vbCrLf
+    s = s & "    dwProcessId As Long" & vbCrLf
+    s = s & "    dwThreadId As Long" & vbCrLf
+    s = s & "End Type" & vbCrLf
+    s = s & "#Else" & vbCrLf
+    s = s & "Private Type HYBRID_STARTUPINFO" & vbCrLf
+    s = s & "    cb As Long" & vbCrLf
+    s = s & "    lpReserved As Long" & vbCrLf
+    s = s & "    lpDesktop As Long" & vbCrLf
+    s = s & "    lpTitle As Long" & vbCrLf
+    s = s & "    dwX As Long" & vbCrLf
+    s = s & "    dwY As Long" & vbCrLf
+    s = s & "    dwXSize As Long" & vbCrLf
+    s = s & "    dwYSize As Long" & vbCrLf
+    s = s & "    dwXCountChars As Long" & vbCrLf
+    s = s & "    dwYCountChars As Long" & vbCrLf
+    s = s & "    dwFillAttribute As Long" & vbCrLf
+    s = s & "    dwFlags As Long" & vbCrLf
+    s = s & "    wShowWindow As Integer" & vbCrLf
+    s = s & "    cbReserved2 As Integer" & vbCrLf
+    s = s & "    lpReserved2 As Long" & vbCrLf
+    s = s & "    hStdInput As Long" & vbCrLf
+    s = s & "    hStdOutput As Long" & vbCrLf
+    s = s & "    hStdError As Long" & vbCrLf
+    s = s & "End Type" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Type HYBRID_PROCESS_INFORMATION" & vbCrLf
+    s = s & "    hProcess As Long" & vbCrLf
+    s = s & "    hThread As Long" & vbCrLf
+    s = s & "    dwProcessId As Long" & vbCrLf
+    s = s & "    dwThreadId As Long" & vbCrLf
+    s = s & "End Type" & vbCrLf
+    s = s & "#End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Type HYBRID_SYSTEMTIME" & vbCrLf
+    s = s & "    wYear As Integer" & vbCrLf
+    s = s & "    wMonth As Integer" & vbCrLf
+    s = s & "    wDayOfWeek As Integer" & vbCrLf
+    s = s & "    wDay As Integer" & vbCrLf
+    s = s & "    wHour As Integer" & vbCrLf
+    s = s & "    wMinute As Integer" & vbCrLf
+    s = s & "    wSecond As Integer" & vbCrLf
+    s = s & "    wMilliseconds As Integer" & vbCrLf
+    s = s & "End Type" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Const HYBRID_CONTRACT_VERSION As String = ""1.0""" & vbCrLf
+    s = s & "Private Const HYBRID_PROTOCOL_VERSION As String = ""1.0""" & vbCrLf
+    s = s & "Private Const HYBRID_ENGINE_ID As String = ""com.masseyslab.cleanupsuite.engine""" & vbCrLf
+    s = s & "Private Const HYBRID_ENGINE_VERSION As String = ""0.2.0""" & vbCrLf
+    s = s & "Private Const HYBRID_UNICODE_TOOL_ID As String = ""invisible-unicode-cleaner""" & vbCrLf
+    s = s & "Private Const HYBRID_UNICODE_TOOL_VERSION As String = ""1.0.0""" & vbCrLf
+    s = s & "Private Const HYBRID_UNICODE_MODE As String = ""selected-characters""" & vbCrLf
+    s = s & "Private Const HYBRID_CREATE_NO_WINDOW As Long = &H8000000" & vbCrLf
+    s = s & "Private Const HYBRID_STARTF_USESTDHANDLES As Long = &H100" & vbCrLf
+    s = s & "Private Const HYBRID_HANDLE_FLAG_INHERIT As Long = 1" & vbCrLf
+    s = s & "Private Const HYBRID_WAIT_OBJECT_0 As Long = 0" & vbCrLf
+    s = s & "Private Const HYBRID_WAIT_TIMEOUT As Long = &H102" & vbCrLf
+    s = s & "Private Const HYBRID_CP_UTF8 As Long = 65001" & vbCrLf
+    s = s & "Private Const HYBRID_WC_ERR_INVALID_CHARS As Long = &H80" & vbCrLf
+    s = s & "Private Const HYBRID_MB_ERR_INVALID_CHARS As Long = &H8" & vbCrLf
+    s = s & "Private Const HYBRID_MAX_RESULT_BYTES As Long = 134217728" & vbCrLf
+    s = s & "Private Const HYBRID_ANALYSIS_TIMEOUT_SECONDS As Long = 90" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "#If VBA7 Then" & vbCrLf
+    s = s & "Private mHybridShaAlgorithm As LongPtr" & vbCrLf
+    s = s & "#Else" & vbCrLf
+    s = s & "Private mHybridShaAlgorithm As Long" & vbCrLf
+    s = s & "#End If" & vbCrLf
+    s = s & "Private mHybridShaObjectLength As Long" & vbCrLf
+    s = s & "Private mHybridShaDigestLength As Long" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Function HybridBridgeSelfTest(ByRef details As String) As Boolean" & vbCrLf
+    s = s & "    Dim parsed As Object" & vbCrLf
+    s = s & "    Dim nested As Object" & vbCrLf
+    s = s & "    Dim items As Collection" & vbCrLf
+    s = s & "    Dim bytes() As Byte" & vbCrLf
+    s = s & "    Dim byteCount As Long" & vbCrLf
+    s = s & "    Dim uuid As String" & vbCrLf
+    s = s & "    Dim stepName As String" & vbCrLf
+    s = s & "    Dim rejectedUnpairedSurrogate As Boolean" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    On Error GoTo SelfTestFailed" & vbCrLf
+    s = s & "    stepName = ""strict JSON""" & vbCrLf
+    s = s & "    Set parsed = HybridJsonParseObject(""{""""name"""":""""CleanupSuite"""",""""active"""":true,""""nested"""":{""""count"""":2},""""items"""":[1,""""\u2011""""]}"")" & vbCrLf
+    s = s & "    HybridRequireExactKeys parsed, ""name|active|nested|items""" & vbCrLf
+    s = s & "    HybridRequireString parsed, ""name"", ""CleanupSuite""" & vbCrLf
+    s = s & "    If Not HybridRequireBoolean(parsed, ""active"") Then Err.Raise 5, ""HybridBridgeSelfTest"", ""JSON Boolean parsing failed.""" & vbCrLf
+    s = s & "    Set nested = HybridRequireObject(parsed, ""nested"")" & vbCrLf
+    s = s & "    If HybridRequireLong(nested, ""count"") <> 2 Then Err.Raise 5, ""HybridBridgeSelfTest"", ""JSON integer parsing failed.""" & vbCrLf
+    s = s & "    Set items = HybridRequireCollection(parsed, ""items"")" & vbCrLf
+    s = s & "    If items.Count <> 2 Or CStr(items(2)) <> ChrW$(&H2011) Then Err.Raise 5, ""HybridBridgeSelfTest"", ""JSON array or Unicode parsing failed.""" & vbCrLf
+    s = s & "    Set parsed = HybridJsonParseObject(""{""""emoji"""":""""\uD83D\uDE00""""}"")" & vbCrLf
+    s = s & "    If CStr(parsed(""emoji"")) <> ChrW$(CLng(&HD83D)) & ChrW$(CLng(&HDE00)) Then Err.Raise 5, ""HybridBridgeSelfTest"", ""Escaped supplementary Unicode parsing failed.""" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    Err.Clear" & vbCrLf
+    s = s & "    Set parsed = HybridJsonParseObject(""{""""invalid"""":""""\uD83D""""}"")" & vbCrLf
+    s = s & "    rejectedUnpairedSurrogate = (Err.Number <> 0)" & vbCrLf
+    s = s & "    Err.Clear" & vbCrLf
+    s = s & "    On Error GoTo SelfTestFailed" & vbCrLf
+    s = s & "    If Not rejectedUnpairedSurrogate Then Err.Raise 5, ""HybridBridgeSelfTest"", ""An unpaired JSON surrogate was accepted.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    stepName = ""SHA-256""" & vbCrLf
+    s = s & "    If HybridSha256Utf8(""abc"") <> ""ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"" Then Err.Raise 5, ""HybridBridgeSelfTest"", ""SHA-256 validation failed.""" & vbCrLf
+    s = s & "    stepName = ""supplementary UTF-8""" & vbCrLf
+    s = s & "    bytes = HybridUtf8Bytes(""A"" & ChrW$(CLng(&HD83D)) & ChrW$(CLng(&HDE00)) & ""B"", byteCount)" & vbCrLf
+    s = s & "    If byteCount <> 6 Then Err.Raise 5, ""HybridBridgeSelfTest"", ""Supplementary Unicode UTF-8 encoding failed.""" & vbCrLf
+    s = s & "    stepName = ""UUID""" & vbCrLf
+    s = s & "    uuid = HybridNewUuid()" & vbCrLf
+    s = s & "    If Len(uuid) <> 36 Or LCase$(uuid) <> uuid Then Err.Raise 5, ""HybridBridgeSelfTest"", ""UUID generation failed.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    details = ""Strict JSON, UTF-8, SHA-256, supplementary Unicode, and UUID checks passed.""" & vbCrLf
+    s = s & "    HybridBridgeSelfTest = True" & vbCrLf
+    s = s & "    Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "SelfTestFailed:" & vbCrLf
+    s = s & "    details = stepName & "": "" & Err.Description" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Function HybridBridgeEngineSelfTest(ByRef details As String) As Boolean" & vbCrLf
+    s = s & "    Dim testDocument As Document" & vbCrLf
+    s = s & "    Dim targetRange As Range" & vbCrLf
+    s = s & "    Dim analysis As Object" & vbCrLf
+    s = s & "    Dim failureMessage As String" & vbCrLf
+    s = s & "    Dim candidates As Collection" & vbCrLf
+    s = s & "    Dim analysisSucceeded As Boolean" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    On Error GoTo SelfTestFailed" & vbCrLf
+    s = s & "    Set testDocument = Documents.Add" & vbCrLf
+    s = s & "    testDocument.Content.Text = _" & vbCrLf
+    s = s & "        ""A"" & ChrW$(&HA0) & _" & vbCrLf
+    s = s & "        ""B"" & ChrW$(&H200B) & _" & vbCrLf
+    s = s & "        ""C"" & ChrW$(&H200C) & _" & vbCrLf
+    s = s & "        ""D"" & ChrW$(&H200D) & _" & vbCrLf
+    s = s & "        ""E"" & ChrW$(CLng(&HFEFF)) & _" & vbCrLf
+    s = s & "        ""F"" & ChrW$(&HAD) & _" & vbCrLf
+    s = s & "        ""G"" & ChrW$(&H2011) & ""H""" & vbCrLf
+    s = s & "    Set targetRange = testDocument.Content.Duplicate" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    analysisSucceeded = HybridAnalyzeInvisibleUnicode( _" & vbCrLf
+    s = s & "            targetRange, False, _" & vbCrLf
+    s = s & "            True, True, True, True, True, True, True, _" & vbCrLf
+    s = s & "            analysis, failureMessage)" & vbCrLf
+    s = s & "    If Not analysisSucceeded Then" & vbCrLf
+    s = s & "        Err.Raise 5, ""HybridBridgeEngineSelfTest"", failureMessage" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    Set candidates = analysis(""candidates"")" & vbCrLf
+    s = s & "    If candidates.Count <> 7 Then Err.Raise 5, ""HybridBridgeEngineSelfTest"", ""The engine did not return all seven deterministic Unicode candidates.""" & vbCrLf
+    s = s & "    If Not HybridRevalidateInvisibleUnicode(analysis, targetRange, failureMessage) Then Err.Raise 5, ""HybridBridgeEngineSelfTest"", failureMessage" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    testDocument.Range(0, 0).InsertBefore ""changed""" & vbCrLf
+    s = s & "    Set targetRange = testDocument.Range(CLng(analysis(""scopeStart"")), CLng(analysis(""scopeEnd"")))" & vbCrLf
+    s = s & "    If HybridRevalidateInvisibleUnicode(analysis, targetRange, failureMessage) Then Err.Raise 5, ""HybridBridgeEngineSelfTest"", ""Stale analysis was not rejected.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    details = ""Word-to-engine analysis returned seven candidates and rejected a stale scope before Apply.""" & vbCrLf
+    s = s & "    testDocument.Close wdDoNotSaveChanges" & vbCrLf
+    s = s & "    Set testDocument = Nothing" & vbCrLf
+    s = s & "    HybridBridgeEngineSelfTest = True" & vbCrLf
+    s = s & "    Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "SelfTestFailed:" & vbCrLf
+    s = s & "    details = Err.Description" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    If Not testDocument Is Nothing Then testDocument.Close wdDoNotSaveChanges" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Function HybridBridgeApplySelfTest(ByRef details As String) As Boolean" & vbCrLf
+    s = s & "    Dim testDocument As Document" & vbCrLf
+    s = s & "    Dim targetRange As Range" & vbCrLf
+    s = s & "    Dim analysis As Object" & vbCrLf
+    s = s & "    Dim failureMessage As String" & vbCrLf
+    s = s & "    Dim candidates As Collection" & vbCrLf
+    s = s & "    Dim candidate As Object" & vbCrLf
+    s = s & "    Dim candidateRange As Range" & vbCrLf
+    s = s & "    Dim originalText As String" & vbCrLf
+    s = s & "    Dim expectedText As String" & vbCrLf
+    s = s & "    Dim index As Long" & vbCrLf
+    s = s & "    Dim undoRecord As UndoRecord" & vbCrLf
+    s = s & "    Dim analysisSucceeded As Boolean" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    On Error GoTo SelfTestFailed" & vbCrLf
+    s = s & "    Set testDocument = Documents.Add" & vbCrLf
+    s = s & "    testDocument.Content.Text = _" & vbCrLf
+    s = s & "        ""A"" & ChrW$(&HA0) & _" & vbCrLf
+    s = s & "        ""B"" & ChrW$(&H200B) & _" & vbCrLf
+    s = s & "        ""C"" & ChrW$(&H200C) & _" & vbCrLf
+    s = s & "        ""D"" & ChrW$(&H200D) & _" & vbCrLf
+    s = s & "        ""E"" & ChrW$(CLng(&HFEFF)) & _" & vbCrLf
+    s = s & "        ""F"" & ChrW$(&HAD) & _" & vbCrLf
+    s = s & "        ""G"" & ChrW$(&H2011) & ""H""" & vbCrLf
+    s = s & "    Set targetRange = testDocument.Content.Duplicate" & vbCrLf
+    s = s & "    originalText = targetRange.Text" & vbCrLf
+    s = s & "    expectedText = ""A BCDEF-G-H"" & vbCr" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    analysisSucceeded = HybridAnalyzeInvisibleUnicode( _" & vbCrLf
+    s = s & "        targetRange, False, _" & vbCrLf
+    s = s & "        True, True, True, True, True, True, True, _" & vbCrLf
+    s = s & "        analysis, failureMessage)" & vbCrLf
+    s = s & "    If Not analysisSucceeded Then Err.Raise 5, ""HybridBridgeApplySelfTest"", failureMessage" & vbCrLf
+    s = s & "    If Not HybridRevalidateInvisibleUnicode(analysis, targetRange, failureMessage) Then Err.Raise 5, ""HybridBridgeApplySelfTest"", failureMessage" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set candidates = analysis(""candidates"")" & vbCrLf
+    s = s & "    Set undoRecord = Application.UndoRecord" & vbCrLf
+    s = s & "    undoRecord.StartCustomRecord ""CleanupSuite Hybrid Apply Self-Test""" & vbCrLf
+    s = s & "    For index = candidates.Count To 1 Step -1" & vbCrLf
+    s = s & "        Set candidate = candidates(index)" & vbCrLf
+    s = s & "        Set candidateRange = HybridCandidateAbsoluteRange(analysis, candidate, testDocument)" & vbCrLf
+    s = s & "        candidateRange.Text = HybridCandidateReplacement(candidate)" & vbCrLf
+    s = s & "    Next index" & vbCrLf
+    s = s & "    undoRecord.EndCustomRecord" & vbCrLf
+    s = s & "    If testDocument.Content.Text <> expectedText Then Err.Raise 5, ""HybridBridgeApplySelfTest"", ""The reverse-order Apply result is incorrect.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    testDocument.Undo" & vbCrLf
+    s = s & "    If testDocument.Content.Text <> originalText Then Err.Raise 5, ""HybridBridgeApplySelfTest"", ""One Word Undo did not restore the original Unicode text.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    details = ""Seven candidates applied bottom-up and one Word Undo restored the exact original text.""" & vbCrLf
+    s = s & "    testDocument.Close wdDoNotSaveChanges" & vbCrLf
+    s = s & "    Set testDocument = Nothing" & vbCrLf
+    s = s & "    HybridBridgeApplySelfTest = True" & vbCrLf
+    s = s & "    Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "SelfTestFailed:" & vbCrLf
+    s = s & "    details = Err.Description" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    undoRecord.EndCustomRecord" & vbCrLf
+    s = s & "    If Not testDocument Is Nothing Then testDocument.Close wdDoNotSaveChanges" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Function HybridBridgePerformanceSelfTest(ByRef details As String) As Boolean" & vbCrLf
+    s = s & "    Dim testDocument As Document" & vbCrLf
+    s = s & "    Dim targetRange As Range" & vbCrLf
+    s = s & "    Dim analysis As Object" & vbCrLf
+    s = s & "    Dim failureMessage As String" & vbCrLf
+    s = s & "    Dim candidates As Collection" & vbCrLf
+    s = s & "    Dim snapshotText As String" & vbCrLf
+    s = s & "    Dim blockText As String" & vbCrLf
+    s = s & "    Dim index As Long" & vbCrLf
+    s = s & "    Dim startedAt As Single" & vbCrLf
+    s = s & "    Dim elapsed As Double" & vbCrLf
+    s = s & "    Dim analysisSucceeded As Boolean" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    On Error GoTo SelfTestFailed" & vbCrLf
+    s = s & "    blockText = String$(500, ""x"") & ChrW$(&HA0)" & vbCrLf
+    s = s & "    For index = 1 To 400" & vbCrLf
+    s = s & "        snapshotText = snapshotText & blockText" & vbCrLf
+    s = s & "    Next index" & vbCrLf
+    s = s & "    Set testDocument = Documents.Add" & vbCrLf
+    s = s & "    testDocument.Content.Text = snapshotText" & vbCrLf
+    s = s & "    Set targetRange = testDocument.Content.Duplicate" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    startedAt = Timer" & vbCrLf
+    s = s & "    analysisSucceeded = HybridAnalyzeInvisibleUnicode( _" & vbCrLf
+    s = s & "        targetRange, False, _" & vbCrLf
+    s = s & "        True, False, False, False, False, False, False, _" & vbCrLf
+    s = s & "        analysis, failureMessage)" & vbCrLf
+    s = s & "    If Not analysisSucceeded Then" & vbCrLf
+    s = s & "        Err.Raise 5, ""HybridBridgePerformanceSelfTest"", failureMessage" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    elapsed = Timer - startedAt" & vbCrLf
+    s = s & "    If elapsed < 0 Then elapsed = elapsed + 86400#" & vbCrLf
+    s = s & "    Set candidates = analysis(""candidates"")" & vbCrLf
+    s = s & "    If candidates.Count <> 400 Then Err.Raise 5, ""HybridBridgePerformanceSelfTest"", ""The performance fixture candidate count is incorrect.""" & vbCrLf
+    s = s & "    If Not HybridRevalidateInvisibleUnicode(analysis, targetRange, failureMessage) Then Err.Raise 5, ""HybridBridgePerformanceSelfTest"", failureMessage" & vbCrLf
+    s = s & "    If elapsed > 30# Then Err.Raise 5, ""HybridBridgePerformanceSelfTest"", ""The 200,000-character bridge regression exceeded 30 seconds.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    details = ""200,000 characters and 400 candidates analyzed and revalidated in "" & Format$(elapsed, ""0.00"") & "" seconds.""" & vbCrLf
+    s = s & "    testDocument.Close wdDoNotSaveChanges" & vbCrLf
+    s = s & "    Set testDocument = Nothing" & vbCrLf
+    s = s & "    HybridBridgePerformanceSelfTest = True" & vbCrLf
+    s = s & "    Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "SelfTestFailed:" & vbCrLf
+    s = s & "    details = Err.Description" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    If Not testDocument Is Nothing Then testDocument.Close wdDoNotSaveChanges" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Function HybridAnalyzeInvisibleUnicode( _" & vbCrLf
+    s = s & "        ByVal targetRange As Range, _" & vbCrLf
+    s = s & "        ByVal selectionOnly As Boolean, _" & vbCrLf
+    s = s & "        ByVal nonBreakingSpace As Boolean, _" & vbCrLf
+    s = s & "        ByVal zeroWidthSpace As Boolean, _" & vbCrLf
+    s = s & "        ByVal zeroWidthNonJoiner As Boolean, _" & vbCrLf
+    s = s & "        ByVal zeroWidthJoiner As Boolean, _" & vbCrLf
+    s = s & "        ByVal byteOrderMark As Boolean, _" & vbCrLf
+    s = s & "        ByVal softHyphen As Boolean, _" & vbCrLf
+    s = s & "        ByVal nonBreakingHyphen As Boolean, _" & vbCrLf
+    s = s & "        ByRef analysis As Object, _" & vbCrLf
+    s = s & "        ByRef failureMessage As String) As Boolean" & vbCrLf
+    s = s & "    Dim enginePath As String" & vbCrLf
+    s = s & "    Dim expectedEngineHash As String" & vbCrLf
+    s = s & "    Dim jobId As String" & vbCrLf
+    s = s & "    Dim jobDirectory As String" & vbCrLf
+    s = s & "    Dim snapshotText As String" & vbCrLf
+    s = s & "    Dim snapshotBytes() As Byte" & vbCrLf
+    s = s & "    Dim snapshotByteCount As Long" & vbCrLf
+    s = s & "    Dim snapshotHash As String" & vbCrLf
+    s = s & "    Dim requestText As String" & vbCrLf
+    s = s & "    Dim exitCode As Long" & vbCrLf
+    s = s & "    Dim resultText As String" & vbCrLf
+    s = s & "    Dim parsed As Object" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    On Error GoTo AnalysisFailed" & vbCrLf
+    s = s & "    failureMessage = vbNullString" & vbCrLf
+    s = s & "    If targetRange Is Nothing Then Err.Raise 5, ""HybridAnalyzeInvisibleUnicode"", ""The analysis range is unavailable.""" & vbCrLf
+    s = s & "    If targetRange.StoryType <> wdMainTextStory Then Err.Raise 5, ""HybridAnalyzeInvisibleUnicode"", ""The pilot currently supports the main document story only.""" & vbCrLf
+    s = s & "    If Not (nonBreakingSpace Or zeroWidthSpace Or zeroWidthNonJoiner Or zeroWidthJoiner Or byteOrderMark Or softHyphen Or nonBreakingHyphen) Then Err.Raise 5, ""HybridAnalyzeInvisibleUnicode"", ""No Unicode character type is selected.""" & vbCrLf
+    s = s & "    If Not HybridResolveTrustedDevelopmentEngine(enginePath, expectedEngineHash, failureMessage) Then Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    jobId = HybridNewUuid()" & vbCrLf
+    s = s & "    jobDirectory = HybridCreateEmptyJobDirectory(jobId)" & vbCrLf
+    s = s & "    exitCode = HybridRunEngine(enginePath, ""--prepare-job"", jobDirectory, 10)" & vbCrLf
+    s = s & "    If exitCode <> 0 Then Err.Raise 5, ""HybridAnalyzeInvisibleUnicode"", ""CleanupSuite could not secure the analysis workspace.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    snapshotText = targetRange.Text" & vbCrLf
+    s = s & "    snapshotBytes = HybridUtf8Bytes(snapshotText, snapshotByteCount)" & vbCrLf
+    s = s & "    snapshotHash = HybridSha256Bytes(snapshotBytes, snapshotByteCount)" & vbCrLf
+    s = s & "    HybridWriteBytesAtomic jobDirectory & ""\document.utf8.txt"", snapshotBytes, snapshotByteCount" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    requestText = HybridBuildUnicodeRequest( _" & vbCrLf
+    s = s & "        jobId, targetRange, selectionOnly, snapshotHash, _" & vbCrLf
+    s = s & "        snapshotByteCount, Len(snapshotText), _" & vbCrLf
+    s = s & "        nonBreakingSpace, zeroWidthSpace, zeroWidthNonJoiner, _" & vbCrLf
+    s = s & "        zeroWidthJoiner, byteOrderMark, softHyphen, nonBreakingHyphen)" & vbCrLf
+    s = s & "    HybridWriteTextUtf8Atomic jobDirectory & ""\request.json"", requestText" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    exitCode = HybridRunEngine(enginePath, ""--analyze"", jobDirectory, HYBRID_ANALYSIS_TIMEOUT_SECONDS)" & vbCrLf
+    s = s & "    If exitCode <> 0 Then Err.Raise 5, ""HybridAnalyzeInvisibleUnicode"", ""The Unicode analysis did not complete safely.""" & vbCrLf
+    s = s & "    resultText = HybridReadUtf8File(jobDirectory & ""\result.json"", HYBRID_MAX_RESULT_BYTES)" & vbCrLf
+    s = s & "    Set parsed = HybridJsonParseObject(resultText)" & vbCrLf
+    s = s & "    HybridValidateUnicodeResponse parsed, jobId, snapshotHash" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If HybridSha256Utf8(targetRange.Text) <> snapshotHash Then Err.Raise 5, ""HybridAnalyzeInvisibleUnicode"", ""The document changed during analysis. Run Preview again.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set analysis = CreateObject(""Scripting.Dictionary"")" & vbCrLf
+    s = s & "    analysis.CompareMode = vbBinaryCompare" & vbCrLf
+    s = s & "    analysis.Add ""enginePath"", enginePath" & vbCrLf
+    s = s & "    analysis.Add ""engineSha256"", expectedEngineHash" & vbCrLf
+    s = s & "    analysis.Add ""snapshotSha256"", snapshotHash" & vbCrLf
+    s = s & "    analysis.Add ""scopeStart"", targetRange.Start" & vbCrLf
+    s = s & "    analysis.Add ""scopeEnd"", targetRange.End" & vbCrLf
+    s = s & "    analysis.Add ""selectionOnly"", selectionOnly" & vbCrLf
+    s = s & "    analysis.Add ""candidates"", parsed(""candidates"")" & vbCrLf
+    s = s & "    analysis.Add ""summary"", parsed(""summary"")" & vbCrLf
+    s = s & "    analysis.Add ""jobId"", jobId" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    HybridDeleteJobDirectory jobDirectory" & vbCrLf
+    s = s & "    HybridAnalyzeInvisibleUnicode = True" & vbCrLf
+    s = s & "    Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "AnalysisFailed:" & vbCrLf
+    s = s & "    failureMessage = Err.Description" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    If Len(jobDirectory) > 0 Then HybridDeleteJobDirectory jobDirectory" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Function HybridRevalidateInvisibleUnicode( _" & vbCrLf
+    s = s & "        ByVal analysis As Object, _" & vbCrLf
+    s = s & "        ByVal currentRange As Range, _" & vbCrLf
+    s = s & "        ByRef failureMessage As String) As Boolean" & vbCrLf
+    s = s & "    Dim currentText As String" & vbCrLf
+    s = s & "    Dim expectedHash As String" & vbCrLf
+    s = s & "    Dim candidates As Collection" & vbCrLf
+    s = s & "    Dim candidate As Object" & vbCrLf
+    s = s & "    Dim fingerprint As Object" & vbCrLf
+    s = s & "    Dim location As Object" & vbCrLf
+    s = s & "    Dim relativeStart As Long" & vbCrLf
+    s = s & "    Dim relativeEnd As Long" & vbCrLf
+    s = s & "    Dim prefixLength As Long" & vbCrLf
+    s = s & "    Dim suffixLength As Long" & vbCrLf
+    s = s & "    Dim exactText As String" & vbCrLf
+    s = s & "    Dim prefixText As String" & vbCrLf
+    s = s & "    Dim suffixText As String" & vbCrLf
+    s = s & "    Dim paragraphText As String" & vbCrLf
+    s = s & "    Dim paragraphKey As String" & vbCrLf
+    s = s & "    Dim paragraphHashes As Object" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    On Error GoTo RevalidationFailed" & vbCrLf
+    s = s & "    failureMessage = vbNullString" & vbCrLf
+    s = s & "    If analysis Is Nothing Or currentRange Is Nothing Then Err.Raise 5, ""HybridRevalidateInvisibleUnicode"", ""The saved Preview analysis is unavailable.""" & vbCrLf
+    s = s & "    If currentRange.Start <> CLng(analysis(""scopeStart"")) Or currentRange.End <> CLng(analysis(""scopeEnd"")) Then Err.Raise 5, ""HybridRevalidateInvisibleUnicode"", ""The analyzed range moved or changed. Run Preview again.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    currentText = currentRange.Text" & vbCrLf
+    s = s & "    expectedHash = CStr(analysis(""snapshotSha256""))" & vbCrLf
+    s = s & "    If HybridSha256Utf8(currentText) <> expectedHash Then Err.Raise 5, ""HybridRevalidateInvisibleUnicode"", ""The document changed after Preview. No changes were applied; run Preview again.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set candidates = analysis(""candidates"")" & vbCrLf
+    s = s & "    Set paragraphHashes = CreateObject(""Scripting.Dictionary"")" & vbCrLf
+    s = s & "    paragraphHashes.CompareMode = vbBinaryCompare" & vbCrLf
+    s = s & "    For Each candidate In candidates" & vbCrLf
+    s = s & "        Set location = candidate(""location"")" & vbCrLf
+    s = s & "        Set fingerprint = candidate(""fingerprint"")" & vbCrLf
+    s = s & "        relativeStart = CLng(location(""startUtf16""))" & vbCrLf
+    s = s & "        relativeEnd = CLng(location(""endUtf16""))" & vbCrLf
+    s = s & "        If relativeStart < 0 Or relativeEnd <= relativeStart Or relativeEnd > Len(currentText) Then Err.Raise 5, ""HybridRevalidateInvisibleUnicode"", ""A candidate range is no longer valid.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        exactText = Mid$(currentText, relativeStart + 1, relativeEnd - relativeStart)" & vbCrLf
+    s = s & "        If HybridSha256Utf8(exactText) <> CStr(fingerprint(""exactTextSha256"")) Then Err.Raise 5, ""HybridRevalidateInvisibleUnicode"", ""A candidate changed after Preview. No changes were applied.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        prefixLength = CLng(fingerprint(""prefixLengthUtf16""))" & vbCrLf
+    s = s & "        suffixLength = CLng(fingerprint(""suffixLengthUtf16""))" & vbCrLf
+    s = s & "        If prefixLength > relativeStart Or relativeEnd + suffixLength > Len(currentText) Then Err.Raise 5, ""HybridRevalidateInvisibleUnicode"", ""A candidate context is no longer valid.""" & vbCrLf
+    s = s & "        prefixText = Mid$(currentText, relativeStart - prefixLength + 1, prefixLength)" & vbCrLf
+    s = s & "        suffixText = Mid$(currentText, relativeEnd + 1, suffixLength)" & vbCrLf
+    s = s & "        If HybridSha256Utf8(prefixText) <> CStr(fingerprint(""prefixSha256"")) Then Err.Raise 5, ""HybridRevalidateInvisibleUnicode"", ""Text before a candidate changed after Preview.""" & vbCrLf
+    s = s & "        If HybridSha256Utf8(suffixText) <> CStr(fingerprint(""suffixSha256"")) Then Err.Raise 5, ""HybridRevalidateInvisibleUnicode"", ""Text after a candidate changed after Preview.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        paragraphText = HybridSnapshotParagraph(currentText, relativeStart, relativeEnd, paragraphKey)" & vbCrLf
+    s = s & "        If Not paragraphHashes.Exists(paragraphKey) Then paragraphHashes.Add paragraphKey, HybridSha256Utf8(paragraphText)" & vbCrLf
+    s = s & "        If CStr(paragraphHashes(paragraphKey)) <> CStr(fingerprint(""paragraphSha256"")) Then Err.Raise 5, ""HybridRevalidateInvisibleUnicode"", ""A candidate paragraph changed after Preview.""" & vbCrLf
+    s = s & "    Next candidate" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    HybridRevalidateInvisibleUnicode = True" & vbCrLf
+    s = s & "    Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "RevalidationFailed:" & vbCrLf
+    s = s & "    failureMessage = Err.Description" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Function HybridCandidateAbsoluteRange( _" & vbCrLf
+    s = s & "        ByVal analysis As Object, _" & vbCrLf
+    s = s & "        ByVal candidate As Object, _" & vbCrLf
+    s = s & "        ByVal document As Document) As Range" & vbCrLf
+    s = s & "    Dim location As Object" & vbCrLf
+    s = s & "    Set location = candidate(""location"")" & vbCrLf
+    s = s & "    Set HybridCandidateAbsoluteRange = document.Range( _" & vbCrLf
+    s = s & "        CLng(analysis(""scopeStart"")) + CLng(location(""startUtf16"")), _" & vbCrLf
+    s = s & "        CLng(analysis(""scopeStart"")) + CLng(location(""endUtf16"")))" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Function HybridCandidateReplacement(ByVal candidate As Object) As String" & vbCrLf
+    s = s & "    Dim operation As Object" & vbCrLf
+    s = s & "    Dim parameters As Object" & vbCrLf
+    s = s & "    Set operation = candidate(""operation"")" & vbCrLf
+    s = s & "    Set parameters = operation(""parameters"")" & vbCrLf
+    s = s & "    HybridCandidateReplacement = CStr(parameters(""replacementText""))" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridBuildUnicodeRequest( _" & vbCrLf
+    s = s & "        ByVal jobId As String, _" & vbCrLf
+    s = s & "        ByVal targetRange As Range, _" & vbCrLf
+    s = s & "        ByVal selectionOnly As Boolean, _" & vbCrLf
+    s = s & "        ByVal snapshotHash As String, _" & vbCrLf
+    s = s & "        ByVal snapshotByteCount As Long, _" & vbCrLf
+    s = s & "        ByVal snapshotUtf16Length As Long, _" & vbCrLf
+    s = s & "        ByVal nonBreakingSpace As Boolean, _" & vbCrLf
+    s = s & "        ByVal zeroWidthSpace As Boolean, _" & vbCrLf
+    s = s & "        ByVal zeroWidthNonJoiner As Boolean, _" & vbCrLf
+    s = s & "        ByVal zeroWidthJoiner As Boolean, _" & vbCrLf
+    s = s & "        ByVal byteOrderMark As Boolean, _" & vbCrLf
+    s = s & "        ByVal softHyphen As Boolean, _" & vbCrLf
+    s = s & "        ByVal nonBreakingHyphen As Boolean) As String" & vbCrLf
+    s = s & "    Dim sessionId As String" & vbCrLf
+    s = s & "    Dim documentSessionId As String" & vbCrLf
+    s = s & "    Dim requestText As String" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    sessionId = HybridNewUuid()" & vbCrLf
+    s = s & "    documentSessionId = HybridNewUuid()" & vbCrLf
+    s = s & "    requestText = _" & vbCrLf
+    s = s & "        ""{"" & _" & vbCrLf
+    s = s & "        """"""contractVersion"""":""""1.0"""","" & _" & vbCrLf
+    s = s & "        """"""messageType"""":""""analysis-request"""","" & _" & vbCrLf
+    s = s & "        """"""jobId"""":"" & HybridJsonEscape(jobId) & "","" & _" & vbCrLf
+    s = s & "        """"""createdUtc"""":"" & HybridJsonEscape(HybridUtcTimestamp()) & "","" & _" & vbCrLf
+    s = s & "        """"""client"""":{"" & _" & vbCrLf
+    s = s & "            """"""suiteVersion"""":"" & HybridJsonEscape(SUITE_VERSION) & "","" & _" & vbCrLf
+    s = s & "            """"""protocolVersion"""":""""1.0"""","" & _" & vbCrLf
+    s = s & "            """"""processId"""":"" & CStr(GetCurrentProcessId()) & "","" & _" & vbCrLf
+    s = s & "            """"""sessionId"""":"" & HybridJsonEscape(sessionId) & ""},""" & vbCrLf
+    s = s & "    requestText = requestText & _" & vbCrLf
+    s = s & "        """"""tool"""":{"" & _" & vbCrLf
+    s = s & "            """"""id"""":""""invisible-unicode-cleaner"""","" & _" & vbCrLf
+    s = s & "            """"""definitionVersion"""":""""1.0.0"""","" & _" & vbCrLf
+    s = s & "            """"""analysisMode"""":""""selected-characters""""},""" & vbCrLf
+    s = s & "    requestText = requestText & _" & vbCrLf
+    s = s & "        """"""scope"""":{"" & _" & vbCrLf
+    s = s & "            """"""documentSessionId"""":"" & HybridJsonEscape(documentSessionId) & "","" & _" & vbCrLf
+    s = s & "            """"""storyType"""":""""main-text"""","" & _" & vbCrLf
+    s = s & "            """"""startUtf16"""":"" & CStr(targetRange.Start) & "","" & _" & vbCrLf
+    s = s & "            """"""endUtf16"""":"" & CStr(targetRange.End) & "","" & _" & vbCrLf
+    s = s & "            """"""selectionOnly"""":"" & HybridJsonBoolean(selectionOnly) & ""},""" & vbCrLf
+    s = s & "    requestText = requestText & _" & vbCrLf
+    s = s & "        """"""snapshot"""":{"" & _" & vbCrLf
+    s = s & "            """"""snapshotId"""":"" & HybridJsonEscape(snapshotHash) & "","" & _" & vbCrLf
+    s = s & "            """"""contentFile"""":""""document.utf8.txt"""","" & _" & vbCrLf
+    s = s & "            """"""encoding"""":""""utf-8"""","" & _" & vbCrLf
+    s = s & "            """"""byteLength"""":"" & CStr(snapshotByteCount) & "","" & _" & vbCrLf
+    s = s & "            """"""utf16Length"""":"" & CStr(snapshotUtf16Length) & "","" & _" & vbCrLf
+    s = s & "            """"""sha256"""":"" & HybridJsonEscape(snapshotHash) & "","" & _" & vbCrLf
+    s = s & "            """"""lineEndingPolicy"""":""""preserve-word-story-text""""},""" & vbCrLf
+    s = s & "    requestText = requestText & _" & vbCrLf
+    s = s & "        """"""options"""":{"" & _" & vbCrLf
+    s = s & "            """"""nonBreakingSpace"""":"" & HybridJsonBoolean(nonBreakingSpace) & "","" & _" & vbCrLf
+    s = s & "            """"""zeroWidthSpace"""":"" & HybridJsonBoolean(zeroWidthSpace) & "","" & _" & vbCrLf
+    s = s & "            """"""zeroWidthNonJoiner"""":"" & HybridJsonBoolean(zeroWidthNonJoiner) & "","" & _" & vbCrLf
+    s = s & "            """"""zeroWidthJoiner"""":"" & HybridJsonBoolean(zeroWidthJoiner) & "","" & _" & vbCrLf
+    s = s & "            """"""byteOrderMark"""":"" & HybridJsonBoolean(byteOrderMark) & "","" & _" & vbCrLf
+    s = s & "            """"""softHyphen"""":"" & HybridJsonBoolean(softHyphen) & "","" & _" & vbCrLf
+    s = s & "            """"""nonBreakingHyphen"""":"" & HybridJsonBoolean(nonBreakingHyphen) & ""},""" & vbCrLf
+    s = s & "    requestText = requestText & _" & vbCrLf
+    s = s & "        """"""requestedCapabilities"""":[""""analysis.invisible-unicode"""",""""fingerprint.sha256-utf8-exact""""],"" & _" & vbCrLf
+    s = s & "        """"""privacy"""":{""""documentPathIncluded"""":false,""""documentNameIncluded"""":false}"" & _" & vbCrLf
+    s = s & "        ""}""" & vbCrLf
+    s = s & "    HybridBuildUnicodeRequest = requestText" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub HybridValidateUnicodeResponse( _" & vbCrLf
+    s = s & "        ByVal root As Object, _" & vbCrLf
+    s = s & "        ByVal expectedJobId As String, _" & vbCrLf
+    s = s & "        ByVal expectedSnapshotHash As String)" & vbCrLf
+    s = s & "    Dim engine As Object" & vbCrLf
+    s = s & "    Dim echo As Object" & vbCrLf
+    s = s & "    Dim summary As Object" & vbCrLf
+    s = s & "    Dim diagnostics As Object" & vbCrLf
+    s = s & "    Dim candidates As Collection" & vbCrLf
+    s = s & "    Dim candidate As Object" & vbCrLf
+    s = s & "    Dim ordinal As Long" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    HybridRequireExactKeys root, ""contractVersion|messageType|jobId|completedUtc|engine|echo|status|candidates|summary|diagnostics""" & vbCrLf
+    s = s & "    HybridRequireString root, ""contractVersion"", HYBRID_CONTRACT_VERSION" & vbCrLf
+    s = s & "    HybridRequireString root, ""messageType"", ""analysis-response""" & vbCrLf
+    s = s & "    HybridRequireString root, ""jobId"", expectedJobId" & vbCrLf
+    s = s & "    HybridRequireString root, ""status"", ""completed""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set engine = HybridRequireObject(root, ""engine"")" & vbCrLf
+    s = s & "    HybridRequireExactKeys engine, ""id|version|protocolVersion""" & vbCrLf
+    s = s & "    HybridRequireString engine, ""id"", HYBRID_ENGINE_ID" & vbCrLf
+    s = s & "    HybridRequireString engine, ""version"", HYBRID_ENGINE_VERSION" & vbCrLf
+    s = s & "    HybridRequireString engine, ""protocolVersion"", HYBRID_PROTOCOL_VERSION" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set echo = HybridRequireObject(root, ""echo"")" & vbCrLf
+    s = s & "    HybridRequireExactKeys echo, ""snapshotId|toolId|toolDefinitionVersion""" & vbCrLf
+    s = s & "    HybridRequireString echo, ""snapshotId"", expectedSnapshotHash" & vbCrLf
+    s = s & "    HybridRequireString echo, ""toolId"", HYBRID_UNICODE_TOOL_ID" & vbCrLf
+    s = s & "    HybridRequireString echo, ""toolDefinitionVersion"", HYBRID_UNICODE_TOOL_VERSION" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set candidates = HybridRequireCollection(root, ""candidates"")" & vbCrLf
+    s = s & "    ordinal = 0" & vbCrLf
+    s = s & "    For Each candidate In candidates" & vbCrLf
+    s = s & "        ordinal = ordinal + 1" & vbCrLf
+    s = s & "        HybridValidateUnicodeCandidate candidate, ordinal, expectedSnapshotHash" & vbCrLf
+    s = s & "    Next candidate" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set summary = HybridRequireObject(root, ""summary"")" & vbCrLf
+    s = s & "    HybridRequireExactKeys summary, ""total|applicable|reviewOnly|protected|skipped""" & vbCrLf
+    s = s & "    If HybridRequireLong(summary, ""total"") <> candidates.Count Then Err.Raise 5, ""HybridValidateUnicodeResponse"", ""The engine summary does not match its candidates.""" & vbCrLf
+    s = s & "    If HybridRequireLong(summary, ""applicable"") <> candidates.Count Then Err.Raise 5, ""HybridValidateUnicodeResponse"", ""The engine returned a non-applicable Unicode candidate.""" & vbCrLf
+    s = s & "    If HybridRequireLong(summary, ""reviewOnly"") <> 0 Or HybridRequireLong(summary, ""protected"") <> 0 Or HybridRequireLong(summary, ""skipped"") <> 0 Then Err.Raise 5, ""HybridValidateUnicodeResponse"", ""The Unicode pilot returned an unsupported candidate state.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set diagnostics = HybridRequireObject(root, ""diagnostics"")" & vbCrLf
+    s = s & "    HybridRequireExactKeys diagnostics, ""durationMs|warningCodes|logContainsDocumentContent""" & vbCrLf
+    s = s & "    If HybridRequireLong(diagnostics, ""durationMs"") < 0 Then Err.Raise 5, ""HybridValidateUnicodeResponse"", ""The engine duration is invalid.""" & vbCrLf
+    s = s & "    Dim warningCodes As Collection" & vbCrLf
+    s = s & "    Set warningCodes = HybridRequireCollection(diagnostics, ""warningCodes"")" & vbCrLf
+    s = s & "    If warningCodes.Count <> 0 Then Err.Raise 5, ""HybridValidateUnicodeResponse"", ""The engine returned an unsupported warning.""" & vbCrLf
+    s = s & "    If HybridRequireBoolean(diagnostics, ""logContainsDocumentContent"") Then Err.Raise 5, ""HybridValidateUnicodeResponse"", ""The engine reported unsafe diagnostic logging.""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub HybridValidateUnicodeCandidate( _" & vbCrLf
+    s = s & "        ByVal candidate As Object, _" & vbCrLf
+    s = s & "        ByVal ordinal As Long, _" & vbCrLf
+    s = s & "        ByVal expectedSnapshotHash As String)" & vbCrLf
+    s = s & "    Dim location As Object" & vbCrLf
+    s = s & "    Dim fingerprint As Object" & vbCrLf
+    s = s & "    Dim operation As Object" & vbCrLf
+    s = s & "    Dim parameters As Object" & vbCrLf
+    s = s & "    Dim revalidation As Object" & vbCrLf
+    s = s & "    Dim confidence As Object" & vbCrLf
+    s = s & "    Dim display As Object" & vbCrLf
+    s = s & "    Dim reasonCode As String" & vbCrLf
+    s = s & "    Dim replacementText As String" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    HybridRequireExactKeys candidate, ""candidateId|state|reasonCode|location|fingerprint|operation|revalidation|confidence|display""" & vbCrLf
+    s = s & "    HybridRequireString candidate, ""candidateId"", ""c"" & Format$(ordinal, ""000000"")" & vbCrLf
+    s = s & "    HybridRequireString candidate, ""state"", ""applicable""" & vbCrLf
+    s = s & "    reasonCode = HybridRequireString(candidate, ""reasonCode"")" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set location = HybridRequireObject(candidate, ""location"")" & vbCrLf
+    s = s & "    HybridRequireExactKeys location, ""storyType|startUtf16|endUtf16|offsetBasis""" & vbCrLf
+    s = s & "    HybridRequireString location, ""storyType"", ""main-text""" & vbCrLf
+    s = s & "    If HybridRequireLong(location, ""startUtf16"") < 0 Then Err.Raise 5, ""HybridValidateUnicodeCandidate"", ""A candidate start is invalid.""" & vbCrLf
+    s = s & "    If HybridRequireLong(location, ""endUtf16"") - HybridRequireLong(location, ""startUtf16"") <> 1 Then Err.Raise 5, ""HybridValidateUnicodeCandidate"", ""A Unicode candidate must cover one UTF-16 code unit.""" & vbCrLf
+    s = s & "    HybridRequireString location, ""offsetBasis"", ""snapshot-relative-utf16-code-units""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set fingerprint = HybridRequireObject(candidate, ""fingerprint"")" & vbCrLf
+    s = s & "    HybridRequireExactKeys fingerprint, ""algorithm|snapshotId|exactTextSha256|prefixLengthUtf16|prefixSha256|suffixLengthUtf16|suffixSha256|paragraphSha256""" & vbCrLf
+    s = s & "    HybridRequireString fingerprint, ""algorithm"", ""sha256-utf8-exact""" & vbCrLf
+    s = s & "    HybridRequireString fingerprint, ""snapshotId"", expectedSnapshotHash" & vbCrLf
+    s = s & "    HybridRequireSha256 fingerprint, ""exactTextSha256""" & vbCrLf
+    s = s & "    If HybridRequireLong(fingerprint, ""prefixLengthUtf16"") < 0 Or HybridRequireLong(fingerprint, ""prefixLengthUtf16"") > 32 Then Err.Raise 5, ""HybridValidateUnicodeCandidate"", ""A candidate prefix length is invalid.""" & vbCrLf
+    s = s & "    HybridRequireSha256 fingerprint, ""prefixSha256""" & vbCrLf
+    s = s & "    If HybridRequireLong(fingerprint, ""suffixLengthUtf16"") < 0 Or HybridRequireLong(fingerprint, ""suffixLengthUtf16"") > 32 Then Err.Raise 5, ""HybridValidateUnicodeCandidate"", ""A candidate suffix length is invalid.""" & vbCrLf
+    s = s & "    HybridRequireSha256 fingerprint, ""suffixSha256""" & vbCrLf
+    s = s & "    HybridRequireSha256 fingerprint, ""paragraphSha256""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set operation = HybridRequireObject(candidate, ""operation"")" & vbCrLf
+    s = s & "    HybridRequireExactKeys operation, ""type|safetyClass|parameters""" & vbCrLf
+    s = s & "    HybridRequireString operation, ""type"", ""replaceText""" & vbCrLf
+    s = s & "    HybridRequireString operation, ""safetyClass"", ""textual""" & vbCrLf
+    s = s & "    Set parameters = HybridRequireObject(operation, ""parameters"")" & vbCrLf
+    s = s & "    HybridRequireExactKeys parameters, ""replacementText""" & vbCrLf
+    s = s & "    replacementText = HybridRequireString(parameters, ""replacementText"")" & vbCrLf
+    s = s & "    HybridValidateUnicodeReasonAndReplacement reasonCode, replacementText" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set revalidation = HybridRequireObject(candidate, ""revalidation"")" & vbCrLf
+    s = s & "    HybridRequireExactKeys revalidation, ""requireWholeScopeSnapshot|requireExactRange|requireContext|requireStructure|onMismatch|allowRelocation""" & vbCrLf
+    s = s & "    If Not HybridRequireBoolean(revalidation, ""requireWholeScopeSnapshot"") Then Err.Raise 5, ""HybridValidateUnicodeCandidate"", ""Whole-scope revalidation is required.""" & vbCrLf
+    s = s & "    If Not HybridRequireBoolean(revalidation, ""requireExactRange"") Then Err.Raise 5, ""HybridValidateUnicodeCandidate"", ""Exact-range revalidation is required.""" & vbCrLf
+    s = s & "    If Not HybridRequireBoolean(revalidation, ""requireContext"") Then Err.Raise 5, ""HybridValidateUnicodeCandidate"", ""Context revalidation is required.""" & vbCrLf
+    s = s & "    If HybridRequireBoolean(revalidation, ""requireStructure"") Then Err.Raise 5, ""HybridValidateUnicodeCandidate"", ""The Unicode pilot must not require structural mutation.""" & vbCrLf
+    s = s & "    HybridRequireString revalidation, ""onMismatch"", ""abort-apply""" & vbCrLf
+    s = s & "    If HybridRequireBoolean(revalidation, ""allowRelocation"") Then Err.Raise 5, ""HybridValidateUnicodeCandidate"", ""Candidate relocation is forbidden.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set confidence = HybridRequireObject(candidate, ""confidence"")" & vbCrLf
+    s = s & "    HybridRequireExactKeys confidence, ""tier|score""" & vbCrLf
+    s = s & "    HybridRequireString confidence, ""tier"", ""deterministic""" & vbCrLf
+    s = s & "    If CDbl(confidence(""score"")) <> 1# Then Err.Raise 5, ""HybridValidateUnicodeCandidate"", ""A Unicode candidate must be deterministic.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set display = HybridRequireObject(candidate, ""display"")" & vbCrLf
+    s = s & "    HybridRequireExactKeys display, ""label|canHighlight""" & vbCrLf
+    s = s & "    If Len(HybridRequireString(display, ""label"")) = 0 Then Err.Raise 5, ""HybridValidateUnicodeCandidate"", ""A candidate label is missing.""" & vbCrLf
+    s = s & "    If Not HybridRequireBoolean(display, ""canHighlight"") Then Err.Raise 5, ""HybridValidateUnicodeCandidate"", ""A Unicode candidate must support Preview highlighting.""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub HybridValidateUnicodeReasonAndReplacement(ByVal reasonCode As String, ByVal replacementText As String)" & vbCrLf
+    s = s & "    Select Case reasonCode" & vbCrLf
+    s = s & "        Case ""unicode.non-breaking-space""" & vbCrLf
+    s = s & "            If replacementText <> "" "" Then Err.Raise 5, ""HybridValidateUnicodeReasonAndReplacement"", ""The non-breaking-space replacement is invalid.""" & vbCrLf
+    s = s & "        Case ""unicode.zero-width-space"", ""unicode.zero-width-nonjoiner"", ""unicode.zero-width-joiner"", ""unicode.byte-order-mark""" & vbCrLf
+    s = s & "            If replacementText <> vbNullString Then Err.Raise 5, ""HybridValidateUnicodeReasonAndReplacement"", ""A zero-width replacement is invalid.""" & vbCrLf
+    s = s & "        Case ""unicode.soft-hyphen"", ""unicode.non-breaking-hyphen""" & vbCrLf
+    s = s & "            If replacementText <> ""-"" Then Err.Raise 5, ""HybridValidateUnicodeReasonAndReplacement"", ""A hyphen replacement is invalid.""" & vbCrLf
+    s = s & "        Case Else" & vbCrLf
+    s = s & "            Err.Raise 5, ""HybridValidateUnicodeReasonAndReplacement"", ""The engine returned an unknown Unicode reason.""" & vbCrLf
+    s = s & "    End Select" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridResolveTrustedDevelopmentEngine( _" & vbCrLf
+    s = s & "        ByRef enginePath As String, _" & vbCrLf
+    s = s & "        ByRef expectedHash As String, _" & vbCrLf
+    s = s & "        ByRef failureMessage As String) As Boolean" & vbCrLf
+    s = s & "    enginePath = Trim$(Environ$(""CLEANUPSUITE_HYBRID_DEV_ENGINE""))" & vbCrLf
+    s = s & "    expectedHash = LCase$(Trim$(Environ$(""CLEANUPSUITE_HYBRID_DEV_SHA256"")))" & vbCrLf
+    s = s & "    If Len(enginePath) = 0 Or Len(expectedHash) = 0 Then" & vbCrLf
+    s = s & "        failureMessage = ""The matched CleanupSuite analysis engine is not installed. Use Setup Repair after the hybrid installer is available.""" & vbCrLf
+    s = s & "        Exit Function" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    If Mid$(enginePath, 2, 2) <> "":\"" Or InStr(enginePath, "".."") > 0 Or InStr(enginePath, """""""") > 0 Or Len(Dir$(enginePath, vbNormal)) = 0 Then" & vbCrLf
+    s = s & "        failureMessage = ""The configured development engine path is invalid.""" & vbCrLf
+    s = s & "        Exit Function" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    If LCase$(Right$(enginePath, 4)) <> "".exe"" Or Not HybridIsLowercaseSha256(expectedHash) Then" & vbCrLf
+    s = s & "        failureMessage = ""The configured development engine identity is invalid.""" & vbCrLf
+    s = s & "        Exit Function" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    If HybridSha256File(enginePath) <> expectedHash Then" & vbCrLf
+    s = s & "        failureMessage = ""The analysis engine hash does not match the trusted development value.""" & vbCrLf
+    s = s & "        Exit Function" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    If Not HybridValidateCapabilityHandshake(enginePath, failureMessage) Then Exit Function" & vbCrLf
+    s = s & "    HybridResolveTrustedDevelopmentEngine = True" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridValidateCapabilityHandshake( _" & vbCrLf
+    s = s & "        ByVal enginePath As String, _" & vbCrLf
+    s = s & "        ByRef failureMessage As String) As Boolean" & vbCrLf
+    s = s & "    Dim capabilityText As String" & vbCrLf
+    s = s & "    Dim root As Object" & vbCrLf
+    s = s & "    Dim engine As Object" & vbCrLf
+    s = s & "    Dim protocolRange As Object" & vbCrLf
+    s = s & "    Dim supportedTools As Collection" & vbCrLf
+    s = s & "    Dim supportedOperations As Collection" & vbCrLf
+    s = s & "    Dim security As Object" & vbCrLf
+    s = s & "    Dim transport As Object" & vbCrLf
+    s = s & "    Dim distribution As Object" & vbCrLf
+    s = s & "    Dim tool As Object" & vbCrLf
+    s = s & "    Dim foundTool As Boolean" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    On Error GoTo CapabilityFailed" & vbCrLf
+    s = s & "    capabilityText = HybridCaptureEngineOutput(enginePath, ""--capabilities"", 10)" & vbCrLf
+    s = s & "    Set root = HybridJsonParseObject(capabilityText)" & vbCrLf
+    s = s & "    HybridRequireExactKeys root, ""contractVersion|messageType|engine|protocolRange|supportedTools|supportedOperations|security|transport|distribution""" & vbCrLf
+    s = s & "    HybridRequireString root, ""contractVersion"", HYBRID_CONTRACT_VERSION" & vbCrLf
+    s = s & "    HybridRequireString root, ""messageType"", ""engine-capabilities""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set engine = HybridRequireObject(root, ""engine"")" & vbCrLf
+    s = s & "    HybridRequireExactKeys engine, ""id|version""" & vbCrLf
+    s = s & "    HybridRequireString engine, ""id"", HYBRID_ENGINE_ID" & vbCrLf
+    s = s & "    HybridRequireString engine, ""version"", HYBRID_ENGINE_VERSION" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set protocolRange = HybridRequireObject(root, ""protocolRange"")" & vbCrLf
+    s = s & "    HybridRequireExactKeys protocolRange, ""minimum|maximum""" & vbCrLf
+    s = s & "    HybridRequireString protocolRange, ""minimum"", HYBRID_PROTOCOL_VERSION" & vbCrLf
+    s = s & "    HybridRequireString protocolRange, ""maximum"", HYBRID_PROTOCOL_VERSION" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set supportedTools = HybridRequireCollection(root, ""supportedTools"")" & vbCrLf
+    s = s & "    For Each tool In supportedTools" & vbCrLf
+    s = s & "        HybridRequireExactKeys tool, ""id|definitionVersions|analysisModes""" & vbCrLf
+    s = s & "        If HybridRequireString(tool, ""id"") = HYBRID_UNICODE_TOOL_ID Then" & vbCrLf
+    s = s & "            If Not HybridCollectionContainsString(HybridRequireCollection(tool, ""definitionVersions""), HYBRID_UNICODE_TOOL_VERSION) Then Err.Raise 5, ""HybridValidateCapabilityHandshake"", ""The engine does not support the Unicode tool definition.""" & vbCrLf
+    s = s & "            If Not HybridCollectionContainsString(HybridRequireCollection(tool, ""analysisModes""), HYBRID_UNICODE_MODE) Then Err.Raise 5, ""HybridValidateCapabilityHandshake"", ""The engine does not support the Unicode analysis mode.""" & vbCrLf
+    s = s & "            foundTool = True" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "    Next tool" & vbCrLf
+    s = s & "    If Not foundTool Then Err.Raise 5, ""HybridValidateCapabilityHandshake"", ""The engine does not advertise the Unicode pilot.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set supportedOperations = HybridRequireCollection(root, ""supportedOperations"")" & vbCrLf
+    s = s & "    If Not HybridCollectionContainsString(supportedOperations, ""replaceText"") Then Err.Raise 5, ""HybridValidateCapabilityHandshake"", ""The engine does not support textual replacement candidates.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set security = HybridRequireObject(root, ""security"")" & vbCrLf
+    s = s & "    HybridRequireExactKeys security, ""editsWordDocuments|requiresNetwork|opensListeningEndpoint|runsAsService|requiresElevation|logsDocumentContent""" & vbCrLf
+    s = s & "    If HybridRequireBoolean(security, ""editsWordDocuments"") Or HybridRequireBoolean(security, ""requiresNetwork"") Or HybridRequireBoolean(security, ""opensListeningEndpoint"") Or HybridRequireBoolean(security, ""runsAsService"") Or HybridRequireBoolean(security, ""requiresElevation"") Or HybridRequireBoolean(security, ""logsDocumentContent"") Then Err.Raise 5, ""HybridValidateCapabilityHandshake"", ""The engine advertises an unsafe capability.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set transport = HybridRequireObject(root, ""transport"")" & vbCrLf
+    s = s & "    HybridRequireExactKeys transport, ""mode|requestFile|resultFile""" & vbCrLf
+    s = s & "    HybridRequireString transport, ""mode"", ""owner-only-job-directory""" & vbCrLf
+    s = s & "    HybridRequireString transport, ""requestFile"", ""request.json""" & vbCrLf
+    s = s & "    HybridRequireString transport, ""resultFile"", ""result.json""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set distribution = HybridRequireObject(root, ""distribution"")" & vbCrLf
+    s = s & "    HybridRequireExactKeys distribution, ""publisher|authenticodeRequiredForOfficialBeta""" & vbCrLf
+    s = s & "    HybridRequireString distribution, ""publisher"", ""MasseysLab""" & vbCrLf
+    s = s & "    If Not HybridRequireBoolean(distribution, ""authenticodeRequiredForOfficialBeta"") Then Err.Raise 5, ""HybridValidateCapabilityHandshake"", ""The engine does not require signed official distribution.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    HybridValidateCapabilityHandshake = True" & vbCrLf
+    s = s & "    Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "CapabilityFailed:" & vbCrLf
+    s = s & "    failureMessage = ""The analysis engine capability handshake failed: "" & Err.Description" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridCaptureEngineOutput( _" & vbCrLf
+    s = s & "        ByVal enginePath As String, _" & vbCrLf
+    s = s & "        ByVal commandName As String, _" & vbCrLf
+    s = s & "        ByVal timeoutSeconds As Long) As String" & vbCrLf
+    s = s & "    Dim securityAttributes As HYBRID_SECURITY_ATTRIBUTES" & vbCrLf
+    s = s & "    Dim startup As HYBRID_STARTUPINFO" & vbCrLf
+    s = s & "    Dim processInfo As HYBRID_PROCESS_INFORMATION" & vbCrLf
+    s = s & "    Dim readPipe As LongPtr" & vbCrLf
+    s = s & "    Dim writePipe As LongPtr" & vbCrLf
+    s = s & "    Dim commandLine As String" & vbCrLf
+    s = s & "    Dim waitResult As Long" & vbCrLf
+    s = s & "    Dim exitCode As Long" & vbCrLf
+    s = s & "    Dim startedAt As Single" & vbCrLf
+    s = s & "    Dim elapsed As Double" & vbCrLf
+    s = s & "    Dim available As Long" & vbCrLf
+    s = s & "    Dim bytesRead As Long" & vbCrLf
+    s = s & "    Dim buffer() As Byte" & vbCrLf
+    s = s & "    Dim outputBytes() As Byte" & vbCrLf
+    s = s & "    Dim outputCount As Long" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    On Error GoTo CaptureFailed" & vbCrLf
+    s = s & "    ReDim buffer(0 To 4095)" & vbCrLf
+    s = s & "    securityAttributes.nLength = LenB(securityAttributes)" & vbCrLf
+    s = s & "    securityAttributes.bInheritHandle = 1" & vbCrLf
+    s = s & "    If CreatePipe(readPipe, writePipe, securityAttributes, 0) = 0 Then Err.Raise 5, ""HybridCaptureEngineOutput"", ""The capability output pipe could not be created.""" & vbCrLf
+    s = s & "    If SetHandleInformation(readPipe, HYBRID_HANDLE_FLAG_INHERIT, 0) = 0 Then Err.Raise 5, ""HybridCaptureEngineOutput"", ""The capability output pipe could not be secured.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    startup.cb = LenB(startup)" & vbCrLf
+    s = s & "    startup.dwFlags = HYBRID_STARTF_USESTDHANDLES" & vbCrLf
+    s = s & "    startup.hStdOutput = writePipe" & vbCrLf
+    s = s & "    startup.hStdError = writePipe" & vbCrLf
+    s = s & "    startup.hStdInput = 0" & vbCrLf
+    s = s & "    commandLine = """""""" & enginePath & """""" "" & commandName" & vbCrLf
+    s = s & "    If CreateProcessW(StrPtr(enginePath), StrPtr(commandLine), 0, 0, 1, HYBRID_CREATE_NO_WINDOW, 0, 0, startup, processInfo) = 0 Then Err.Raise 5, ""HybridCaptureEngineOutput"", ""The capability command could not be started.""" & vbCrLf
+    s = s & "    CloseHandle writePipe" & vbCrLf
+    s = s & "    writePipe = 0" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    startedAt = Timer" & vbCrLf
+    s = s & "    Do" & vbCrLf
+    s = s & "        HybridDrainPipe readPipe, outputBytes, outputCount, buffer, available, bytesRead" & vbCrLf
+    s = s & "        waitResult = WaitForSingleObject(processInfo.hProcess, 25)" & vbCrLf
+    s = s & "        If waitResult = HYBRID_WAIT_OBJECT_0 Then Exit Do" & vbCrLf
+    s = s & "        If waitResult <> HYBRID_WAIT_TIMEOUT Then Err.Raise 5, ""HybridCaptureEngineOutput"", ""The capability command wait failed.""" & vbCrLf
+    s = s & "        DoEvents" & vbCrLf
+    s = s & "        elapsed = Timer - startedAt" & vbCrLf
+    s = s & "        If elapsed < 0 Then elapsed = elapsed + 86400#" & vbCrLf
+    s = s & "        If elapsed >= timeoutSeconds Then" & vbCrLf
+    s = s & "            TerminateProcess processInfo.hProcess, 124" & vbCrLf
+    s = s & "            WaitForSingleObject processInfo.hProcess, 5000" & vbCrLf
+    s = s & "            Err.Raise 5, ""HybridCaptureEngineOutput"", ""The capability command timed out.""" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "    Loop" & vbCrLf
+    s = s & "    HybridDrainPipe readPipe, outputBytes, outputCount, buffer, available, bytesRead" & vbCrLf
+    s = s & "    If GetExitCodeProcess(processInfo.hProcess, exitCode) = 0 Or exitCode <> 0 Then Err.Raise 5, ""HybridCaptureEngineOutput"", ""The capability command failed.""" & vbCrLf
+    s = s & "    If outputCount < 1 Or outputCount > 1048576 Then Err.Raise 5, ""HybridCaptureEngineOutput"", ""The capability response size is invalid.""" & vbCrLf
+    s = s & "    HybridCaptureEngineOutput = HybridUtf8Decode(outputBytes, outputCount)" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "CaptureExit:" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    If writePipe <> 0 Then CloseHandle writePipe" & vbCrLf
+    s = s & "    If readPipe <> 0 Then CloseHandle readPipe" & vbCrLf
+    s = s & "    If processInfo.hThread <> 0 Then CloseHandle processInfo.hThread" & vbCrLf
+    s = s & "    If processInfo.hProcess <> 0 Then CloseHandle processInfo.hProcess" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "    Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "CaptureFailed:" & vbCrLf
+    s = s & "    Dim failureNumber As Long" & vbCrLf
+    s = s & "    Dim failureSource As String" & vbCrLf
+    s = s & "    Dim failureDescription As String" & vbCrLf
+    s = s & "    failureNumber = Err.Number" & vbCrLf
+    s = s & "    failureSource = Err.Source" & vbCrLf
+    s = s & "    failureDescription = Err.Description" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    If writePipe <> 0 Then CloseHandle writePipe" & vbCrLf
+    s = s & "    If readPipe <> 0 Then CloseHandle readPipe" & vbCrLf
+    s = s & "    If processInfo.hThread <> 0 Then CloseHandle processInfo.hThread" & vbCrLf
+    s = s & "    If processInfo.hProcess <> 0 Then CloseHandle processInfo.hProcess" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "    Err.Raise failureNumber, failureSource, failureDescription" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub HybridDrainPipe( _" & vbCrLf
+    s = s & "        ByVal readPipe As LongPtr, _" & vbCrLf
+    s = s & "        ByRef outputBytes() As Byte, _" & vbCrLf
+    s = s & "        ByRef outputCount As Long, _" & vbCrLf
+    s = s & "        ByRef buffer() As Byte, _" & vbCrLf
+    s = s & "        ByRef available As Long, _" & vbCrLf
+    s = s & "        ByRef bytesRead As Long)" & vbCrLf
+    s = s & "    Dim oldCount As Long" & vbCrLf
+    s = s & "    Dim i As Long" & vbCrLf
+    s = s & "    Do" & vbCrLf
+    s = s & "        available = 0" & vbCrLf
+    s = s & "        If PeekNamedPipe(readPipe, ByVal 0&, 0, bytesRead, available, bytesRead) = 0 Then Exit Do" & vbCrLf
+    s = s & "        If available <= 0 Then Exit Do" & vbCrLf
+    s = s & "        If ReadFile(readPipe, buffer(0), IIf(available > 4096, 4096, available), bytesRead, 0) = 0 Then Err.Raise 5, ""HybridDrainPipe"", ""The capability response could not be read.""" & vbCrLf
+    s = s & "        If outputCount + bytesRead > 1048576 Then Err.Raise 5, ""HybridDrainPipe"", ""The capability response exceeded its size limit.""" & vbCrLf
+    s = s & "        oldCount = outputCount" & vbCrLf
+    s = s & "        outputCount = outputCount + bytesRead" & vbCrLf
+    s = s & "        If oldCount = 0 Then" & vbCrLf
+    s = s & "            ReDim outputBytes(0 To outputCount - 1)" & vbCrLf
+    s = s & "        Else" & vbCrLf
+    s = s & "            ReDim Preserve outputBytes(0 To outputCount - 1)" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "        For i = 0 To bytesRead - 1" & vbCrLf
+    s = s & "            outputBytes(oldCount + i) = buffer(i)" & vbCrLf
+    s = s & "        Next i" & vbCrLf
+    s = s & "    Loop" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridCollectionContainsString( _" & vbCrLf
+    s = s & "        ByVal values As Collection, _" & vbCrLf
+    s = s & "        ByVal expected As String) As Boolean" & vbCrLf
+    s = s & "    Dim value As Variant" & vbCrLf
+    s = s & "    For Each value In values" & vbCrLf
+    s = s & "        If VarType(value) = vbString Then" & vbCrLf
+    s = s & "            If CStr(value) = expected Then" & vbCrLf
+    s = s & "                HybridCollectionContainsString = True" & vbCrLf
+    s = s & "                Exit Function" & vbCrLf
+    s = s & "            End If" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "    Next value" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridCreateEmptyJobDirectory(ByVal jobId As String) As String" & vbCrLf
+    s = s & "    Dim localRoot As String" & vbCrLf
+    s = s & "    Dim publisherRoot As String" & vbCrLf
+    s = s & "    Dim suiteRoot As String" & vbCrLf
+    s = s & "    Dim jobsRoot As String" & vbCrLf
+    s = s & "    Dim jobDirectory As String" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    localRoot = Environ$(""LOCALAPPDATA"")" & vbCrLf
+    s = s & "    If Len(localRoot) = 0 Then Err.Raise 5, ""HybridCreateEmptyJobDirectory"", ""Local application data is unavailable.""" & vbCrLf
+    s = s & "    publisherRoot = localRoot & ""\MasseysLab""" & vbCrLf
+    s = s & "    suiteRoot = publisherRoot & ""\CleanupSuite""" & vbCrLf
+    s = s & "    jobsRoot = suiteRoot & ""\Jobs""" & vbCrLf
+    s = s & "    HybridEnsureDirectory publisherRoot" & vbCrLf
+    s = s & "    HybridEnsureDirectory suiteRoot" & vbCrLf
+    s = s & "    HybridEnsureDirectory jobsRoot" & vbCrLf
+    s = s & "    jobDirectory = jobsRoot & ""\"" & jobId" & vbCrLf
+    s = s & "    If Len(Dir$(jobDirectory, vbDirectory)) > 0 Then Err.Raise 5, ""HybridCreateEmptyJobDirectory"", ""The analysis job already exists.""" & vbCrLf
+    s = s & "    MkDir jobDirectory" & vbCrLf
+    s = s & "    HybridCreateEmptyJobDirectory = jobDirectory" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub HybridEnsureDirectory(ByVal path As String)" & vbCrLf
+    s = s & "    If Len(Dir$(path, vbDirectory)) = 0 Then MkDir path" & vbCrLf
+    s = s & "    If (GetAttr(path) And vbDirectory) = 0 Then Err.Raise 5, ""HybridEnsureDirectory"", ""An analysis workspace path is not a directory.""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridRunEngine( _" & vbCrLf
+    s = s & "        ByVal enginePath As String, _" & vbCrLf
+    s = s & "        ByVal commandName As String, _" & vbCrLf
+    s = s & "        ByVal jobDirectory As String, _" & vbCrLf
+    s = s & "        ByVal timeoutSeconds As Long) As Long" & vbCrLf
+    s = s & "    Dim startup As HYBRID_STARTUPINFO" & vbCrLf
+    s = s & "    Dim processInfo As HYBRID_PROCESS_INFORMATION" & vbCrLf
+    s = s & "    Dim commandLine As String" & vbCrLf
+    s = s & "    Dim waitResult As Long" & vbCrLf
+    s = s & "    Dim exitCode As Long" & vbCrLf
+    s = s & "    Dim startedAt As Single" & vbCrLf
+    s = s & "    Dim elapsed As Double" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    On Error GoTo RunEngineFailed" & vbCrLf
+    s = s & "    commandLine = """""""" & enginePath & """""" "" & commandName & "" """""" & jobDirectory & """"""""" & vbCrLf
+    s = s & "    startup.cb = LenB(startup)" & vbCrLf
+    s = s & "    If CreateProcessW(StrPtr(enginePath), StrPtr(commandLine), 0, 0, 0, HYBRID_CREATE_NO_WINDOW, 0, 0, startup, processInfo) = 0 Then Err.Raise 5, ""HybridRunEngine"", ""The analysis engine could not be started.""" & vbCrLf
+    s = s & "    startedAt = Timer" & vbCrLf
+    s = s & "    Do" & vbCrLf
+    s = s & "        waitResult = WaitForSingleObject(processInfo.hProcess, 50)" & vbCrLf
+    s = s & "        If waitResult = HYBRID_WAIT_OBJECT_0 Then Exit Do" & vbCrLf
+    s = s & "        If waitResult <> HYBRID_WAIT_TIMEOUT Then Err.Raise 5, ""HybridRunEngine"", ""The analysis engine wait failed.""" & vbCrLf
+    s = s & "        DoEvents" & vbCrLf
+    s = s & "        elapsed = Timer - startedAt" & vbCrLf
+    s = s & "        If elapsed < 0 Then elapsed = elapsed + 86400#" & vbCrLf
+    s = s & "        If elapsed >= timeoutSeconds Then" & vbCrLf
+    s = s & "            TerminateProcess processInfo.hProcess, 124" & vbCrLf
+    s = s & "            WaitForSingleObject processInfo.hProcess, 5000" & vbCrLf
+    s = s & "            Err.Raise 5, ""HybridRunEngine"", ""The analysis engine timed out.""" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "    Loop" & vbCrLf
+    s = s & "    If GetExitCodeProcess(processInfo.hProcess, exitCode) = 0 Then Err.Raise 5, ""HybridRunEngine"", ""The analysis engine exit status is unavailable.""" & vbCrLf
+    s = s & "    HybridRunEngine = exitCode" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "RunEngineExit:" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    If processInfo.hThread <> 0 Then CloseHandle processInfo.hThread" & vbCrLf
+    s = s & "    If processInfo.hProcess <> 0 Then CloseHandle processInfo.hProcess" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "    Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "RunEngineFailed:" & vbCrLf
+    s = s & "    Dim failureNumber As Long" & vbCrLf
+    s = s & "    Dim failureSource As String" & vbCrLf
+    s = s & "    Dim failureDescription As String" & vbCrLf
+    s = s & "    failureNumber = Err.Number" & vbCrLf
+    s = s & "    failureSource = Err.Source" & vbCrLf
+    s = s & "    failureDescription = Err.Description" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    If processInfo.hThread <> 0 Then CloseHandle processInfo.hThread" & vbCrLf
+    s = s & "    If processInfo.hProcess <> 0 Then CloseHandle processInfo.hProcess" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "    Err.Raise failureNumber, failureSource, failureDescription" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridNewUuid() As String" & vbCrLf
+    s = s & "    Dim value As HYBRID_GUID" & vbCrLf
+    s = s & "    Dim buffer As String" & vbCrLf
+    s = s & "    If CoCreateGuid(value) <> 0 Then Err.Raise 5, ""HybridNewUuid"", ""A secure job identifier could not be created.""" & vbCrLf
+    s = s & "    buffer = String$(39, vbNullChar)" & vbCrLf
+    s = s & "    If StringFromGUID2(value, StrPtr(buffer), 39) <= 0 Then Err.Raise 5, ""HybridNewUuid"", ""A job identifier could not be formatted.""" & vbCrLf
+    s = s & "    HybridNewUuid = LCase$(Mid$(buffer, 2, 36))" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridJsonBoolean(ByVal value As Boolean) As String" & vbCrLf
+    s = s & "    If value Then HybridJsonBoolean = ""true"" Else HybridJsonBoolean = ""false""" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridUtcTimestamp() As String" & vbCrLf
+    s = s & "    Dim value As HYBRID_SYSTEMTIME" & vbCrLf
+    s = s & "    GetSystemTime value" & vbCrLf
+    s = s & "    HybridUtcTimestamp = _" & vbCrLf
+    s = s & "        Format$(value.wYear, ""0000"") & ""-"" & _" & vbCrLf
+    s = s & "        Format$(value.wMonth, ""00"") & ""-"" & _" & vbCrLf
+    s = s & "        Format$(value.wDay, ""00"") & ""T"" & _" & vbCrLf
+    s = s & "        Format$(value.wHour, ""00"") & "":"" & _" & vbCrLf
+    s = s & "        Format$(value.wMinute, ""00"") & "":"" & _" & vbCrLf
+    s = s & "        Format$(value.wSecond, ""00"") & ""."" & _" & vbCrLf
+    s = s & "        Format$(value.wMilliseconds, ""000"") & ""Z""" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridUtf8Bytes(ByVal text As String, ByRef byteCount As Long) As Byte()" & vbCrLf
+    s = s & "    Dim bytes() As Byte" & vbCrLf
+    s = s & "    If Len(text) = 0 Then" & vbCrLf
+    s = s & "        ReDim bytes(0 To 0)" & vbCrLf
+    s = s & "        byteCount = 0" & vbCrLf
+    s = s & "        HybridUtf8Bytes = bytes" & vbCrLf
+    s = s & "        Exit Function" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    byteCount = WideCharToMultiByte(HYBRID_CP_UTF8, HYBRID_WC_ERR_INVALID_CHARS, StrPtr(text), Len(text), ByVal 0&, 0, 0, 0)" & vbCrLf
+    s = s & "    If byteCount <= 0 Then Err.Raise 5, ""HybridUtf8Bytes"", ""The Word snapshot contains invalid Unicode.""" & vbCrLf
+    s = s & "    ReDim bytes(0 To byteCount - 1)" & vbCrLf
+    s = s & "    If WideCharToMultiByte(HYBRID_CP_UTF8, HYBRID_WC_ERR_INVALID_CHARS, StrPtr(text), Len(text), bytes(0), byteCount, 0, 0) <> byteCount Then Err.Raise 5, ""HybridUtf8Bytes"", ""The Word snapshot could not be encoded exactly.""" & vbCrLf
+    s = s & "    HybridUtf8Bytes = bytes" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridUtf8Decode(ByRef bytes() As Byte, ByVal byteCount As Long) As String" & vbCrLf
+    s = s & "    Dim charCount As Long" & vbCrLf
+    s = s & "    Dim result As String" & vbCrLf
+    s = s & "    If byteCount = 0 Then Exit Function" & vbCrLf
+    s = s & "    charCount = MultiByteToWideChar(HYBRID_CP_UTF8, HYBRID_MB_ERR_INVALID_CHARS, bytes(0), byteCount, 0, 0)" & vbCrLf
+    s = s & "    If charCount <= 0 Then Err.Raise 5, ""HybridUtf8Decode"", ""The engine result is not valid UTF-8.""" & vbCrLf
+    s = s & "    result = String$(charCount, vbNullChar)" & vbCrLf
+    s = s & "    If MultiByteToWideChar(HYBRID_CP_UTF8, HYBRID_MB_ERR_INVALID_CHARS, bytes(0), byteCount, StrPtr(result), charCount) <> charCount Then Err.Raise 5, ""HybridUtf8Decode"", ""The engine result could not be decoded exactly.""" & vbCrLf
+    s = s & "    HybridUtf8Decode = result" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub HybridWriteTextUtf8Atomic(ByVal path As String, ByVal text As String)" & vbCrLf
+    s = s & "    Dim bytes() As Byte" & vbCrLf
+    s = s & "    Dim byteCount As Long" & vbCrLf
+    s = s & "    bytes = HybridUtf8Bytes(text, byteCount)" & vbCrLf
+    s = s & "    HybridWriteBytesAtomic path, bytes, byteCount" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub HybridWriteBytesAtomic(ByVal path As String, ByRef bytes() As Byte, ByVal byteCount As Long)" & vbCrLf
+    s = s & "    Dim temporaryPath As String" & vbCrLf
+    s = s & "    Dim fileNumber As Integer" & vbCrLf
+    s = s & "    On Error GoTo WriteFailed" & vbCrLf
+    s = s & "    temporaryPath = path & "".tmp""" & vbCrLf
+    s = s & "    If Len(Dir$(path, vbNormal)) > 0 Or Len(Dir$(temporaryPath, vbNormal)) > 0 Then Err.Raise 5, ""HybridWriteBytesAtomic"", ""A protocol output already exists.""" & vbCrLf
+    s = s & "    fileNumber = FreeFile" & vbCrLf
+    s = s & "    Open temporaryPath For Binary Access Write Lock Read Write As #fileNumber" & vbCrLf
+    s = s & "    If byteCount > 0 Then Put #fileNumber, , bytes" & vbCrLf
+    s = s & "    Close #fileNumber" & vbCrLf
+    s = s & "    fileNumber = 0" & vbCrLf
+    s = s & "    Name temporaryPath As path" & vbCrLf
+    s = s & "    Exit Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "WriteFailed:" & vbCrLf
+    s = s & "    Dim failureNumber As Long" & vbCrLf
+    s = s & "    Dim failureSource As String" & vbCrLf
+    s = s & "    Dim failureDescription As String" & vbCrLf
+    s = s & "    failureNumber = Err.Number" & vbCrLf
+    s = s & "    failureSource = Err.Source" & vbCrLf
+    s = s & "    failureDescription = Err.Description" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    If fileNumber <> 0 Then Close #fileNumber" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "    Err.Raise failureNumber, failureSource, failureDescription" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridReadUtf8File(ByVal path As String, ByVal maximumBytes As Long) As String" & vbCrLf
+    s = s & "    Dim fileNumber As Integer" & vbCrLf
+    s = s & "    Dim byteCount As Long" & vbCrLf
+    s = s & "    Dim bytes() As Byte" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If Len(Dir$(path, vbNormal)) = 0 Then Err.Raise 5, ""HybridReadUtf8File"", ""The engine did not create a result.""" & vbCrLf
+    s = s & "    byteCount = FileLen(path)" & vbCrLf
+    s = s & "    If byteCount < 1 Or byteCount > maximumBytes Then Err.Raise 5, ""HybridReadUtf8File"", ""The engine result has an invalid size.""" & vbCrLf
+    s = s & "    ReDim bytes(0 To byteCount - 1)" & vbCrLf
+    s = s & "    fileNumber = FreeFile" & vbCrLf
+    s = s & "    Open path For Binary Access Read Lock Write As #fileNumber" & vbCrLf
+    s = s & "    Get #fileNumber, , bytes" & vbCrLf
+    s = s & "    Close #fileNumber" & vbCrLf
+    s = s & "    fileNumber = 0" & vbCrLf
+    s = s & "    If byteCount >= 3 Then" & vbCrLf
+    s = s & "        If bytes(0) = &HEF And bytes(1) = &HBB And bytes(2) = &HBF Then Err.Raise 5, ""HybridReadUtf8File"", ""The engine result contains a forbidden UTF-8 byte-order mark.""" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    HybridReadUtf8File = HybridUtf8Decode(bytes, byteCount)" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridSha256Utf8(ByVal text As String) As String" & vbCrLf
+    s = s & "    Dim bytes() As Byte" & vbCrLf
+    s = s & "    Dim byteCount As Long" & vbCrLf
+    s = s & "    bytes = HybridUtf8Bytes(text, byteCount)" & vbCrLf
+    s = s & "    HybridSha256Utf8 = HybridSha256Bytes(bytes, byteCount)" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridSha256File(ByVal path As String) As String" & vbCrLf
+    s = s & "    Dim bytes() As Byte" & vbCrLf
+    s = s & "    Dim byteCount As Long" & vbCrLf
+    s = s & "    Dim fileNumber As Integer" & vbCrLf
+    s = s & "    On Error GoTo FileHashFailed" & vbCrLf
+    s = s & "    byteCount = FileLen(path)" & vbCrLf
+    s = s & "    If byteCount < 0 Then Err.Raise 5, ""HybridSha256File"", ""The engine file size is invalid.""" & vbCrLf
+    s = s & "    If byteCount = 0 Then" & vbCrLf
+    s = s & "        ReDim bytes(0 To 0)" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        ReDim bytes(0 To byteCount - 1)" & vbCrLf
+    s = s & "        fileNumber = FreeFile" & vbCrLf
+    s = s & "        Open path For Binary Access Read Lock Write As #fileNumber" & vbCrLf
+    s = s & "        Get #fileNumber, , bytes" & vbCrLf
+    s = s & "        Close #fileNumber" & vbCrLf
+    s = s & "        fileNumber = 0" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    HybridSha256File = HybridSha256Bytes(bytes, byteCount)" & vbCrLf
+    s = s & "    Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "FileHashFailed:" & vbCrLf
+    s = s & "    Dim failureNumber As Long" & vbCrLf
+    s = s & "    Dim failureSource As String" & vbCrLf
+    s = s & "    Dim failureDescription As String" & vbCrLf
+    s = s & "    failureNumber = Err.Number" & vbCrLf
+    s = s & "    failureSource = Err.Source" & vbCrLf
+    s = s & "    failureDescription = Err.Description" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    If fileNumber <> 0 Then Close #fileNumber" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "    Err.Raise failureNumber, failureSource, failureDescription" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridSha256Bytes(ByRef bytes() As Byte, ByVal byteCount As Long) As String" & vbCrLf
+    s = s & "    Dim hashHandle As LongPtr" & vbCrLf
+    s = s & "    Dim hashObject() As Byte" & vbCrLf
+    s = s & "    Dim digest() As Byte" & vbCrLf
+    s = s & "    Dim i As Long" & vbCrLf
+    s = s & "    Dim result As String" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    HybridEnsureSha256Provider" & vbCrLf
+    s = s & "    ReDim hashObject(0 To mHybridShaObjectLength - 1)" & vbCrLf
+    s = s & "    ReDim digest(0 To mHybridShaDigestLength - 1)" & vbCrLf
+    s = s & "    If BCryptCreateHash(mHybridShaAlgorithm, hashHandle, hashObject(0), mHybridShaObjectLength, 0, 0, 0) <> 0 Then GoTo HashFailed" & vbCrLf
+    s = s & "    If byteCount > 0 Then" & vbCrLf
+    s = s & "        If BCryptHashData(hashHandle, bytes(0), byteCount, 0) <> 0 Then GoTo HashFailed" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    If BCryptFinishHash(hashHandle, digest(0), mHybridShaDigestLength, 0) <> 0 Then GoTo HashFailed" & vbCrLf
+    s = s & "    For i = 0 To mHybridShaDigestLength - 1" & vbCrLf
+    s = s & "        result = result & LCase$(Right$(""0"" & Hex$(digest(i)), 2))" & vbCrLf
+    s = s & "    Next i" & vbCrLf
+    s = s & "    HybridSha256Bytes = result" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "HashExit:" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    If hashHandle <> 0 Then BCryptDestroyHash hashHandle" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "    Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "HashFailed:" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    If hashHandle <> 0 Then BCryptDestroyHash hashHandle" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "    Err.Raise 5, ""HybridSha256Bytes"", ""SHA-256 hashing failed.""" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub HybridEnsureSha256Provider()" & vbCrLf
+    s = s & "    Dim returnedLength As Long" & vbCrLf
+    s = s & "    If mHybridShaAlgorithm <> 0 Then Exit Sub" & vbCrLf
+    s = s & "    If BCryptOpenAlgorithmProvider(mHybridShaAlgorithm, StrPtr(""SHA256""), 0, 0) <> 0 Then Err.Raise 5, ""HybridEnsureSha256Provider"", ""SHA-256 is unavailable.""" & vbCrLf
+    s = s & "    If BCryptGetProperty(mHybridShaAlgorithm, StrPtr(""ObjectLength""), mHybridShaObjectLength, 4, returnedLength, 0) <> 0 Then GoTo ProviderFailed" & vbCrLf
+    s = s & "    If BCryptGetProperty(mHybridShaAlgorithm, StrPtr(""HashDigestLength""), mHybridShaDigestLength, 4, returnedLength, 0) <> 0 Then GoTo ProviderFailed" & vbCrLf
+    s = s & "    If mHybridShaObjectLength < 1 Or mHybridShaDigestLength <> 32 Then GoTo ProviderFailed" & vbCrLf
+    s = s & "    Exit Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "ProviderFailed:" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    If mHybridShaAlgorithm <> 0 Then BCryptCloseAlgorithmProvider mHybridShaAlgorithm, 0" & vbCrLf
+    s = s & "    mHybridShaAlgorithm = 0" & vbCrLf
+    s = s & "    mHybridShaObjectLength = 0" & vbCrLf
+    s = s & "    mHybridShaDigestLength = 0" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "    Err.Raise 5, ""HybridEnsureSha256Provider"", ""SHA-256 initialization failed.""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridSnapshotParagraph( _" & vbCrLf
+    s = s & "        ByVal snapshotText As String, _" & vbCrLf
+    s = s & "        ByVal relativeStart As Long, _" & vbCrLf
+    s = s & "        ByVal relativeEnd As Long, _" & vbCrLf
+    s = s & "        Optional ByRef paragraphKey As String) As String" & vbCrLf
+    s = s & "    Dim paragraphStart As Long" & vbCrLf
+    s = s & "    Dim paragraphMark As Long" & vbCrLf
+    s = s & "    paragraphStart = InStrRev(Left$(snapshotText, relativeStart), vbCr, -1, vbBinaryCompare)" & vbCrLf
+    s = s & "    If paragraphStart = 0 Then paragraphStart = 1 Else paragraphStart = paragraphStart + 1" & vbCrLf
+    s = s & "    paragraphMark = InStr(relativeEnd + 1, snapshotText, vbCr, vbBinaryCompare)" & vbCrLf
+    s = s & "    If paragraphMark = 0 Then" & vbCrLf
+    s = s & "        HybridSnapshotParagraph = Mid$(snapshotText, paragraphStart)" & vbCrLf
+    s = s & "        paragraphKey = CStr(paragraphStart) & ""|"" & CStr(Len(snapshotText))" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        HybridSnapshotParagraph = Mid$(snapshotText, paragraphStart, paragraphMark - paragraphStart + 1)" & vbCrLf
+    s = s & "        paragraphKey = CStr(paragraphStart) & ""|"" & CStr(paragraphMark)" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub HybridDeleteJobDirectory(ByVal jobDirectory As String)" & vbCrLf
+    s = s & "    Dim jobsRoot As String" & vbCrLf
+    s = s & "    Dim jobName As String" & vbCrLf
+    s = s & "    Dim fileName As Variant" & vbCrLf
+    s = s & "    jobsRoot = Environ$(""LOCALAPPDATA"") & ""\MasseysLab\CleanupSuite\Jobs\""" & vbCrLf
+    s = s & "    If LCase$(Left$(jobDirectory, Len(jobsRoot))) <> LCase$(jobsRoot) Then Exit Sub" & vbCrLf
+    s = s & "    jobName = Mid$(jobDirectory, Len(jobsRoot) + 1)" & vbCrLf
+    s = s & "    If Len(jobName) <> 36 Or InStr(jobName, ""\"") > 0 Or InStr(jobName, ""/"") > 0 Then Exit Sub" & vbCrLf
+    s = s & "    For Each fileName In Array(""request.json"", ""document.utf8.txt"", ""structure.json"", ""result.json"", ""cancel.request"", ""engine.log"", ""request.json.tmp"", ""document.utf8.txt.tmp"", ""result.json.tmp"")" & vbCrLf
+    s = s & "        If Len(Dir$(jobDirectory & ""\"" & CStr(fileName), vbNormal)) > 0 Then Kill jobDirectory & ""\"" & CStr(fileName)" & vbCrLf
+    s = s & "    Next fileName" & vbCrLf
+    s = s & "    If Len(Dir$(jobDirectory, vbDirectory)) > 0 Then RmDir jobDirectory" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub HybridRequireExactKeys(ByVal value As Object, ByVal keyList As String)" & vbCrLf
+    s = s & "    Dim allowed As Object" & vbCrLf
+    s = s & "    Dim key As Variant" & vbCrLf
+    s = s & "    Dim expected As Variant" & vbCrLf
+    s = s & "    Set allowed = CreateObject(""Scripting.Dictionary"")" & vbCrLf
+    s = s & "    allowed.CompareMode = vbBinaryCompare" & vbCrLf
+    s = s & "    For Each expected In Split(keyList, ""|"")" & vbCrLf
+    s = s & "        allowed.Add CStr(expected), True" & vbCrLf
+    s = s & "    Next expected" & vbCrLf
+    s = s & "    If value.Count <> allowed.Count Then Err.Raise 5, ""HybridRequireExactKeys"", ""A protocol object contains missing or unknown fields.""" & vbCrLf
+    s = s & "    For Each key In value.Keys" & vbCrLf
+    s = s & "        If Not allowed.Exists(CStr(key)) Then Err.Raise 5, ""HybridRequireExactKeys"", ""A protocol object contains an unknown field.""" & vbCrLf
+    s = s & "    Next key" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridRequireObject(ByVal value As Object, ByVal key As String) As Object" & vbCrLf
+    s = s & "    If Not value.Exists(key) Or Not IsObject(value(key)) Or TypeName(value(key)) <> ""Dictionary"" Then Err.Raise 5, ""HybridRequireObject"", ""A required protocol object is missing.""" & vbCrLf
+    s = s & "    Set HybridRequireObject = value(key)" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridRequireCollection(ByVal value As Object, ByVal key As String) As Collection" & vbCrLf
+    s = s & "    If Not value.Exists(key) Or Not IsObject(value(key)) Or TypeName(value(key)) <> ""Collection"" Then Err.Raise 5, ""HybridRequireCollection"", ""A required protocol array is missing.""" & vbCrLf
+    s = s & "    Set HybridRequireCollection = value(key)" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridRequireString(ByVal value As Object, ByVal key As String, Optional ByVal expected As String = vbNullString) As String" & vbCrLf
+    s = s & "    If Not value.Exists(key) Or VarType(value(key)) <> vbString Then Err.Raise 5, ""HybridRequireString"", ""A required protocol string is missing.""" & vbCrLf
+    s = s & "    HybridRequireString = CStr(value(key))" & vbCrLf
+    s = s & "    If Len(expected) > 0 And HybridRequireString <> expected Then Err.Raise 5, ""HybridRequireString"", ""A protocol string does not match the expected value.""" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridRequireLong(ByVal value As Object, ByVal key As String) As Long" & vbCrLf
+    s = s & "    If Not value.Exists(key) Or (VarType(value(key)) <> vbInteger And VarType(value(key)) <> vbLong And VarType(value(key)) <> vbDouble) Then Err.Raise 5, ""HybridRequireLong"", ""A required protocol integer is missing.""" & vbCrLf
+    s = s & "    If CDbl(value(key)) <> Fix(CDbl(value(key))) Then Err.Raise 5, ""HybridRequireLong"", ""A protocol integer contains a fraction.""" & vbCrLf
+    s = s & "    HybridRequireLong = CLng(value(key))" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridRequireBoolean(ByVal value As Object, ByVal key As String) As Boolean" & vbCrLf
+    s = s & "    If Not value.Exists(key) Or VarType(value(key)) <> vbBoolean Then Err.Raise 5, ""HybridRequireBoolean"", ""A required protocol Boolean is missing.""" & vbCrLf
+    s = s & "    HybridRequireBoolean = CBool(value(key))" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub HybridRequireSha256(ByVal value As Object, ByVal key As String)" & vbCrLf
+    s = s & "    If Not HybridIsLowercaseSha256(HybridRequireString(value, key)) Then Err.Raise 5, ""HybridRequireSha256"", ""A protocol SHA-256 value is invalid.""" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridIsLowercaseSha256(ByVal value As String) As Boolean" & vbCrLf
+    s = s & "    Dim i As Long" & vbCrLf
+    s = s & "    Dim ch As String" & vbCrLf
+    s = s & "    If Len(value) <> 64 Then Exit Function" & vbCrLf
+    s = s & "    For i = 1 To 64" & vbCrLf
+    s = s & "        ch = Mid$(value, i, 1)" & vbCrLf
+    s = s & "        If InStr(1, ""0123456789abcdef"", ch, vbBinaryCompare) = 0 Then Exit Function" & vbCrLf
+    s = s & "    Next i" & vbCrLf
+    s = s & "    HybridIsLowercaseSha256 = True" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & ""
+    modHybridBridge_Code = s
 End Function
 
 ' ---------------------------
@@ -10881,7 +12552,14 @@ End Function
 Private Function frmUnicodeCleanup_Code() As String
     Dim s As String
     s = s & "Option Explicit" & vbCrLf
+    s = s & "Private mHybridAnalysis As Object" & vbCrLf
+    s = s & "Private mHybridDocument As Document" & vbCrLf
+    s = s & "Private mHybridScopeStart As Long" & vbCrLf
+    s = s & "Private mHybridScopeEnd As Long" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)" & vbCrLf
+    s = s & "    Set mHybridAnalysis = Nothing" & vbCrLf
+    s = s & "    Set mHybridDocument = Nothing" & vbCrLf
     s = s & "    ReturnToMainAfterToolClose Me, Cancel, CloseMode" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "' --------------------------------------------------------------" & vbCrLf
@@ -10981,6 +12659,8 @@ Private Function frmUnicodeCleanup_Code() As String
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Private Sub cmdReset_Click()" & vbCrLf
+    s = s & "    Set mHybridAnalysis = Nothing" & vbCrLf
+    s = s & "    Set mHybridDocument = Nothing" & vbCrLf
     s = s & "    UserForm_Initialize" & vbCrLf
     s = s & "    chkPreviewOnly.Value = False" & vbCrLf
     s = s & "End Sub" & vbCrLf
@@ -11048,16 +12728,43 @@ Private Function frmUnicodeCleanup_Code() As String
     s = s & "        includeSoftHyphen = optAll.Value Or (optCustom.Value And chkSoftHyphen.Value)" & vbCrLf
     s = s & "        includeNBHyphen = optAll.Value Or (optCustom.Value And chkNBHyphen.Value)" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "        If includeNBSP Then previewNBSP = CountPreviewFindMatches(targetRange, UnicodeChar(&HA0))" & vbCrLf
-    s = s & "        If includeZWSP Then previewZWSP = CountPreviewFindMatches(targetRange, UnicodeChar(&H200B))" & vbCrLf
-    s = s & "        If includeZWNJ Then previewZWNJ = CountPreviewFindMatches(targetRange, UnicodeChar(&H200C))" & vbCrLf
-    s = s & "        If includeZWJ Then previewZWJ = CountPreviewFindMatches(targetRange, UnicodeChar(&H200D))" & vbCrLf
-    s = s & "        If includeBOM Then previewBOM = CountPreviewFindMatches(targetRange, UnicodeChar(&HFEFF))" & vbCrLf
-    s = s & "        If includeSoftHyphen Then previewSoftHyphen = CountPreviewFindMatches(targetRange, UnicodeChar(&HAD))" & vbCrLf
-    s = s & "        If includeNBHyphen Then previewNBHyphen = CountPreviewFindMatches(targetRange, UnicodeChar(&H2011))" & vbCrLf
-    s = s & "        For idx = 1 To findList.Count" & vbCrLf
-    s = s & "            HighlightUnicodeMatches targetRange, CStr(findList(idx)), UnicodePreviewNeedsAdjacentFallback(CStr(findList(idx)))" & vbCrLf
-    s = s & "        Next idx" & vbCrLf
+    s = s & "        Dim hybridFailure As String" & vbCrLf
+    s = s & "        Dim hybridSucceeded As Boolean" & vbCrLf
+    s = s & "        Set mHybridAnalysis = Nothing" & vbCrLf
+    s = s & "        Set mHybridDocument = Nothing" & vbCrLf
+    s = s & "        hybridSucceeded = HybridAnalyzeInvisibleUnicode( _" & vbCrLf
+    s = s & "            targetRange, (optScopeSelection.Value And optScopeSelection.Enabled), _" & vbCrLf
+    s = s & "            includeNBSP, includeZWSP, includeZWNJ, includeZWJ, _" & vbCrLf
+    s = s & "            includeBOM, includeSoftHyphen, includeNBHyphen, _" & vbCrLf
+    s = s & "            mHybridAnalysis, hybridFailure)" & vbCrLf
+    s = s & "        If Not hybridSucceeded Then" & vbCrLf
+    s = s & "            MsgBox hybridFailure, vbExclamation, ""Unicode Analysis Unavailable""" & vbCrLf
+    s = s & "            Exit Sub" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Set mHybridDocument = targetRange.Document" & vbCrLf
+    s = s & "        mHybridScopeStart = targetRange.Start" & vbCrLf
+    s = s & "        mHybridScopeEnd = targetRange.End" & vbCrLf
+    s = s & "        Dim hybridCandidates As Collection" & vbCrLf
+    s = s & "        Dim hybridCandidate As Object" & vbCrLf
+    s = s & "        Dim hybridReason As String" & vbCrLf
+    s = s & "        Dim hybridRange As Range" & vbCrLf
+    s = s & "        Set hybridCandidates = mHybridAnalysis(""candidates"")" & vbCrLf
+    s = s & "        For Each hybridCandidate In hybridCandidates" & vbCrLf
+    s = s & "            hybridReason = CStr(hybridCandidate(""reasonCode""))" & vbCrLf
+    s = s & "            Select Case hybridReason" & vbCrLf
+    s = s & "                Case ""unicode.non-breaking-space"": previewNBSP = previewNBSP + 1" & vbCrLf
+    s = s & "                Case ""unicode.zero-width-space"": previewZWSP = previewZWSP + 1" & vbCrLf
+    s = s & "                Case ""unicode.zero-width-nonjoiner"": previewZWNJ = previewZWNJ + 1" & vbCrLf
+    s = s & "                Case ""unicode.zero-width-joiner"": previewZWJ = previewZWJ + 1" & vbCrLf
+    s = s & "                Case ""unicode.byte-order-mark"": previewBOM = previewBOM + 1" & vbCrLf
+    s = s & "                Case ""unicode.soft-hyphen"": previewSoftHyphen = previewSoftHyphen + 1" & vbCrLf
+    s = s & "                Case ""unicode.non-breaking-hyphen"": previewNBHyphen = previewNBHyphen + 1" & vbCrLf
+    s = s & "            End Select" & vbCrLf
+    s = s & "            Set hybridRange = HybridCandidateAbsoluteRange(mHybridAnalysis, hybridCandidate, mHybridDocument)" & vbCrLf
+    s = s & "            ApplyPreviewHighlight hybridRange" & vbCrLf
+    s = s & "            If UnicodeHybridNeedsAdjacentFallback(hybridReason) Then HighlightUnicodeAdjacentCharacter hybridRange, targetRange" & vbCrLf
+    s = s & "        Next hybridCandidate" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "        Set previewRows = NewPreviewSummaryRows()" & vbCrLf
     s = s & "        AddPreviewSummaryRow previewRows, ""Non-breaking spaces"", previewNBSP, False, (Not includeNBSP)" & vbCrLf
@@ -11070,18 +12777,41 @@ Private Function frmUnicodeCleanup_Code() As String
     s = s & "        ShowPreviewActionsSummary Me, ""Unicode Cleaner"", previewRows" & vbCrLf
     s = s & "        Exit Sub" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "    If mHybridAnalysis Is Nothing Or mHybridDocument Is Nothing Then" & vbCrLf
+    s = s & "        MsgBox ""Run Preview before applying Unicode cleanup."", vbInformation, ""Preview Required""" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    If Not ActiveDocument Is mHybridDocument Then" & vbCrLf
+    s = s & "        MsgBox ""The active document is no longer the document that was previewed. Run Preview again."", vbExclamation, ""Preview Is Stale""" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    Set targetRange = mHybridDocument.Range(mHybridScopeStart, mHybridScopeEnd)" & vbCrLf
+    s = s & "    Dim applyFailure As String" & vbCrLf
+    s = s & "    If Not HybridRevalidateInvisibleUnicode(mHybridAnalysis, targetRange, applyFailure) Then" & vbCrLf
+    s = s & "        MsgBox applyFailure & vbCrLf & vbCrLf & ""No changes were applied. Run Preview again."", vbExclamation, ""Preview Is Stale""" & vbCrLf
+    s = s & "        Set mHybridAnalysis = Nothing" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
+    s = s & "    End If" & vbCrLf
     s = s & "    MarkCleanupStart ""Unicode Cleaner""" & vbCrLf
     s = s & "    Dim undoRec As UndoRecord" & vbCrLf
     s = s & "    Set undoRec = Application.UndoRecord" & vbCrLf
     s = s & "    undoRec.StartCustomRecord ""Cleanup Suite - Unicode Cleaner""" & vbCrLf
     s = s & "    On Error GoTo RunErr" & vbCrLf
-    s = s & "    For idx = 1 To findList.Count" & vbCrLf
-    s = s & "        counts(idx) = ReplaceUnicodeMatches(targetRange, CStr(findList(idx)), CStr(replaceList(idx)))" & vbCrLf
+    s = s & "    Dim applyCandidates As Collection" & vbCrLf
+    s = s & "    Dim applyCandidate As Object" & vbCrLf
+    s = s & "    Dim applyRange As Range" & vbCrLf
+    s = s & "    Set applyCandidates = mHybridAnalysis(""candidates"")" & vbCrLf
+    s = s & "    For idx = applyCandidates.Count To 1 Step -1" & vbCrLf
+    s = s & "        Set applyCandidate = applyCandidates(idx)" & vbCrLf
+    s = s & "        Set applyRange = HybridCandidateAbsoluteRange(mHybridAnalysis, applyCandidate, mHybridDocument)" & vbCrLf
+    s = s & "        applyRange.Text = HybridCandidateReplacement(applyCandidate)" & vbCrLf
     s = s & "    Next idx" & vbCrLf
     s = s & "    RemoveAllHighlighting targetRange" & vbCrLf
     s = s & "    undoRec.EndCustomRecord" & vbCrLf
     s = s & "    MarkCleanupEnd" & vbCrLf
     s = s & "    MarkCleanupToolApplied" & vbCrLf
+    s = s & "    Set mHybridAnalysis = Nothing" & vbCrLf
+    s = s & "    Set mHybridDocument = Nothing" & vbCrLf
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "RunErr:" & vbCrLf
@@ -11123,6 +12853,15 @@ Private Function frmUnicodeCleanup_Code() As String
     s = s & "        UnicodePreviewNeedsAdjacentFallback = True" & vbCrLf
     s = s & "    ElseIf Not UnicodeFormattingMarksVisible() Then" & vbCrLf
     s = s & "        UnicodePreviewNeedsAdjacentFallback = (findText = UnicodeChar(&H200B) Or findText = UnicodeChar(&HFEFF))" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "Private Function UnicodeHybridNeedsAdjacentFallback(ByVal reasonCode As String) As Boolean" & vbCrLf
+    s = s & "    If reasonCode = ""unicode.zero-width-nonjoiner"" Then" & vbCrLf
+    s = s & "        UnicodeHybridNeedsAdjacentFallback = True" & vbCrLf
+    s = s & "    ElseIf Not UnicodeFormattingMarksVisible() Then" & vbCrLf
+    s = s & "        UnicodeHybridNeedsAdjacentFallback = _" & vbCrLf
+    s = s & "            (reasonCode = ""unicode.zero-width-space"" Or _" & vbCrLf
+    s = s & "             reasonCode = ""unicode.byte-order-mark"")" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "End Function" & vbCrLf
     s = s & "Private Function UnicodeFormattingMarksVisible() As Boolean" & vbCrLf

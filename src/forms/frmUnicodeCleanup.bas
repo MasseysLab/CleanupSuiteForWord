@@ -1,5 +1,12 @@
 Option Explicit
+Private mHybridAnalysis As Object
+Private mHybridDocument As Document
+Private mHybridScopeStart As Long
+Private mHybridScopeEnd As Long
+
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
+    Set mHybridAnalysis = Nothing
+    Set mHybridDocument = Nothing
     ReturnToMainAfterToolClose Me, Cancel, CloseMode
 End Sub
 ' --------------------------------------------------------------
@@ -99,6 +106,8 @@ Public Sub PreviewFromPanel()
     chkPreviewOnly.Value = False
 End Sub
 Private Sub cmdReset_Click()
+    Set mHybridAnalysis = Nothing
+    Set mHybridDocument = Nothing
     UserForm_Initialize
     chkPreviewOnly.Value = False
 End Sub
@@ -166,16 +175,43 @@ Private Sub cmdRun_Click()
         includeSoftHyphen = optAll.Value Or (optCustom.Value And chkSoftHyphen.Value)
         includeNBHyphen = optAll.Value Or (optCustom.Value And chkNBHyphen.Value)
 
-        If includeNBSP Then previewNBSP = CountPreviewFindMatches(targetRange, UnicodeChar(&HA0))
-        If includeZWSP Then previewZWSP = CountPreviewFindMatches(targetRange, UnicodeChar(&H200B))
-        If includeZWNJ Then previewZWNJ = CountPreviewFindMatches(targetRange, UnicodeChar(&H200C))
-        If includeZWJ Then previewZWJ = CountPreviewFindMatches(targetRange, UnicodeChar(&H200D))
-        If includeBOM Then previewBOM = CountPreviewFindMatches(targetRange, UnicodeChar(&HFEFF))
-        If includeSoftHyphen Then previewSoftHyphen = CountPreviewFindMatches(targetRange, UnicodeChar(&HAD))
-        If includeNBHyphen Then previewNBHyphen = CountPreviewFindMatches(targetRange, UnicodeChar(&H2011))
-        For idx = 1 To findList.Count
-            HighlightUnicodeMatches targetRange, CStr(findList(idx)), UnicodePreviewNeedsAdjacentFallback(CStr(findList(idx)))
-        Next idx
+        Dim hybridFailure As String
+        Dim hybridSucceeded As Boolean
+        Set mHybridAnalysis = Nothing
+        Set mHybridDocument = Nothing
+        hybridSucceeded = HybridAnalyzeInvisibleUnicode( _
+            targetRange, (optScopeSelection.Value And optScopeSelection.Enabled), _
+            includeNBSP, includeZWSP, includeZWNJ, includeZWJ, _
+            includeBOM, includeSoftHyphen, includeNBHyphen, _
+            mHybridAnalysis, hybridFailure)
+        If Not hybridSucceeded Then
+            MsgBox hybridFailure, vbExclamation, "Unicode Analysis Unavailable"
+            Exit Sub
+        End If
+
+        Set mHybridDocument = targetRange.Document
+        mHybridScopeStart = targetRange.Start
+        mHybridScopeEnd = targetRange.End
+        Dim hybridCandidates As Collection
+        Dim hybridCandidate As Object
+        Dim hybridReason As String
+        Dim hybridRange As Range
+        Set hybridCandidates = mHybridAnalysis("candidates")
+        For Each hybridCandidate In hybridCandidates
+            hybridReason = CStr(hybridCandidate("reasonCode"))
+            Select Case hybridReason
+                Case "unicode.non-breaking-space": previewNBSP = previewNBSP + 1
+                Case "unicode.zero-width-space": previewZWSP = previewZWSP + 1
+                Case "unicode.zero-width-nonjoiner": previewZWNJ = previewZWNJ + 1
+                Case "unicode.zero-width-joiner": previewZWJ = previewZWJ + 1
+                Case "unicode.byte-order-mark": previewBOM = previewBOM + 1
+                Case "unicode.soft-hyphen": previewSoftHyphen = previewSoftHyphen + 1
+                Case "unicode.non-breaking-hyphen": previewNBHyphen = previewNBHyphen + 1
+            End Select
+            Set hybridRange = HybridCandidateAbsoluteRange(mHybridAnalysis, hybridCandidate, mHybridDocument)
+            ApplyPreviewHighlight hybridRange
+            If UnicodeHybridNeedsAdjacentFallback(hybridReason) Then HighlightUnicodeAdjacentCharacter hybridRange, targetRange
+        Next hybridCandidate
 
         Set previewRows = NewPreviewSummaryRows()
         AddPreviewSummaryRow previewRows, "Non-breaking spaces", previewNBSP, False, (Not includeNBSP)
@@ -188,18 +224,41 @@ Private Sub cmdRun_Click()
         ShowPreviewActionsSummary Me, "Unicode Cleaner", previewRows
         Exit Sub
     End If
+    If mHybridAnalysis Is Nothing Or mHybridDocument Is Nothing Then
+        MsgBox "Run Preview before applying Unicode cleanup.", vbInformation, "Preview Required"
+        Exit Sub
+    End If
+    If Not ActiveDocument Is mHybridDocument Then
+        MsgBox "The active document is no longer the document that was previewed. Run Preview again.", vbExclamation, "Preview Is Stale"
+        Exit Sub
+    End If
+    Set targetRange = mHybridDocument.Range(mHybridScopeStart, mHybridScopeEnd)
+    Dim applyFailure As String
+    If Not HybridRevalidateInvisibleUnicode(mHybridAnalysis, targetRange, applyFailure) Then
+        MsgBox applyFailure & vbCrLf & vbCrLf & "No changes were applied. Run Preview again.", vbExclamation, "Preview Is Stale"
+        Set mHybridAnalysis = Nothing
+        Exit Sub
+    End If
     MarkCleanupStart "Unicode Cleaner"
     Dim undoRec As UndoRecord
     Set undoRec = Application.UndoRecord
     undoRec.StartCustomRecord "Cleanup Suite - Unicode Cleaner"
     On Error GoTo RunErr
-    For idx = 1 To findList.Count
-        counts(idx) = ReplaceUnicodeMatches(targetRange, CStr(findList(idx)), CStr(replaceList(idx)))
+    Dim applyCandidates As Collection
+    Dim applyCandidate As Object
+    Dim applyRange As Range
+    Set applyCandidates = mHybridAnalysis("candidates")
+    For idx = applyCandidates.Count To 1 Step -1
+        Set applyCandidate = applyCandidates(idx)
+        Set applyRange = HybridCandidateAbsoluteRange(mHybridAnalysis, applyCandidate, mHybridDocument)
+        applyRange.Text = HybridCandidateReplacement(applyCandidate)
     Next idx
     RemoveAllHighlighting targetRange
     undoRec.EndCustomRecord
     MarkCleanupEnd
     MarkCleanupToolApplied
+    Set mHybridAnalysis = Nothing
+    Set mHybridDocument = Nothing
     Unload Me
     Exit Sub
 RunErr:
@@ -241,6 +300,15 @@ Private Function UnicodePreviewNeedsAdjacentFallback(ByVal findText As String) A
         UnicodePreviewNeedsAdjacentFallback = True
     ElseIf Not UnicodeFormattingMarksVisible() Then
         UnicodePreviewNeedsAdjacentFallback = (findText = UnicodeChar(&H200B) Or findText = UnicodeChar(&HFEFF))
+    End If
+End Function
+Private Function UnicodeHybridNeedsAdjacentFallback(ByVal reasonCode As String) As Boolean
+    If reasonCode = "unicode.zero-width-nonjoiner" Then
+        UnicodeHybridNeedsAdjacentFallback = True
+    ElseIf Not UnicodeFormattingMarksVisible() Then
+        UnicodeHybridNeedsAdjacentFallback = _
+            (reasonCode = "unicode.zero-width-space" Or _
+             reasonCode = "unicode.byte-order-mark")
     End If
 End Function
 Private Function UnicodeFormattingMarksVisible() As Boolean

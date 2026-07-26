@@ -67,6 +67,8 @@ Public Sub InstallCleanupSuite()
     ' 1) Create standard modules (code-only)
     CreateOrReplaceModule vbProj, "modCleanupLauncher", modCleanupLauncher_Code, installLog
     CreateOrReplaceModule vbProj, "modCleanupHelpers", modCleanupHelpers_Code, installLog
+    CreateOrReplaceModule vbProj, "modHybridJson", modHybridJson_Code, installLog
+    CreateOrReplaceModule vbProj, "modHybridBridge", modHybridBridge_Code, installLog
     CreateOrReplaceModule vbProj, "modMetaDataSuite", modMetaDataSuite_Code, installLog
     CreateOrReplaceModule vbProj, "modUpdateChecker", modUpdateChecker_Code, installLog
 
@@ -316,7 +318,8 @@ Private Function IsSuiteComponent(compName As String) As Boolean
         "frmHyperlinkRemover", "frmSoftReturnConverter", "frmMetaDataSuite", "frmSafeMetadataEditor", "frmFinalReview", _
         "frmStyleCleanup", "frmFootnoteRemover", "frmHeaderFooterStandardizer", _
         "frmObjectRemover", "frmPreviewActions", "frmCleanupSuiteLauncher", "modCleanupLauncher", _
-        "modCleanupHelpers", "modMetaDataSuite", "modUpdateChecker")
+        "modCleanupHelpers", "modHybridJson", "modHybridBridge", _
+        "modMetaDataSuite", "modUpdateChecker")
 
     Dim i As Long
     For i = LBound(names) To UBound(names)

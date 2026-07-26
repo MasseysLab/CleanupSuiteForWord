@@ -993,6 +993,94 @@ depends on a matched engine and VBA bridge.
 Estimated combined difficulty: **48–62%**.
 Estimated professional desirability: **96–99%**.
 
+### Task 6 checkpoint: the first real hybrid pilot
+
+Task 6 crossed the source-code boundary deliberately left untouched by Task 5.
+Invisible Unicode Cleaner is now the first real tool whose analysis can be
+performed by the matched C# engine while VBA continues to own Word, Preview,
+navigation, Apply, and Undo.
+
+Engine 0.2.0 analyzes only the explicitly selected invisible Unicode categories.
+It returns deterministic, document-order, one-UTF-16-unit replacement candidates
+for nonbreaking spaces, zero-width spaces, zero-width nonjoiners, zero-width
+joiners, byte-order marks, soft hyphens, and nonbreaking hyphens. The engine never
+opens Word or mutates the document.
+
+The VBA bridge is intentionally strict. It:
+
+- creates and hardens a per-job owner-only directory through the trusted engine;
+- writes exact UTF-8 snapshots and requests without a shell;
+- launches the engine directly with `CreateProcessW`;
+- validates engine identity, version, capability allowlists, protocol fields,
+  response shape, candidate ranges, fingerprints, replacements, and summaries;
+- rejects duplicate or unknown JSON fields and invalid Unicode;
+- revalidates the complete snapshot, scope, each exact candidate, surrounding
+  context, and paragraph immediately before Apply;
+- aborts before the Undo record and before the first mutation if anything is
+  stale;
+- applies accepted replacements from the end of the document toward the start in
+  one VBA-owned Word Undo record.
+
+Preview uses the existing minimal-highlight infrastructure. Visible characters
+receive exact one-character highlighting. Characters that Word cannot visibly
+shade use the nearest safe one-character cue rather than a whole paragraph or
+page. The legacy full-scan Unicode Preview and Apply paths are no longer active.
+
+Development trust is explicit and intentionally inconvenient to choose
+accidentally: it requires both an absolute engine path and its exact SHA-256 in
+process-local development environment variables, followed by the same strict
+capability handshake. Ordinary product operation has no unsigned or
+version-mismatched fallback. Official trust remains dependent on the matched
+installer manifest, hash verification, and Authenticode.
+
+The final development package proof is a self-contained `win-x64` executable of
+35,108,802 bytes with SHA-256
+`BDEB2CD8578B31946DF0731B80FF3EC8CC2336C807726E5112E5A7C64E36DA44`.
+CleanupSuite may use .NET internally, but requiring users to install, update,
+select, or maintain .NET separately is a rejected product design. The engine and
+its runtime must be installed and serviced as one CleanupSuite component.
+
+Automated evidence at this checkpoint:
+
+- 15 isolated engine contract and analyzer tests passed;
+- 249 repository tests passed with 3 expected skips and 1,105 passing subtests;
+- all 31 VBA builders passed, producing 19,717 lines and 1,361,767 bytes;
+- strict C# formatting verification passed for both engine projects;
+- disposable Word automation passed primitive bridge, seven-candidate analysis,
+  stale-scope rejection, reverse-order Apply, exact one-step Undo restoration, and
+  a 200,000-character/400-candidate performance probe;
+- the large bridge probe completed analysis in approximately 21.75 seconds and
+  then passed full pre-Apply revalidation;
+- a local Microsoft Defender scan of the current self-contained proof reported no
+  threats.
+
+The installed Startup template, final VBA-only release template, stable installer,
+and stable update manifest remain unchanged by the hybrid pilot. The source is not
+yet an official distributable hybrid build.
+
+The final human-visible Word gate passed on July 26, 2026. A disposable macro
+document containing one example of every supported category opened the real
+Invisible Unicode Cleaner form through the CleanupSuite launcher. Preview reported
+exactly one candidate in each of the seven rows. Word showed narrow
+one-character—or, where the character itself was not safely visible,
+nearest-one-character—green cues at the seven actual boundaries. It did not shade
+whole paragraphs, pages, or unrelated text. The probe was closed without saving,
+and no Trust Center setting, installed template, release artifact, or user
+document was changed.
+
+That visual result completes Task 6: the first hybrid pilot now has source,
+contract, performance, Apply/Undo, stale-state, security, packaging, antivirus,
+and human-visible Preview evidence. Distribution remains intentionally deferred
+until the state-aware installer can place and verify the matched signed engine.
+
+The release-integrity regression was updated to reflect the intentional two-track
+state: the installer manifest remains pinned to stable `0.9.2-alpha`, while the
+repository's manual-install `CleanupSuite.dotm` is the separately hash-documented
+`0.9.3-beta-vba-final` checkpoint.
+
+Estimated combined difficulty: **55–68%**.
+Estimated professional desirability: **97–99%**.
+
 ## Primary Historical Sources
 
 - [Current handoff](../WHERE_WE_LEFT_OFF.md)

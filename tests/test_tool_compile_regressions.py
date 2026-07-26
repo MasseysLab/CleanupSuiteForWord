@@ -191,12 +191,25 @@ class ToolCompileRegressionTests(unittest.TestCase):
         self.assertIn("ApplyPreviewHighlight markerRange, markerColor", helpers)
         self.assertNotIn("RestorePreviewSpacingBoundaries", helpers)
 
-    def test_unicode_tool_uses_direct_text_replacement_for_matches(self):
+    def test_unicode_tool_applies_revalidated_engine_candidates_bottom_up(self):
         source = read("src/forms/frmUnicodeCleanup.bas")
 
-        self.assertIn("counts(idx) = ReplaceUnicodeMatches(targetRange, CStr(findList(idx)), CStr(replaceList(idx)))", source)
-        self.assertIn("Private Function ReplaceUnicodeMatches(", source)
-        self.assertIn("matchRange.Text = replacementText", source)
+        self.assertIn(
+            "HybridRevalidateInvisibleUnicode(mHybridAnalysis, targetRange, applyFailure)",
+            source,
+        )
+        self.assertIn(
+            "For idx = applyCandidates.Count To 1 Step -1",
+            source,
+        )
+        self.assertIn(
+            "Set applyRange = HybridCandidateAbsoluteRange",
+            source,
+        )
+        self.assertIn(
+            "applyRange.Text = HybridCandidateReplacement(applyCandidate)",
+            source,
+        )
         self.assertNotIn("While .Execute(Replace:=wdReplaceOne)", source)
 
     def test_unicode_preview_summary_treats_invisible_characters_as_highlightable(self):

@@ -15,6 +15,10 @@ SEP  DQoNCg0KJyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0NCicgTWFudWFsIGNoZWNrbGlzdCB
 BUILDER  installer/checklist.bas  ManualChecklistText
 SEP  DQonIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQ0KJyBIZWxwZXIgY29kZSBtb2R1bGUgKHNoYXJlZCBoZWxwZXJzIHVzZWQgYnkgaW5qZWN0ZWQgZm9ybXMpDQonIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQ==
 BUILDER  modules/modCleanupHelpers.bas  modCleanupHelpers_Code
+SEP
+BUILDER  modules/modHybridJson.bas  modHybridJson_Code
+SEP
+BUILDER  modules/modHybridBridge.bas  modHybridBridge_Code
 SEP  DQonIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQ0KJyBMYXVuY2hlciBtb2R1bGUgY29kZQ0KJyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0=
 BUILDER  modules/modCleanupLauncher.bas  modCleanupLauncher_Code
 SEP

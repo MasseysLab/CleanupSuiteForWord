@@ -30,6 +30,18 @@ public static class Capabilities
                     {
                         ContractConstants.FixtureAnalysisMode
                     }
+                },
+                new
+                {
+                    id = ContractConstants.UnicodeToolId,
+                    definitionVersions = new[]
+                    {
+                        ContractConstants.UnicodeToolDefinitionVersion
+                    },
+                    analysisModes = new[]
+                    {
+                        ContractConstants.UnicodeAnalysisMode
+                    }
                 }
             },
             supportedOperations = new[]

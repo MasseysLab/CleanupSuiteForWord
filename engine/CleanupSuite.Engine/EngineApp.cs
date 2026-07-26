@@ -29,9 +29,47 @@ public static class EngineApp
             return Analyze(args[1]);
         }
 
+        if (args.Length == 2 && args[0] == "--prepare-job")
+        {
+            return PrepareJob(args[1]);
+        }
+
         Console.Error.WriteLine(
-            "Usage: CleanupSuite.Engine --capabilities | --version | --analyze <job-directory>");
+            "Usage: CleanupSuite.Engine --capabilities | --version | --prepare-job <job-directory> | --analyze <job-directory>");
         return ContractConstants.ExitInvalidRequest;
+    }
+
+    private static int PrepareJob(string suppliedJobDirectory)
+    {
+        try
+        {
+            string jobDirectory =
+                JobPathPolicy.ValidateUnhardenedJobDirectory(
+                    suppliedJobDirectory);
+            if (Directory.EnumerateFileSystemEntries(jobDirectory).Any())
+            {
+                throw new EngineContractException(
+                    "security-error",
+                    "security-policy-violation",
+                    "A job directory must be empty before it is prepared.",
+                    ContractConstants.ExitSecurityError);
+            }
+
+            JobAccessPolicy.HardenForCurrentUser(jobDirectory);
+            JobAccessPolicy.ValidateOwnerOnly(jobDirectory);
+            return ContractConstants.ExitCompleted;
+        }
+        catch (EngineContractException exception)
+        {
+            Console.Error.WriteLine(exception.SafeMessage);
+            return exception.ExitCode;
+        }
+        catch
+        {
+            Console.Error.WriteLine(
+                "The analysis engine could not prepare the job directory.");
+            return ContractConstants.ExitInternalError;
+        }
     }
 
     private static int Analyze(string suppliedJobDirectory)
@@ -48,7 +86,7 @@ public static class EngineApp
             jobId = Path.GetFileName(jobDirectory);
             ValidatedJob job = RequestValidator.Load(jobDirectory);
             request = job.Request;
-            AnalysisResponse response = ContractFixtureAnalyzer.Analyze(job);
+            AnalysisResponse response = AnalyzeJob(job);
             WriteResult(jobDirectory, response);
             SanitizedLog.TryAppend(
                 jobDirectory,
@@ -98,6 +136,20 @@ public static class EngineApp
             return exception.ExitCode;
         }
     }
+
+    private static AnalysisResponse AnalyzeJob(ValidatedJob job) =>
+        job.Request.Tool.Id switch
+        {
+            ContractConstants.FixtureToolId =>
+                ContractFixtureAnalyzer.Analyze(job),
+            ContractConstants.UnicodeToolId =>
+                InvisibleUnicodeAnalyzer.Analyze(job),
+            _ => throw new EngineContractException(
+                "incompatible",
+                "unsupported-tool",
+                "The requested tool is not supported.",
+                ContractConstants.ExitIncompatible)
+        };
 
     private static void WriteResult(
         string jobDirectory,

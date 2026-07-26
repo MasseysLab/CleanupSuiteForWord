@@ -37,7 +37,7 @@ class HybridEngineSourceContractTests(unittest.TestCase):
             with self.subTest(token=token):
                 self.assertNotIn(token, source)
 
-    def test_engine_exposes_only_contract_fixture_analyzer(self):
+    def test_engine_exposes_only_fixture_and_unicode_pilot_analyzers(self):
         constants = (
             ENGINE_SOURCE / "ContractConstants.cs"
         ).read_text(encoding="utf-8")
@@ -53,8 +53,13 @@ class HybridEngineSourceContractTests(unittest.TestCase):
             constants,
         )
         self.assertIn("ContractConstants.FixtureToolId", capabilities)
+        self.assertIn(
+            'UnicodeToolId = "invisible-unicode-cleaner"',
+            constants,
+        )
+        self.assertIn("ContractConstants.UnicodeToolId", capabilities)
         self.assertNotIn("punctuation-normalizer", capabilities)
-        self.assertNotIn("unicode-cleaner", capabilities)
+        self.assertNotIn("duplicate-paragraph", capabilities)
 
     def test_engine_security_claims_match_protocol(self):
         protocol = json.loads(

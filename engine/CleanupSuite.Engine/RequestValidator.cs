@@ -14,6 +14,7 @@ public static class RequestValidator
     private static readonly HashSet<string> SupportedCapabilities =
     [
         "analysis.contract-fixture",
+        "analysis.invisible-unicode",
         "fingerprint.sha256-utf8-exact"
     ];
 
@@ -72,7 +73,7 @@ public static class RequestValidator
         }
 
         ValidateSnapshot(request, snapshotBytes, snapshotText);
-        ValidateFixtureOptions(request.Options);
+        ValidateToolOptions(request);
         ValidateOptionalStructure(jobDirectory, request.Snapshot);
 
         return new ValidatedJob(
@@ -121,26 +122,7 @@ public static class RequestValidator
             "invalid-request",
             "The client process ID is invalid.",
             ContractConstants.ExitInvalidRequest);
-        Require(
-            request.Tool.Id == ContractConstants.FixtureToolId,
-            "incompatible",
-            "unsupported-tool",
-            "The requested tool is not supported.",
-            ContractConstants.ExitIncompatible);
-        Require(
-            request.Tool.DefinitionVersion
-                == ContractConstants.FixtureToolDefinitionVersion,
-            "incompatible",
-            "unsupported-tool-version",
-            "The requested tool-definition version is not supported.",
-            ContractConstants.ExitIncompatible);
-        Require(
-            request.Tool.AnalysisMode
-                == ContractConstants.FixtureAnalysisMode,
-            "incompatible",
-            "unsupported-tool",
-            "The requested analysis mode is not supported.",
-            ContractConstants.ExitIncompatible);
+        ValidateToolEnvelope(request);
         Require(
             !request.Privacy.DocumentPathIncluded
                 && !request.Privacy.DocumentNameIncluded,
@@ -154,6 +136,78 @@ public static class RequestValidator
             "incompatible",
             "unsupported-tool",
             "A requested engine capability is not supported.",
+            ContractConstants.ExitIncompatible);
+    }
+
+    private static void ValidateToolEnvelope(AnalysisRequest request)
+    {
+        string requiredCapability;
+        if (request.Tool.Id == ContractConstants.FixtureToolId)
+        {
+            Require(
+                request.Tool.DefinitionVersion
+                    == ContractConstants.FixtureToolDefinitionVersion
+                    && request.Tool.AnalysisMode
+                    == ContractConstants.FixtureAnalysisMode,
+                "incompatible",
+                "unsupported-tool-version",
+                "The requested contract fixture version or mode is not supported.",
+                ContractConstants.ExitIncompatible);
+            requiredCapability = "analysis.contract-fixture";
+        }
+        else if (request.Tool.Id == ContractConstants.UnicodeToolId)
+        {
+            Require(
+                request.Tool.DefinitionVersion
+                    == ContractConstants.UnicodeToolDefinitionVersion
+                    && request.Tool.AnalysisMode
+                    == ContractConstants.UnicodeAnalysisMode,
+                "incompatible",
+                "unsupported-tool-version",
+                "The requested Unicode tool version or mode is not supported.",
+                ContractConstants.ExitIncompatible);
+            requiredCapability = "analysis.invisible-unicode";
+        }
+        else
+        {
+            throw new EngineContractException(
+                "incompatible",
+                "unsupported-tool",
+                "The requested tool is not supported.",
+                ContractConstants.ExitIncompatible);
+        }
+
+        Require(
+            request.RequestedCapabilities.Contains(
+                requiredCapability,
+                StringComparer.Ordinal)
+                && request.RequestedCapabilities.Contains(
+                    "fingerprint.sha256-utf8-exact",
+                    StringComparer.Ordinal),
+            "incompatible",
+            "unsupported-tool",
+            "Required engine capabilities were not requested.",
+            ContractConstants.ExitIncompatible);
+    }
+
+    private static void ValidateToolOptions(AnalysisRequest request)
+    {
+        if (request.Tool.Id == ContractConstants.FixtureToolId)
+        {
+            ValidateFixtureOptions(request.Options);
+            return;
+        }
+
+        if (request.Tool.Id == ContractConstants.UnicodeToolId)
+        {
+            _ = InvisibleUnicodeOptions.From(request.Options);
+            return;
+        }
+
+        throw new EngineContractException(
+            "incompatible",
+            "unsupported-tool",
+            "The requested tool is not supported.",
             ContractConstants.ExitIncompatible);
     }
 

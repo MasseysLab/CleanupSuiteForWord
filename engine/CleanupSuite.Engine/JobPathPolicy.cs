@@ -11,6 +11,13 @@ public static class JobPathPolicy
 
     public static string ValidateJobDirectory(string suppliedPath)
     {
+        string job = ValidateUnhardenedJobDirectory(suppliedPath);
+        JobAccessPolicy.ValidateOwnerOnly(job);
+        return job;
+    }
+
+    public static string ValidateUnhardenedJobDirectory(string suppliedPath)
+    {
         if (string.IsNullOrWhiteSpace(suppliedPath))
         {
             throw SecurityError("The job directory was not supplied.");
@@ -48,7 +55,6 @@ public static class JobPathPolicy
 
         RejectReparsePoint(root.TrimEnd(Path.DirectorySeparatorChar));
         RejectReparsePoint(job);
-        JobAccessPolicy.ValidateOwnerOnly(job);
         return job;
     }
 
