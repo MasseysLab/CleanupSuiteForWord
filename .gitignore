@@ -13,6 +13,8 @@ backups/
 /docs/test-results/
 /WHERE_WE_LEFT_OFF.md
 *.backup.docm
+/engine/**/bin/
+/engine/**/obj/
 
 # Local planning packets for future milestones; release-facing docs stay tracked.
 /docs/superpowers/

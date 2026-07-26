@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>CleanupSuite.Engine.ContractTests</AssemblyName>
+    <RootNamespace>MasseysLab.CleanupSuite.Engine.ContractTests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CleanupSuite.Engine\CleanupSuite.Engine.csproj" />
+  </ItemGroup>
+</Project>

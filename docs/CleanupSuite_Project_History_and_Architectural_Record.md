@@ -948,6 +948,51 @@ assembly builders remained clean. No Word runtime or release artifact changed.
 Estimated combined difficulty: **42–57%**.
 Estimated professional desirability: **97–100%**.
 
+### Task 5: Isolated engine before Word integration
+
+Task 5 created the first C# component without crossing the release boundary. The
+new `CleanupSuite.Engine` is an offline, on-demand `net8.0-windows` command-line
+process that implements Contract 1.0. It is not installed, not shipped, not called
+by Word, and not used by a real CleanupSuite tool.
+
+The engine accepts only a lowercase-UUID job directory directly beneath
+CleanupSuite's fixed LocalAppData job root. It requires an owner-only protected
+directory, rejects reparse points and unsafe paths, reads only fixed filenames,
+strictly validates UTF-8 JSON and exact snapshot hashes and lengths, and writes a
+result atomically without overwriting an existing result. Cancellation and every
+failure path return zero candidates. Logs contain event codes and counts rather
+than document text or source paths.
+
+The Task 5 analyzer is deliberately artificial:
+`contract-fixture/replace-literal`. Its purpose is to prove deterministic,
+Word-compatible UTF-16 offsets, surrogate-safe context, fingerprints, capability
+discovery, cancellation, failure behavior, and schema-valid result transport. It
+is not a migrated product tool.
+
+The focused engine gate passed 12 end-to-end tests. The actual binary's capability
+output matches Contract 1.0 and its actual two-candidate result validates against
+the Contract 1.0 JSON Schema. The complete repository suite passed 233 tests with
+3 expected skips, all 29 VBA builders remained clean, and C# formatting required
+no changes. Local Microsoft Defender scans reported no new detections for either
+the framework build or the self-contained proof. This is early local evidence,
+not a substitute for Authenticode signing or reputation testing on clean machines.
+
+The development publish proof produced a single-file self-contained `win-x64`
+engine of 35,106,239 bytes with SHA-256
+`32BD795E91FDB722BF6CD35045B9E00740239B79545B9F887C0ACC56B9AB824D`.
+The proof is unsigned, ignored, and nondistributable. Chris clarified the durable
+packaging requirement: using .NET internally is acceptable, but requiring users
+to install, update, select, or maintain .NET separately is undesirable. The
+official product must therefore ship the matched engine with its runtime
+self-contained.
+
+Task 5 changed no VBA runtime, installed template, release artifact, installer, or
+stable manifest. Task 6 remains the hard boundary where a real pilot tool first
+depends on a matched engine and VBA bridge.
+
+Estimated combined difficulty: **48–62%**.
+Estimated professional desirability: **96–99%**.
+
 ## Primary Historical Sources
 
 - [Current handoff](../WHERE_WE_LEFT_OFF.md)
