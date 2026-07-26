@@ -19,7 +19,7 @@ class DocmSyncScriptTests(unittest.TestCase):
         self.assertIn('ComponentName = "modAlphaSmokeRunner"', script)
         self.assertIn('ComponentName = "modMetaDataSuite"', script)
         self.assertIn('ComponentName = "frmPreviewActions"', script)
-        self.assertIn('"cmdPreviousPage", "cmdNextPage", "lblButtonMeasure"', script)
+        self.assertIn('"cmdPreviousChange", "cmdPreviousPage", "cmdNextPage", "cmdNextChange", "lblButtonMeasure"', script)
         self.assertNotIn('"frmPreviewActions" = @("cmdPreviousPage", "cmdNextPage")', script)
         self.assertIn('ComponentName = "frmCleanupSuiteLauncher"', script)
         self.assertIn('ComponentName = "frmMetaDataSuite"', script)
@@ -56,7 +56,7 @@ class DocmSyncScriptTests(unittest.TestCase):
         expected_controls = [
             "cmdRiskPlacementListAll", "cmdRiskPlacementListBullets", "cmdRiskPlacementListNumbering", "cmdRiskPlacementListIndent", "cmdRiskPlacementListCustom",
             "cmdRiskPlacementParagraphAll", "cmdRiskPlacementParagraphRemoveEmpty", "cmdRiskPlacementParagraphSpacing", "cmdRiskPlacementParagraphCustom",
-            "cmdRiskPlacementDuplicatePreview", "cmdRiskPlacementDuplicateRemove", "cmdRiskPlacementDuplicateExact", "cmdRiskPlacementDuplicateNormalized", "cmdRiskPlacementDuplicateFuzzy",
+            "cmdRiskPlacementDuplicateExact", "cmdRiskPlacementDuplicateNormalized", "cmdRiskPlacementDuplicateFuzzy", "chkIncludeEmptyParagraphs", "cmdRiskPlacementDuplicateEmpty",
             "cmdRiskPlacementFormattingChar", "cmdRiskPlacementFormattingPara", "cmdRiskPlacementFormattingQuick", "cmdRiskPlacementFormattingThorough", "cmdRiskPlacementFormattingStrip",
             "cmdRiskPlacementFontFace", "cmdRiskPlacementFontSize", "cmdRiskPlacementFontBold", "cmdRiskPlacementFontItalic", "cmdRiskPlacementFontColor",
             "cmdRiskPlacementStyleRemoveUnused", "cmdRiskPlacementStyleRemap",

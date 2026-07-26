@@ -16,23 +16,23 @@ class PreviewInactiveRowTests(unittest.TestCase):
         helper_end = source.index("End Function", helper_start)
         helper = source[helper_start:helper_end]
 
-        self.assertIn("matchRange.HighlightColorIndex = wdYellow", helper)
+        self.assertIn("ApplyPreviewHighlight matchRange, wdYellow", helper)
         self.assertIn("matchRange.Collapse wdCollapseEnd", helper)
         self.assertIn("matchRange.End = searchEnd", helper)
         self.assertNotIn(".Replacement.Highlight = True", helper)
         self.assertNotIn("Replace:=wdReplaceOne", helper)
-        self.assertIn('cntCollapse = CountPreviewFindMatches(targetRange, "^l")', source)
+        self.assertIn('cntCollapse = HighlightPreviewFindBoundaryMatches(targetRange, "^l")', source)
 
     def test_mode_driven_previews_gray_only_unselected_rows(self):
         expected_calls = {
             "src/forms/frmBreakNormalizer.bas": [
-                'AddPreviewSummaryRow previewRows, "Consecutive section breaks", previewSectionBreaks, True, (Not doCollSect)',
-                'AddPreviewSummaryRow previewRows, "Consecutive page breaks", previewPageBreaks, True, (Not doCollPage)',
-                'AddPreviewSummaryRow previewRows, "Section break conversions", previewConversions, True, (Not doConvert)',
+                'AddPreviewSummaryRow previewRows, "Consecutive section breaks", previewSectionBreaks, False, (Not doCollSect)',
+                'AddPreviewSummaryRow previewRows, "Consecutive page breaks", previewPageBreaks, False, (Not doCollPage)',
+                'AddPreviewSummaryRow previewRows, "Section break conversions", previewConversions, False, (Not doConvert)',
             ],
             "src/forms/frmFinalReview.bas": [
-                'AddPreviewSummaryRow previewRows, "Comments", previewComments, True, (Not doComments)',
-                'AddPreviewSummaryRow previewRows, "Tracked changes", previewRevisions, True, (Not doRevisions)',
+                'AddPreviewSummaryRow previewRows, "Comments", previewComments, False, (Not doComments)',
+                'AddPreviewSummaryRow previewRows, "Tracked changes", previewRevisions, False, (Not doRevisions)',
             ],
             "src/forms/frmFontNormalizer.bas": [
                 'AddPreviewSummaryRow previewRows, "Font face", previewFace, False, (Not doFace)',
@@ -44,43 +44,43 @@ class PreviewInactiveRowTests(unittest.TestCase):
             "src/forms/frmFootnoteRemover.bas": [
                 'AddPreviewSummaryRow previewRows, "Footnotes", pf, False, (Not doFoot)',
                 'AddPreviewSummaryRow previewRows, "Endnotes", pe, False, (Not doEnd)',
-                'AddPreviewSummaryRow previewRows, "Note text kept inline", keptInline, True, (Not keepText)',
+                'AddPreviewSummaryRow previewRows, "Note text kept inline", keptInline, False, (Not keepText)',
             ],
             "src/forms/frmFormattingStripper.bas": [
                 'AddPreviewSummaryRow previewRows, "Character formatting", previewChar, False, (Not doResetChar)',
                 'AddPreviewSummaryRow previewRows, "Paragraph formatting", previewPara, False, (Not doResetPara)',
             ],
             "src/forms/frmHeaderFooterStandardizer.bas": [
-                'AddPreviewSummaryRow previewRows, "Header areas", headerAreas, True, (Not doHeaders)',
-                'AddPreviewSummaryRow previewRows, "Footer areas", footerAreas, True, (Not doFooters)',
-                'AddPreviewSummaryRow previewRows, "Cleared areas", previewCleared, True, (Not doClear)',
-                'AddPreviewSummaryRow previewRows, "Font reset areas", previewFont, True, (Not standardizeFont)',
-                'AddPreviewSummaryRow previewRows, "Spacing reset areas", previewSpacing, True, (Not standardizeSpacing)',
-                'AddPreviewSummaryRow previewRows, "Alignment areas", previewAlignment, True, (Not standardizeAlignment)',
-                'AddPreviewSummaryRow previewRows, "Unlinked sections", previewUnlinked, True, (Not breakLinks)',
+                'AddPreviewSummaryRow previewRows, "Header areas", headerAreas, False, (Not doHeaders)',
+                'AddPreviewSummaryRow previewRows, "Footer areas", footerAreas, False, (Not doFooters)',
+                'AddPreviewSummaryRow previewRows, "Cleared areas", previewCleared, False, (Not doClear)',
+                'AddPreviewSummaryRow previewRows, "Font reset areas", previewFont, False, (Not standardizeFont)',
+                'AddPreviewSummaryRow previewRows, "Spacing reset areas", previewSpacing, False, (Not standardizeSpacing)',
+                'AddPreviewSummaryRow previewRows, "Alignment areas", previewAlignment, False, (Not standardizeAlignment)',
+                'AddPreviewSummaryRow previewRows, "Unlinked sections", previewUnlinked, False, (Not breakLinks)',
             ],
             "src/forms/frmListCleanup.bas": [
                 'AddPreviewSummaryRow previewRows, "Hyphen list items", previewHyphen, False, (Not doHyphen)',
-                'AddPreviewSummaryRow previewRows, "Bullet list items", previewBullets, True, (Not doBullets)',
+                'AddPreviewSummaryRow previewRows, "Bullet list items", previewBullets, False, (Not doBullets)',
                 'AddPreviewSummaryRow previewRows, "Numbered list items", previewNumbering, False, (Not doNumbering)',
-                'AddPreviewSummaryRow previewRows, "List indents", previewIndent, True, (Not doIndent)',
+                'AddPreviewSummaryRow previewRows, "List indents", previewIndent, False, (Not doIndent)',
             ],
             "src/forms/frmMetadataScrubber.bas": [
                 'AddPreviewSummaryRow previewRows, "Document properties", previewProperties, True, (Not doProps)',
                 'AddPreviewSummaryRow previewRows, "Personal information", previewPersonal, True, (Not doPersonal)',
             ],
             "src/forms/frmObjectRemover.bas": [
-                'AddPreviewSummaryRow previewRows, "Pictures", previewPictures, True, (Not doPic)',
-                'AddPreviewSummaryRow previewRows, "Text boxes", previewTextBoxes, True, (Not doTxt)',
-                'AddPreviewSummaryRow previewRows, "Frames", previewFrames, True, (Not doFra)',
-                'AddPreviewSummaryRow previewRows, "Horizontal lines", previewHorizontalLines, True, (Not doHL)',
-                'AddPreviewSummaryRow previewRows, "Form controls", previewFormControls, True, (Not doHtml)',
-                'AddPreviewSummaryRow previewRows, "Hidden text", previewHiddenText, True, (Not doHid)',
-                'AddPreviewSummaryRow previewRows, "Tables", previewTables, True, (Not doTab)',
+                'AddPreviewSummaryRow previewRows, "Pictures", previewPictures, False, (Not doPic)',
+                'AddPreviewSummaryRow previewRows, "Text boxes", previewTextBoxes, False, (Not doTxt)',
+                'AddPreviewSummaryRow previewRows, "Frames", previewFrames, False, (Not doFra)',
+                'AddPreviewSummaryRow previewRows, "Horizontal lines", previewHorizontalLines, False, (Not doHL)',
+                'AddPreviewSummaryRow previewRows, "Form controls", previewFormControls, False, (Not doHtml)',
+                'AddPreviewSummaryRow previewRows, "Hidden text", previewHiddenText, False, (Not doHid)',
+                'AddPreviewSummaryRow previewRows, "Tables", previewTables, False, (Not doTab)',
             ],
             "src/forms/frmParagraphCleanup.bas": [
                 'AddPreviewSummaryRow previewRows, "Empty paragraphs", cntRemove, False, (Not doRemove)',
-                'AddPreviewSummaryRow previewRows, "Soft returns", cntCollapse, True, (Not doCollapse)',
+                'AddPreviewSummaryRow previewRows, "Soft returns", cntCollapse, False, (Not doCollapse)',
                 'AddPreviewSummaryRow previewRows, "Paragraph spacing", cntNormalize, False, (Not doNormalize)',
                 'AddPreviewSummaryRow previewRows, "Indents", cntIndent, False, (Not doIndent)',
             ],
@@ -93,16 +93,16 @@ class PreviewInactiveRowTests(unittest.TestCase):
             ],
             "src/forms/frmStyleCleanup.bas": [
                 'AddPreviewSummaryRow previewRows, "Unused custom styles", previewUnused, True, (Not doUnused)',
-                'AddPreviewSummaryRow previewRows, "Variant style remaps", previewRemaps, True, (Not doRemap)',
+                'AddPreviewSummaryRow previewRows, "Variant style remaps", previewRemaps, False, (Not doRemap)',
             ],
             "src/forms/frmTableCleaner.bas": [
                 'AddPreviewSummaryRow previewRows, "Empty rows", previewEmptyRows, False, (Not doEmptyRows)',
                 'AddPreviewSummaryRow previewRows, "Empty columns", previewCols, False, (Not doEmptyCols)',
-                'AddPreviewSummaryRow previewRows, "Cell padding", previewPadding, True, (Not doPadding)',
-                'AddPreviewSummaryRow previewRows, "Direct cell formatting", previewDirectFmt, True, (Not doDirectFmt)',
-                'AddPreviewSummaryRow previewRows, "Border normalization", previewNormalizeBorders, True, (Not doBorders)',
-                'AddPreviewSummaryRow previewRows, "Border removal", previewRemoveBorders, True, (Not doRemoveBorders)',
-                'AddPreviewSummaryRow previewRows, "Tables to text", previewConvertText, True, (Not doConvertText)',
+                'AddPreviewSummaryRow previewRows, "Cell padding", previewPadding, False, (Not doPadding)',
+                'AddPreviewSummaryRow previewRows, "Direct cell formatting", previewDirectFmt, False, (Not doDirectFmt)',
+                'AddPreviewSummaryRow previewRows, "Border normalization", previewNormalizeBorders, False, (Not doBorders)',
+                'AddPreviewSummaryRow previewRows, "Border removal", previewRemoveBorders, False, (Not doRemoveBorders)',
+                'AddPreviewSummaryRow previewRows, "Tables to text", previewConvertText, False, (Not doConvertText)',
             ],
         }
 
@@ -147,17 +147,18 @@ class PreviewInactiveRowTests(unittest.TestCase):
         self.assertNotIn("IIf(doPic, ProcessPictures(False), 0)", object_source)
         self.assertIn("If doProps Then previewProperties = CountPopulatedMetadataValues(propertySignals)", metadata_source)
         self.assertNotIn("IIf(doProps, CountPopulatedMetadataValues(propertySignals), 0)", metadata_source)
-        self.assertIn("If doRemap Then previewRemaps = CountStyleVariantsForRemap()", style_source)
-        self.assertNotIn("IIf(doRemap, CountStyleVariantsForRemap(), 0)", style_source)
+        self.assertIn("If doRemap Then previewRemaps = HighlightStyleVariantsForRemap()", style_source)
+        self.assertNotIn("IIf(doRemap, HighlightStyleVariantsForRemap(), 0)", style_source)
 
-    def test_break_preview_counts_without_false_nonprinting_mark_highlights(self):
+    def test_break_preview_marks_nearest_visible_characters_without_replacing(self):
         source = read("src/forms/frmBreakNormalizer.bas")
         preview_start = source.index("If previewOnly Then")
         preview_end = source.index('MarkCleanupStart "Break Normalizer"', preview_start)
         preview_block = source[preview_start:preview_end]
 
-        self.assertIn('CountPreviewFindMatches(targetRange, "^b^b")', preview_block)
-        self.assertIn('CountPreviewFindMatches(targetRange, "^m^m")', preview_block)
+        self.assertIn('HighlightPreviewFindBoundaryMatches(targetRange, "^b^b")', preview_block)
+        self.assertIn('HighlightPreviewFindBoundaryMatches(targetRange, "^m^m")', preview_block)
+        self.assertIn("ApplyPreviewMinimalMarker previewSec.Range, True", preview_block)
         self.assertNotIn(".Replacement.Highlight = True", preview_block)
         self.assertNotIn("Replace:=wdReplaceAll", preview_block)
 

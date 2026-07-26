@@ -68,7 +68,7 @@ Private Sub cmdRun_Click()
     If previewOnly Then
         For i = 1 To ActiveDocument.Hyperlinks.Count
             Dim hp As Hyperlink: Set hp = ActiveDocument.Hyperlinks(i)
-            If hp.Range.Start >= targetRange.Start And hp.Range.End <= targetRange.End Then hp.Range.HighlightColorIndex = wdYellow: cnt = cnt + 1
+            If hp.Range.Start >= targetRange.Start And hp.Range.End <= targetRange.End Then ApplyPreviewHighlight hp.Range, wdYellow: cnt = cnt + 1
         Next i
         Dim previewRows As Collection
         Set previewRows = NewPreviewSummaryRows()

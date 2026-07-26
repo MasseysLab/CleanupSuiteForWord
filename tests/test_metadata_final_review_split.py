@@ -29,8 +29,10 @@ class MetadataFinalReviewSplitTests(unittest.TestCase):
 
         for snippet in [
             'Set previewRows = NewPreviewSummaryRows()',
-            'AddPreviewSummaryRow previewRows, "Comments", previewComments, True, (Not doComments)',
-            'AddPreviewSummaryRow previewRows, "Tracked changes", previewRevisions, True, (Not doRevisions)',
+            'AddPreviewSummaryRow previewRows, "Comments", previewComments, False, (Not doComments)',
+            'AddPreviewSummaryRow previewRows, "Tracked changes", previewRevisions, False, (Not doRevisions)',
+            'ApplyPreviewMinimalMarker previewComment.Scope, True',
+            'ApplyPreviewMinimalMarker previewRevision.Range, True',
             'ShowPreviewActionsSummary Me, "Final Review", previewRows',
             'ActiveDocument.DeleteAllComments',
             'ActiveDocument.Revisions.AcceptAll',

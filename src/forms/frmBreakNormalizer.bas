@@ -16,8 +16,8 @@ Private Sub UserForm_Initialize()
     optConvertOddPage.GroupName = "BreakMode"
     optScopeDocument.GroupName = "BreakScope"
     optScopeSelection.GroupName = "BreakScope"
-    chkCollapseSectionBreaks.Value = True
-    chkCollapsePageBreaks.Value = True
+    chkCollapseSectionBreaks.Value = False
+    chkCollapsePageBreaks.Value = False
     chkConvertSectionBreaks.Value = False
     fraConvertTo.Enabled = False
     optConvertContinuous.Value = True
@@ -96,22 +96,25 @@ Private Sub cmdRun_Click()
         Dim previewSectionBreaks As Long
         Dim previewPageBreaks As Long
         Dim previewConversions As Long
-        If doCollSect Then previewSectionBreaks = CountPreviewFindMatches(targetRange, "^b^b")
-        If doCollPage Then previewPageBreaks = CountPreviewFindMatches(targetRange, "^m^m")
+        If doCollSect Then previewSectionBreaks = HighlightPreviewFindBoundaryMatches(targetRange, "^b^b")
+        If doCollPage Then previewPageBreaks = HighlightPreviewFindBoundaryMatches(targetRange, "^m^m")
         If doConvert Then
             Dim previewSec As Section
             For Each previewSec In ActiveDocument.Sections
                 If previewSec.Range.Start >= targetRange.Start And previewSec.Range.End <= targetRange.End Then
-                    If previewSec.Index > 1 Then previewConversions = previewConversions + 1
+                    If previewSec.Index > 1 Then
+                        previewConversions = previewConversions + 1
+                        ApplyPreviewMinimalMarker previewSec.Range, True
+                    End If
                 End If
             Next previewSec
         End If
 
         Dim previewRows As Collection
         Set previewRows = NewPreviewSummaryRows()
-        AddPreviewSummaryRow previewRows, "Consecutive section breaks", previewSectionBreaks, True, (Not doCollSect)
-        AddPreviewSummaryRow previewRows, "Consecutive page breaks", previewPageBreaks, True, (Not doCollPage)
-        AddPreviewSummaryRow previewRows, "Section break conversions", previewConversions, True, (Not doConvert)
+        AddPreviewSummaryRow previewRows, "Consecutive section breaks", previewSectionBreaks, False, (Not doCollSect)
+        AddPreviewSummaryRow previewRows, "Consecutive page breaks", previewPageBreaks, False, (Not doCollPage)
+        AddPreviewSummaryRow previewRows, "Section break conversions", previewConversions, False, (Not doConvert)
         ShowPreviewActionsSummary Me, "Break Normalizer", previewRows
         Exit Sub
     End If

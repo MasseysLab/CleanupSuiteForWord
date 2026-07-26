@@ -108,8 +108,20 @@ Private Sub cmdRun_Click()
     Dim p As Paragraph
     Dim cntRemove As Long, cntCollapse As Long, cntNormalize As Long, cntIndent As Long
     If previewOnly Then
-        If doRemove Then cntRemove = HighlightExtraEmptyParagraphs(targetRange)
-        If doCollapse Then cntCollapse = CountPreviewFindMatches(targetRange, "^l")
+        If doRemove Then
+            Dim previewBlankStarts As Collection
+            Dim previewProtectedCells As Long
+            Dim previewProtectedRows As Long
+            Dim previewProtectedFinal As Long
+            Dim previewSkipped As Long
+            Set previewBlankStarts = CollectCollapsibleBlankParagraphStarts(targetRange, True, previewProtectedCells, previewProtectedRows, previewProtectedFinal, previewSkipped)
+            cntRemove = previewBlankStarts.Count
+            Dim previewBlankIndex As Long
+            For previewBlankIndex = 1 To previewBlankStarts.Count
+                ApplyPreviewMinimalMarker ActiveDocument.Range(previewBlankStarts(previewBlankIndex), previewBlankStarts(previewBlankIndex))
+            Next previewBlankIndex
+        End If
+        If doCollapse Then cntCollapse = HighlightPreviewFindBoundaryMatches(targetRange, "^l")
         If doNormalize Then
             For Each p In targetRange.Paragraphs
                 If ParagraphOverlapsRange(p, targetRange) Then
@@ -127,7 +139,7 @@ Private Sub cmdRun_Click()
                     leadingIndentLength = ParagraphLeadingIndentLength(p)
                     If p.Format.LeftIndent <> 0 Or leadingIndentLength > 0 Then
                         If leadingIndentLength > 0 Then
-                            ActiveDocument.Range(p.Range.Start, p.Range.Start + leadingIndentLength).HighlightColorIndex = wdBrightGreen
+                            ApplyPreviewHighlight ActiveDocument.Range(p.Range.Start, p.Range.Start + leadingIndentLength)
                         Else
                             ApplyPreviewShading p.Range
                         End If
@@ -140,7 +152,7 @@ Private Sub cmdRun_Click()
         Dim previewRows As Collection
         Set previewRows = NewPreviewSummaryRows()
         AddPreviewSummaryRow previewRows, "Empty paragraphs", cntRemove, False, (Not doRemove)
-        AddPreviewSummaryRow previewRows, "Soft returns", cntCollapse, True, (Not doCollapse)
+        AddPreviewSummaryRow previewRows, "Soft returns", cntCollapse, False, (Not doCollapse)
         AddPreviewSummaryRow previewRows, "Paragraph spacing", cntNormalize, False, (Not doNormalize)
         AddPreviewSummaryRow previewRows, "Indents", cntIndent, False, (Not doIndent)
         ShowPreviewActionsSummary Me, "Paragraph Fixer", previewRows
@@ -156,10 +168,18 @@ Private Sub cmdRun_Click()
     Dim replacedThisPass As Long
     If doRemove Then
         UpdateCleanupProgress "Removing extra empty paragraphs"
-        Do
-            replacedThisPass = ReplaceParagraphFindMatches(targetRange, "^p^p^p", "^p^p")
-            cntRemove = cntRemove + replacedThisPass
-        Loop While replacedThisPass > 0
+        Dim blankStarts As Collection
+        Dim protectedCells As Long
+        Dim protectedRows As Long
+        Dim protectedFinal As Long
+        Dim skippedStructures As Long
+        Set blankStarts = CollectCollapsibleBlankParagraphStarts(targetRange, True, protectedCells, protectedRows, protectedFinal, skippedStructures)
+        Dim blankIndex As Long
+        For blankIndex = blankStarts.Count To 1 Step -1
+            If RemoveCleanupBlankParagraphAtStart(ActiveDocument, CLng(blankStarts(blankIndex))) Then
+                cntRemove = cntRemove + 1
+            End If
+        Next blankIndex
     End If
     If doCollapse Then
         UpdateCleanupProgress "Converting soft returns"
@@ -260,33 +280,13 @@ Private Function HighlightParagraphFindMatches(ByVal searchRange As Range, ByVal
             If Not .Execute Then Exit Do
         End With
 
-        matchRange.HighlightColorIndex = wdYellow
+        ApplyPreviewHighlight matchRange, wdYellow
         HighlightParagraphFindMatches = HighlightParagraphFindMatches + 1
         matchRange.Collapse wdCollapseEnd
         If matchRange.Start >= searchEnd Then Exit Do
         matchRange.End = searchEnd
     Loop
 End Function
-Private Function HighlightExtraEmptyParagraphs(ByVal searchRange As Range) As Long
-    Dim p As Paragraph
-    Dim blankRun As Long
-    For Each p In searchRange.Paragraphs
-        If ParagraphOverlapsRange(p, searchRange) Then
-            If Len(Trim$(Replace(Replace(p.Range.Text, vbCr, ""), Chr$(7), ""))) = 0 Then
-                blankRun = blankRun + 1
-                If blankRun > 1 Then
-                    ApplyPreviewShading p.Range
-                    HighlightExtraEmptyParagraphs = HighlightExtraEmptyParagraphs + 1
-                End If
-            Else
-                blankRun = 0
-            End If
-        Else
-            blankRun = 0
-        End If
-    Next p
-End Function
-
 Private Function ReplaceParagraphFindMatches(ByVal searchRange As Range, ByVal findText As String, ByVal replacementText As String) As Long
     Dim matchRange As Range
     Set matchRange = searchRange.Duplicate

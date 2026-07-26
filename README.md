@@ -32,14 +32,16 @@ Close Word, download `CleanupSuite.dotm` from the newest [GitHub release](https:
 
 To uninstall manually, close Word and remove `%APPDATA%\Microsoft\Word\STARTUP\CleanupSuite.dotm`. The installer also registers a normal per-user uninstall entry in Windows Settings.
 
-## Release
+## Releases
 
-- Current release: **0.9.2 Alpha**
-- Git tag: `v0.9.2-alpha`
+- Stable installer release: **0.9.2 Alpha** (`v0.9.2-alpha`)
+- Latest manual-install prerelease: **0.9.3 Beta — Final VBA-Only Checkpoint** (`v0.9.3-beta-vba-final`)
 - Publisher: **MasseysLab**
 
-See the [0.9.2 Alpha release notes](docs/Release_Notes_v0.9.2-alpha.md) for
-highlights, known Alpha limits, and the verified template hash.
+The special prerelease contains only the standalone `CleanupSuite.dotm`; it leaves
+the stable installer and update manifest on `0.9.2-alpha`. See the
+[0.9.3 Beta VBA-only release notes](docs/Release_Notes_v0.9.3-beta-vba-final.md)
+for its safety, navigation, validation, and installation details.
 
 Software and documentation are licensed under the [MIT License](LICENSE).
 

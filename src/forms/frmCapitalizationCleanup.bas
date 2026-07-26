@@ -352,11 +352,11 @@ Private Sub HighlightCapitalizationDifferenceRuns(ByVal p As Paragraph, ByVal or
                 i = i + 1
             Loop
             Set changedRange = ActiveDocument.Range(paragraphStart + runStart - 1, paragraphStart + i - 1)
-            changedRange.HighlightColorIndex = wdBrightGreen
+            ApplyPreviewHighlight changedRange
         End If
     Loop
 
-    If Len(originalText) <> Len(transformedText) Then p.Range.HighlightColorIndex = wdBrightGreen
+    If Len(originalText) <> Len(transformedText) Then ApplyPreviewHighlight p.Range
 End Sub
 
 Private Function SmartRepairParagraph(ByVal textValue As String, ByVal useAbbreviations As Boolean, ByVal protectAcronyms As Boolean, ByVal protectNames As Boolean, ByVal useHeadingHeuristics As Boolean, ByVal titleCaseParentheticalText As Boolean, ByVal useContextRules As Boolean, Optional ByVal styleHeadingLike As Boolean = False) As String

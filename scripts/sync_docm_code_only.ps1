@@ -47,7 +47,7 @@ function Get-ControlsForForm {
     switch ($FormName) {
         "frmPreviewActions" {
             return @(
-                "cmdPreviousPage", "cmdNextPage", "lblButtonMeasure"
+                "cmdPreviousChange", "cmdPreviousPage", "cmdNextPage", "cmdNextChange", "lblButtonMeasure"
             )
         }
         "frmCapitalizationCleanup" {
@@ -102,9 +102,9 @@ function Get-ControlsForForm {
         }
         "frmDuplicateDetector" {
             return @(
-                "cmdRiskPlacementDuplicatePreview", "cmdRiskPlacementDuplicateRemove",
                 "cmdRiskPlacementDuplicateExact", "cmdRiskPlacementDuplicateNormalized",
-                "cmdRiskPlacementDuplicateFuzzy", "cmdRiskPlacementDuplicateFuzzyLoose",
+                "cmdRiskPlacementDuplicateFuzzy", "chkIncludeEmptyParagraphs", "cmdRiskPlacementDuplicateEmpty",
+                "cmdRiskPlacementDuplicateFuzzyLoose",
                 "cmdRiskPlacementDuplicateFuzzyMedium", "cmdRiskPlacementDuplicateFuzzyStrict"
             )
         }
@@ -401,7 +401,7 @@ function Sync-FormCaptions {
         "frmSpacingCleanup" = "Spacing Fixer"
         "frmListCleanup" = "List Normalizer"
         "frmParagraphCleanup" = "Paragraph Structure Fixer"
-        "frmDuplicateDetector" = "Duplicate Paragraph Detector"
+        "frmDuplicateDetector" = "Duplicate Paragraph Remover"
         "frmFontNormalizer" = "Font Normalizer"
         "frmTableCleaner" = "Table Cleaner"
         "frmBreakNormalizer" = "Break Normalizer"
@@ -448,7 +448,7 @@ function Sync-ControlCaptions {
             "lblDescDuplicate" = "Find repeated or near-duplicate paragraphs before removing them."
             "lblDescHyperlink" = "Keep links but Hide styling`r`nKeep text but remove links"
             "lblResetAllCalloutText" = "If highlights remain after an error, select Reset All."
-            "lblAutoSaveWarning" = "Dangerous! Should be selected"
+            "lblAutoSaveWarning" = "It is dangerous to turn off auto save!"
             "lblRiskUnicode" = "Safe`r`ncleanup"
             "lblRiskPunctuation" = "Safe`r`ncleanup"
             "lblRiskSpacing" = "Safe`r`ncleanup"

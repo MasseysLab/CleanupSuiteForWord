@@ -82,7 +82,7 @@ class ToolCompileRegressionTests(unittest.TestCase):
 
         self.assertIn("ActiveWindow.View.ShowAll", source)
         self.assertIn("HighlightUnicodeAdjacentCharacter", source)
-        self.assertIn("markerRange.HighlightColorIndex = wdBrightGreen", source)
+        self.assertIn("ApplyPreviewHighlight markerRange", source)
 
     def test_capitalization_preview_highlights_changed_characters_and_repairs_selected_protections(self):
         source = read("src/forms/frmCapitalizationCleanup.bas")
@@ -96,7 +96,7 @@ class ToolCompileRegressionTests(unittest.TestCase):
         source = read("src/forms/frmParagraphCleanup.bas")
 
         self.assertIn("ParagraphLeadingIndentLength(p)", source)
-        self.assertIn("HighlightColorIndex = wdBrightGreen", source)
+        self.assertIn("ApplyPreviewHighlight ActiveDocument.Range(p.Range.Start, p.Range.Start + leadingIndentLength)", source)
         self.assertIn("ActiveDocument.Range(p.Range.Start, p.Range.Start + leadingIndentLength).Delete", source)
 
     def test_spacing_tool_has_no_duplicate_local_dim_names(self):
@@ -180,8 +180,15 @@ class ToolCompileRegressionTests(unittest.TestCase):
         self.assertNotIn("ApplyPreviewShading p.Range", spacing_block)
         self.assertIn("Public Sub ApplyPreviewSpacingBoundary", helpers)
         self.assertIn("markerColor As WdColorIndex = wdBrightGreen", helpers)
-        self.assertIn("markerRange.Start = markerRange.End - 2", helpers)
-        self.assertIn("markerRange.HighlightColorIndex = markerColor", helpers)
+        self.assertIn("trailingCharacter <> vbCr And trailingCharacter <> Chr$(7)", helpers)
+        self.assertIn("ApplyPreviewNearestVisibleCharacter(paragraphRange, markerColor)", helpers)
+        self.assertIn("Private Function ApplyPreviewNearestVisibleCharacter", helpers)
+        self.assertIn("paragraphRange.Document.Range(paragraphRange.Start - 1, paragraphRange.Start)", helpers)
+        self.assertIn("If trailingCharacter = Chr$(7) Then Exit Function", helpers)
+        self.assertIn("nearbyRange.Start = nearbyRange.Start - 1", helpers)
+        self.assertIn("ApplyPreviewShading paragraphRange", helpers)
+        self.assertIn("markerRange.Start = markerRange.End - 1", helpers)
+        self.assertIn("ApplyPreviewHighlight markerRange, markerColor", helpers)
         self.assertNotIn("RestorePreviewSpacingBoundaries", helpers)
 
     def test_unicode_tool_uses_direct_text_replacement_for_matches(self):
@@ -234,27 +241,26 @@ class ToolCompileRegressionTests(unittest.TestCase):
         self.assertIn('replacedThisPass = ReplaceSpacingLiteralMatches(targetRange, CStr(pattern), Left$(CStr(pattern), 1) & " ")', source)
         self.assertNotIn("With targetRange.Find", apply_block[: apply_block.index("RemoveAllHighlighting ActiveDocument.Content")])
 
-    def test_spacing_tool_collapses_empty_table_rows_and_clears_preview_highlighting_globally_after_apply(self):
+    def test_spacing_tool_collapses_body_blanks_but_never_deletes_table_rows(self):
         source = read("src/forms/frmSpacingCleanup.bas")
 
-        self.assertIn('replacedThisPass = ReplaceSpacingFindMatches(targetRange, "^p^p^p", "^p^p")', source)
-        self.assertIn("cntBlank = cntBlank + CollapseExtraBlankTableRowsInRange(targetRange)", source)
-        self.assertIn("Private Function ReplaceSpacingFindMatches(", source)
-        self.assertIn("Private Function CollapseExtraBlankTableRowsInRange(", source)
-        self.assertIn("If rowRange.End < searchRange.Start Or rowRange.Start > searchRange.End Then", source)
-        self.assertIn("Private Function IsSpacingBlankTableRow(", source)
+        self.assertIn("CollectCollapsibleBlankParagraphStarts(targetRange, False", source)
+        self.assertIn("RemoveCleanupBlankParagraphAtStart(ActiveDocument, CLng(blankStarts(blankIndex)), cbpkRemovableBody)", source)
+        self.assertNotIn("CollapseExtraBlankTableRowsInRange", source)
+        self.assertNotIn("IsSpacingBlankTableRow", source)
+        self.assertNotIn(".Rows(", source)
+        self.assertNotIn(".Rows.Delete", source)
         self.assertIn("RemoveAllHighlighting ActiveDocument.Content", source)
         self.assertNotIn("RemoveAllHighlighting targetRange", source)
 
-    def test_spacing_blank_line_preview_highlights_extra_blank_paragraphs_directly(self):
+    def test_spacing_blank_line_preview_uses_shared_minimal_markers(self):
         source = read("src/forms/frmSpacingCleanup.bas")
-        self.assertIn("Private Function HighlightExtraBlankLinesInRange(ByVal searchRange As Range) As Long", source)
-        helper = source[source.index("Private Function HighlightExtraBlankLinesInRange"):source.index("End Function", source.index("Private Function HighlightExtraBlankLinesInRange"))]
 
-        self.assertIn("If doBlank Then previewBlank = HighlightExtraBlankLinesInRange(targetRange)", source)
-        self.assertIn("If blankRun > 1 Then", helper)
-        self.assertIn("ApplyPreviewShading p.Range", helper)
-        self.assertIn("HighlightExtraBlankLinesInRange = HighlightExtraBlankLinesInRange + 1", helper)
+        self.assertIn("Set previewBlankStarts = CollectCollapsibleBlankParagraphStarts(targetRange, False", source)
+        self.assertIn("previewBlank = previewBlankStarts.Count", source)
+        self.assertIn("ApplyPreviewMinimalMarker ActiveDocument.Range(previewBlankStarts(previewBlankIndex), previewBlankStarts(previewBlankIndex))", source)
+        self.assertNotIn("HighlightExtraBlankLinesInRange", source)
+        self.assertNotIn("ApplyPreviewShading p.Range", source)
         self.assertNotIn('If doBlank Then previewBlank = CountPreviewFindMatches(targetRange, "^p^p^p")', source)
 
     def test_hyperlink_cleaner_clears_preview_highlighting_globally_after_apply(self):
@@ -393,7 +399,7 @@ class ToolCompileRegressionTests(unittest.TestCase):
         self.assertIn("If doIndent And ListIndentNeedsFix(p) Then actionIndent = True", source)
         self.assertNotIn('If doBullets And (Left$(txt, 2) = Chr(149) & " " Or Left$(txt, 2) = "* ")', preview_block)
 
-    def test_paragraph_cleanup_collapse_empty_paragraphs_uses_overlap_scope_and_find_replace(self):
+    def test_paragraph_cleanup_uses_shared_revalidated_blank_classifier(self):
         source = read("src/forms/frmParagraphCleanup.bas")
         preview_block = source[source.index("If previewOnly Then"):source.index("MarkCleanupStart \"Paragraph Fixer\"")]
         apply_block = source[source.index("Dim cntRemove As Long"):source.index("RemoveAllHighlighting")]
@@ -404,11 +410,11 @@ class ToolCompileRegressionTests(unittest.TestCase):
         self.assertIn("expanded.Start = expanded.Paragraphs(1).Range.Start", source)
         self.assertIn("expanded.End = expanded.Paragraphs(expanded.Paragraphs.Count).Range.End", source)
         self.assertIn("Public Function ParagraphOverlapsRange(ByVal paragraphItem As Paragraph, ByVal scopeRange As Range) As Boolean", helpers)
-        self.assertIn("HighlightExtraEmptyParagraphs(targetRange)", preview_block)
-        self.assertIn("ApplyPreviewShading p.Range", source)
-        self.assertIn("If ParagraphOverlapsRange(p, targetRange) Then", apply_block)
-        self.assertIn('replacedThisPass = ReplaceParagraphFindMatches(targetRange, "^p^p^p", "^p^p")', apply_block)
-        self.assertIn("Loop While replacedThisPass > 0", apply_block)
+        self.assertIn("CollectCollapsibleBlankParagraphStarts(targetRange, True", preview_block)
+        self.assertIn("ApplyPreviewMinimalMarker ActiveDocument.Range(previewBlankStarts(previewBlankIndex), previewBlankStarts(previewBlankIndex))", preview_block)
+        self.assertIn("CollectCollapsibleBlankParagraphStarts(targetRange, True", apply_block)
+        self.assertIn("RemoveCleanupBlankParagraphAtStart(ActiveDocument, CLng(blankStarts(blankIndex)))", apply_block)
+        self.assertNotIn('ReplaceParagraphFindMatches(targetRange, "^p^p^p", "^p^p")', apply_block)
         self.assertNotIn("p.Range.Delete", source)
         self.assertNotIn("p.Range.Start >= targetRange.Start And p.Range.End <= targetRange.End", source)
 
@@ -456,26 +462,25 @@ class ToolCompileRegressionTests(unittest.TestCase):
         self.assertNotIn("Len(pt) - Len(Replace(pt, markChar, \"\"))", source)
         self.assertNotIn("Len(txt) - Len(Replace(txt, markChar, \"\"))", source)
 
-    def test_soft_return_preview_counts_break_marks_without_false_document_highlighting(self):
+    def test_soft_return_preview_marks_nearest_visible_characters(self):
         source = read("src/forms/frmSoftReturnConverter.bas")
         preview_block = source[source.index("If previewOnly Then"):source.index("ShowPreviewActionsSummary Me, \"Soft Return Converter\", previewRows")]
 
         self.assertIn("pc = CountSoftReturnConvertibleMarks(targetRange, softToPara)", preview_block)
+        self.assertIn("Call HighlightSoftReturnConvertibleMarks(targetRange, softToPara)", preview_block)
         self.assertIn("RemoveAllHighlighting ActiveDocument.Content", preview_block)
         self.assertLess(preview_block.index("RemoveAllHighlighting ActiveDocument.Content"), preview_block.index("pc = CountSoftReturnConvertibleMarks(targetRange, softToPara)"))
         self.assertNotIn(".Replacement.Highlight = True", preview_block)
         self.assertNotIn("Private Function SoftReturnPreviewMarksAreVisible", source)
-        self.assertNotIn("Private Function HighlightSoftReturnPreviewMarks", source)
-        self.assertNotIn("matchRange.HighlightColorIndex = wdYellow", source)
-        self.assertNotIn("HighlightSoftReturnVisibleRange", source)
-        self.assertNotIn("HighlightSoftReturnParagraphMark", source)
+        self.assertIn("Private Function HighlightSoftReturnConvertibleMarks", source)
+        self.assertIn("ApplyPreviewMinimalMarker matchRange", source)
 
-    def test_soft_return_preview_marks_active_break_rows_unhighlighted_and_inactive_rows_gray(self):
+    def test_soft_return_preview_marks_active_rows_highlighted_and_inactive_rows_gray(self):
         source = read("src/forms/frmSoftReturnConverter.bas")
         preview_block = source[source.index("If previewOnly Then"):source.index("ShowPreviewActionsSummary Me, \"Soft Return Converter\", previewRows")]
 
-        self.assertIn('AddPreviewSummaryRow previewRows, "Soft returns", IIf(softToPara, pc, 0), True, (Not softToPara)', preview_block)
-        self.assertIn('AddPreviewSummaryRow previewRows, "Paragraph marks", IIf(softToPara, 0, pc), True, softToPara', preview_block)
+        self.assertIn('AddPreviewSummaryRow previewRows, "Soft returns", IIf(softToPara, pc, 0), False, (Not softToPara)', preview_block)
+        self.assertIn('AddPreviewSummaryRow previewRows, "Paragraph marks", IIf(softToPara, 0, pc), False, softToPara', preview_block)
 
     def test_soft_return_converter_apply_clears_preview_highlighting_globally(self):
         source = read("src/forms/frmSoftReturnConverter.bas")
@@ -498,9 +503,45 @@ class ToolCompileRegressionTests(unittest.TestCase):
 
     def test_duplicate_detector_does_not_treat_image_only_paragraphs_as_duplicates(self):
         source = read("src/forms/frmDuplicateDetector.bas")
-        self.assertIn("If Len(DuplicateCandidateVisibleText(p.Range.Text)) > 0 Then paras.Add p", source)
+        helpers = read("src/modules/modCleanupHelpers.bas")
+        self.assertIn("candidateText = DuplicateCandidateVisibleText(p.Range.Text)", source)
+        self.assertIn("If Len(candidateText) > 0 Then", source)
+        self.assertIn("blankKind = ClassifyCleanupBlankParagraph(p)", source)
+        self.assertIn("Case cbpkRemovableBody, cbpkRemovableCellExtra", source)
+        self.assertIn("If targetRange.InlineShapes.Count > 0 Then GoTo MeaningfulRange", helpers)
         self.assertIn("paragraphText = Replace(paragraphText, Chr$(1), \"\")", source)
         self.assertIn("If a.Count = 0 And b.Count = 0 Then JaccardSimilarity = 0", source)
+
+    def test_duplicate_remover_is_removal_only_and_safely_includes_empty_paragraphs(self):
+        source = read("src/forms/frmDuplicateDetector.bas")
+        helpers = read("src/modules/modCleanupHelpers.bas")
+        installer = read("src/installer/installer.bas")
+
+        self.assertIn('chkIncludeEmptyParagraphs.Caption = "Include empty paragraphs"', source)
+        self.assertIn("Dim doRemove As Boolean: doRemove = True", source)
+        self.assertNotIn("optHighlightOnly.GroupName", source)
+        self.assertNotIn("optRemoveDupes.GroupName", source)
+        self.assertIn("blankKind = ClassifyCleanupBlankParagraph(paragraphItem)", source)
+        self.assertIn("RemoveDuplicateParagraphAtStart = RemoveCleanupBlankParagraphAtStart(ActiveDocument, paragraphStart, blankKind)", source)
+        self.assertIn("If expectedKind <> cbpkNotBlank And blankKind <> expectedKind Then Exit Function", helpers)
+        self.assertIn("If paragraphItem.Range.Start <= cellRange.Start Then Exit Function", helpers)
+        self.assertIn("If precedingMark.Text <> vbCr Then Exit Function", helpers)
+        self.assertIn("If Not precedingMark.Information(wdWithInTable) Then Exit Function", helpers)
+        self.assertIn("ApplyPreviewMinimalMarker paragraphItem.Range, False, wdYellow", source)
+        self.assertIn("If RemoveDuplicateParagraphAtStart(ds(di)) Then removed = removed + 1", source)
+        self.assertIn("Private Function RemoveDuplicateParagraphAtStart(ByVal paragraphStart As Long) As Boolean", source)
+        self.assertIn("precedingMark.Delete", helpers)
+        self.assertIn('AddPreviewSummaryRow previewRows, "Removable empty paragraphs", duplicateEmptyCount', source)
+        self.assertIn('AddPreviewSummaryRow previewRows, "Protected empty cells", protectedEmptyCells', source)
+        self.assertIn('AddPreviewSummaryRow previewRows, "Protected row markers", protectedRowMarkers', source)
+        self.assertIn('Case "frmDuplicateDetector": GuidedToolName = "Duplicate Paragraph Remover"', helpers)
+        self.assertIn('Case "frmDuplicateDetector": FriendlyFormCaption = "Duplicate Paragraph Remover"', installer)
+
+    def test_duplicate_remover_fuzzy_thresholds_match_their_labels(self):
+        source = read("src/forms/frmDuplicateDetector.bas")
+        self.assertIn("Dim threshold As Double: threshold = 0.7", source)
+        self.assertIn("If optFuzzyLoose.Value Then threshold = 0.5", source)
+        self.assertIn("If optFuzzyStrict.Value Then threshold = 0.9", source)
 
     def test_formatting_stripper_uses_supported_font_reset_api(self):
         source = read("src/forms/frmFormattingStripper.bas")

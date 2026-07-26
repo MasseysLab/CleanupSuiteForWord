@@ -163,11 +163,11 @@ Private Sub cmdRun_Click()
         Dim previewEmDash As Long
         Dim previewEnDash As Long
         Dim previewEllipses As Long
-        If includeCurlyDouble Then previewCurlyDouble = CountPreviewFindMatches(targetRange, ChrW(&H201C)) + CountPreviewFindMatches(targetRange, ChrW(&H201D))
-        If includeCurlySingle Then previewCurlySingle = CountPreviewFindMatches(targetRange, ChrW(&H2018)) + CountPreviewFindMatches(targetRange, ChrW(&H2019))
-        If includeEmDash Then previewEmDash = CountPreviewFindMatches(targetRange, ChrW(&H2014))
-        If includeEnDash Then previewEnDash = CountPreviewFindMatches(targetRange, ChrW(&H2013))
-        If includeEllipses Then previewEllipses = CountPreviewFindMatches(targetRange, ChrW(&H2026))
+        If includeCurlyDouble Then previewCurlyDouble = CountPreviewFindMatches(targetRange, ChrW(&H201C), True) + CountPreviewFindMatches(targetRange, ChrW(&H201D), True)
+        If includeCurlySingle Then previewCurlySingle = CountPreviewFindMatches(targetRange, ChrW(&H2018), True) + CountPreviewFindMatches(targetRange, ChrW(&H2019), True)
+        If includeEmDash Then previewEmDash = CountPreviewFindMatches(targetRange, ChrW(&H2014), True)
+        If includeEnDash Then previewEnDash = CountPreviewFindMatches(targetRange, ChrW(&H2013), True)
+        If includeEllipses Then previewEllipses = CountPreviewFindMatches(targetRange, ChrW(&H2026), True)
         Dim previewCharacters As String
         For idx = 1 To findList.Count
             previewCharacters = previewCharacters & CStr(findList(idx))

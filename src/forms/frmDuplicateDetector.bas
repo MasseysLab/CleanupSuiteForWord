@@ -3,17 +3,15 @@ Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
     ReturnToMainAfterToolClose Me, Cancel, CloseMode
 End Sub
 ' --------------------------------------------------------------
-'  Duplicate Paragraph Detector
-'  Finds repeated paragraphs and highlights them, or removes all but the
-'  first occurrence.  Three matching methods: exact (case-insensitive),
+'  Duplicate Paragraph Remover
+'  Finds repeated paragraphs and removes all but the first occurrence after
+'  preview.  Three matching methods: exact (case-insensitive),
 '  normalized (ignores punctuation and spacing), and fuzzy (groups
 '  paragraphs that share a chosen percentage of their words).  Fuzzy
 '  matching uses global single-linkage clustering, so the groups it finds
 '  do not depend on the order paragraphs appear in the document.
 ' --------------------------------------------------------------
 Private Sub UserForm_Initialize()
-    optHighlightOnly.GroupName = "DupAction"
-    optRemoveDupes.GroupName = "DupAction"
     optMatchExact.GroupName = "DupMatch"
     optMatchNormalized.GroupName = "DupMatch"
     optMatchFuzzy.GroupName = "DupMatch"
@@ -22,19 +20,18 @@ Private Sub UserForm_Initialize()
     optFuzzyStrict.GroupName = "DupThreshold"
     optScopeDocument.GroupName = "DupScope"
     optScopeSelection.GroupName = "DupScope"
-    optHighlightOnly.Value = True
     optMatchExact.Value = True
     optFuzzyMedium.Value = True
+    chkIncludeEmptyParagraphs.Value = False
     lblFuzzyWarning.Caption = "Exact and normalized matching are fast.  Fuzzy matching compares every paragraph and is slower on large documents."
     optScopeDocument.Caption = "Entire document"
     optScopeDocument.Value = True
     optScopeSelection.Caption = "Selected text only"
     RefreshScopeSelectionState Me, True
-    optHighlightOnly.Caption = "Highlight duplicates (preview only)"
-    optRemoveDupes.Caption = "Remove duplicate paragraphs"
     optMatchExact.Caption = "Exact match"
     optMatchNormalized.Caption = "Normalized match (ignore punctuation and spaces)"
     optMatchFuzzy.Caption = "Fuzzy match (word overlap)"
+    chkIncludeEmptyParagraphs.Caption = "Include empty paragraphs"
     optFuzzyLoose.Caption = "Loose  (50% word overlap)"
     optFuzzyMedium.Caption = "Medium  (70% word overlap)"
     optFuzzyStrict.Caption = "Strict  (90% word overlap)"
@@ -115,16 +112,14 @@ Private Function FindRoot(ByRef par() As Long, ByVal x As Long) As Long
     Loop
     FindRoot = x
 End Function
-Private Sub optHighlightOnly_Click(): LayoutCleanupToolForm Me: End Sub
-Private Sub optRemoveDupes_Click(): LayoutCleanupToolForm Me: End Sub
+Private Sub chkIncludeEmptyParagraphs_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub optFuzzyLoose_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub optFuzzyMedium_Click(): LayoutCleanupToolForm Me: End Sub
 Private Sub optFuzzyStrict_Click(): LayoutCleanupToolForm Me: End Sub
-Private Sub cmdRiskPlacementDuplicatePreview_Click(): ShowToolRiskChoiceExplanation "Highlight duplicates", "Inspect first", "Marks likely duplicates for review without deleting text." : End Sub
-Private Sub cmdRiskPlacementDuplicateRemove_Click(): ShowToolRiskChoiceExplanation "Remove duplicate paragraphs", "Removes content", "Deletes later duplicate paragraphs and keeps the first match." : End Sub
 Private Sub cmdRiskPlacementDuplicateExact_Click(): ShowToolRiskChoiceExplanation "Exact match", "Inspect first", "Finds only paragraphs that match exactly." : End Sub
 Private Sub cmdRiskPlacementDuplicateNormalized_Click(): ShowToolRiskChoiceExplanation "Normalized match", "Inspect first", "Ignores punctuation and spacing differences when finding repeats." : End Sub
 Private Sub cmdRiskPlacementDuplicateFuzzy_Click(): ShowToolRiskChoiceExplanation "Fuzzy match", "Inspect first", "Finds near-duplicates by word overlap and needs human review." : End Sub
+Private Sub cmdRiskPlacementDuplicateEmpty_Click(): ShowToolRiskChoiceExplanation "Include empty paragraphs", "Removes content", "Treats removable blank body and trailing table-cell paragraphs as duplicate candidates while preserving required table-cell and final document markers." : End Sub
 Private Sub cmdRiskPlacementDuplicateFuzzyLoose_Click(): ShowToolRiskChoiceExplanation "Loose fuzzy threshold", "Inspect first", "Finds more possible matches and more false positives." : End Sub
 Private Sub cmdRiskPlacementDuplicateFuzzyMedium_Click(): ShowToolRiskChoiceExplanation "Medium fuzzy threshold", "Inspect first", "Balances catch rate and false positives." : End Sub
 Private Sub cmdRiskPlacementDuplicateFuzzyStrict_Click(): ShowToolRiskChoiceExplanation "Strict fuzzy threshold", "Inspect first", "Finds fewer candidates but reduces false positives." : End Sub
@@ -150,7 +145,7 @@ Private Sub cmdRun_Click()
     If ActiveDocument.ProtectionType <> wdNoProtection Then
         MsgBox "This document is protected. Please remove protection before running cleanup.", vbExclamation, "Document Protected": Exit Sub
     End If
-    If Not GuardBeforeCleanup("Duplicate Detector") Then Unload Me: Exit Sub
+    If Not GuardBeforeCleanup("Duplicate Paragraph Remover") Then Unload Me: Exit Sub
     Dim previewOnly As Boolean: previewOnly = chkPreviewOnly.Value
     Dim targetRange As Range
     If optScopeSelection.Value And optScopeSelection.Enabled Then
@@ -158,30 +153,55 @@ Private Sub cmdRun_Click()
     Else
         Set targetRange = ActiveDocument.Content
     End If
-    Dim doRemove As Boolean: doRemove = optRemoveDupes.Value
+    Dim doRemove As Boolean: doRemove = True
+    Dim includeEmptyParagraphs As Boolean: includeEmptyParagraphs = chkIncludeEmptyParagraphs.Value
     Dim matchMode As Integer: matchMode = 0
     If optMatchNormalized.Value Then matchMode = 1
     If optMatchFuzzy.Value Then matchMode = 2
-    Dim threshold As Double: threshold = 0.8
-    If optFuzzyLoose.Value Then threshold = 0.6
+    Dim threshold As Double: threshold = 0.7
+    If optFuzzyLoose.Value Then threshold = 0.5
     If optFuzzyStrict.Value Then threshold = 0.9
     Dim paras As Collection: Set paras = New Collection
     Dim p As Paragraph
+    Dim candidateText As String
+    Dim blankKind As CleanupBlankParagraphKind
+    Dim protectedEmptyCells As Long
+    Dim protectedRowMarkers As Long
+    Dim protectedFinalMarkers As Long
+    Dim skippedStructures As Long
     For Each p In targetRange.Paragraphs
         If ParagraphContainedInRange(p, targetRange) Then
-            If Len(DuplicateCandidateVisibleText(p.Range.Text)) > 0 Then paras.Add p
+            candidateText = DuplicateCandidateVisibleText(p.Range.Text)
+            If Len(candidateText) > 0 Then
+                paras.Add p
+            Else
+                blankKind = ClassifyCleanupBlankParagraph(p)
+                Select Case blankKind
+                    Case cbpkRemovableBody, cbpkRemovableCellExtra
+                        If includeEmptyParagraphs Then paras.Add p
+                    Case cbpkProtectedEmptyCell
+                        protectedEmptyCells = protectedEmptyCells + 1
+                    Case cbpkProtectedRowMarker
+                        protectedRowMarkers = protectedRowMarkers + 1
+                    Case cbpkProtectedFinalDocument
+                        protectedFinalMarkers = protectedFinalMarkers + 1
+                    Case cbpkUnsupported
+                        skippedStructures = skippedStructures + 1
+                End Select
+            End If
         End If
     Next p
     If matchMode = 2 And paras.Count > 1500 Then
         If MsgBox("This scope has " & paras.Count & " paragraphs. Fuzzy matching compares them all and may take a while. Continue?", vbQuestion + vbYesNo, "Fuzzy Match") = vbNo Then Exit Sub
     End If
-    MarkCleanupStart "Duplicate Detector"
+    MarkCleanupStart "Duplicate Paragraph Remover"
     Dim undoRec As UndoRecord
     Set undoRec = Application.UndoRecord
-    undoRec.StartCustomRecord "Cleanup Suite - Duplicate Detector"
+    undoRec.StartCustomRecord "Cleanup Suite - Duplicate Paragraph Remover"
     On Error GoTo RunErr
     Application.ScreenUpdating = False
-    Dim dupCount As Long: dupCount = 0
+    Dim duplicateTextCount As Long
+    Dim duplicateEmptyCount As Long
     Dim dupStarts As Collection: Set dupStarts = New Collection
     Dim i As Long, j As Long
     If matchMode <= 1 Then
@@ -190,16 +210,23 @@ Private Sub cmdRun_Click()
         Dim key As String
         For i = 1 To paras.Count
             Set p = paras(i)
+            Dim candidateIsEmpty As Boolean
+            candidateIsEmpty = (Len(DuplicateCandidateVisibleText(p.Range.Text)) = 0)
             If matchMode = 0 Then
                 key = NormalizeText(p.Range.Text, False)
             Else
                 key = NormalizeText(p.Range.Text, True)
             End If
+            If candidateIsEmpty Then key = vbNullChar & "EMPTY_PARAGRAPH"
             If Len(key) > 0 Then
                 If dict.Exists(key) Then
-                    p.Range.HighlightColorIndex = wdYellow
+                    MarkDuplicateParagraphPreview p, candidateIsEmpty
                     dupStarts.Add p.Range.Start
-                    dupCount = dupCount + 1
+                    If candidateIsEmpty Then
+                        duplicateEmptyCount = duplicateEmptyCount + 1
+                    Else
+                        duplicateTextCount = duplicateTextCount + 1
+                    End If
                 Else
                     dict.Add key, i
                 End If
@@ -221,6 +248,18 @@ Private Sub cmdRun_Click()
             For i = 1 To n
                 par(i) = i
             Next i
+            If includeEmptyParagraphs Then
+                Dim firstEmptyIndex As Long
+                For i = 1 To n
+                    If Len(DuplicateCandidateVisibleText(paras(i).Range.Text)) = 0 Then
+                        If firstEmptyIndex = 0 Then
+                            firstEmptyIndex = i
+                        Else
+                            par(i) = firstEmptyIndex
+                        End If
+                    End If
+                Next i
+            End If
             Dim ca As Long, cb As Long, mn As Long, mx As Long, ra As Long, rb As Long
             For i = 1 To n - 1
                 ca = wsArr(i).Count
@@ -260,9 +299,13 @@ Private Sub cmdRun_Click()
             For i = 1 To n
                 rt = CStr(FindRoot(par, i))
                 If i <> rootMin(rt) Then
-                    paras(i).Range.HighlightColorIndex = wdYellow
+                    MarkDuplicateParagraphPreview paras(i), (Len(DuplicateCandidateVisibleText(paras(i).Range.Text)) = 0)
                     dupStarts.Add paras(i).Range.Start
-                    dupCount = dupCount + 1
+                    If Len(DuplicateCandidateVisibleText(paras(i).Range.Text)) = 0 Then
+                        duplicateEmptyCount = duplicateEmptyCount + 1
+                    Else
+                        duplicateTextCount = duplicateTextCount + 1
+                    End If
                 End If
             Next i
         End If
@@ -273,8 +316,13 @@ Private Sub cmdRun_Click()
         MarkCleanupEnd
         Dim previewRows As Collection
         Set previewRows = NewPreviewSummaryRows()
-        AddPreviewSummaryRow previewRows, "Duplicate paragraphs", dupCount
-        ShowPreviewActionsSummary Me, "Duplicate Detector", previewRows
+        AddPreviewSummaryRow previewRows, "Text duplicate paragraphs", duplicateTextCount
+        AddPreviewSummaryRow previewRows, "Removable empty paragraphs", duplicateEmptyCount, False, (Not includeEmptyParagraphs)
+        AddPreviewSummaryRow previewRows, "Protected empty cells", protectedEmptyCells, True, (Not includeEmptyParagraphs)
+        AddPreviewSummaryRow previewRows, "Protected row markers", protectedRowMarkers, True, (Not includeEmptyParagraphs)
+        AddPreviewSummaryRow previewRows, "Protected final marker", protectedFinalMarkers, True, (Not includeEmptyParagraphs)
+        AddPreviewSummaryRow previewRows, "Skipped structures", skippedStructures, True, (Not includeEmptyParagraphs)
+        ShowPreviewActionsSummary Me, "Duplicate Paragraph Remover", previewRows
         Exit Sub
     End If
     If doRemove Then
@@ -296,8 +344,7 @@ Private Sub cmdRun_Click()
                 Next b
             Next a
             For di = 1 To dn
-                ActiveDocument.Range(ds(di), ds(di)).Paragraphs(1).Range.Delete
-                removed = removed + 1
+                If RemoveDuplicateParagraphAtStart(ds(di)) Then removed = removed + 1
             Next di
         End If
     End If
@@ -321,6 +368,28 @@ RunErr:
              "Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back."
     MsgBox errMsg, vbCritical, "Cleanup Error"
 End Sub
+Private Sub MarkDuplicateParagraphPreview(ByVal paragraphItem As Paragraph, ByVal isEmptyParagraph As Boolean)
+    If isEmptyParagraph Then
+        ApplyPreviewMinimalMarker paragraphItem.Range, False, wdYellow
+    Else
+        ApplyPreviewHighlight paragraphItem.Range, wdYellow
+    End If
+End Sub
+Private Function RemoveDuplicateParagraphAtStart(ByVal paragraphStart As Long) As Boolean
+    Dim paragraphItem As Paragraph
+    Dim blankKind As CleanupBlankParagraphKind
+    On Error GoTo SafeExit
+    Set paragraphItem = ActiveDocument.Range(paragraphStart, paragraphStart).Paragraphs(1)
+
+    If Len(DuplicateCandidateVisibleText(paragraphItem.Range.Text)) = 0 Then
+        blankKind = ClassifyCleanupBlankParagraph(paragraphItem)
+        RemoveDuplicateParagraphAtStart = RemoveCleanupBlankParagraphAtStart(ActiveDocument, paragraphStart, blankKind)
+        Exit Function
+    End If
+    paragraphItem.Range.Delete
+    RemoveDuplicateParagraphAtStart = True
+SafeExit:
+End Function
 Private Function DuplicateCandidateVisibleText(ByVal paragraphText As String) As String
     paragraphText = Replace(paragraphText, vbCr, "")
     paragraphText = Replace(paragraphText, Chr$(1), "")

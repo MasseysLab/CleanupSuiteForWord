@@ -64,9 +64,10 @@ Private Sub cmdRun_Click()
         Dim previewRows As Collection
         RemoveAllHighlighting ActiveDocument.Content
         pc = CountSoftReturnConvertibleMarks(targetRange, softToPara)
+        Call HighlightSoftReturnConvertibleMarks(targetRange, softToPara)
         Set previewRows = NewPreviewSummaryRows()
-        AddPreviewSummaryRow previewRows, "Soft returns", IIf(softToPara, pc, 0), True, (Not softToPara)
-        AddPreviewSummaryRow previewRows, "Paragraph marks", IIf(softToPara, 0, pc), True, softToPara
+        AddPreviewSummaryRow previewRows, "Soft returns", IIf(softToPara, pc, 0), False, (Not softToPara)
+        AddPreviewSummaryRow previewRows, "Paragraph marks", IIf(softToPara, 0, pc), False, softToPara
         ShowPreviewActionsSummary Me, "Soft Return Converter", previewRows
         Exit Sub
     End If
@@ -105,6 +106,32 @@ Private Function CountSoftReturnConvertibleMarks(ByVal searchRange As Range, ByV
             If CountSoftReturnConvertibleMarks > 0 Then CountSoftReturnConvertibleMarks = CountSoftReturnConvertibleMarks - 1
         End If
     End If
+End Function
+
+Private Function HighlightSoftReturnConvertibleMarks(ByVal searchRange As Range, ByVal softToPara As Boolean) As Long
+    Dim matchRange As Range
+    Dim searchEnd As Long
+    Dim findText As String
+    searchEnd = searchRange.End
+    If softToPara Then findText = "^l" Else findText = "^p"
+    Set matchRange = searchRange.Duplicate
+
+    Do
+        With matchRange.Find
+            .ClearFormatting
+            .Text = findText
+            .Forward = True
+            .Wrap = wdFindStop
+            .MatchWildcards = False
+            If Not .Execute Then Exit Do
+        End With
+        If (Not softToPara) And matchRange.End >= searchEnd Then Exit Do
+        HighlightSoftReturnConvertibleMarks = HighlightSoftReturnConvertibleMarks + 1
+        ApplyPreviewMinimalMarker matchRange
+        matchRange.Collapse wdCollapseEnd
+        If matchRange.Start >= searchEnd Then Exit Do
+        matchRange.End = searchEnd
+    Loop
 End Function
 Private Function CountSoftReturnCharacters(ByVal textValue As String, ByVal markChar As String) As Long
     CountSoftReturnCharacters = Len(textValue) - Len(Replace(textValue, markChar, ""))

@@ -119,6 +119,7 @@ Private Sub cmdRun_Click()
                 txt = Trim$(ParagraphBodyText(p))
                 ResolveListParagraphActions p, txt, doBullets, doNumbering, doIndent, doHyphen, actionHyphen, actionBullets, actionNumbering, actionIndent
                 If actionHyphen Or actionNumbering Then HighlightManualListPrefix p, actionNumbering
+                If actionBullets Or actionIndent Then ApplyPreviewMinimalMarker p.Range, True
                 If actionHyphen Or actionBullets Or actionNumbering Or actionIndent Then changed = changed + 1
                 If actionHyphen Then previewHyphen = previewHyphen + 1
                 If actionBullets Then previewBullets = previewBullets + 1
@@ -130,9 +131,9 @@ Private Sub cmdRun_Click()
         Dim previewRows As Collection
         Set previewRows = NewPreviewSummaryRows()
         AddPreviewSummaryRow previewRows, "Hyphen list items", previewHyphen, False, (Not doHyphen)
-        AddPreviewSummaryRow previewRows, "Bullet list items", previewBullets, True, (Not doBullets)
+        AddPreviewSummaryRow previewRows, "Bullet list items", previewBullets, False, (Not doBullets)
         AddPreviewSummaryRow previewRows, "Numbered list items", previewNumbering, False, (Not doNumbering)
-        AddPreviewSummaryRow previewRows, "List indents", previewIndent, True, (Not doIndent)
+        AddPreviewSummaryRow previewRows, "List indents", previewIndent, False, (Not doIndent)
         ShowPreviewActionsSummary Me, "List Normalizer", previewRows
         Exit Sub
     End If
@@ -181,7 +182,7 @@ Private Sub HighlightManualListPrefix(ByVal p As Paragraph, ByVal isNumbered As 
     ElseIf Left$(visibleText, 2) = "- " Or Left$(visibleText, 2) = "* " Then
         prefixLength = 2
     End If
-    If prefixLength > 0 Then ActiveDocument.Range(p.Range.Start, p.Range.Start + prefixLength).HighlightColorIndex = wdBrightGreen
+    If prefixLength > 0 Then ApplyPreviewHighlight ActiveDocument.Range(p.Range.Start, p.Range.Start + prefixLength)
 End Sub
 Private Function ConvertHyphenListsToBullets(scopeRange As Range) As Long
     Dim p As Paragraph, listText As String, cnt As Long

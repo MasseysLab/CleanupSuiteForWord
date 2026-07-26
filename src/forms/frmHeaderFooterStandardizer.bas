@@ -134,11 +134,13 @@ Private Sub cmdRun_Click()
             If doHeaders Then
                 For Each hf In sec.Headers
                     headerAreas = headerAreas + 1
+                    If Not ApplyPreviewMinimalMarker(hf.Range, True) Then ApplyPreviewMinimalMarker sec.Range, True
                 Next hf
             End If
             If doFooters Then
                 For Each hf In sec.Footers
                     footerAreas = footerAreas + 1
+                    If Not ApplyPreviewMinimalMarker(hf.Range, True) Then ApplyPreviewMinimalMarker sec.Range, True
                 Next hf
             End If
         Next sec
@@ -158,13 +160,13 @@ Private Sub cmdRun_Click()
         If breakLinks Then previewUnlinked = areaCount
         Dim previewRows As Collection
         Set previewRows = NewPreviewSummaryRows()
-        AddPreviewSummaryRow previewRows, "Header areas", headerAreas, True, (Not doHeaders)
-        AddPreviewSummaryRow previewRows, "Footer areas", footerAreas, True, (Not doFooters)
-        AddPreviewSummaryRow previewRows, "Cleared areas", previewCleared, True, (Not doClear)
-        AddPreviewSummaryRow previewRows, "Font reset areas", previewFont, True, (Not standardizeFont)
-        AddPreviewSummaryRow previewRows, "Spacing reset areas", previewSpacing, True, (Not standardizeSpacing)
-        AddPreviewSummaryRow previewRows, "Alignment areas", previewAlignment, True, (Not standardizeAlignment)
-        AddPreviewSummaryRow previewRows, "Unlinked sections", previewUnlinked, True, (Not breakLinks)
+        AddPreviewSummaryRow previewRows, "Header areas", headerAreas, False, (Not doHeaders)
+        AddPreviewSummaryRow previewRows, "Footer areas", footerAreas, False, (Not doFooters)
+        AddPreviewSummaryRow previewRows, "Cleared areas", previewCleared, False, (Not doClear)
+        AddPreviewSummaryRow previewRows, "Font reset areas", previewFont, False, (Not standardizeFont)
+        AddPreviewSummaryRow previewRows, "Spacing reset areas", previewSpacing, False, (Not standardizeSpacing)
+        AddPreviewSummaryRow previewRows, "Alignment areas", previewAlignment, False, (Not standardizeAlignment)
+        AddPreviewSummaryRow previewRows, "Unlinked sections", previewUnlinked, False, (Not breakLinks)
         ShowPreviewActionsSummary Me, "Header / Footer Standardizer", previewRows
         Exit Sub
     End If

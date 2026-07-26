@@ -12,6 +12,8 @@ Private mSummaryTop As Single
 Private mResumeModelessAfterModal As Boolean
 Private mOriginalBrowseTarget As Long
 Private mBrowseTargetCaptured As Boolean
+Private mEditablePreviewRestored As Boolean
+Private mNavigationDetached As Boolean
 
 Private Const FORM_W As Single = 283
 Private Const MIN_FORM_H As Single = 90
@@ -34,7 +36,9 @@ Public Sub ConfigureSummary(sourceForm As Object, toolName As String, rows As Co
     mToolName = toolName
     Set mSummaryRows = rows
     mPreviewOn = True
+    mEditablePreviewRestored = False
     mResumeModelessAfterModal = False
+    mNavigationDetached = False
     Set mPreviewDocument = ActiveDocument
     Set mPreviewWindow = ActiveWindow
     On Error Resume Next
@@ -52,13 +56,20 @@ Public Sub ConfigureSummary(sourceForm As Object, toolName As String, rows As Co
     cmdPreview.Enabled = True
     cmdPreview.Visible = True
     cmdClear.Caption = "Reconfigure"
-    cmdPreviousPage.Caption = ChrW$(&H25C0) & "  Previous page"
-    cmdNextPage.Caption = "Next page  " & ChrW$(&H25B6)
+    cmdPreviousChange.Caption = "Change" & vbCrLf & ChrW$(&H25C0) & " Previous"
+    cmdPreviousPage.Caption = "Page" & vbCrLf & ChrW$(&H25C0) & " Previous"
+    cmdNextPage.Caption = "Page" & vbCrLf & "Next " & ChrW$(&H25B6)
+    cmdNextChange.Caption = "Change" & vbCrLf & "Next " & ChrW$(&H25B6)
+    cmdPreviousChange.Enabled = True
     cmdPreviousPage.Enabled = True
     cmdNextPage.Enabled = True
+    cmdNextChange.Enabled = True
+    cmdPreviousChange.Visible = True
     cmdPreviousPage.Visible = True
     cmdNextPage.Visible = True
+    cmdNextChange.Visible = True
     LayoutPanel
+    UpdateNavigationButtonStates
     mApplyButtonBackColor = cmdApply.BackColor
     mApplyButtonForeColor = cmdApply.ForeColor
 End Sub
@@ -74,7 +85,7 @@ Private Sub LayoutPanel()
     Me.Width = FORM_W
     buttonHeight = MeasuredPreviewButtonHeight()
     navigationTop = ACTION_TOP + buttonHeight + GAP
-    navigationWidth = (CONTENT_W - GAP) / 2
+    navigationWidth = (CONTENT_W - (3 * GAP)) / 4
     If mPreviewOn Then
         mSummaryTop = navigationTop + buttonHeight + GAP
     Else
@@ -96,15 +107,21 @@ Private Sub LayoutPanel()
     cmdPreview.Move M, ACTION_TOP, BTN_W, buttonHeight
     cmdClear.Move M + BTN_W + GAP, ACTION_TOP, BTN_W, buttonHeight
     cmdApply.Move M + (2 * (BTN_W + GAP)), ACTION_TOP, BTN_W, buttonHeight
-    cmdPreviousPage.Move M, navigationTop, navigationWidth, buttonHeight
-    cmdNextPage.Move M + navigationWidth + GAP, navigationTop, navigationWidth, buttonHeight
+    cmdPreviousChange.Move M, navigationTop, navigationWidth, buttonHeight
+    cmdPreviousPage.Move M + navigationWidth + GAP, navigationTop, navigationWidth, buttonHeight
+    cmdNextPage.Move M + (2 * (navigationWidth + GAP)), navigationTop, navigationWidth, buttonHeight
+    cmdNextChange.Move M + (3 * (navigationWidth + GAP)), navigationTop, navigationWidth, buttonHeight
+    cmdPreviousChange.Visible = mPreviewOn
     cmdPreviousPage.Visible = mPreviewOn
     cmdNextPage.Visible = mPreviewOn
+    cmdNextChange.Visible = mPreviewOn
     FitPreviewButtonCaption cmdPreview
     FitPreviewButtonCaption cmdClear
     FitPreviewButtonCaption cmdApply
+    FitPreviewButtonCaption cmdPreviousChange
     FitPreviewButtonCaption cmdPreviousPage
     FitPreviewButtonCaption cmdNextPage
+    FitPreviewButtonCaption cmdNextChange
     lblSummary.Move M, mSummaryTop, 0, 0
     lblSummary.Visible = False
     lblTitle.Visible = False
@@ -229,8 +246,10 @@ Private Sub StyleActionBar()
     StyleButton cmdApply, True
     StyleButton cmdPreview, True
     StyleButton cmdClear, True
+    StyleButton cmdPreviousChange, True
     StyleButton cmdPreviousPage, True
     StyleButton cmdNextPage, True
+    StyleButton cmdNextChange, True
     lblButtonMeasure.Visible = False
 End Sub
 
@@ -260,7 +279,8 @@ Private Function MeasuredPreviewButtonHeight() As Single
 
     On Error Resume Next
     captions = Array(cmdPreview.Caption, cmdClear.Caption, cmdApply.Caption, _
-                     cmdPreviousPage.Caption, cmdNextPage.Caption)
+                     cmdPreviousChange.Caption, cmdPreviousPage.Caption, _
+                     cmdNextPage.Caption, cmdNextChange.Caption)
     With lblButtonMeasure
         .Visible = False
         .AutoSize = True
@@ -275,7 +295,7 @@ Private Function MeasuredPreviewButtonHeight() As Single
         .Caption = ""
         .AutoSize = False
     End With
-    MeasuredPreviewButtonHeight = MaxSingle(25, maximumTextHeight + 12)
+    MeasuredPreviewButtonHeight = MaxSingle(32, maximumTextHeight + 8)
     On Error GoTo 0
 End Function
 
@@ -319,8 +339,10 @@ Public Sub ShowProgress(ByVal progressText As String)
     cmdPreview.Enabled = False
     cmdClear.Enabled = False
     cmdApply.Enabled = False
-    cmdPreviousPage.Enabled = False
-    cmdNextPage.Enabled = False
+    StyleNavigationButton cmdPreviousChange, True, False
+    StyleNavigationButton cmdPreviousPage, False, False
+    StyleNavigationButton cmdNextPage, False, False
+    StyleNavigationButton cmdNextChange, True, False
     Me.Repaint
     On Error GoTo 0
 End Sub
@@ -334,17 +356,18 @@ Public Sub ClearProgress()
     cmdPreview.Enabled = True
     cmdClear.Enabled = True
     cmdApply.Enabled = True
-    cmdPreviousPage.Enabled = mPreviewOn
-    cmdNextPage.Enabled = mPreviewOn
+    UpdateNavigationButtonStates
     Me.Repaint
     On Error GoTo 0
 End Sub
 
 Private Sub RestoreEditablePreviewDocument()
+    If mEditablePreviewRestored Then Exit Sub
     On Error Resume Next
     RestoreCleanupSuiteTransientState
     RemovePreviewHighlighting mPreviewDocument
     RestorePreviewBrowseTarget
+    mEditablePreviewRestored = True
     On Error GoTo 0
 End Sub
 
@@ -355,6 +378,10 @@ Private Sub RestorePreviewBrowseTarget()
     On Error GoTo 0
 End Sub
 
+Private Sub cmdPreviousChange_Click()
+    NavigatePreviewChange False
+End Sub
+
 Private Sub cmdPreviousPage_Click()
     NavigatePreviewPage False
 End Sub
@@ -363,22 +390,125 @@ Private Sub cmdNextPage_Click()
     NavigatePreviewPage True
 End Sub
 
+Private Sub cmdNextChange_Click()
+    NavigatePreviewChange True
+End Sub
+
 Private Sub NavigatePreviewPage(ByVal moveForward As Boolean)
+    Dim resumePanelHere As Boolean
+
     On Error GoTo NavigationErr
     If Not mPreviewOn Then Exit Sub
     If Not PreviewTargetIsActive() Then Exit Sub
-    Application.Browser.Target = wdBrowsePage
-    If moveForward Then
-        Application.Browser.Next
-    Else
-        Application.Browser.Previous
-    End If
+    resumePanelHere = DetachPreviewPanelForNavigationIfNeeded()
+    FocusPreviewDocumentWindow
+    If Not TurnPreviewPage(moveForward) Then GoTo NavigationErr
     lblHint.Caption = mToolName
+    UpdateNavigationButtonStates
     Me.Repaint
-    Exit Sub
+    GoTo NavigationExit
 NavigationErr:
     lblHint.Caption = "Could not turn the preview page"
     Me.Repaint
+NavigationExit:
+    ResumePreviewPanelAfterNavigation resumePanelHere
+End Sub
+
+Private Sub NavigatePreviewChange(ByVal moveForward As Boolean)
+    Dim resumePanelHere As Boolean
+
+    On Error GoTo NavigationErr
+    If Not mPreviewOn Then Exit Sub
+    If Not PreviewTargetIsActive() Then Exit Sub
+    resumePanelHere = DetachPreviewPanelForNavigationIfNeeded()
+    FocusPreviewDocumentWindow
+    If Not NavigatePreviewChangePage(mPreviewDocument, moveForward) Then GoTo NavigationExit
+    lblHint.Caption = mToolName
+    UpdateNavigationButtonStates
+    Me.Repaint
+    GoTo NavigationExit
+NavigationErr:
+    lblHint.Caption = "Could not turn to the preview change"
+    Me.Repaint
+NavigationExit:
+    ResumePreviewPanelAfterNavigation resumePanelHere
+End Sub
+
+Private Function DetachPreviewPanelForNavigationIfNeeded() As Boolean
+    RememberPreviewActionPanelPosition Me.Left, Me.Top
+    If mNavigationDetached Then
+        ' The panel is already modeless. Hide it for this page turn so Word's
+        ' Reading View window owns the native left/right page key.
+        Me.Hide
+        DoEvents
+        DetachPreviewPanelForNavigationIfNeeded = True
+        Exit Function
+    End If
+
+    ' A modal VBA form can prevent Reading View from repainting a backward
+    ' page turn even though Word moves Selection to the correct page. Hand the
+    ' first navigation click back to the document window, then resume this
+    ' same form modelessly. Reading View remains the editing safety boundary.
+    mNavigationDetached = True
+    mResumeModelessAfterModal = True
+    Me.Hide
+    DoEvents
+End Function
+
+Private Sub ResumePreviewPanelAfterNavigation(ByVal resumePanelHere As Boolean)
+    If Not resumePanelHere Then Exit Sub
+    On Error Resume Next
+    Me.Show vbModeless
+    On Error GoTo 0
+End Sub
+
+Private Sub FocusPreviewDocumentWindow()
+    ' Modeless form clicks return keyboard focus to the form. Word can update
+    ' Selection without repainting a backward Reading View page while that is
+    ' true, so reactivate the captured Word window before each turn.
+    On Error Resume Next
+    mPreviewWindow.Activate
+    DoEvents
+    On Error GoTo 0
+End Sub
+
+Private Sub UpdateNavigationButtonStates()
+    Dim targetIsActive As Boolean
+
+    On Error Resume Next
+    targetIsActive = (mPreviewOn And PreviewTargetIsActive())
+    If Not targetIsActive Then
+        StyleNavigationButton cmdPreviousChange, True, False
+        StyleNavigationButton cmdPreviousPage, False, False
+        StyleNavigationButton cmdNextPage, False, False
+        StyleNavigationButton cmdNextChange, True, False
+        Exit Sub
+    End If
+
+    StyleNavigationButton cmdPreviousChange, True, PreviewChangeNavigationAvailable(mPreviewDocument, False)
+    StyleNavigationButton cmdPreviousPage, False, PreviewPageNavigationAvailable(mPreviewDocument, False)
+    StyleNavigationButton cmdNextPage, False, PreviewPageNavigationAvailable(mPreviewDocument, True)
+    StyleNavigationButton cmdNextChange, True, PreviewChangeNavigationAvailable(mPreviewDocument, True)
+    On Error GoTo 0
+End Sub
+
+Private Sub StyleNavigationButton(ByVal buttonControl As Object, ByVal isChangeButton As Boolean, ByVal enabledState As Boolean)
+    On Error Resume Next
+    buttonControl.Enabled = enabledState
+    buttonControl.WordWrap = True
+    buttonControl.Font.Size = 7.5
+    buttonControl.Font.Bold = True
+    If Not enabledState Then
+        buttonControl.BackColor = RGB(235, 235, 235)
+        buttonControl.ForeColor = RGB(128, 128, 128)
+    ElseIf isChangeButton Then
+        buttonControl.BackColor = RGB(255, 243, 205)
+        buttonControl.ForeColor = RGB(112, 78, 0)
+    Else
+        buttonControl.BackColor = RGB(221, 235, 247)
+        buttonControl.ForeColor = RGB(31, 78, 121)
+    End If
+    On Error GoTo 0
 End Sub
 
 Private Sub cmdApply_Click()

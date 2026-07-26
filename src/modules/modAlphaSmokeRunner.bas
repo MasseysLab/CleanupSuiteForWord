@@ -22,6 +22,8 @@ Public Function RunAlphaSmokeChecklist(Optional ByVal repoRoot As String = "") A
     SmokeTrace "Capitalization check complete"
     results.Add SmokeParagraphHelpersCheck()
     SmokeTrace "Paragraph helper check complete"
+    results.Add SmokeStructuralSafetyCheck()
+    SmokeTrace "Structural safety check complete"
     results.Add SmokeHeaderFooterCheck()
     SmokeTrace "Header/Footer check complete"
     results.Add SmokeFormattingCleanerCheck()
@@ -44,6 +46,29 @@ Public Function RunCapitalizationAlphaSmokeCheck() As String
     RunCapitalizationAlphaSmokeCheck = CStr(SmokeCapitalizationCheck())
 End Function
 
+Public Function RunStructuralSafetySmokeCheck() As String
+    RunStructuralSafetySmokeCheck = CStr(SmokeStructuralSafetyCheck())
+End Function
+
+Public Function RunStructuralFixtureSmokeCheck() As String
+    On Error GoTo Fail
+    SmokeRequireValue ActiveDocument.Tables.Count >= 8, "The structural fixture does not contain the expected tables."
+    SmokeRequireValue CleanupTableStructureIsSupported(ActiveDocument.Tables(1)), "The fixture's empty-row table was rejected."
+    SmokeRequireValue Not CleanupTableRowHasMeaningfulContent(ActiveDocument.Tables(1).Rows(2)), "The fixture's empty row was not recognized."
+    SmokeRequireValue CleanupTableStructureIsSupported(ActiveDocument.Tables(2)), "The fixture's empty-column table was rejected."
+    SmokeRequireValue Not CleanupTableColumnHasMeaningfulContent(ActiveDocument.Tables(2), 2), "The fixture's empty column was not recognized."
+    SmokeRequireValue Not CleanupTableStructureIsSupported(ActiveDocument.Tables(5)), "The fixture's merged table was accepted."
+    SmokeRequireValue Not CleanupTableStructureIsSupported(ActiveDocument.Tables(6)), "The fixture's nested table was accepted."
+    SmokeRequireValue CleanupTableStructureIsSupported(ActiveDocument.Tables(7)), "The fixture's single-column conversion table was rejected."
+    SmokeRequireValue ActiveDocument.Tables(7).Columns.Count = 1, "The fixture's conversion candidate is not single-column."
+
+    RunStructuralFixtureSmokeCheck = "PASS|Structural Fixture|Eligible rows, columns, and conversion tables were accepted while merged and nested structures were protected."
+    Exit Function
+
+Fail:
+    RunStructuralFixtureSmokeCheck = "FAIL|Structural Fixture|" & Err.Description
+End Function
+
 Public Function RunPreviewLifecycleSmokeChecks() As String
     Dim originalDocument As Document
     Dim previewDocument As Document
@@ -64,6 +89,10 @@ Public Function RunPreviewLifecycleSmokeChecks() As String
     Dim originalBrowseTarget As WdBrowseTarget
     Dim navigationStart As Long
     Dim navigationNextStart As Long
+    Dim userHighlightRange As Range
+    Dim plainHighlightRange As Range
+    Dim mixedHighlightRange As Range
+    Dim smokeStage As String
     Dim i As Long
 
     On Error GoTo SmokeFail
@@ -86,6 +115,7 @@ Public Function RunPreviewLifecycleSmokeChecks() As String
     Err.Clear
     On Error GoTo SmokeFail
     originalViewType = previewWindow.View.Type
+    smokeStage = "initial highlight visibility setup"
     previewWindow.View.ShowHighlight = False
     originalShowHighlight = previewWindow.View.ShowHighlight
     originalZoom = previewWindow.View.Zoom.Percentage
@@ -93,11 +123,14 @@ Public Function RunPreviewLifecycleSmokeChecks() As String
     originalSelectionStart = previewWindow.Selection.Start
     originalSelectionEnd = previewWindow.Selection.End
 
+    smokeStage = "first Preview ON"
     SmokeRequireValue BeginPreviewViewSession(), "Preview ON did not start a view session."
     SmokeRequireValue PreviewViewSessionIsActive(), "Preview ON did not mark the view session active."
     SmokeRequireValue previewWindow.View.ReadingLayout, "Preview ON did not enter Reading View."
-    SmokeRequireValue previewWindow.View.ShowHighlight, "Preview ON did not make highlight formatting visible."
+    ' Word does not expose ShowHighlight while Reading View is active. The
+    ' helper sets it immediately before the final Reading View transition.
     previewWindow.Selection.SetRange 30, 30
+    smokeStage = "first Preview OFF restoration"
     RestorePreviewViewSession
     SmokeRequireValue Not PreviewViewSessionIsActive(), "Preview OFF left the view session active."
     SmokeRequireValue Not previewWindow.View.ReadingLayout, "Preview OFF did not leave Reading View."
@@ -108,20 +141,44 @@ Public Function RunPreviewLifecycleSmokeChecks() As String
     SmokeRequireValue previewWindow.Selection.Start = originalSelectionStart And previewWindow.Selection.End = originalSelectionEnd, "Preview OFF did not restore the selection."
     RestorePreviewViewSession
 
+    smokeStage = "existing Reading View setup"
     previewWindow.View.ReadingLayout = True
+    smokeStage = "existing Reading View Preview ON"
     SmokeRequireValue BeginPreviewViewSession(), "An existing Reading View did not start a preview session."
+    smokeStage = "existing Reading View restoration"
     RestorePreviewViewSession
     SmokeRequireValue previewWindow.View.ReadingLayout, "An existing Reading View was not preserved."
     previewWindow.View.ReadingLayout = False
 
     Set rows = NewPreviewSummaryRows()
     AddPreviewSummaryRow rows, "Smoke row", 1
+    BeginPreviewChangeCollection
+    Set userHighlightRange = previewDocument.Paragraphs(2).Range.Words(1).Duplicate
+    userHighlightRange.HighlightColorIndex = wdYellow
+    ApplyPreviewHighlight userHighlightRange
+    Set plainHighlightRange = previewDocument.Paragraphs(150).Range.Words(1).Duplicate
+    plainHighlightRange.HighlightColorIndex = wdNoHighlight
+    ApplyPreviewHighlight plainHighlightRange
     Set panel = VBA.UserForms.Add("frmPreviewActions")
     originalBrowseTarget = Application.Browser.Target
+    smokeStage = "Preview Actions configuration"
     panel.ConfigureSummary Nothing, "Preview OFF Smoke", rows
     SmokeRequireValue previewWindow.View.ReadingLayout, "Panel Preview ON did not enter Reading View."
+    SmokeRequireValue panel.Controls("cmdPreviousChange").Visible, "Preview did not expose Previous change navigation."
     SmokeRequireValue panel.Controls("cmdPreviousPage").Visible, "Preview did not expose Previous page navigation."
     SmokeRequireValue panel.Controls("cmdNextPage").Visible, "Preview did not expose Next page navigation."
+    SmokeRequireValue panel.Controls("cmdNextChange").Visible, "Preview did not expose Next change navigation."
+    SmokeRequireValue panel.Controls("cmdPreviousChange").Width = panel.Controls("cmdPreviousPage").Width And _
+                      panel.Controls("cmdPreviousPage").Width = panel.Controls("cmdNextPage").Width And _
+                      panel.Controls("cmdNextPage").Width = panel.Controls("cmdNextChange").Width, "Preview navigation buttons are not equal width."
+    SmokeRequireValue panel.Controls("cmdNextPage").BackColor = RGB(221, 235, 247), "Enabled Page navigation did not use pale blue."
+    SmokeRequireValue panel.Controls("cmdNextChange").BackColor = RGB(255, 243, 205), "Enabled Change navigation did not use pale gold."
+    navigationStart = previewWindow.Selection.Start
+    panel.Controls("cmdNextChange").Value = True
+    navigationNextStart = previewWindow.Selection.Start
+    SmokeRequireValue navigationNextStart > navigationStart, "Next change did not skip to the next page containing a preview change."
+    panel.Controls("cmdPreviousChange").Value = True
+    SmokeRequireValue previewWindow.Selection.Start < navigationNextStart, "Previous change did not skip back to the prior changed page."
     navigationStart = previewWindow.Selection.Start
     panel.Controls("cmdNextPage").Value = True
     navigationNextStart = previewWindow.Selection.Start
@@ -133,8 +190,11 @@ Public Function RunPreviewLifecycleSmokeChecks() As String
     SmokeRequireValue Not previewWindow.View.ReadingLayout, "Panel Preview OFF did not restore the view."
     SmokeRequireValue panel.Controls("cmdPreview").Caption = "Preview is OFF", "Panel Preview OFF did not update its state label."
     SmokeRequireValue Not panel.Controls("cmdPreview").Enabled, "Panel Preview OFF still exposed the unstable direct re-preview shortcut."
-    SmokeRequireValue Not panel.Controls("cmdPreviousPage").Visible And Not panel.Controls("cmdNextPage").Visible, "Panel Preview OFF left page navigation visible."
+    SmokeRequireValue Not panel.Controls("cmdPreviousChange").Visible And Not panel.Controls("cmdPreviousPage").Visible And _
+                      Not panel.Controls("cmdNextPage").Visible And Not panel.Controls("cmdNextChange").Visible, "Panel Preview OFF left navigation visible."
     SmokeRequireValue Application.Browser.Target = originalBrowseTarget, "Preview navigation did not restore Word's browse target."
+    SmokeRequireValue userHighlightRange.HighlightColorIndex = wdYellow, "Preview OFF did not restore the user's original highlight."
+    SmokeRequireValue plainHighlightRange.HighlightColorIndex = wdNoHighlight, "Preview OFF left a preview-owned highlight behind."
     SmokeCloseForm panel
 
     Set rows = NewPreviewSummaryRows()
@@ -150,14 +210,18 @@ Public Function RunPreviewLifecycleSmokeChecks() As String
     AddPreviewSummaryRow rows, "Smoke row", 1
     originalShade = previewDocument.Paragraphs(1).Range.Shading.BackgroundPatternColor
     ApplyPreviewShading previewDocument.Paragraphs(1).Range
-    previewDocument.Paragraphs(2).Range.HighlightColorIndex = wdBrightGreen
+    Set mixedHighlightRange = previewDocument.Range(previewDocument.Paragraphs(2).Range.Words(1).Start, previewDocument.Paragraphs(2).Range.Words(2).End)
+    previewDocument.Paragraphs(2).Range.Words(1).HighlightColorIndex = wdYellow
+    previewDocument.Paragraphs(2).Range.Words(2).HighlightColorIndex = wdTurquoise
+    ApplyPreviewHighlight mixedHighlightRange
     Set panel = VBA.UserForms.Add("frmPreviewActions")
     panel.ConfigureSummary Nothing, "Reconfigure Smoke", rows
     panel.Controls("cmdClear").Value = True
     SmokeRequireValue Not PreviewViewSessionIsActive(), "Reconfigure left the preview session active."
     SmokeRequireValue Not previewWindow.View.ReadingLayout, "Reconfigure did not restore the view."
     SmokeRequireValue previewDocument.Paragraphs(1).Range.Shading.BackgroundPatternColor = originalShade, "Reconfigure left preview paragraph shading behind."
-    SmokeRequireValue previewDocument.Paragraphs(2).Range.HighlightColorIndex = wdNoHighlight, "Reconfigure left preview highlighting behind."
+    SmokeRequireValue previewDocument.Paragraphs(2).Range.Words(1).HighlightColorIndex = wdYellow, "Reconfigure did not restore the first mixed highlight color."
+    SmokeRequireValue previewDocument.Paragraphs(2).Range.Words(2).HighlightColorIndex = wdTurquoise, "Reconfigure did not restore the second mixed highlight color."
     SmokeCloseForm panel
 
     Set rows = NewPreviewSummaryRows()
@@ -165,14 +229,16 @@ Public Function RunPreviewLifecycleSmokeChecks() As String
     previewDocument.Paragraphs(3).Range.Words(1).Bold = True
     originalShade = previewDocument.Paragraphs(3).Range.ParagraphFormat.Shading.BackgroundPatternColor
     ApplyPreviewShading previewDocument.Paragraphs(3).Range
-    previewDocument.Paragraphs(4).Range.HighlightColorIndex = wdBrightGreen
+    Set plainHighlightRange = previewDocument.Paragraphs(4).Range.Words(1).Duplicate
+    plainHighlightRange.HighlightColorIndex = wdNoHighlight
+    ApplyPreviewHighlight plainHighlightRange
     Set panel = VBA.UserForms.Add("frmPreviewActions")
     panel.ConfigureSummary Nothing, "Close Smoke", rows
     SmokeCloseForm panel
     SmokeRequireValue Not PreviewViewSessionIsActive(), "Panel unload left the preview session active."
     SmokeRequireValue Not previewWindow.View.ReadingLayout, "Panel unload did not restore the view."
     SmokeRequireValue previewDocument.Paragraphs(3).Range.ParagraphFormat.Shading.BackgroundPatternColor = originalShade, "Panel unload left mixed-format preview paragraph shading behind."
-    SmokeRequireValue previewDocument.Paragraphs(4).Range.HighlightColorIndex = wdNoHighlight, "Panel unload left preview highlighting behind."
+    SmokeRequireValue plainHighlightRange.HighlightColorIndex = wdNoHighlight, "Panel unload left preview highlighting behind."
 
     previewDocument.Activate
     SmokeRequireValue BeginPreviewViewSession(), "Switched-window smoke did not start a preview session."
@@ -200,10 +266,10 @@ Public Function RunPreviewLifecycleSmokeChecks() As String
     RestorePreviewViewSession
     SmokeRequireValue Not PreviewViewSessionIsActive(), "Closed-document cleanup left the session active."
 
-    RunPreviewLifecycleSmokeChecks = "PASS|Preview Lifecycle|Reading View, modal page navigation, modeless Preview OFF, preview formatting, switched windows, closed documents, and progress cleanup passed."
+    RunPreviewLifecycleSmokeChecks = "PASS|Preview Lifecycle|Reading View, equal Page/Change navigation, user-highlight preservation, modeless Preview OFF, preview formatting, switched windows, closed documents, and progress cleanup passed."
     GoTo SmokeCleanup
 SmokeFail:
-    RunPreviewLifecycleSmokeChecks = "FAIL|Preview Lifecycle|" & CStr(Err.Number) & " - " & Err.Description
+    RunPreviewLifecycleSmokeChecks = "FAIL|Preview Lifecycle|" & smokeStage & ": " & CStr(Err.Number) & " - " & Err.Description
 SmokeCleanup:
     On Error Resume Next
     RestoreCleanupSuiteTransientState
@@ -705,6 +771,73 @@ Private Function SmokeParagraphHelpersCheck() As Variant
 
 Fail:
     SmokeParagraphHelpersCheck = SmokeResultLine("FAIL", "Paragraph Helpers", Err.Description)
+CleanUp:
+    On Error Resume Next
+    If Not testDocument Is Nothing Then testDocument.Close SaveChanges:=wdDoNotSaveChanges
+    If Not originalDocument Is Nothing Then originalDocument.Activate
+    On Error GoTo 0
+End Function
+
+Private Function SmokeStructuralSafetyCheck() As Variant
+    Dim originalDocument As Document
+    Dim testDocument As Document
+    Dim bodyStarts As Collection
+    Dim testTable As Table
+    Dim mergedTable As Table
+    Dim nestedTable As Table
+    Dim insertRange As Range
+    Dim protectedCells As Long
+    Dim protectedRows As Long
+    Dim protectedFinal As Long
+    Dim skippedStructures As Long
+    Dim removableStart As Long
+
+    On Error GoTo Fail
+    Set originalDocument = ActiveDocument
+    Set testDocument = Documents.Add
+    testDocument.Content.Text = "Body anchor" & vbCr & vbCr & vbCr & "Body tail" & vbCr
+
+    SmokeRequireValue ClassifyCleanupBlankParagraph(testDocument.Paragraphs(2)) = cbpkRemovableBody, _
+                      "The first body blank was not classified as removable."
+    SmokeRequireValue ClassifyCleanupBlankParagraph(testDocument.Paragraphs(3)) = cbpkRemovableBody, _
+                      "The second body blank was not classified as removable."
+    SmokeRequireValue ClassifyCleanupBlankParagraph(testDocument.Paragraphs(testDocument.Paragraphs.Count)) = cbpkProtectedFinalDocument, _
+                      "The final document paragraph was not protected."
+
+    removableStart = testDocument.Paragraphs(3).Range.Start
+    Set bodyStarts = CollectCollapsibleBlankParagraphStarts(testDocument.Content, False, protectedCells, protectedRows, protectedFinal, skippedStructures)
+    SmokeRequireValue bodyStarts.Count = 1, "The body blank collector did not preserve one separator."
+    SmokeRequireValue CLng(bodyStarts(1)) = removableStart, "The body blank collector selected the wrong paragraph."
+    SmokeRequireValue RemoveCleanupBlankParagraphAtStart(testDocument, removableStart, cbpkRemovableBody), _
+                      "The revalidated body blank could not be removed."
+
+    Set insertRange = testDocument.Range(testDocument.Content.End - 1, testDocument.Content.End - 1)
+    Set testTable = testDocument.Tables.Add(insertRange, 2, 2)
+    testTable.Cell(1, 1).Range.Text = "Keep A"
+    testTable.Cell(1, 2).Range.Text = "Keep B"
+    SmokeRequireValue CleanupTableStructureIsSupported(testTable), "A uniform unnested table was rejected."
+    SmokeRequireValue Not CleanupTableRowHasMeaningfulContent(testTable.Rows(2)), "An empty table row was treated as populated."
+    testTable.Cell(2, 1).Range.InsertBefore Chr$(160)
+    SmokeRequireValue CleanupTableRowHasMeaningfulContent(testTable.Rows(2)), "A non-breaking-space cell was treated as empty."
+
+    Set insertRange = testTable.Cell(2, 2).Range.Duplicate
+    insertRange.End = insertRange.End - 1
+    insertRange.Collapse wdCollapseEnd
+    Set nestedTable = testDocument.Tables.Add(insertRange, 1, 1)
+    nestedTable.Cell(1, 1).Range.Text = "Nested content"
+    SmokeRequireValue CleanupCellHasMeaningfulContent(testTable.Cell(2, 2)), "A cell containing a nested table was treated as empty."
+    SmokeRequireValue Not CleanupTableStructureIsSupported(testTable), "A table containing a nested table was accepted."
+
+    Set insertRange = testDocument.Range(testDocument.Content.End - 1, testDocument.Content.End - 1)
+    Set mergedTable = testDocument.Tables.Add(insertRange, 2, 2)
+    mergedTable.Cell(1, 1).Merge MergeTo:=mergedTable.Cell(1, 2)
+    SmokeRequireValue Not CleanupTableStructureIsSupported(mergedTable), "A nonuniform merged table was accepted."
+
+    SmokeStructuralSafetyCheck = SmokeResultLine("PASS", "Structural Safety", "Blank classification, revalidation, final-marker protection, NBSP protection, and nested/merged table guards passed in Word.")
+    GoTo CleanUp
+
+Fail:
+    SmokeStructuralSafetyCheck = SmokeResultLine("FAIL", "Structural Safety", Err.Description)
 CleanUp:
     On Error Resume Next
     If Not testDocument Is Nothing Then testDocument.Close SaveChanges:=wdDoNotSaveChanges

@@ -108,7 +108,7 @@ Private Sub cmdRun_Click()
                 If hasDirectCharacterFormatting Then previewChar = previewChar + 1
                 If hasDirectParagraphFormatting Then previewPara = previewPara + 1
                 If hasDirectCharacterFormatting Or hasDirectParagraphFormatting Then
-                    p.Range.HighlightColorIndex = wdYellow
+                    ApplyPreviewHighlight p.Range, wdYellow
                 End If
             End If
         Next p

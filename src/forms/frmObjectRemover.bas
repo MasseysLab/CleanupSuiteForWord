@@ -41,14 +41,22 @@ Private Function ProcessPictures(doDelete As Boolean) As Long
         Select Case ActiveDocument.InlineShapes(k).Type
             Case wdInlineShapePicture, wdInlineShapeLinkedPicture
                 c = c + 1
-                If doDelete Then ActiveDocument.InlineShapes(k).Delete
+                If doDelete Then
+                    ActiveDocument.InlineShapes(k).Delete
+                Else
+                    ApplyPreviewMinimalMarker ActiveDocument.InlineShapes(k).Range
+                End If
         End Select
     Next k
     For k = ActiveDocument.Shapes.Count To 1 Step -1
         Select Case ActiveDocument.Shapes(k).Type
             Case msoPicture, msoLinkedPicture
                 c = c + 1
-                If doDelete Then ActiveDocument.Shapes(k).Delete
+                If doDelete Then
+                    ActiveDocument.Shapes(k).Delete
+                Else
+                    ApplyPreviewMinimalMarker ActiveDocument.Shapes(k).Anchor
+                End If
         End Select
     Next k
     ProcessPictures = c
@@ -59,7 +67,11 @@ Private Function ProcessTextBoxes(doDelete As Boolean) As Long
     For k = ActiveDocument.Shapes.Count To 1 Step -1
         If ActiveDocument.Shapes(k).Type = msoTextBox Then
             c = c + 1
-            If doDelete Then ActiveDocument.Shapes(k).Delete
+            If doDelete Then
+                ActiveDocument.Shapes(k).Delete
+            Else
+                ApplyPreviewMinimalMarker ActiveDocument.Shapes(k).Anchor
+            End If
         End If
     Next k
     ProcessTextBoxes = c
@@ -72,6 +84,10 @@ Private Function ProcessFrames(doDelete As Boolean) As Long
         For k = ActiveDocument.Frames.Count To 1 Step -1
             ActiveDocument.Frames(k).Delete
         Next k
+    Else
+        For k = ActiveDocument.Frames.Count To 1 Step -1
+            ApplyPreviewMinimalMarker ActiveDocument.Frames(k).Range, True
+        Next k
     End If
     ProcessFrames = c
 End Function
@@ -81,7 +97,11 @@ Private Function ProcessHorizontalLines(doDelete As Boolean) As Long
     For k = ActiveDocument.InlineShapes.Count To 1 Step -1
         If ActiveDocument.InlineShapes(k).Type = wdInlineShapeHorizontalLine Then
             c = c + 1
-            If doDelete Then ActiveDocument.InlineShapes(k).Delete
+            If doDelete Then
+                ActiveDocument.InlineShapes(k).Delete
+            Else
+                ApplyPreviewMinimalMarker ActiveDocument.InlineShapes(k).Range
+            End If
         End If
     Next k
     ProcessHorizontalLines = c
@@ -91,12 +111,20 @@ Private Function ProcessHtmlControls(doDelete As Boolean) As Long
     Dim c As Long, k As Long
     For k = ActiveDocument.ContentControls.Count To 1 Step -1
         c = c + 1
-        If doDelete Then ActiveDocument.ContentControls(k).Delete True
+        If doDelete Then
+            ActiveDocument.ContentControls(k).Delete True
+        Else
+            ApplyPreviewMinimalMarker ActiveDocument.ContentControls(k).Range, True
+        End If
     Next k
     For k = ActiveDocument.InlineShapes.Count To 1 Step -1
         If ActiveDocument.InlineShapes(k).Type = wdInlineShapeOLEControlObject Then
             c = c + 1
-            If doDelete Then ActiveDocument.InlineShapes(k).Delete
+            If doDelete Then
+                ActiveDocument.InlineShapes(k).Delete
+            Else
+                ApplyPreviewMinimalMarker ActiveDocument.InlineShapes(k).Range
+            End If
         End If
     Next k
     ProcessHtmlControls = c
@@ -108,6 +136,10 @@ Private Function ProcessTables(doDelete As Boolean) As Long
     If doDelete Then
         For k = ActiveDocument.Tables.Count To 1 Step -1
             ActiveDocument.Tables(k).Delete
+        Next k
+    Else
+        For k = ActiveDocument.Tables.Count To 1 Step -1
+            ApplyPreviewMinimalMarker ActiveDocument.Tables(k).Range, True
         Next k
     End If
     ProcessTables = c
@@ -121,6 +153,7 @@ Private Function ProcessHiddenText(doDelete As Boolean) As Long
     rng.Find.Forward = True
     rng.Find.Wrap = wdFindStop
     Dim found As Boolean: found = rng.Find.Execute
+    If found And Not doDelete Then ApplyPreviewMinimalMarker rng, True
     If found And doDelete Then
         Dim r2 As Range: Set r2 = ActiveDocument.Content.Duplicate
         r2.Find.ClearFormatting
@@ -195,13 +228,13 @@ Private Sub cmdRun_Click()
         If doTab Then previewTables = ProcessTables(False)
         Dim previewRows As Collection
         Set previewRows = NewPreviewSummaryRows()
-        AddPreviewSummaryRow previewRows, "Pictures", previewPictures, True, (Not doPic)
-        AddPreviewSummaryRow previewRows, "Text boxes", previewTextBoxes, True, (Not doTxt)
-        AddPreviewSummaryRow previewRows, "Frames", previewFrames, True, (Not doFra)
-        AddPreviewSummaryRow previewRows, "Horizontal lines", previewHorizontalLines, True, (Not doHL)
-        AddPreviewSummaryRow previewRows, "Form controls", previewFormControls, True, (Not doHtml)
-        AddPreviewSummaryRow previewRows, "Hidden text", previewHiddenText, True, (Not doHid)
-        AddPreviewSummaryRow previewRows, "Tables", previewTables, True, (Not doTab)
+        AddPreviewSummaryRow previewRows, "Pictures", previewPictures, False, (Not doPic)
+        AddPreviewSummaryRow previewRows, "Text boxes", previewTextBoxes, False, (Not doTxt)
+        AddPreviewSummaryRow previewRows, "Frames", previewFrames, False, (Not doFra)
+        AddPreviewSummaryRow previewRows, "Horizontal lines", previewHorizontalLines, False, (Not doHL)
+        AddPreviewSummaryRow previewRows, "Form controls", previewFormControls, False, (Not doHtml)
+        AddPreviewSummaryRow previewRows, "Hidden text", previewHiddenText, False, (Not doHid)
+        AddPreviewSummaryRow previewRows, "Tables", previewTables, False, (Not doTab)
         ShowPreviewActionsSummary Me, "Object Remover", previewRows
         Exit Sub
     End If

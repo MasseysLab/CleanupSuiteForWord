@@ -73,12 +73,24 @@ Private Sub cmdRun_Click()
     If previewOnly Then
         Dim previewComments As Long
         Dim previewRevisions As Long
-        If doComments Then previewComments = ActiveDocument.Comments.Count
-        If doRevisions Then previewRevisions = ActiveDocument.Revisions.Count
+        If doComments Then
+            Dim previewComment As Comment
+            For Each previewComment In ActiveDocument.Comments
+                previewComments = previewComments + 1
+                ApplyPreviewMinimalMarker previewComment.Scope, True
+            Next previewComment
+        End If
+        If doRevisions Then
+            Dim previewRevision As Revision
+            For Each previewRevision In ActiveDocument.Revisions
+                previewRevisions = previewRevisions + 1
+                ApplyPreviewMinimalMarker previewRevision.Range, True
+            Next previewRevision
+        End If
         Dim previewRows As Collection
         Set previewRows = NewPreviewSummaryRows()
-        AddPreviewSummaryRow previewRows, "Comments", previewComments, True, (Not doComments)
-        AddPreviewSummaryRow previewRows, "Tracked changes", previewRevisions, True, (Not doRevisions)
+        AddPreviewSummaryRow previewRows, "Comments", previewComments, False, (Not doComments)
+        AddPreviewSummaryRow previewRows, "Tracked changes", previewRevisions, False, (Not doRevisions)
         ShowPreviewActionsSummary Me, "Final Review", previewRows
         Exit Sub
     End If

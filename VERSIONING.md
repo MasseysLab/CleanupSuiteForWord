@@ -6,9 +6,9 @@ The project uses a simple SemVer-style ladder, but with `0.x.0` milestones until
 
 ## Current Version
 
-`0.9.2-alpha`
+`0.9.3-beta-vba-final`
 
-This Alpha hotfix preserves the packaged tool set while correcting preview performance and presentation: punctuation previews use a fast display-only highlight path, bulk punctuation Apply avoids per-match replacement loops, Reading View remains stable, and paragraph-spacing previews mark only the affected boundary. Git tag: `v0.9.2-alpha`.
+This manual-install prerelease is the final standalone VBA-only checkpoint before CleanupSuite begins requiring the approved C#/VBA hybrid system. It completes the structural-safety package and Preview navigation model while preserving fast punctuation Preview, stable Reading View, minimal change markers, and one-step Undo. It intentionally does not replace the `0.9.2-alpha` stable installer channel. Git tag: `v0.9.3-beta-vba-final`.
 
 ## Roadmap
 
@@ -27,6 +27,7 @@ This Alpha hotfix preserves the packaged tool set while correcting preview perfo
 | `0.9.0-alpha` | Official Alpha with the global template, installer, update checks, and full documentation. Git tag: `v0.9.0-alpha`. |
 | `0.9.1-alpha` | Alpha hotfix for MetaDataSuite on synchronized personal OneDrive documents. Git tag: `v0.9.1-alpha`. |
 | `0.9.2-alpha` | Alpha hotfix for punctuation performance and Preview/Reading View presentation. Git tag: `v0.9.2-alpha`. |
+| `0.9.3-beta-vba-final` | Manual-install prerelease freezing the last complete VBA-only product after Beta Tasks 1–3. Git tag: `v0.9.3-beta-vba-final`. |
 | `0.9.5-beta` | Official Beta release after Alpha feedback, full MetaData-project incorporation, and the planned Capitalization follow-up upgrades. |
 | `1.0.0` | Global `.dotm` Word add-in/template release suitable for normal use on any document. |
 
@@ -38,7 +39,7 @@ This Alpha hotfix preserves the packaged tool set while correcting preview perfo
 - Keep Git commits small enough that each milestone can be understood later.
 - After `0.6.4` is pushed, no feature or code changes go into `0.6.5` unless required to correct documentation-blocking bugs.
 - After `0.7.4` is pushed, no feature or code changes go into `0.7.5` unless required to correct documentation-blocking bugs.
-- Treat the `0.9.x-alpha` line as Alpha and reserve the entire `0.9.5` milestone for Beta.
+- Treat the `0.9.x-alpha` line as Alpha, use `0.9.3-beta-vba-final` only for the frozen standalone checkpoint, and reserve the entire `0.9.5` milestone for Beta—the official hybrid Beta line.
 - Do not remove historical documentation or release history without an explicit maintenance decision.
 - Do not call the project `1.0.0` until the global add-in/template workflow is stable.
 

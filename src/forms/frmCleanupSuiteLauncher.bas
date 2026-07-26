@@ -17,7 +17,7 @@ Private Sub UserForm_Initialize()
     chkUpdateChecks.Caption = "Check periodically for updates"
     chkUpdateChecks.Value = GetCleanupSuiteUpdateChecksEnabled()
     cmdCheckUpdates.Caption = "Check for Updates"
-    lblAutoSaveWarning.Caption = "Dangerous! Should be selected"
+    lblAutoSaveWarning.Caption = "It is dangerous to turn off auto save!"
     RefreshAutoSaveWarning
     RefreshLauncherFooterButtons
 End Sub
@@ -386,7 +386,7 @@ End Sub
 Private Sub RefreshAutoSaveWarning()
     On Error Resume Next
     With lblAutoSaveWarning
-        .Caption = "Dangerous! Should be selected"
+        .Caption = "It is dangerous to turn off auto save!"
         .Visible = (Not chkAutoSave.Value)
         .ForeColor = RGB(220, 0, 0)
         .Font.Name = "Segoe UI"

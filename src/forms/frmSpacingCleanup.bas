@@ -116,6 +116,11 @@ Private Sub cmdRun_Click()
         Dim previewBefore As Long
         Dim previewAfter As Long
         Dim previewBlank As Long
+        Dim previewBlankStarts As Collection
+        Dim previewProtectedCells As Long
+        Dim previewProtectedRows As Long
+        Dim previewProtectedFinal As Long
+        Dim previewSkipped As Long
         If doDouble Then previewDouble = CountPreviewFindMatches(targetRange, "  ")
         If doTrim Then
             Dim previewPara As Paragraph
@@ -133,33 +138,25 @@ Private Sub cmdRun_Click()
         If doAfterPunct Then
             previewAfter = CountPreviewFindMatches(targetRange, ".  ") + CountPreviewFindMatches(targetRange, "?  ") + CountPreviewFindMatches(targetRange, "!  ") + CountPreviewFindMatches(targetRange, ",  ") + CountPreviewFindMatches(targetRange, ";  ") + CountPreviewFindMatches(targetRange, ":  ")
         End If
-        If doBlank Then previewBlank = HighlightExtraBlankLinesInRange(targetRange)
+        If doBlank Then
+            Set previewBlankStarts = CollectCollapsibleBlankParagraphStarts(targetRange, False, previewProtectedCells, previewProtectedRows, previewProtectedFinal, previewSkipped)
+            previewBlank = previewBlankStarts.Count
+            Dim previewBlankIndex As Long
+            For previewBlankIndex = 1 To previewBlankStarts.Count
+                ApplyPreviewMinimalMarker ActiveDocument.Range(previewBlankStarts(previewBlankIndex), previewBlankStarts(previewBlankIndex))
+            Next previewBlankIndex
+        End If
 
         ' Highlight preview matches.
         If doDouble Then
-            With targetRange.Find
-                .ClearFormatting
-                .Replacement.ClearFormatting
-                .Text = "  "
-                .Replacement.Text = "^&"
-                .Replacement.Highlight = True
-                .Execute Replace:=wdReplaceAll
-            End With
+            Call HighlightPreviewFindMatches(targetRange, "  ")
         End If
         If doBeforePunct Then
             Dim previewBeforePunctPatterns
             Dim previewBeforePunct
             previewBeforePunctPatterns = Array(" .", " ,", " ;", " :", " !", " ?")
             For Each previewBeforePunct In previewBeforePunctPatterns
-                With targetRange.Find
-                    .ClearFormatting
-                    .Replacement.ClearFormatting
-                    .Text = previewBeforePunct
-                    .MatchWildcards = False
-                    .Replacement.Text = "^&"
-                    .Replacement.Highlight = True
-                    .Execute Replace:=wdReplaceAll
-                End With
+                Call HighlightPreviewFindMatches(targetRange, CStr(previewBeforePunct))
             Next previewBeforePunct
         End If
         If doAfterPunct Then
@@ -167,28 +164,12 @@ Private Sub cmdRun_Click()
             Dim punct
             punctPatterns = Array(".  ", "?  ", "!  ", ",  ", ";  ", ":  ")
             For Each punct In punctPatterns
-                With targetRange.Find
-                    .ClearFormatting
-                    .Replacement.ClearFormatting
-                    .Text = punct
-                    .Replacement.Text = "^&"
-                    .Replacement.Highlight = True
-                    .Execute Replace:=wdReplaceAll
-                End With
+                Call HighlightPreviewFindMatches(targetRange, CStr(punct))
             Next punct
         End If
         If doTrim Then
-            With targetRange.Find
-                .ClearFormatting
-                .Replacement.ClearFormatting
-                .Text = "^p "
-                .Replacement.Text = "^&"
-                .Replacement.Highlight = True
-                .Execute Replace:=wdReplaceAll
-                .Text = " ^p"
-                .Replacement.Text = "^&"
-                .Execute Replace:=wdReplaceAll
-            End With
+            Call HighlightPreviewFindMatches(targetRange, "^p ")
+            Call HighlightPreviewFindMatches(targetRange, " ^p")
         End If
 
         Set previewRows = NewPreviewSummaryRows()
@@ -251,11 +232,18 @@ Private Sub cmdRun_Click()
         Loop While replacedThisPass > 0
     End If
     If doBlank Then
-        Do
-            replacedThisPass = ReplaceSpacingFindMatches(targetRange, "^p^p^p", "^p^p")
-            cntBlank = cntBlank + replacedThisPass
-        Loop While replacedThisPass > 0
-        cntBlank = cntBlank + CollapseExtraBlankTableRowsInRange(targetRange)
+        Dim blankStarts As Collection
+        Dim protectedCells As Long
+        Dim protectedRows As Long
+        Dim protectedFinal As Long
+        Dim skippedStructures As Long
+        Set blankStarts = CollectCollapsibleBlankParagraphStarts(targetRange, False, protectedCells, protectedRows, protectedFinal, skippedStructures)
+        Dim blankIndex As Long
+        For blankIndex = blankStarts.Count To 1 Step -1
+            If RemoveCleanupBlankParagraphAtStart(ActiveDocument, CLng(blankStarts(blankIndex)), cbpkRemovableBody) Then
+                cntBlank = cntBlank + 1
+            End If
+        Next blankIndex
     End If
     RemoveAllHighlighting ActiveDocument.Content
     undoRec.EndCustomRecord
@@ -278,26 +266,6 @@ RunErr:
     MsgBox errMsg, vbCritical, "Cleanup Error"
 End Sub
 
-Private Function HighlightExtraBlankLinesInRange(ByVal searchRange As Range) As Long
-    Dim p As Paragraph
-    Dim blankRun As Long
-    For Each p In searchRange.Paragraphs
-        If ParagraphOverlapsRangeOutsideTable(p, searchRange) Then
-            If Len(Trim$(ParagraphBodyText(p))) = 0 Then
-                blankRun = blankRun + 1
-                If blankRun > 1 Then
-                    ApplyPreviewShading p.Range
-                    HighlightExtraBlankLinesInRange = HighlightExtraBlankLinesInRange + 1
-                End If
-            Else
-                blankRun = 0
-            End If
-        Else
-            blankRun = 0
-        End If
-    Next p
-End Function
-
 Private Function ReplaceSpacingLiteralMatches(ByVal searchRange As Range, ByVal findText As String, ByVal replacementText As String) As Long
     Dim matchRange As Range
     Set matchRange = searchRange.Duplicate
@@ -316,62 +284,4 @@ Private Function ReplaceSpacingLiteralMatches(ByVal searchRange As Range, ByVal 
             matchRange.Collapse wdCollapseEnd
         Loop
     End With
-End Function
-
-Private Function ReplaceSpacingFindMatches(ByVal searchRange As Range, ByVal findText As String, ByVal replacementText As String) As Long
-    Dim matchRange As Range
-    Set matchRange = searchRange.Duplicate
-
-    With matchRange.Find
-        .ClearFormatting
-        .Replacement.ClearFormatting
-        .Text = findText
-        .Replacement.Text = replacementText
-        .Forward = True
-        .Wrap = wdFindStop
-        .MatchWildcards = False
-
-        Do While .Execute(Replace:=wdReplaceOne)
-            ReplaceSpacingFindMatches = ReplaceSpacingFindMatches + 1
-        Loop
-    End With
-End Function
-
-Private Function CollapseExtraBlankTableRowsInRange(ByVal searchRange As Range) As Long
-    Dim tbl As Table
-    For Each tbl In ActiveDocument.Tables
-        If tbl.Range.End < searchRange.Start Or tbl.Range.Start > searchRange.End Then GoTo NextTable
-
-        Dim blankRun As Long
-        Dim rowIndex As Long
-        For rowIndex = tbl.Rows.Count To 1 Step -1
-            Dim rowRange As Range
-            Set rowRange = tbl.Rows(rowIndex).Range
-            If rowRange.End < searchRange.Start Or rowRange.Start > searchRange.End Then
-                blankRun = 0
-                GoTo NextRow
-            End If
-            If IsSpacingBlankTableRow(tbl.Rows(rowIndex)) Then
-                blankRun = blankRun + 1
-                If blankRun > 1 Then
-                    tbl.Rows(rowIndex).Delete
-                    CollapseExtraBlankTableRowsInRange = CollapseExtraBlankTableRowsInRange + 1
-                End If
-            Else
-                blankRun = 0
-            End If
-NextRow:
-        Next rowIndex
-NextTable:
-    Next tbl
-End Function
-
-Private Function IsSpacingBlankTableRow(ByVal tableRow As Row) As Boolean
-    Dim rowText As String
-    rowText = tableRow.Range.Text
-    rowText = Replace(rowText, Chr$(13), "")
-    rowText = Replace(rowText, Chr$(7), "")
-    rowText = Replace(rowText, vbTab, "")
-    rowText = Replace(rowText, " ", "")
-    IsSpacingBlankTableRow = (Len(rowText) = 0)
 End Function

@@ -97,7 +97,7 @@ Private Sub cmdRun_Click()
                     If doItalic And p.Range.Font.Italic <> styleFont.Italic Then hasDirect = True: previewItalic = previewItalic + 1
                     If doColor And p.Range.Font.Color <> styleFont.Color Then hasDirect = True: previewColor = previewColor + 1
                     If hasDirect Then
-                        p.Range.HighlightColorIndex = wdYellow
+                        ApplyPreviewHighlight p.Range, wdYellow
                         cnt = cnt + 1
                     End If
                 End If

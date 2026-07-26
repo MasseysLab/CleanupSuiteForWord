@@ -740,7 +740,7 @@ Private Sub LayoutPreviewActionsControls(comp As VBIDE.VBComponent, designer As 
     Const ACTION_TOP As Single = 17
     Const NAV_TOP As Single = ACTION_TOP + BTN_H + GAP
     Const SUMMARY_TOP As Single = NAV_TOP + BTN_H + GAP
-    Const NAV_W As Single = (CONTENT_W - GAP) / 2
+    Const NAV_W As Single = (CONTENT_W - (3 * GAP)) / 4
 
     ' Keep the design-time MSForms canvas caption blank; Configure sets the native title bar.
     comp.Properties("Caption") = ""
@@ -750,8 +750,10 @@ Private Sub LayoutPreviewActionsControls(comp As VBIDE.VBComponent, designer As 
     PositionControl designer, "cmdPreview", MARGIN, ACTION_TOP, BTN_W, BTN_H
     PositionControl designer, "cmdClear", MARGIN + BTN_W + GAP, ACTION_TOP, BTN_W, BTN_H
     PositionControl designer, "cmdApply", MARGIN + (2 * (BTN_W + GAP)), ACTION_TOP, BTN_W, BTN_H
-    PositionControl designer, "cmdPreviousPage", MARGIN, NAV_TOP, NAV_W, BTN_H
-    PositionControl designer, "cmdNextPage", MARGIN + NAV_W + GAP, NAV_TOP, NAV_W, BTN_H
+    PositionControl designer, "cmdPreviousChange", MARGIN, NAV_TOP, NAV_W, BTN_H
+    PositionControl designer, "cmdPreviousPage", MARGIN + NAV_W + GAP, NAV_TOP, NAV_W, BTN_H
+    PositionControl designer, "cmdNextPage", MARGIN + (2 * (NAV_W + GAP)), NAV_TOP, NAV_W, BTN_H
+    PositionControl designer, "cmdNextChange", MARGIN + (3 * (NAV_W + GAP)), NAV_TOP, NAV_W, BTN_H
     PositionControl designer, "lblButtonMeasure", 0, 0, 0, 0
     PositionControl designer, "lblSummary", MARGIN, SUMMARY_TOP, CONTENT_W, 26
     designer.Controls("lblTitle").Caption = ""
@@ -1146,7 +1148,7 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmCleanupSuiteLauncher.chkReturnToMainAfterApply": ControlCaptionText = "Global default: return to main menu after apply"
         Case "frmCleanupSuiteLauncher.chkReturnToMainAfterClose": ControlCaptionText = "Global default: return to main menu after closing individual tool menus"
         Case "frmCleanupSuiteLauncher.chkUpdateChecks": ControlCaptionText = "Check periodically for updates"
-        Case "frmCleanupSuiteLauncher.lblAutoSaveWarning": ControlCaptionText = "Dangerous! Should be selected"
+        Case "frmCleanupSuiteLauncher.lblAutoSaveWarning": ControlCaptionText = "It is dangerous to turn off auto save!"
         Case "frmMetaDataSuite.chkShowSuiteMetadata": ControlCaptionText = "Show CleanupSuite metadata"
         Case "frmCleanupSuiteLauncher.lblLauncherTitle": ControlCaptionText = "Cleanup Suite"
         Case "frmCleanupSuiteLauncher.lblLauncherSubtitle": ControlCaptionText = "Choose the kind of cleanup you need. Tools are grouped by what you are trying to fix."
@@ -1205,11 +1207,10 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmDuplicateDetector.optFuzzyLoose": ControlCaptionText = "Loose  (50% word overlap)"
         Case "frmDuplicateDetector.optFuzzyMedium": ControlCaptionText = "Medium  (70% word overlap)"
         Case "frmDuplicateDetector.optFuzzyStrict": ControlCaptionText = "Strict  (90% word overlap)"
-        Case "frmDuplicateDetector.optHighlightOnly": ControlCaptionText = "Highlight duplicates (preview only)"
         Case "frmDuplicateDetector.optMatchExact": ControlCaptionText = "Exact match"
         Case "frmDuplicateDetector.optMatchFuzzy": ControlCaptionText = "Fuzzy match (word overlap)"
         Case "frmDuplicateDetector.optMatchNormalized": ControlCaptionText = "Normalized match (ignore punctuation and spaces)"
-        Case "frmDuplicateDetector.optRemoveDupes": ControlCaptionText = "Remove duplicate paragraphs"
+        Case "frmDuplicateDetector.chkIncludeEmptyParagraphs": ControlCaptionText = "Include empty paragraphs"
         Case "frmDuplicateDetector.optScopeDocument": ControlCaptionText = "Entire document"
         Case "frmDuplicateDetector.optScopeSelection": ControlCaptionText = "Selected text only"
         Case "frmFontNormalizer.chkBold": ControlCaptionText = "Normalize direct bold overrides"
@@ -1367,8 +1368,10 @@ Private Sub SetButtonCaption(designer As Object, nm As String)
         Case "cmdPreview": cap = "Preview"
         Case "cmdApply": cap = "Apply"
         Case "cmdClear": cap = "Reconfigure"
-        Case "cmdPreviousPage": cap = "Previous page"
-        Case "cmdNextPage": cap = "Next page"
+        Case "cmdPreviousChange": cap = "Change" & vbCrLf & ChrW$(&H25C0) & " Previous"
+        Case "cmdPreviousPage": cap = "Page" & vbCrLf & ChrW$(&H25C0) & " Previous"
+        Case "cmdNextPage": cap = "Page" & vbCrLf & "Next " & ChrW$(&H25B6)
+        Case "cmdNextChange": cap = "Change" & vbCrLf & "Next " & ChrW$(&H25B6)
         Case "cmdReset": cap = "Reset"
         Case "cmdResetAll": cap = "Reset All"
         Case "cmdUserManual": cap = "User Manual"
@@ -1414,7 +1417,7 @@ Private Function FriendlyFormCaption(formName As String) As String
         Case "frmCapitalizationCleanup": FriendlyFormCaption = "Capitalization Fixer"
         Case "frmListCleanup": FriendlyFormCaption = "List Normalizer"
         Case "frmParagraphCleanup": FriendlyFormCaption = "Paragraph Structure Fixer"
-        Case "frmDuplicateDetector": FriendlyFormCaption = "Duplicate Paragraph Detector"
+        Case "frmDuplicateDetector": FriendlyFormCaption = "Duplicate Paragraph Remover"
         Case "frmFontNormalizer": FriendlyFormCaption = "Font Normalizer"
         Case "frmTableCleaner": FriendlyFormCaption = "Table Cleaner"
         Case "frmBreakNormalizer": FriendlyFormCaption = "Break Normalizer"
@@ -1453,8 +1456,10 @@ Private Function ButtonTipText(nm As String) As String
         Case "cmdPreview": ButtonTipText = "Preview with the current settings"
         Case "cmdApply": ButtonTipText = "Apply this preview using the same settings"
         Case "cmdClear": ButtonTipText = "Return to this tool without resetting its controls"
+        Case "cmdPreviousChange": ButtonTipText = "Skip to the previous page that contains a preview change"
         Case "cmdPreviousPage": ButtonTipText = "Turn to the previous preview page"
         Case "cmdNextPage": ButtonTipText = "Turn to the next preview page"
+        Case "cmdNextChange": ButtonTipText = "Skip to the next page that contains a preview change"
         Case "cmdReset": ButtonTipText = "Reset this tool to its defaults"
         Case "cmdResetAll": ButtonTipText = "Reset all tools and global settings to defaults"
         Case "cmdUserManual": ButtonTipText = "Open the PDF User Manual"
@@ -1507,7 +1512,7 @@ Private Function ControlsForForm(formName As String) As Variant
                                     "chkReturnToMainAfterApply", "chkReturnToMainAfterClose", "chkAutoSave", "lblAutoSaveWarning", "chkUpdateChecks", "cmdCheckUpdates", "cmdResetAll", "cmdUserManual", "lblResetAllArrow", "lblResetAllCalloutBox", "lblResetAllCalloutText")
         Case "frmPreviewActions"
             ControlsForForm = Array("lblTitle", "lblSummary", "lblHint", "lblButtonMeasure", _
-                                    "cmdApply", "cmdPreview", "cmdClear", "cmdPreviousPage", "cmdNextPage")
+                                    "cmdApply", "cmdPreview", "cmdClear", "cmdPreviousChange", "cmdPreviousPage", "cmdNextPage", "cmdNextChange")
         Case "frmPunctuationCleanup"
             ControlsForForm = Array("optAll", "optQuotes", "optDashes", "optEllipses", "optCustom", _
                                     "cmdRiskPlacementPunctuationAll", "cmdRiskPlacementPunctuationQuotes", "cmdRiskPlacementPunctuationDashes", "cmdRiskPlacementPunctuationEllipses", "cmdRiskPlacementPunctuationCustom", "fraCustom", _
@@ -1541,10 +1546,9 @@ Private Function ControlsForForm(formName As String) As Variant
                                     "chkRemoveEmpty", "chkCollapseBreaks", "chkNormalizeParaSpacing", "chkFixIndent", _
                                     "chkPreviewOnly", "cmdSelectAll", "cmdDeselectAll", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")
         Case "frmDuplicateDetector"
-            ControlsForForm = Array("optHighlightOnly", "optRemoveDupes", "fraMatching", _
-                                    "cmdRiskPlacementDuplicatePreview", "cmdRiskPlacementDuplicateRemove", _
-                                    "optMatchExact", "optMatchNormalized", "optMatchFuzzy", _
+            ControlsForForm = Array("optMatchExact", "optMatchNormalized", "optMatchFuzzy", _
                                     "cmdRiskPlacementDuplicateExact", "cmdRiskPlacementDuplicateNormalized", "cmdRiskPlacementDuplicateFuzzy", _
+                                    "chkIncludeEmptyParagraphs", "cmdRiskPlacementDuplicateEmpty", _
                                     "fraThreshold", "optFuzzyLoose", "optFuzzyMedium", "optFuzzyStrict", "lblFuzzyWarning", _
                                     "cmdRiskPlacementDuplicateFuzzyLoose", "cmdRiskPlacementDuplicateFuzzyMedium", "cmdRiskPlacementDuplicateFuzzyStrict", _
                                     "chkPreviewOnly", "cmdPreview", "cmdRun", "cmdReset", "fraScopeSelection", "optScopeDocument", "optScopeSelection")

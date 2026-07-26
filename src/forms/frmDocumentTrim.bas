@@ -42,27 +42,17 @@ Private Sub cmdRun_Click()
     End If
     If Not GuardBeforeCleanup("Document Trim") Then Unload Me: Exit Sub
     Dim previewOnly As Boolean: previewOnly = chkPreviewOnly.Value
-    ' Find trailing empty paragraphs (walk backwards from end)
-    Dim totalParas As Long: totalParas = ActiveDocument.Paragraphs.Count
-    Dim trailingCount As Long: trailingCount = 0
+    Dim trailingStarts As Collection
+    Set trailingStarts = CollectTrailingRemovableBlankStarts(ActiveDocument)
+    Dim toRemove As Long: toRemove = trailingStarts.Count
     Dim i As Long
-    For i = totalParas To 1 Step -1
-        Dim p As Paragraph: Set p = ActiveDocument.Paragraphs(i)
-        If Len(Trim$(p.Range.Text)) <= 1 Then
-            trailingCount = trailingCount + 1
-        Else
-            Exit For
-        End If
-    Next i
-    ' Always leave at least one paragraph at the end
-    Dim toRemove As Long: toRemove = trailingCount - 1
     If previewOnly Then
         Dim previewRows As Collection
         Set previewRows = NewPreviewSummaryRows()
         AddPreviewSummaryRow previewRows, "Trailing empty paragraphs", IIf(toRemove > 0, toRemove, 0)
         If toRemove > 0 Then
-            For i = totalParas To totalParas - toRemove + 1 Step -1
-                ActiveDocument.Paragraphs(i).Range.HighlightColorIndex = wdYellow
+            For i = 1 To trailingStarts.Count
+                ApplyPreviewMinimalMarker ActiveDocument.Range(trailingStarts(i), trailingStarts(i)), False, wdYellow
             Next i
         End If
         ShowPreviewActionsSummary Me, "Document Trim", previewRows
@@ -74,20 +64,16 @@ Private Sub cmdRun_Click()
         Unload Me
         Exit Sub
     End If
-    ' Highlight the ones that will be removed
-    For i = totalParas To totalParas - toRemove + 1 Step -1
-        ActiveDocument.Paragraphs(i).Range.HighlightColorIndex = wdYellow
-    Next i
     MarkCleanupStart "Document Trim"
     Dim undoRec As UndoRecord
     Set undoRec = Application.UndoRecord
     undoRec.StartCustomRecord "Cleanup Suite - Document Trim"
     On Error GoTo RunErr
     Dim removed As Long: removed = 0
-    Dim currentTotal As Long: currentTotal = ActiveDocument.Paragraphs.Count
-    For i = currentTotal To currentTotal - toRemove + 1 Step -1
-        ActiveDocument.Paragraphs(i).Range.Delete
-        removed = removed + 1
+    For i = 1 To trailingStarts.Count
+        If RemoveCleanupBlankParagraphAtStart(ActiveDocument, CLng(trailingStarts(i)), cbpkRemovableBody) Then
+            removed = removed + 1
+        End If
     Next i
     undoRec.EndCustomRecord
     MarkCleanupEnd
@@ -108,3 +94,24 @@ RunErr:
              "Use Word's Undo command (Ctrl+Z) after closing this message if you want to roll them back."
     MsgBox errMsg, vbCritical, "Cleanup Error"
 End Sub
+
+Private Function CollectTrailingRemovableBlankStarts(ByVal sourceDocument As Document) As Collection
+    Dim starts As Collection
+    Dim paragraphIndex As Long
+    Dim paragraphItem As Paragraph
+    Dim blankKind As CleanupBlankParagraphKind
+
+    Set starts = New Collection
+    For paragraphIndex = sourceDocument.Paragraphs.Count To 1 Step -1
+        Set paragraphItem = sourceDocument.Paragraphs(paragraphIndex)
+        blankKind = ClassifyCleanupBlankParagraph(paragraphItem)
+        If blankKind = cbpkProtectedFinalDocument Then
+            ' Word's required final paragraph is never a removal candidate.
+        ElseIf blankKind = cbpkRemovableBody Then
+            starts.Add paragraphItem.Range.Start
+        Else
+            Exit For
+        End If
+    Next paragraphIndex
+    Set CollectTrailingRemovableBlankStarts = starts
+End Function

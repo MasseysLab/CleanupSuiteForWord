@@ -1,5 +1,25 @@
 Option Explicit
 ' Shared helper functions for cleanup forms
+Private Declare PtrSafe Function SetForegroundWindow Lib "user32" (ByVal hWnd As LongPtr) As Long
+Private Declare PtrSafe Function GetWindowRect Lib "user32" (ByVal hWnd As LongPtr, ByRef lpRect As RECT) As Long
+Private Declare PtrSafe Function GetCursorPos Lib "user32" (ByRef lpPoint As POINTAPI) As Long
+Private Declare PtrSafe Function SetCursorPos Lib "user32" (ByVal X As Long, ByVal Y As Long) As Long
+Private Declare PtrSafe Sub mouse_event Lib "user32" (ByVal dwFlags As Long, ByVal dx As Long, ByVal dy As Long, ByVal dwData As Long, ByVal dwExtraInfo As LongPtr)
+
+Private Type RECT
+    Left As Long
+    Top As Long
+    Right As Long
+    Bottom As Long
+End Type
+
+Private Type POINTAPI
+    X As Long
+    Y As Long
+End Type
+
+Private Const MOUSEEVENTF_LEFTDOWN As Long = &H2
+Private Const MOUSEEVENTF_LEFTUP As Long = &H4
 Public gPreviewActionPanel As Object
 Private gPreviewActionPanelHasPosition As Boolean
 Private gPreviewActionPanelLeft As Single
@@ -16,6 +36,15 @@ Private gPreviewShadingKeys As Object
 Private gPreviewShadingBackgrounds As Collection
 Private gPreviewShadingForegrounds As Collection
 Private gPreviewShadingTextures As Collection
+Private gPreviewHighlightDocuments As Collection
+Private gPreviewHighlightStarts As Collection
+Private gPreviewHighlightEnds As Collection
+Private gPreviewHighlightColors As Collection
+Private gPreviewHighlightKeys As Object
+Private gPreviewChangeDocuments As Collection
+Private gPreviewChangeStarts As Collection
+Private gPreviewChangePages As Collection
+Private gPreviewChangeKeys As Object
 Private gPreviewViewSessionActive As Boolean
 Private gPreviewViewDocument As Document
 Private gPreviewViewWindow As Window
@@ -40,6 +69,16 @@ Private Const CLEANUP_SETTINGS_APP As String = "CleanupSuiteForWord"
 Private Const CLEANUP_SETTINGS_SECTION As String = "GlobalDefaults"
 Public Const CLEANUP_SUITE_USER_MANUAL_PDF_URL As String = "https://raw.githubusercontent.com/MasseysLab/CleanupSuiteForWord/main/documents/CleanupSuite_User_Manual.pdf"
 
+Public Enum CleanupBlankParagraphKind
+    cbpkNotBlank = 0
+    cbpkRemovableBody = 1
+    cbpkRemovableCellExtra = 2
+    cbpkProtectedEmptyCell = 3
+    cbpkProtectedRowMarker = 4
+    cbpkProtectedFinalDocument = 5
+    cbpkUnsupported = 6
+End Enum
+
 Public Sub OpenCleanupUserManualPdf()
     On Error GoTo OpenErr
     ActiveDocument.FollowHyperlink Address:=CLEANUP_SUITE_USER_MANUAL_PDF_URL, NewWindow:=True
@@ -62,7 +101,7 @@ Public Function CleanupHelpTitle(ByVal toolKey As String) As String
         Case "Capitalization": CleanupHelpTitle = "Capitalization Fixer"
         Case "List": CleanupHelpTitle = "List Normalizer"
         Case "Paragraph": CleanupHelpTitle = "Paragraph Structure Fixer"
-        Case "Duplicate": CleanupHelpTitle = "Duplicate Paragraph Detector"
+        Case "Duplicate": CleanupHelpTitle = "Duplicate Paragraph Remover"
         Case "Font": CleanupHelpTitle = "Font Normalizer"
         Case "Table": CleanupHelpTitle = "Table Cleaner"
         Case "Break": CleanupHelpTitle = "Break Normalizer"
@@ -194,7 +233,7 @@ Public Function CleanupHelpText(ByVal toolKey As String) As String
             AddHelpLine h, "Preview highlights affected paragraphs before changes are made."
 
         Case "Duplicate"
-            AddHelpLine h, "Duplicate Paragraph Detector"
+            AddHelpLine h, "Duplicate Paragraph Remover"
             AddHelpLine h, ""
             AddHelpLine h, "Finds repeated or near-repeated paragraphs before you decide whether to keep or remove them."
             AddHelpLine h, ""
@@ -578,7 +617,6 @@ Public Function BeginPreviewViewSession() As Boolean
     Set gPreviewViewSelection = previewSelection.Range.Duplicate
     gPreviewViewType = gPreviewViewWindow.View.Type
     gPreviewViewReadingLayout = gPreviewViewWindow.View.ReadingLayout
-    gPreviewViewShowHighlight = gPreviewViewWindow.View.ShowHighlight
     gPreviewViewZoom = gPreviewViewWindow.View.Zoom.Percentage
     On Error Resume Next
     Err.Clear
@@ -586,15 +624,16 @@ Public Function BeginPreviewViewSession() As Boolean
     gPreviewViewHasVerticalScroll = (Err.Number = 0)
     Err.Clear
     On Error GoTo BeginErr
+    If gPreviewViewReadingLayout Then gPreviewViewWindow.View.ReadingLayout = False
+    gPreviewViewShowHighlight = gPreviewViewWindow.View.ShowHighlight
     gPreviewViewSessionActive = True
 
-    ' Reading View can inherit a window setting that hides highlight formatting.
-    ' Set highlight visibility before the final view transition; setting it
-    ' afterward can make Word return to Print Layout.
+    ' Reading View does not expose ShowHighlight. Leave it briefly when the
+    ' document was already there, set visibility, and make Reading View the
+    ' final transition so Word does not bounce back to Print Layout.
+    gPreviewViewWindow.View.ReadingLayout = False
     gPreviewViewWindow.View.ShowHighlight = True
-    If Not gPreviewViewReadingLayout Then
-        gPreviewViewWindow.View.ReadingLayout = True
-    End If
+    gPreviewViewWindow.View.ReadingLayout = True
     BeginPreviewViewSession = True
     Exit Function
 BeginErr:
@@ -632,13 +671,10 @@ Public Sub RestorePreviewViewSession()
 
     If previewWindowIsLive Then
         With gPreviewViewWindow
-            If gPreviewViewReadingLayout Then
-                .View.ReadingLayout = True
-            Else
-                .View.ReadingLayout = False
-                .View.Type = gPreviewViewType
-            End If
+            .View.ReadingLayout = False
+            If Not gPreviewViewReadingLayout Then .View.Type = gPreviewViewType
             .View.ShowHighlight = gPreviewViewShowHighlight
+            If gPreviewViewReadingLayout Then .View.ReadingLayout = True
             .View.Zoom.Percentage = gPreviewViewZoom
         End With
 
@@ -676,6 +712,7 @@ Public Sub RemovePreviewHighlighting(ByVal previewDocument As Document)
 
     On Error Resume Next
     RestorePreviewShading
+    RestorePreviewHighlighting
     If previewDocument Is Nothing Then Exit Sub
     For Each liveDocument In Application.Documents
         If liveDocument Is previewDocument Then
@@ -685,7 +722,6 @@ Public Sub RemovePreviewHighlighting(ByVal previewDocument As Document)
     Next liveDocument
     If previewDocumentIsLive Then
         previewDocument.Content.Find.ClearHitHighlight
-        previewDocument.Content.HighlightColorIndex = wdNoHighlight
     End If
     On Error GoTo 0
 End Sub
@@ -703,6 +739,7 @@ Public Sub BeginPreviewActionIndicator(ByVal sourceForm As Object)
     Dim previewButton As Object
 
     EndPreviewActionIndicator
+    BeginPreviewChangeCollection
     On Error GoTo SafeExit
     If sourceForm Is Nothing Then Exit Sub
     Set previewButton = sourceForm.Controls("cmdPreview")
@@ -783,11 +820,14 @@ Public Sub RestoreCleanupSuiteTransientState()
     EndPreviewActionIndicator
     RestorePreviewViewSession
     RestorePreviewShading
+    RestorePreviewHighlighting
+    ClearPreviewChangeCollection
     EndCleanupProgress
 End Sub
 
 Public Sub RemoveAllHighlighting(Optional scopeRange As Range = Nothing)
     RestorePreviewShading
+    RestorePreviewHighlighting
     Dim hlRange As Range
     If scopeRange Is Nothing Then
         Set hlRange = ActiveDocument.Content.Duplicate
@@ -795,32 +835,447 @@ Public Sub RemoveAllHighlighting(Optional scopeRange As Range = Nothing)
         Set hlRange = scopeRange.Duplicate
     End If
     hlRange.Find.ClearHitHighlight
-    hlRange.HighlightColorIndex = wdNoHighlight
+End Sub
+
+Public Sub ApplyPreviewHighlight(ByVal targetRange As Range, Optional ByVal markerColor As WdColorIndex = wdBrightGreen)
+    On Error GoTo SafeExit
+    If targetRange Is Nothing Then Exit Sub
+    If targetRange.End <= targetRange.Start Then Exit Sub
+    RegisterPreviewChangeAnchor targetRange
+    RegisterPreviewHighlightRange targetRange
+    targetRange.HighlightColorIndex = markerColor
+SafeExit:
+End Sub
+
+Public Sub BeginPreviewChangeCollection()
+    Set gPreviewChangeDocuments = New Collection
+    Set gPreviewChangeStarts = New Collection
+    Set gPreviewChangePages = New Collection
+    Set gPreviewChangeKeys = CreateObject("Scripting.Dictionary")
+End Sub
+
+Private Sub ClearPreviewChangeCollection()
+    Set gPreviewChangeDocuments = Nothing
+    Set gPreviewChangeStarts = Nothing
+    Set gPreviewChangePages = Nothing
+    Set gPreviewChangeKeys = Nothing
+End Sub
+
+Public Sub RegisterPreviewChangeAnchor(ByVal targetRange As Range)
+    Dim anchorRange As Range
+    Dim pageNumber As Long
+    Dim pageKey As String
+
+    On Error GoTo SafeExit
+    If targetRange Is Nothing Then Exit Sub
+    If gPreviewChangeDocuments Is Nothing Then BeginPreviewChangeCollection
+    Set anchorRange = targetRange.Duplicate
+    anchorRange.Collapse wdCollapseStart
+    pageNumber = CLng(anchorRange.Information(wdActiveEndAdjustedPageNumber))
+    If pageNumber < 1 Then Exit Sub
+    pageKey = PreviewShadingDocumentIdentity(anchorRange.Document) & "|" & CStr(pageNumber)
+    If gPreviewChangeKeys.Exists(pageKey) Then Exit Sub
+
+    gPreviewChangeKeys.Add pageKey, True
+    gPreviewChangeDocuments.Add anchorRange.Document
+    gPreviewChangeStarts.Add CLng(anchorRange.Start)
+    gPreviewChangePages.Add pageNumber
+SafeExit:
+End Sub
+
+Public Function PreviewPageNavigationAvailable(ByVal previewDocument As Document, ByVal moveForward As Boolean) As Boolean
+    Dim currentPage As Long
+    Dim totalPages As Long
+
+    On Error GoTo SafeExit
+    If previewDocument Is Nothing Then Exit Function
+    If Not ActiveDocument Is previewDocument Then Exit Function
+    currentPage = PreviewCurrentPageNumber()
+    totalPages = previewDocument.ComputeStatistics(wdStatisticPages)
+    If moveForward Then
+        PreviewPageNavigationAvailable = (currentPage < totalPages)
+    Else
+        PreviewPageNavigationAvailable = (currentPage > 1)
+    End If
+SafeExit:
+End Function
+
+Public Function PreviewChangeNavigationAvailable(ByVal previewDocument As Document, ByVal moveForward As Boolean) As Boolean
+    Dim currentPage As Long
+    Dim anchorIndex As Long
+    Dim anchorPage As Long
+
+    On Error GoTo SafeExit
+    If previewDocument Is Nothing Then Exit Function
+    If Not ActiveDocument Is previewDocument Then Exit Function
+    If gPreviewChangeDocuments Is Nothing Then Exit Function
+    currentPage = PreviewCurrentPageNumber()
+
+    For anchorIndex = 1 To gPreviewChangeDocuments.Count
+        If gPreviewChangeDocuments(anchorIndex) Is previewDocument Then
+            anchorPage = CLng(gPreviewChangePages(anchorIndex))
+            If moveForward Then
+                If anchorPage > currentPage Then
+                    PreviewChangeNavigationAvailable = True
+                    Exit Function
+                End If
+            ElseIf anchorPage < currentPage Then
+                PreviewChangeNavigationAvailable = True
+                Exit Function
+            End If
+        End If
+    Next anchorIndex
+SafeExit:
+End Function
+
+Public Function TurnPreviewPage(ByVal moveForward As Boolean) As Boolean
+    Dim originalStart As Long
+    Dim readingViewActive As Boolean
+
+    On Error GoTo BrowserFallback
+    originalStart = Selection.Start
+    readingViewActive = (ActiveWindow.View.Type = wdReadingView)
+    If moveForward Then
+        Application.CommandBars.ExecuteMso "GoToNextPage"
+    ElseIf readingViewActive Then
+        ' Reading View's backward ExecuteMso path can update Selection without
+        ' repainting the page canvas. Move the internal page first, then give
+        ' the canvas the same focus-and-Left input that makes Word repaint it.
+        Application.CommandBars.ExecuteMso "GoToPreviousPage"
+        If Selection.Start >= originalStart Then
+            Application.Browser.Target = wdBrowsePage
+            Application.Browser.Previous
+        End If
+        RepaintReadingViewAfterPreviousPage ActiveWindow
+    Else
+        Application.CommandBars.ExecuteMso "GoToPreviousPage"
+    End If
+    TurnPreviewPage = True
+    Exit Function
+
+BrowserFallback:
+    Err.Clear
+    On Error GoTo SafeExit
+    Application.Browser.Target = wdBrowsePage
+    If moveForward Then
+        Application.Browser.Next
+    Else
+        Application.Browser.Previous
+        If readingViewActive Then RepaintReadingViewAfterPreviousPage ActiveWindow
+    End If
+    TurnPreviewPage = True
+SafeExit:
+End Function
+
+Private Function RepaintReadingViewAfterPreviousPage(ByVal previewWindow As Window) As Boolean
+    Dim wordWindowHandle As LongPtr
+    Dim windowBounds As RECT
+    Dim originalCursor As POINTAPI
+    Dim cursorCaptured As Boolean
+    Dim targetX As Long
+    Dim targetY As Long
+
+    On Error GoTo SafeExit
+    previewWindow.Activate
+    wordWindowHandle = previewWindow.hWnd
+    If wordWindowHandle = 0 Then Exit Function
+    If GetWindowRect(wordWindowHandle, windowBounds) = 0 Then Exit Function
+    cursorCaptured = (GetCursorPos(originalCursor) <> 0)
+    targetX = windowBounds.Left + 100
+    targetY = windowBounds.Top + 100
+    SetForegroundWindow wordWindowHandle
+    SetCursorPos targetX, targetY
+    DoEvents
+    mouse_event MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0
+    mouse_event MOUSEEVENTF_LEFTUP, 0, 0, 0, 0
+    DoEvents
+    VBA.SendKeys "{LEFT}", True
+    DoEvents
+    RepaintReadingViewAfterPreviousPage = True
+SafeExit:
+    If cursorCaptured Then SetCursorPos originalCursor.X, originalCursor.Y
+End Function
+
+Public Function NavigatePreviewChangePage(ByVal previewDocument As Document, ByVal moveForward As Boolean) As Boolean
+    Dim currentPage As Long
+    Dim candidatePage As Long
+    Dim candidateStart As Long
+    Dim candidateEnd As Long
+    Dim anchorIndex As Long
+    Dim anchorPage As Long
+    Dim anchorStart As Long
+    Dim pageStep As Long
+    Dim pageDistance As Long
+    Dim targetRange As Range
+
+    On Error GoTo SafeExit
+    If previewDocument Is Nothing Then Exit Function
+    If Not ActiveDocument Is previewDocument Then Exit Function
+    If gPreviewChangeDocuments Is Nothing Then Exit Function
+    currentPage = PreviewCurrentPageNumber()
+    If moveForward Then candidatePage = 2147483647 Else candidatePage = 0
+
+    For anchorIndex = 1 To gPreviewChangeDocuments.Count
+        If gPreviewChangeDocuments(anchorIndex) Is previewDocument Then
+            anchorPage = CLng(gPreviewChangePages(anchorIndex))
+            anchorStart = CLng(gPreviewChangeStarts(anchorIndex))
+            If moveForward Then
+                If anchorPage > currentPage And anchorPage < candidatePage Then
+                    candidatePage = anchorPage
+                    candidateStart = anchorStart
+                End If
+            ElseIf anchorPage < currentPage And anchorPage > candidatePage Then
+                candidatePage = anchorPage
+                candidateStart = anchorStart
+            End If
+        End If
+    Next anchorIndex
+
+    If (moveForward And candidatePage = 2147483647) Or (Not moveForward And candidatePage = 0) Then Exit Function
+    pageDistance = Abs(candidatePage - currentPage)
+    For pageStep = 1 To pageDistance
+        If Not TurnPreviewPage(moveForward) Then Exit Function
+    Next pageStep
+
+    If candidateStart < previewDocument.Content.Start Then candidateStart = previewDocument.Content.Start
+    If candidateStart > previewDocument.Content.End Then candidateStart = previewDocument.Content.End
+    candidateEnd = candidateStart
+    If candidateEnd < previewDocument.Content.End Then candidateEnd = candidateEnd + 1
+    Set targetRange = previewDocument.Range(candidateStart, candidateEnd)
+    targetRange.Select
+    Application.ActiveWindow.ScrollIntoView targetRange, True
+    Application.ScreenRefresh
+    DoEvents
+    NavigatePreviewChangePage = True
+SafeExit:
+End Function
+
+Private Function PreviewCurrentPageNumber() As Long
+    On Error GoTo SafeExit
+    PreviewCurrentPageNumber = CLng(Selection.Range.Information(wdActiveEndAdjustedPageNumber))
+SafeExit:
+    If PreviewCurrentPageNumber < 1 Then PreviewCurrentPageNumber = 1
+End Function
+
+Private Sub RegisterPreviewHighlightRange(ByVal targetRange As Range)
+    Dim rangeKey As String
+    Dim originalColor As Long
+    Dim characterIndex As Long
+    Dim runStart As Long
+    Dim runColor As Long
+    Dim characterColor As Long
+    Dim characterRange As Range
+
+    On Error GoTo SafeExit
+    If gPreviewHighlightDocuments Is Nothing Then
+        Set gPreviewHighlightDocuments = New Collection
+        Set gPreviewHighlightStarts = New Collection
+        Set gPreviewHighlightEnds = New Collection
+        Set gPreviewHighlightColors = New Collection
+        Set gPreviewHighlightKeys = CreateObject("Scripting.Dictionary")
+    End If
+    rangeKey = PreviewShadingDocumentIdentity(targetRange.Document) & "|" & _
+               CStr(targetRange.Start) & ":" & CStr(targetRange.End)
+    If gPreviewHighlightKeys.Exists(rangeKey) Then Exit Sub
+    gPreviewHighlightKeys.Add rangeKey, True
+
+    originalColor = CLng(targetRange.HighlightColorIndex)
+    If originalColor <> wdUndefined Then
+        AddPreviewHighlightRecord targetRange.Document, targetRange.Start, targetRange.End, originalColor
+        Exit Sub
+    End If
+
+    runStart = targetRange.Start
+    Set characterRange = targetRange.Document.Range(runStart, runStart + 1)
+    runColor = CLng(characterRange.HighlightColorIndex)
+    For characterIndex = targetRange.Start + 1 To targetRange.End - 1
+        Set characterRange = targetRange.Document.Range(characterIndex, characterIndex + 1)
+        characterColor = CLng(characterRange.HighlightColorIndex)
+        If characterColor <> runColor Then
+            AddPreviewHighlightRecord targetRange.Document, runStart, characterIndex, runColor
+            runStart = characterIndex
+            runColor = characterColor
+        End If
+    Next characterIndex
+    AddPreviewHighlightRecord targetRange.Document, runStart, targetRange.End, runColor
+SafeExit:
+End Sub
+
+Private Sub AddPreviewHighlightRecord(ByVal previewDocument As Document, ByVal rangeStart As Long, ByVal rangeEnd As Long, ByVal originalColor As Long)
+    gPreviewHighlightDocuments.Add previewDocument
+    gPreviewHighlightStarts.Add rangeStart
+    gPreviewHighlightEnds.Add rangeEnd
+    gPreviewHighlightColors.Add originalColor
+End Sub
+
+Private Sub RestorePreviewHighlighting()
+    Dim recordIndex As Long
+    Dim previewDocument As Document
+    Dim liveDocument As Document
+    Dim previewDocumentIsLive As Boolean
+    Dim restoreRange As Range
+    Dim rangeStart As Long
+    Dim rangeEnd As Long
+    Dim documentEnd As Long
+    Dim expectedColor As Long
+    Dim allLiveRecordsRestored As Boolean
+
+    On Error Resume Next
+    allLiveRecordsRestored = True
+    If Not gPreviewHighlightDocuments Is Nothing Then
+        For recordIndex = gPreviewHighlightDocuments.Count To 1 Step -1
+            Set previewDocument = Nothing
+            Set previewDocument = gPreviewHighlightDocuments(recordIndex)
+            previewDocumentIsLive = False
+            For Each liveDocument In Application.Documents
+                If liveDocument Is previewDocument Then
+                    previewDocumentIsLive = True
+                    Exit For
+                End If
+            Next liveDocument
+            If previewDocumentIsLive Then
+                rangeStart = CLng(gPreviewHighlightStarts(recordIndex))
+                rangeEnd = CLng(gPreviewHighlightEnds(recordIndex))
+                documentEnd = previewDocument.Content.End
+                If rangeStart < 0 Then rangeStart = 0
+                If rangeStart > documentEnd Then rangeStart = documentEnd
+                If rangeEnd < rangeStart Then rangeEnd = rangeStart
+                If rangeEnd > documentEnd Then rangeEnd = documentEnd
+                expectedColor = CLng(gPreviewHighlightColors(recordIndex))
+                Set restoreRange = previewDocument.Range(rangeStart, rangeEnd)
+                Err.Clear
+                restoreRange.HighlightColorIndex = expectedColor
+                If Err.Number <> 0 Then
+                    allLiveRecordsRestored = False
+                ElseIf CLng(restoreRange.HighlightColorIndex) <> expectedColor Then
+                    allLiveRecordsRestored = False
+                End If
+                Err.Clear
+            End If
+        Next recordIndex
+    End If
+    If allLiveRecordsRestored Then
+        Set gPreviewHighlightDocuments = Nothing
+        Set gPreviewHighlightStarts = Nothing
+        Set gPreviewHighlightEnds = Nothing
+        Set gPreviewHighlightColors = Nothing
+        Set gPreviewHighlightKeys = Nothing
+    End If
+    On Error GoTo 0
 End Sub
 
 Public Sub ApplyPreviewSpacingBoundary(ByVal paragraphRange As Range, Optional ByVal markerColor As WdColorIndex = wdBrightGreen)
     Dim markerRange As Range
+    Dim trailingCharacter As String
 
     On Error GoTo SafeExit
     Set markerRange = paragraphRange.Duplicate
     If markerRange.End <= markerRange.Start Then Exit Sub
 
     ' Word cannot apply text highlight to the empty Space Before/Space After
-    ' region. Mark the paragraph boundary instead: include the paragraph mark
-    ' and, where available, the final visible character so the strip remains
-    ' visible even when nonprinting marks are hidden.
-    If Right$(markerRange.Text, 1) = vbCr Then
-        If markerRange.End - markerRange.Start >= 2 Then
-            markerRange.Start = markerRange.End - 2
-        Else
-            markerRange.Start = markerRange.End - 1
+    ' region. Mark the final visible character. Table-cell paragraphs end in
+    ' both a paragraph mark and a cell mark, so remove those control marks
+    ' before choosing the character. If the paragraph contains only control
+    ' marks, shade that empty paragraph so its spacing still has a visible cue.
+    Do While markerRange.End > markerRange.Start
+        trailingCharacter = Right$(markerRange.Text, 1)
+        If trailingCharacter <> vbCr And trailingCharacter <> Chr$(7) Then Exit Do
+        markerRange.End = markerRange.End - 1
+    Loop
+    If markerRange.End <= markerRange.Start Then
+        If Not ApplyPreviewNearestVisibleCharacter(paragraphRange, markerColor) Then
+            ApplyPreviewShading paragraphRange
         End If
-    Else
-        markerRange.Start = markerRange.End - 1
+        Exit Sub
     End If
-    markerRange.HighlightColorIndex = markerColor
+    markerRange.Start = markerRange.End - 1
+    ApplyPreviewHighlight markerRange, markerColor
 SafeExit:
 End Sub
+
+Private Function ApplyPreviewNearestVisibleCharacter(ByVal paragraphRange As Range, ByVal markerColor As WdColorIndex) As Boolean
+    Dim nearbyRange As Range
+    Dim trailingCharacter As String
+
+    On Error GoTo SafeExit
+    If Not paragraphRange.Information(wdWithInTable) Then Exit Function
+    If paragraphRange.Start <= 0 Then Exit Function
+
+    Set nearbyRange = paragraphRange.Document.Range(paragraphRange.Start - 1, paragraphRange.Start)
+    Do While nearbyRange.End > nearbyRange.Start
+        trailingCharacter = nearbyRange.Text
+        If trailingCharacter = Chr$(7) Then Exit Function
+        If trailingCharacter <> vbCr And _
+           trailingCharacter <> vbLf And trailingCharacter <> vbTab And _
+           trailingCharacter <> Chr$(11) And trailingCharacter <> Chr$(12) And _
+           trailingCharacter <> " " And trailingCharacter <> ChrW$(160) Then Exit Do
+        If nearbyRange.Start <= 0 Then Exit Function
+        nearbyRange.End = nearbyRange.Start
+        nearbyRange.Start = nearbyRange.Start - 1
+    Loop
+    If nearbyRange.End <= nearbyRange.Start Then Exit Function
+
+    ApplyPreviewHighlight nearbyRange, markerColor
+    ApplyPreviewNearestVisibleCharacter = True
+SafeExit:
+End Function
+
+Public Function ApplyPreviewMinimalMarker(ByVal targetRange As Range, Optional ByVal preferStart As Boolean = False, Optional ByVal markerColor As WdColorIndex = wdBrightGreen) As Boolean
+    Dim scanRange As Range
+    Dim characterRange As Range
+
+    On Error GoTo SafeExit
+    If targetRange Is Nothing Then Exit Function
+    Set scanRange = targetRange.Duplicate
+
+    If preferStart Then
+        Do While scanRange.Start < scanRange.End
+            Set characterRange = scanRange.Duplicate
+            characterRange.End = characterRange.Start + 1
+            If PreviewMarkerCharacterIsVisible(characterRange.Text) Then GoTo ApplyMarker
+            scanRange.Start = scanRange.Start + 1
+        Loop
+    Else
+        Do While scanRange.End > scanRange.Start
+            Set characterRange = scanRange.Duplicate
+            characterRange.Start = characterRange.End - 1
+            If PreviewMarkerCharacterIsVisible(characterRange.Text) Then GoTo ApplyMarker
+            scanRange.End = scanRange.End - 1
+        Loop
+    End If
+
+    ' Invisible boundaries such as breaks and empty table paragraphs need a
+    ' nearby visible cue. Walk backward in the same story and never cross a
+    ' table-cell marker into a neighboring cell.
+    Set characterRange = targetRange.Duplicate
+    characterRange.End = characterRange.Start
+    Do While characterRange.Start > 0
+        characterRange.Start = characterRange.Start - 1
+        If characterRange.Text = Chr$(7) Then Exit Function
+        If PreviewMarkerCharacterIsVisible(characterRange.Text) Then GoTo ApplyMarker
+        characterRange.End = characterRange.Start
+    Loop
+    Exit Function
+
+ApplyMarker:
+    ApplyPreviewHighlight characterRange, markerColor
+    ApplyPreviewMinimalMarker = True
+SafeExit:
+End Function
+
+Private Function PreviewMarkerCharacterIsVisible(ByVal characterText As String) As Boolean
+    Dim characterCode As Long
+    If Len(characterText) = 0 Then Exit Function
+    characterCode = AscW(Left$(characterText, 1))
+    If characterCode < 0 Then characterCode = characterCode + 65536
+
+    Select Case characterCode
+        Case 0, 1, 7 To 13, 19 To 21, 32, 160, 8203 To 8205, 65279
+            PreviewMarkerCharacterIsVisible = False
+        Case Else
+            PreviewMarkerCharacterIsVisible = True
+    End Select
+End Function
 Public Sub ApplyPreviewShading(ByVal targetRange As Range, Optional ByVal shadeColor As Long = wdColorBrightGreen)
     Dim paragraphItem As Paragraph
     Dim paragraphRange As Range
@@ -837,6 +1292,7 @@ Private Sub ApplyPreviewShadingToParagraph(ByVal paragraphRange As Range, ByVal 
     Dim shadingKey As String
 
     On Error GoTo SafeExit
+    RegisterPreviewChangeAnchor paragraphRange
     If gPreviewShadingDocuments Is Nothing Then
         Set gPreviewShadingDocuments = New Collection
         Set gPreviewShadingStarts = New Collection
@@ -1061,6 +1517,7 @@ Public Sub BeginCleanupToolSession()
     gCleanupToolExitReason = ""
 End Sub
 Public Sub MarkCleanupToolApplied()
+    If gCleanupToolExitReason = CLEANUP_TOOL_EXIT_APPLY Then Exit Sub
     RestoreCleanupSuiteTransientState
     gCleanupToolExitReason = CLEANUP_TOOL_EXIT_APPLY
 End Sub
@@ -1179,6 +1636,15 @@ Public Sub LayoutCleanupToolForm(ByVal toolForm As Object)
 
     If toolForm.Name = "frmCapitalizationCleanup" Then
         LayoutCapitalizationChoices toolForm, M, y, contentW, BH, GAP
+        ApplyGuidedRiskPlacementLayout toolForm
+        LayoutGuidedInfoBox toolForm, M, y, contentW
+        LayoutGuidedPreviewAndScopeRow toolForm, M, y, contentW
+        toolForm.Height = y + 26
+        Exit Sub
+    End If
+
+    If toolForm.Name = "frmDuplicateDetector" Then
+        LayoutDuplicateChoices toolForm, M, y, contentW, GAP
         ApplyGuidedRiskPlacementLayout toolForm
         LayoutGuidedInfoBox toolForm, M, y, contentW
         LayoutGuidedPreviewAndScopeRow toolForm, M, y, contentW
@@ -1556,11 +2022,10 @@ Public Sub LayoutParagraphRiskChoiceChips(ByVal toolForm As Object)
     PlaceRiskChipBesideChoice toolForm, "chkFixIndent", "cmdRiskPlacementParagraphChkIndent", "Structure change"
 End Sub
 Public Sub LayoutDuplicateRiskChoiceChips(ByVal toolForm As Object)
-    PlaceRiskChipBesideChoice toolForm, "optHighlightOnly", "cmdRiskPlacementDuplicatePreview", "Inspect first"
-    PlaceRiskChipBesideChoice toolForm, "optRemoveDupes", "cmdRiskPlacementDuplicateRemove", "Removes content"
     PlaceRiskChipBesideChoice toolForm, "optMatchExact", "cmdRiskPlacementDuplicateExact", "Inspect first"
     PlaceRiskChipBesideChoice toolForm, "optMatchNormalized", "cmdRiskPlacementDuplicateNormalized", "Inspect first"
     PlaceRiskChipBesideChoice toolForm, "optMatchFuzzy", "cmdRiskPlacementDuplicateFuzzy", "Inspect first"
+    PlaceRiskChipBesideChoice toolForm, "chkIncludeEmptyParagraphs", "cmdRiskPlacementDuplicateEmpty", "Removes content"
     PlaceRiskChipBesideChoice toolForm, "optFuzzyLoose", "cmdRiskPlacementDuplicateFuzzyLoose", "Inspect first"
     PlaceRiskChipBesideChoice toolForm, "optFuzzyMedium", "cmdRiskPlacementDuplicateFuzzyMedium", "Inspect first"
     PlaceRiskChipBesideChoice toolForm, "optFuzzyStrict", "cmdRiskPlacementDuplicateFuzzyStrict", "Inspect first"
@@ -1756,11 +2221,18 @@ Private Function ShouldHideGuidedControl(ByVal toolForm As Object, ByVal control
         End Select
     End If
 
-    If toolForm.Name = "frmDuplicateDetector" And Not toolForm.Controls("optMatchFuzzy").Value Then
+    If toolForm.Name = "frmDuplicateDetector" Then
         Select Case controlName
-            Case "optFuzzyLoose", "optFuzzyMedium", "optFuzzyStrict"
+            Case "optHighlightOnly", "optRemoveDupes"
                 ShouldHideGuidedControl = True
+                Exit Function
         End Select
+        If Not toolForm.Controls("optMatchFuzzy").Value Then
+            Select Case controlName
+                Case "optFuzzyLoose", "optFuzzyMedium", "optFuzzyStrict"
+                    ShouldHideGuidedControl = True
+            End Select
+        End If
     End If
 
     If toolForm.Name = "frmHeaderFooterStandardizer" Then
@@ -1830,6 +2302,69 @@ Private Sub LayoutCapitalizationChoices(ByVal toolForm As Object, ByVal M As Sin
     toolForm.Controls("cmdEditExceptions").Move M, y, contentW, BH
     toolForm.Controls("cmdEditExceptions").Visible = True
     y = y + BH + GAP + 1
+End Sub
+
+Private Sub LayoutDuplicateChoices(ByVal toolForm As Object, ByVal M As Single, ByRef y As Single, ByVal contentW As Single, ByVal GAP As Single)
+    On Error Resume Next
+    Dim columnW As Single
+    Dim leftX As Single
+    Dim rightX As Single
+    Dim rowH As Single
+    columnW = (contentW - GAP) / 2
+    leftX = M + 8
+    rightX = M + columnW + GAP + 8
+
+    HideGuidedControl toolForm.Controls("optHighlightOnly")
+    HideGuidedControl toolForm.Controls("optRemoveDupes")
+    HideGuidedControl toolForm.Controls("fraMatching")
+    HideGuidedControl toolForm.Controls("fraThreshold")
+
+    rowH = 28
+    StyleGuidedOption toolForm.Controls("optMatchExact")
+    StyleGuidedOption toolForm.Controls("optMatchFuzzy")
+    toolForm.Controls("optMatchExact").Move leftX, y, columnW - 8, rowH
+    toolForm.Controls("optMatchFuzzy").Move rightX, y, columnW - 8, rowH
+    toolForm.Controls("optMatchExact").Visible = True
+    toolForm.Controls("optMatchFuzzy").Visible = True
+    y = y + rowH + GAP
+
+    rowH = 30
+    StyleGuidedOption toolForm.Controls("optMatchNormalized")
+    toolForm.Controls("optMatchNormalized").Move leftX, y, columnW - 8, rowH
+    toolForm.Controls("optMatchNormalized").Visible = True
+    If toolForm.Controls("optMatchFuzzy").Value Then
+        PositionDuplicateFuzzyThreshold toolForm, "optFuzzyLoose", rightX, y, columnW - 8, rowH
+    Else
+        HideGuidedControl toolForm.Controls("optFuzzyLoose")
+    End If
+    y = y + rowH + GAP
+
+    If toolForm.Controls("optMatchFuzzy").Value Then
+        rowH = 30
+        PositionDuplicateFuzzyThreshold toolForm, "optFuzzyMedium", rightX, y, columnW - 8, rowH
+        y = y + rowH + GAP
+
+        rowH = 30
+        PositionDuplicateFuzzyThreshold toolForm, "optFuzzyStrict", rightX, y, columnW - 8, rowH
+        y = y + rowH + GAP
+    Else
+        HideGuidedControl toolForm.Controls("optFuzzyMedium")
+        HideGuidedControl toolForm.Controls("optFuzzyStrict")
+    End If
+
+    LayoutGuidedDivider toolForm, M, y, contentW
+    rowH = 24
+    StyleGuidedOption toolForm.Controls("chkIncludeEmptyParagraphs")
+    toolForm.Controls("chkIncludeEmptyParagraphs").Move M + 8, y, contentW - 8, rowH
+    toolForm.Controls("chkIncludeEmptyParagraphs").Visible = True
+    y = y + rowH + GAP
+End Sub
+
+Private Sub PositionDuplicateFuzzyThreshold(ByVal toolForm As Object, ByVal controlName As String, ByVal controlLeft As Single, ByVal controlTop As Single, ByVal controlWidth As Single, ByVal controlHeight As Single)
+    On Error Resume Next
+    StyleGuidedOption toolForm.Controls(controlName)
+    toolForm.Controls(controlName).Move controlLeft + 12, controlTop, controlWidth - 12, controlHeight
+    toolForm.Controls(controlName).Visible = True
 End Sub
 
 Private Sub PositionCapitalizationGridRow(ByVal toolForm As Object, ByVal leftName As String, ByVal rightName As String, ByVal M As Single, ByRef y As Single, ByVal contentW As Single, ByVal GAP As Single)
@@ -2308,11 +2843,10 @@ Private Function GuidedInfoDisplayName(ByVal formName As String, ByVal controlNa
         Case "frmCapitalizationCleanup.chkHeadingParentheses": GuidedInfoDisplayName = "Parenthetical heading repair"
         Case "frmCapitalizationCleanup.chkSmartSentences": GuidedInfoDisplayName = "Sentence context"
         Case "frmCapitalizationCleanup.cmdEditExceptions": GuidedInfoDisplayName = "Custom exceptions"
-        Case "frmDuplicateDetector.optHighlightOnly": GuidedInfoDisplayName = "Preview duplicates"
-        Case "frmDuplicateDetector.optRemoveDupes": GuidedInfoDisplayName = "Remove duplicates"
         Case "frmDuplicateDetector.optMatchExact": GuidedInfoDisplayName = "Exact match"
         Case "frmDuplicateDetector.optMatchNormalized": GuidedInfoDisplayName = "Normalized match"
         Case "frmDuplicateDetector.optMatchFuzzy": GuidedInfoDisplayName = "Fuzzy match"
+        Case "frmDuplicateDetector.chkIncludeEmptyParagraphs": GuidedInfoDisplayName = "Include empty paragraphs"
         Case "frmDuplicateDetector.optFuzzyLoose": GuidedInfoDisplayName = "Loose"
         Case "frmDuplicateDetector.optFuzzyMedium": GuidedInfoDisplayName = "Medium"
         Case "frmDuplicateDetector.optFuzzyStrict": GuidedInfoDisplayName = "Strict"
@@ -2432,11 +2966,10 @@ Private Function GuidedInfoAdvisory(ByVal formName As String, ByVal controlName 
         Case "frmCapitalizationCleanup.chkHeadingParentheses": GuidedInfoAdvisory = "Also title-cases balanced parenthetical wording as its own heading segment; it is off by default."
         Case "frmCapitalizationCleanup.chkSmartSentences": GuidedInfoAdvisory = "Recognizes quotes, bullets, and punctuation while finding sentence starts."
         Case "frmCapitalizationCleanup.cmdEditExceptions": GuidedInfoAdvisory = "Adds document-specific names, brands, and acronyms that should keep their exact capitalization."
-        Case "frmDuplicateDetector.optHighlightOnly": GuidedInfoAdvisory = "Marks likely duplicates for review without deleting any text."
-        Case "frmDuplicateDetector.optRemoveDupes": GuidedInfoAdvisory = "Deletes later duplicates and keeps the first surviving paragraph in each group."
         Case "frmDuplicateDetector.optMatchExact": GuidedInfoAdvisory = "Fastest check; punctuation and spacing must still match."
         Case "frmDuplicateDetector.optMatchNormalized": GuidedInfoAdvisory = "Ignores punctuation and extra spaces to catch cosmetic repeats."
         Case "frmDuplicateDetector.optMatchFuzzy": GuidedInfoAdvisory = "Catches near-duplicates by word overlap, but runs slower on long documents."
+        Case "frmDuplicateDetector.chkIncludeEmptyParagraphs": GuidedInfoAdvisory = "Also removes later blank body paragraphs while protecting table-cell and final document markers."
         Case "frmDuplicateDetector.optFuzzyLoose": GuidedInfoAdvisory = "Broadest fuzzy setting; finds more candidates but needs more review."
         Case "frmDuplicateDetector.optFuzzyMedium": GuidedInfoAdvisory = "Balanced fuzzy setting for most cleanup passes."
         Case "frmDuplicateDetector.optFuzzyStrict": GuidedInfoAdvisory = "Most conservative fuzzy setting; fewer false matches, but easier to miss loose repeats."
@@ -2657,7 +3190,7 @@ Private Function GuidedToolName(ByVal formName As String) As String
         Case "frmSpacingCleanup": GuidedToolName = "Spacing Fixer"
         Case "frmListCleanup": GuidedToolName = "List Normalizer"
         Case "frmParagraphCleanup": GuidedToolName = "Paragraph Structure Fixer"
-        Case "frmDuplicateDetector": GuidedToolName = "Duplicate Paragraph Detector"
+        Case "frmDuplicateDetector": GuidedToolName = "Duplicate Paragraph Remover"
         Case "frmFontNormalizer": GuidedToolName = "Font Normalizer"
         Case "frmTableCleaner": GuidedToolName = "Table Cleaner"
         Case "frmBreakNormalizer": GuidedToolName = "Break Normalizer"
@@ -2681,7 +3214,7 @@ Private Function GuidedToolIntro(ByVal formName As String) As String
         Case "frmSpacingCleanup": GuidedToolIntro = "Choose which spacing problems to fix."
         Case "frmListCleanup": GuidedToolIntro = "Choose how lists, bullets, numbering, and indents should be cleaned."
         Case "frmParagraphCleanup": GuidedToolIntro = "Choose which paragraph structure issues to clean."
-        Case "frmDuplicateDetector": GuidedToolIntro = "Choose how repeated or similar paragraphs should be reviewed."
+        Case "frmDuplicateDetector": GuidedToolIntro = "Choose how repeated or similar paragraphs should be matched before removal."
         Case "frmFontNormalizer": GuidedToolIntro = "Choose which direct font overrides to reset."
         Case "frmTableCleaner": GuidedToolIntro = "Choose which table structure and formatting issues to clean."
         Case "frmBreakNormalizer": GuidedToolIntro = "Choose how page and section breaks should be normalized."
@@ -2723,6 +3256,352 @@ Private Function IsLegacyTitleControlName(controlName As String) As Boolean
     nm = LCase$(controlName)
     IsLegacyTitleControlName = (nm = "lbltitle" Or Left$(nm, 8) = "lbltitle")
 End Function
+
+Public Function ClassifyCleanupBlankParagraph(ByVal paragraphItem As Paragraph) As CleanupBlankParagraphKind
+    Dim paragraphRange As Range
+    Dim cellRange As Range
+    Dim rowRange As Range
+    Dim precedingMark As Range
+
+    On Error GoTo UnsupportedParagraph
+    Set paragraphRange = paragraphItem.Range
+
+    If CleanupRangeHasMeaningfulContent(paragraphRange) Then
+        ClassifyCleanupBlankParagraph = cbpkNotBlank
+        Exit Function
+    End If
+
+    If paragraphRange.Tables.Count > 0 Then
+        If paragraphRange.Information(wdWithInTable) Then
+            If paragraphRange.Tables.Count > 1 Then GoTo UnsupportedParagraph
+        Else
+            ClassifyCleanupBlankParagraph = cbpkNotBlank
+            Exit Function
+        End If
+    End If
+
+    If paragraphRange.Information(wdWithInTable) Then
+        Set cellRange = paragraphRange.Cells(1).Range
+        If CleanupCellRangeContainsNestedTable(cellRange) Then GoTo UnsupportedParagraph
+
+        If Right$(paragraphRange.Text, 1) <> Chr$(7) Then
+            ClassifyCleanupBlankParagraph = cbpkRemovableCellExtra
+            Exit Function
+        End If
+
+        If paragraphRange.Start > cellRange.Start Then
+            Set precedingMark = paragraphRange.Document.Range(paragraphRange.Start - 1, paragraphRange.Start)
+            If precedingMark.Text = vbCr And precedingMark.Information(wdWithInTable) Then
+                ClassifyCleanupBlankParagraph = cbpkRemovableCellExtra
+                Exit Function
+            End If
+        End If
+
+        Set rowRange = paragraphRange.Rows(1).Range
+        If cellRange.End >= rowRange.End Then
+            ClassifyCleanupBlankParagraph = cbpkProtectedRowMarker
+        Else
+            ClassifyCleanupBlankParagraph = cbpkProtectedEmptyCell
+        End If
+        Exit Function
+    End If
+
+    If paragraphRange.End >= paragraphRange.Document.Content.End Then
+        ClassifyCleanupBlankParagraph = cbpkProtectedFinalDocument
+    Else
+        ClassifyCleanupBlankParagraph = cbpkRemovableBody
+    End If
+    Exit Function
+
+UnsupportedParagraph:
+    ClassifyCleanupBlankParagraph = cbpkUnsupported
+End Function
+
+Public Function CleanupBlankParagraphKindName(ByVal blankKind As CleanupBlankParagraphKind) As String
+    Select Case blankKind
+        Case cbpkRemovableBody: CleanupBlankParagraphKindName = "Removable body blank"
+        Case cbpkRemovableCellExtra: CleanupBlankParagraphKindName = "Removable table-cell extra"
+        Case cbpkProtectedEmptyCell: CleanupBlankParagraphKindName = "Protected empty-cell marker"
+        Case cbpkProtectedRowMarker: CleanupBlankParagraphKindName = "Protected table-row marker"
+        Case cbpkProtectedFinalDocument: CleanupBlankParagraphKindName = "Protected final-document marker"
+        Case cbpkUnsupported: CleanupBlankParagraphKindName = "Unsupported or ambiguous structure"
+        Case Else: CleanupBlankParagraphKindName = "Not blank"
+    End Select
+End Function
+
+Public Function CleanupRangeHasMeaningfulContent(ByVal targetRange As Range) As Boolean
+    Dim rawText As String
+
+    On Error GoTo ProtectRange
+    rawText = targetRange.Text
+    rawText = Replace(rawText, vbCr, "")
+    rawText = Replace(rawText, Chr$(7), "")
+    rawText = Replace(rawText, " ", "")
+    rawText = Replace(rawText, vbTab, "")
+    If Len(rawText) > 0 Then
+        CleanupRangeHasMeaningfulContent = True
+        Exit Function
+    End If
+
+    If targetRange.InlineShapes.Count > 0 Then GoTo MeaningfulRange
+    If targetRange.Fields.Count > 0 Then GoTo MeaningfulRange
+    If targetRange.FormFields.Count > 0 Then GoTo MeaningfulRange
+    If targetRange.ContentControls.Count > 0 Then GoTo MeaningfulRange
+    If CleanupRangeHasUserBookmark(targetRange) Then GoTo MeaningfulRange
+    If targetRange.Comments.Count > 0 Then GoTo MeaningfulRange
+    If targetRange.Revisions.Count > 0 Then GoTo MeaningfulRange
+    If Len(targetRange.Text) > 0 And targetRange.Font.Hidden <> 0 Then GoTo MeaningfulRange
+    If CleanupRangeHasAnchoredShape(targetRange) Then GoTo MeaningfulRange
+    Exit Function
+
+MeaningfulRange:
+    CleanupRangeHasMeaningfulContent = True
+    Exit Function
+
+ProtectRange:
+    CleanupRangeHasMeaningfulContent = True
+End Function
+
+Private Function CleanupRangeHasUserBookmark(ByVal targetRange As Range) As Boolean
+    Dim bookmarkItem As Bookmark
+
+    On Error GoTo ProtectRange
+    For Each bookmarkItem In targetRange.Bookmarks
+        If Left$(bookmarkItem.Name, 1) <> "_" And Left$(bookmarkItem.Name, 1) <> "\" Then
+            CleanupRangeHasUserBookmark = True
+            Exit Function
+        End If
+    Next bookmarkItem
+    Exit Function
+
+ProtectRange:
+    CleanupRangeHasUserBookmark = True
+End Function
+
+Private Function CleanupRangeHasAnchoredShape(ByVal targetRange As Range) As Boolean
+    Dim shapeItem As Shape
+    Dim anchorRange As Range
+
+    On Error GoTo ProtectRange
+    For Each shapeItem In targetRange.Document.Shapes
+        Set anchorRange = shapeItem.Anchor
+        If anchorRange.Start < targetRange.End And anchorRange.End >= targetRange.Start Then
+            CleanupRangeHasAnchoredShape = True
+            Exit Function
+        End If
+    Next shapeItem
+    Exit Function
+
+ProtectRange:
+    CleanupRangeHasAnchoredShape = True
+End Function
+
+Private Function CleanupCellRangeContainsNestedTable(ByVal cellRange As Range) As Boolean
+    Dim rawText As String
+    Dim markerPosition As Long
+    Dim cellMarkerCount As Long
+
+    On Error GoTo ProtectRange
+    rawText = cellRange.Text
+    markerPosition = InStr(1, rawText, Chr$(7), vbBinaryCompare)
+    Do While markerPosition > 0
+        cellMarkerCount = cellMarkerCount + 1
+        If cellMarkerCount > 1 Then
+            CleanupCellRangeContainsNestedTable = True
+            Exit Function
+        End If
+        markerPosition = InStr(markerPosition + 1, rawText, Chr$(7), vbBinaryCompare)
+    Loop
+    Exit Function
+
+ProtectRange:
+    CleanupCellRangeContainsNestedTable = True
+End Function
+
+Public Function CollectCollapsibleBlankParagraphStarts( _
+    ByVal searchRange As Range, _
+    ByVal includeTableCellExtras As Boolean, _
+    ByRef protectedEmptyCells As Long, _
+    ByRef protectedRowMarkers As Long, _
+    ByRef protectedFinalMarkers As Long, _
+    ByRef skippedStructures As Long) As Collection
+
+    Dim starts As Collection
+    Dim paragraphItem As Paragraph
+    Dim blankKind As CleanupBlankParagraphKind
+    Dim blankRun As Long
+    Dim currentCellStart As Long
+    Dim cellRange As Range
+
+    Set starts = New Collection
+    currentCellStart = -1
+
+    For Each paragraphItem In searchRange.Paragraphs
+        If Not ParagraphContainedInRange(paragraphItem, searchRange) Then
+            blankRun = 0
+            currentCellStart = -1
+            GoTo NextParagraph
+        End If
+
+        blankKind = ClassifyCleanupBlankParagraph(paragraphItem)
+        Select Case blankKind
+            Case cbpkRemovableBody
+                If currentCellStart <> -1 Then blankRun = 0
+                currentCellStart = -1
+                blankRun = blankRun + 1
+                If blankRun > 1 Then starts.Add paragraphItem.Range.Start
+
+            Case cbpkRemovableCellExtra
+                If Not includeTableCellExtras Then
+                    blankRun = 0
+                    currentCellStart = -1
+                    GoTo NextParagraph
+                End If
+                Set cellRange = Nothing
+                On Error Resume Next
+                Set cellRange = paragraphItem.Range.Cells(1).Range
+                On Error GoTo 0
+                If cellRange Is Nothing Then
+                    skippedStructures = skippedStructures + 1
+                    blankRun = 0
+                    currentCellStart = -1
+                Else
+                    If currentCellStart <> cellRange.Start Then blankRun = 0
+                    currentCellStart = cellRange.Start
+                    blankRun = blankRun + 1
+                    If blankRun > 1 Then starts.Add paragraphItem.Range.Start
+                End If
+
+            Case cbpkProtectedEmptyCell
+                protectedEmptyCells = protectedEmptyCells + 1
+                blankRun = 0
+                currentCellStart = -1
+
+            Case cbpkProtectedRowMarker
+                protectedRowMarkers = protectedRowMarkers + 1
+                blankRun = 0
+                currentCellStart = -1
+
+            Case cbpkProtectedFinalDocument
+                protectedFinalMarkers = protectedFinalMarkers + 1
+                blankRun = 0
+                currentCellStart = -1
+
+            Case cbpkUnsupported
+                skippedStructures = skippedStructures + 1
+                blankRun = 0
+                currentCellStart = -1
+
+            Case Else
+                blankRun = 0
+                currentCellStart = -1
+        End Select
+NextParagraph:
+    Next paragraphItem
+
+    Set CollectCollapsibleBlankParagraphStarts = starts
+End Function
+
+Public Function RemoveCleanupBlankParagraphAtStart( _
+    ByVal sourceDocument As Document, _
+    ByVal paragraphStart As Long, _
+    Optional ByVal expectedKind As CleanupBlankParagraphKind = cbpkNotBlank) As Boolean
+
+    Dim paragraphItem As Paragraph
+    Dim blankKind As CleanupBlankParagraphKind
+    Dim cellRange As Range
+    Dim precedingMark As Range
+
+    On Error GoTo SafeExit
+    Set paragraphItem = sourceDocument.Range(paragraphStart, paragraphStart).Paragraphs(1)
+    blankKind = ClassifyCleanupBlankParagraph(paragraphItem)
+    If expectedKind <> cbpkNotBlank And blankKind <> expectedKind Then Exit Function
+
+    Select Case blankKind
+        Case cbpkRemovableBody
+            paragraphItem.Range.Delete
+            RemoveCleanupBlankParagraphAtStart = True
+
+        Case cbpkRemovableCellExtra
+            If Right$(paragraphItem.Range.Text, 1) = Chr$(7) Then
+                Set cellRange = paragraphItem.Range.Cells(1).Range
+                If paragraphItem.Range.Start <= cellRange.Start Then Exit Function
+                Set precedingMark = sourceDocument.Range(paragraphItem.Range.Start - 1, paragraphItem.Range.Start)
+                If precedingMark.Text <> vbCr Then Exit Function
+                If Not precedingMark.Information(wdWithInTable) Then Exit Function
+                precedingMark.Delete
+            Else
+                paragraphItem.Range.Delete
+            End If
+            RemoveCleanupBlankParagraphAtStart = True
+    End Select
+SafeExit:
+End Function
+
+Public Function CleanupCellHasMeaningfulContent(ByVal tableCell As Cell) As Boolean
+    On Error GoTo ProtectCell
+    If CleanupRangeHasMeaningfulContent(tableCell.Range) Then
+        CleanupCellHasMeaningfulContent = True
+        Exit Function
+    End If
+
+    If CleanupCellRangeContainsNestedTable(tableCell.Range) Then CleanupCellHasMeaningfulContent = True
+    Exit Function
+
+ProtectCell:
+    CleanupCellHasMeaningfulContent = True
+End Function
+
+Public Function CleanupTableRowHasMeaningfulContent(ByVal tableRow As Row) As Boolean
+    Dim tableCell As Cell
+
+    On Error GoTo ProtectRow
+    For Each tableCell In tableRow.Cells
+        If CleanupCellHasMeaningfulContent(tableCell) Then
+            CleanupTableRowHasMeaningfulContent = True
+            Exit Function
+        End If
+    Next tableCell
+    Exit Function
+
+ProtectRow:
+    CleanupTableRowHasMeaningfulContent = True
+End Function
+
+Public Function CleanupTableColumnHasMeaningfulContent(ByVal sourceTable As Table, ByVal columnIndex As Long) As Boolean
+    Dim rowIndex As Long
+    Dim tableCell As Cell
+
+    On Error GoTo ProtectColumn
+    For rowIndex = 1 To sourceTable.Rows.Count
+        Set tableCell = sourceTable.Cell(rowIndex, columnIndex)
+        If CleanupCellHasMeaningfulContent(tableCell) Then
+            CleanupTableColumnHasMeaningfulContent = True
+            Exit Function
+        End If
+    Next rowIndex
+    Exit Function
+
+ProtectColumn:
+    CleanupTableColumnHasMeaningfulContent = True
+End Function
+
+Public Function CleanupTableStructureIsSupported(ByVal sourceTable As Table) As Boolean
+    Dim rowIndex As Long
+    Dim columnIndex As Long
+
+    On Error GoTo UnsupportedTable
+    For rowIndex = 1 To sourceTable.Rows.Count
+        For columnIndex = 1 To sourceTable.Columns.Count
+            If CleanupCellRangeContainsNestedTable(sourceTable.Cell(rowIndex, columnIndex).Range) Then Exit Function
+        Next columnIndex
+    Next rowIndex
+    CleanupTableStructureIsSupported = True
+    Exit Function
+
+UnsupportedTable:
+End Function
+
 Public Function GetTargetRange() As Range
     If gPreviewScopeHasRange Then
         If ActiveDocument.FullName = gPreviewScopeDocumentKey Or ActiveDocument.Name = gPreviewScopeDocumentKey Then
@@ -2793,7 +3672,7 @@ Private Function ParagraphBodyLength(ByVal fullText As String) As Long
     ParagraphBodyLength = bodyLength
 End Function
 
-Public Function CountPreviewFindMatches(ByVal searchRange As Range, ByVal findText As String) As Long
+Public Function CountPreviewFindMatches(ByVal searchRange As Range, ByVal findText As String, Optional ByVal registerChangePages As Boolean = False) As Long
     Dim matchRange As Range
     Set matchRange = searchRange.Duplicate
 
@@ -2807,6 +3686,51 @@ Public Function CountPreviewFindMatches(ByVal searchRange As Range, ByVal findTe
 
         Do While .Execute
             CountPreviewFindMatches = CountPreviewFindMatches + 1
+            If registerChangePages Then RegisterPreviewChangeAnchor matchRange
+            matchRange.Collapse wdCollapseEnd
+        Loop
+    End With
+End Function
+
+Public Function HighlightPreviewFindMatches(ByVal searchRange As Range, ByVal findText As String, Optional ByVal markerColor As WdColorIndex = wdBrightGreen) As Long
+    Dim matchRange As Range
+    Dim searchEnd As Long
+
+    searchEnd = searchRange.End
+    Set matchRange = searchRange.Duplicate
+    Do
+        With matchRange.Find
+            .ClearFormatting
+            .Replacement.ClearFormatting
+            .Text = findText
+            .Forward = True
+            .Wrap = wdFindStop
+            .MatchWildcards = False
+            If Not .Execute Then Exit Do
+        End With
+        HighlightPreviewFindMatches = HighlightPreviewFindMatches + 1
+        ApplyPreviewHighlight matchRange, markerColor
+        matchRange.Collapse wdCollapseEnd
+        If matchRange.Start >= searchEnd Then Exit Do
+        matchRange.End = searchEnd
+    Loop
+End Function
+
+Public Function HighlightPreviewFindBoundaryMatches(ByVal searchRange As Range, ByVal findText As String) As Long
+    Dim matchRange As Range
+    Set matchRange = searchRange.Duplicate
+
+    With matchRange.Find
+        .ClearFormatting
+        .Replacement.ClearFormatting
+        .Text = findText
+        .Forward = True
+        .Wrap = wdFindStop
+        .MatchWildcards = False
+
+        Do While .Execute
+            HighlightPreviewFindBoundaryMatches = HighlightPreviewFindBoundaryMatches + 1
+            ApplyPreviewMinimalMarker matchRange
             matchRange.Collapse wdCollapseEnd
         Loop
     End With

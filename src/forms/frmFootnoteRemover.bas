@@ -71,12 +71,12 @@ Private Sub cmdRun_Click()
         Dim fnP As Footnote, enP As Endnote
         If doFoot Then
             For Each fnP In ActiveDocument.Footnotes
-                If InScope(fnP.Reference, targetRange) Then fnP.Reference.HighlightColorIndex = wdYellow: pf = pf + 1
+                If InScope(fnP.Reference, targetRange) Then ApplyPreviewHighlight fnP.Reference, wdYellow: pf = pf + 1
             Next fnP
         End If
         If doEnd Then
             For Each enP In ActiveDocument.Endnotes
-                If InScope(enP.Reference, targetRange) Then enP.Reference.HighlightColorIndex = wdYellow: pe = pe + 1
+                If InScope(enP.Reference, targetRange) Then ApplyPreviewHighlight enP.Reference, wdYellow: pe = pe + 1
             Next enP
         End If
         Dim previewRows As Collection
@@ -85,7 +85,7 @@ Private Sub cmdRun_Click()
         Set previewRows = NewPreviewSummaryRows()
         AddPreviewSummaryRow previewRows, "Footnotes", pf, False, (Not doFoot)
         AddPreviewSummaryRow previewRows, "Endnotes", pe, False, (Not doEnd)
-        AddPreviewSummaryRow previewRows, "Note text kept inline", keptInline, True, (Not keepText)
+        AddPreviewSummaryRow previewRows, "Note text kept inline", keptInline, False, (Not keepText)
         ShowPreviewActionsSummary Me, "Footnote / Endnote Remover", previewRows
         Exit Sub
     End If

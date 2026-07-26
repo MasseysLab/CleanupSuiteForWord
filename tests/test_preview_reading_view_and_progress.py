@@ -85,6 +85,40 @@ class PreviewReadingViewAndProgressTests(unittest.TestCase):
         self.assertIn("RestoreEditablePreviewDocument", query_close)
         self.assertIn("RestoreEditablePreviewDocument", terminate)
 
+    def test_panel_restores_editable_preview_only_once_before_apply(self):
+        panel = read("src/forms/frmPreviewActions.bas")
+        configure_start = panel.index("Public Sub ConfigureSummary")
+        configure_end = panel.index("Private Sub LayoutPanel()", configure_start)
+        configure = panel[configure_start:configure_end]
+        cleanup_start = panel.index("Private Sub RestoreEditablePreviewDocument()")
+        cleanup_end = panel.index("Private Sub cmdApply_Click()", cleanup_start)
+        cleanup = panel[cleanup_start:cleanup_end]
+
+        self.assertIn("Private mEditablePreviewRestored As Boolean", panel)
+        self.assertIn("mEditablePreviewRestored = False", configure)
+        self.assertIn("If mEditablePreviewRestored Then Exit Sub", cleanup)
+        self.assertIn("mEditablePreviewRestored = True", cleanup)
+        self.assertLess(
+            cleanup.index("If mEditablePreviewRestored Then Exit Sub"),
+            cleanup.index("RestoreCleanupSuiteTransientState"),
+        )
+        self.assertLess(
+            cleanup.index("RemovePreviewHighlighting mPreviewDocument"),
+            cleanup.index("mEditablePreviewRestored = True"),
+        )
+
+    def test_repeated_applied_notification_cannot_repeat_transient_document_cleanup(self):
+        helpers = read("src/modules/modCleanupHelpers.bas")
+        applied_start = helpers.index("Public Sub MarkCleanupToolApplied()")
+        applied_end = helpers.index("Public Sub MarkCleanupToolClosedByUser()", applied_start)
+        applied = helpers[applied_start:applied_end]
+
+        self.assertIn("If gCleanupToolExitReason = CLEANUP_TOOL_EXIT_APPLY Then Exit Sub", applied)
+        self.assertLess(
+            applied.index("If gCleanupToolExitReason = CLEANUP_TOOL_EXIT_APPLY Then Exit Sub"),
+            applied.index("RestoreCleanupSuiteTransientState"),
+        )
+
     def test_preview_panel_is_modal_while_on_and_modeless_only_after_preview_off(self):
         helpers = read("src/modules/modCleanupHelpers.bas")
 
@@ -97,15 +131,18 @@ class PreviewReadingViewAndProgressTests(unittest.TestCase):
 
     def test_modal_preview_navigation_uses_word_page_browser_and_restores_target(self):
         panel = read("src/forms/frmPreviewActions.bas")
+        helpers = read("src/modules/modCleanupHelpers.bas")
 
         self.assertIn("Private mOriginalBrowseTarget As Long", panel)
         self.assertIn("mOriginalBrowseTarget = Application.Browser.Target", panel)
-        self.assertIn("Application.Browser.Target = wdBrowsePage", panel)
-        self.assertIn("Application.Browser.Previous", panel)
-        self.assertIn("Application.Browser.Next", panel)
+        self.assertIn("Application.Browser.Target = wdBrowsePage", helpers)
+        self.assertIn("Application.Browser.Previous", helpers)
+        self.assertIn("Application.Browser.Next", helpers)
         self.assertIn("If mBrowseTargetCaptured Then Application.Browser.Target = mOriginalBrowseTarget", panel)
-        self.assertIn('cmdPreviousPage.Caption = ChrW$(&H25C0) & "  Previous page"', panel)
-        self.assertIn('cmdNextPage.Caption = "Next page  " & ChrW$(&H25B6)', panel)
+        self.assertIn('cmdPreviousChange.Caption = "Change" & vbCrLf & ChrW$(&H25C0) & " Previous"', panel)
+        self.assertIn('cmdPreviousPage.Caption = "Page" & vbCrLf & ChrW$(&H25C0) & " Previous"', panel)
+        self.assertIn('cmdNextPage.Caption = "Page" & vbCrLf & "Next " & ChrW$(&H25B6)', panel)
+        self.assertIn('cmdNextChange.Caption = "Change" & vbCrLf & "Next " & ChrW$(&H25B6)', panel)
 
     def test_preview_shading_is_restored_from_document_coordinates(self):
         helpers = read("src/modules/modCleanupHelpers.bas")
@@ -146,7 +183,9 @@ class PreviewReadingViewAndProgressTests(unittest.TestCase):
         runner = read("src/modules/modAlphaSmokeRunner.bas")
 
         self.assertIn('"Reconfigure left preview paragraph shading behind."', runner)
-        self.assertIn('"Reconfigure left preview highlighting behind."', runner)
+        self.assertIn('"Reconfigure did not restore the first mixed highlight color."', runner)
+        self.assertIn('"Reconfigure did not restore the second mixed highlight color."', runner)
+        self.assertIn('"Preview OFF did not restore the user\'s original highlight."', runner)
         self.assertIn("previewDocument.Paragraphs(3).Range.Words(1).Bold = True", runner)
         self.assertIn('"Panel unload left mixed-format preview paragraph shading behind."', runner)
         self.assertIn('"Panel unload left preview highlighting behind."', runner)
@@ -206,8 +245,10 @@ class PreviewReadingViewAndProgressTests(unittest.TestCase):
         self.assertIn("cmdPreview.Enabled = False", panel)
         self.assertIn("cmdClear.Enabled = False", panel)
         self.assertIn("cmdApply.Enabled = False", panel)
-        self.assertIn("cmdPreviousPage.Enabled = False", panel)
-        self.assertIn("cmdNextPage.Enabled = False", panel)
+        self.assertIn("StyleNavigationButton cmdPreviousChange, True, False", panel)
+        self.assertIn("StyleNavigationButton cmdPreviousPage, False, False", panel)
+        self.assertIn("StyleNavigationButton cmdNextPage, False, False", panel)
+        self.assertIn("StyleNavigationButton cmdNextChange, True, False", panel)
         self.assertIn("Me.Repaint", panel)
         apply_block = panel[panel.index("Private Sub cmdApply_Click()"): panel.index("Private Sub cmdPreview_Click()")]
         self.assertIn('ShowProgress mToolName & ": Applying changes"', apply_block)

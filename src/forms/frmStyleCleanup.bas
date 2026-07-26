@@ -155,11 +155,11 @@ Private Sub cmdRun_Click()
                 End If
             Next st
         End If
-        If doRemap Then previewRemaps = CountStyleVariantsForRemap()
+        If doRemap Then previewRemaps = HighlightStyleVariantsForRemap()
         Dim previewRows As Collection
         Set previewRows = NewPreviewSummaryRows()
         AddPreviewSummaryRow previewRows, "Unused custom styles", previewUnused, True, (Not doUnused)
-        AddPreviewSummaryRow previewRows, "Variant style remaps", previewRemaps, True, (Not doRemap)
+        AddPreviewSummaryRow previewRows, "Variant style remaps", previewRemaps, False, (Not doRemap)
         ShowPreviewActionsSummary Me, "Style Cleanup", previewRows
         Exit Sub
     End If
@@ -222,6 +222,33 @@ Private Function CountStyleVariantsForRemap() As Long
     For vi = LBound(variants) To UBound(variants)
         If TryGetDocumentStyle(CStr(variants(vi)), variantStyle) Then
             CountStyleVariantsForRemap = CountStyleVariantsForRemap + CountParagraphsUsingStyle(variantStyle)
+        End If
+    Next vi
+End Function
+
+Private Function HighlightStyleVariantsForRemap() As Long
+    Dim variants As Variant
+    Dim vi As Long
+    Dim variantStyle As Style
+    Dim firstStory As Range
+    Dim storyPart As Range
+    Dim paragraphItem As Paragraph
+    variants = RemappableStyleNames()
+
+    For vi = LBound(variants) To UBound(variants)
+        If TryGetDocumentStyle(CStr(variants(vi)), variantStyle) Then
+            For Each firstStory In ActiveDocument.StoryRanges
+                Set storyPart = firstStory
+                Do While Not storyPart Is Nothing
+                    For Each paragraphItem In storyPart.Paragraphs
+                        If ParagraphUsesStyle(paragraphItem, variantStyle) Then
+                            HighlightStyleVariantsForRemap = HighlightStyleVariantsForRemap + 1
+                            ApplyPreviewMinimalMarker paragraphItem.Range, True
+                        End If
+                    Next paragraphItem
+                    Set storyPart = storyPart.NextStoryRange
+                Loop
+            Next firstStory
         End If
     Next vi
 End Function

@@ -315,6 +315,25 @@ class GuidedToolDynamicLayoutTests(unittest.TestCase):
             self.assertIn(f"Private Sub {control}_Click()", duplicate_form)
         self.assertIn("LayoutCleanupToolForm Me", duplicate_form)
 
+    def test_duplicate_remover_uses_requested_two_column_match_layout(self):
+        helpers = read("src/modules/modCleanupHelpers.bas")
+        layout_start = helpers.index("Private Sub LayoutDuplicateChoices")
+        layout_end = helpers.index("End Sub", layout_start)
+        layout = helpers[layout_start:layout_end]
+
+        self.assertIn('toolForm.Controls("optMatchExact").Move leftX, y', layout)
+        self.assertIn('toolForm.Controls("optMatchFuzzy").Move rightX, y', layout)
+        self.assertIn('toolForm.Controls("optMatchNormalized").Move leftX, y', layout)
+        self.assertIn('toolForm.Controls("chkIncludeEmptyParagraphs").Move M + 8, y, contentW - 8', layout)
+        self.assertIn('PositionDuplicateFuzzyThreshold toolForm, "optFuzzyLoose", rightX, y', layout)
+        self.assertIn('PositionDuplicateFuzzyThreshold toolForm, "optFuzzyMedium", rightX, y', layout)
+        self.assertIn('PositionDuplicateFuzzyThreshold toolForm, "optFuzzyStrict", rightX, y', layout)
+        self.assertIn("LayoutGuidedDivider toolForm, M, y, contentW", layout)
+        self.assertLess(layout.index('toolForm.Controls("optMatchExact").Move'), layout.index('toolForm.Controls("optMatchNormalized").Move'))
+        self.assertLess(layout.index('toolForm.Controls("optMatchNormalized").Move'), layout.index('toolForm.Controls("chkIncludeEmptyParagraphs").Move'))
+        self.assertLess(layout.index('PositionDuplicateFuzzyThreshold toolForm, "optFuzzyStrict"'), layout.index('toolForm.Controls("chkIncludeEmptyParagraphs").Move'))
+        self.assertLess(layout.index("LayoutGuidedDivider toolForm, M, y, contentW"), layout.index('toolForm.Controls("chkIncludeEmptyParagraphs").Move'))
+
         header_form = read("src/forms/frmHeaderFooterStandardizer.bas")
         for control in ["optStandardize", "optClearAll", "chkAlignment"]:
             self.assertIn(f"Private Sub {control}_Click()", header_form)
@@ -418,7 +437,7 @@ class GuidedToolDynamicLayoutTests(unittest.TestCase):
         self.assertIn('PlaceRiskChipBesideChoice toolForm, "optAll", "cmdRiskPlacementUnicodeAll", "Safe cleanup"', helpers)
         self.assertIn('PlaceRiskChipBesideChoice toolForm, "optAll", "cmdRiskPlacementPunctuationAll", "Text caution"', helpers)
         self.assertIn('PlaceRiskChipBesideChoice toolForm, "optAll", "cmdRiskPlacementListAll", "Structure change"', helpers)
-        self.assertIn('PlaceRiskChipBesideChoice toolForm, "optRemoveDupes", "cmdRiskPlacementDuplicateRemove", "Removes content"', helpers)
+        self.assertIn('PlaceRiskChipBesideChoice toolForm, "chkIncludeEmptyParagraphs", "cmdRiskPlacementDuplicateEmpty", "Removes content"', helpers)
         self.assertIn('PlaceRiskChipBesideChoice toolForm, "chkConvertToText", "cmdRiskPlacementTableConvertToText", "Structure change"', helpers)
         self.assertIn('PlaceRiskChipBesideChoice toolForm, "chkTables", "cmdRiskPlacementObjectTables", "Removes content"', helpers)
         self.assertIn('PlaceRiskChipBesideChoice toolForm, "optSoftToPara", "cmdRiskPlacementSoftReturnToPara", "Structure change"', helpers)
@@ -529,7 +548,7 @@ class GuidedToolDynamicLayoutTests(unittest.TestCase):
             "cmdRiskPlacementCapitalizationRecommended", "cmdRiskPlacementCapitalizationCustom",
             "cmdRiskPlacementListAll", "cmdRiskPlacementListBullets", "cmdRiskPlacementListNumbering", "cmdRiskPlacementListIndent", "cmdRiskPlacementListCustom",
             "cmdRiskPlacementParagraphAll", "cmdRiskPlacementParagraphRemoveEmpty", "cmdRiskPlacementParagraphSpacing", "cmdRiskPlacementParagraphCustom",
-            "cmdRiskPlacementDuplicatePreview", "cmdRiskPlacementDuplicateRemove", "cmdRiskPlacementDuplicateExact", "cmdRiskPlacementDuplicateNormalized", "cmdRiskPlacementDuplicateFuzzy",
+            "cmdRiskPlacementDuplicateExact", "cmdRiskPlacementDuplicateNormalized", "cmdRiskPlacementDuplicateFuzzy", "cmdRiskPlacementDuplicateEmpty",
             "cmdRiskPlacementFormattingChar", "cmdRiskPlacementFormattingPara", "cmdRiskPlacementFormattingQuick", "cmdRiskPlacementFormattingThorough", "cmdRiskPlacementFormattingStrip",
             "cmdRiskPlacementFontFace", "cmdRiskPlacementFontSize", "cmdRiskPlacementFontBold", "cmdRiskPlacementFontItalic", "cmdRiskPlacementFontColor",
             "cmdRiskPlacementStyleRemoveUnused", "cmdRiskPlacementStyleRemap",

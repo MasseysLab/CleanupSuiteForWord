@@ -65,7 +65,7 @@ class WordAlphaSmokeRunnerTests(unittest.TestCase):
             "Private Sub SmokeRequireSummaryRowFits(",
             "Panel Preview OFF did not update its state label.",
             "Panel Preview OFF still exposed the unstable direct re-preview shortcut.",
-            "Panel Preview OFF left page navigation visible.",
+            "Panel Preview OFF left navigation visible.",
             'panel.ConfigureSummary toolForm, "Document Trim", flowRows',
             'panel.ConfigureSummary toolForm, "Object Remover", wideRows',
             'toolForm.RunAfterPreview',

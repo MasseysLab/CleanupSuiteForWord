@@ -262,7 +262,7 @@ Private Sub HighlightUnicodeMatches(ByVal searchRange As Range, ByVal findText A
             .MatchWildcards = False
             If Not .Execute Then Exit Do
         End With
-        matchRange.HighlightColorIndex = wdBrightGreen
+        ApplyPreviewHighlight matchRange
         If useAdjacentFallback Then HighlightUnicodeAdjacentCharacter matchRange, searchRange
         matchRange.Collapse wdCollapseEnd
         If matchRange.Start >= searchEnd Then Exit Do
@@ -278,5 +278,5 @@ Private Sub HighlightUnicodeAdjacentCharacter(ByVal matchRange As Range, ByVal s
     Else
         Exit Sub
     End If
-    markerRange.HighlightColorIndex = wdBrightGreen
+    ApplyPreviewHighlight markerRange
 End Sub
