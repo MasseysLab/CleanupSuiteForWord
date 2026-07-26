@@ -6,9 +6,11 @@ The project uses a simple SemVer-style ladder, but with `0.x.0` milestones until
 
 ## Current Version
 
-`0.9.3-beta-vba-final`
+`0.9.5-beta`
 
-This manual-install prerelease is the final standalone VBA-only checkpoint before CleanupSuite begins requiring the approved C#/VBA hybrid system. It completes the structural-safety package and Preview navigation model while preserving fast punctuation Preview, stable Reading View, minimal change markers, and one-step Undo. It intentionally does not replace the `0.9.2-alpha` stable installer channel. Git tag: `v0.9.3-beta-vba-final`.
+This is the active hybrid Beta development line. The final standalone VBA-only
+checkpoint remains published as `v0.9.3-beta-vba-final`, and the stable installer
+channel remains `0.9.2-alpha` until the signed `0.9.5-beta` release gate passes.
 
 ## Roadmap
 

@@ -6407,7 +6407,7 @@ Private Function modHybridBridge_Code() As String
     s = s & "    If targetRange Is Nothing Then Err.Raise 5, ""HybridAnalyzeInvisibleUnicode"", ""The analysis range is unavailable.""" & vbCrLf
     s = s & "    If targetRange.StoryType <> wdMainTextStory Then Err.Raise 5, ""HybridAnalyzeInvisibleUnicode"", ""The pilot currently supports the main document story only.""" & vbCrLf
     s = s & "    If Not (nonBreakingSpace Or zeroWidthSpace Or zeroWidthNonJoiner Or zeroWidthJoiner Or byteOrderMark Or softHyphen Or nonBreakingHyphen) Then Err.Raise 5, ""HybridAnalyzeInvisibleUnicode"", ""No Unicode character type is selected.""" & vbCrLf
-    s = s & "    If Not HybridResolveTrustedDevelopmentEngine(enginePath, expectedEngineHash, failureMessage) Then Exit Function" & vbCrLf
+    s = s & "    If Not HybridResolveTrustedEngine(enginePath, expectedEngineHash, failureMessage) Then Exit Function" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "    jobId = HybridNewUuid()" & vbCrLf
     s = s & "    jobDirectory = HybridCreateEmptyJobDirectory(jobId)" & vbCrLf
@@ -6738,6 +6738,21 @@ Private Function modHybridBridge_Code() As String
     s = s & "    End Select" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
+    s = s & "Private Function HybridResolveTrustedEngine( _" & vbCrLf
+    s = s & "        ByRef enginePath As String, _" & vbCrLf
+    s = s & "        ByRef expectedHash As String, _" & vbCrLf
+    s = s & "        ByRef failureMessage As String) As Boolean" & vbCrLf
+    s = s & "    Dim useDevelopmentEngine As Boolean" & vbCrLf
+    s = s & "    useDevelopmentEngine = (Len(Trim$(Environ$(""CLEANUPSUITE_HYBRID_DEV_ENGINE""))) > 0 Or Len(Trim$(Environ$(""CLEANUPSUITE_HYBRID_DEV_SHA256""))) > 0)" & vbCrLf
+    s = s & "    If useDevelopmentEngine Then" & vbCrLf
+    s = s & "        HybridResolveTrustedEngine = HybridResolveTrustedDevelopmentEngine( _" & vbCrLf
+    s = s & "            enginePath, expectedHash, failureMessage)" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        HybridResolveTrustedEngine = HybridResolveMatchedInstalledEngine( _" & vbCrLf
+    s = s & "            enginePath, expectedHash, failureMessage)" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "Private Function HybridResolveTrustedDevelopmentEngine( _" & vbCrLf
     s = s & "        ByRef enginePath As String, _" & vbCrLf
     s = s & "        ByRef expectedHash As String, _" & vbCrLf
@@ -6762,6 +6777,127 @@ Private Function modHybridBridge_Code() As String
     s = s & "    End If" & vbCrLf
     s = s & "    If Not HybridValidateCapabilityHandshake(enginePath, failureMessage) Then Exit Function" & vbCrLf
     s = s & "    HybridResolveTrustedDevelopmentEngine = True" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function HybridResolveMatchedInstalledEngine( _" & vbCrLf
+    s = s & "        ByRef enginePath As String, _" & vbCrLf
+    s = s & "        ByRef expectedHash As String, _" & vbCrLf
+    s = s & "        ByRef failureMessage As String) As Boolean" & vbCrLf
+    s = s & "    Dim localRoot As String" & vbCrLf
+    s = s & "    Dim productRoot As String" & vbCrLf
+    s = s & "    Dim manifestPath As String" & vbCrLf
+    s = s & "    Dim manifestText As String" & vbCrLf
+    s = s & "    Dim manifest As Object" & vbCrLf
+    s = s & "    Dim components As Collection" & vbCrLf
+    s = s & "    Dim component As Object" & vbCrLf
+    s = s & "    Dim componentId As String" & vbCrLf
+    s = s & "    Dim componentVersion As String" & vbCrLf
+    s = s & "    Dim relativePath As String" & vbCrLf
+    s = s & "    Dim componentHash As String" & vbCrLf
+    s = s & "    Dim componentLength As Long" & vbCrLf
+    s = s & "    Dim componentPath As String" & vbCrLf
+    s = s & "    Dim seen As Object" & vbCrLf
+    s = s & "    Dim templateFound As Boolean" & vbCrLf
+    s = s & "    Dim engineFound As Boolean" & vbCrLf
+    s = s & "    Dim definitionsFound As Boolean" & vbCrLf
+    s = s & "    Dim rulesFound As Boolean" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    On Error GoTo InstalledEngineFailed" & vbCrLf
+    s = s & "    localRoot = Environ$(""LOCALAPPDATA"")" & vbCrLf
+    s = s & "    If Len(localRoot) = 0 Then Err.Raise 5, ""HybridResolveMatchedInstalledEngine"", ""Local application data is unavailable.""" & vbCrLf
+    s = s & "    productRoot = localRoot & ""\MasseysLab\CleanupSuiteForWord""" & vbCrLf
+    s = s & "    manifestPath = productRoot & ""\installation-manifest.json""" & vbCrLf
+    s = s & "    If Len(Dir$(manifestPath, vbNormal)) = 0 Then" & vbCrLf
+    s = s & "        Err.Raise 5, ""HybridResolveMatchedInstalledEngine"", _" & vbCrLf
+    s = s & "            ""The matched installation manifest is missing.""" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    manifestText = HybridReadUtf8File(manifestPath, 1048576)" & vbCrLf
+    s = s & "    Set manifest = HybridJsonParseObject(manifestText)" & vbCrLf
+    s = s & "    HybridRequireExactKeys manifest, _" & vbCrLf
+    s = s & "        ""manifestVersion|suiteVersion|protocolVersion|publisher|authenticodeRequired|components""" & vbCrLf
+    s = s & "    HybridRequireString manifest, ""manifestVersion"", ""1.0""" & vbCrLf
+    s = s & "    HybridRequireString manifest, ""suiteVersion"", SUITE_VERSION" & vbCrLf
+    s = s & "    HybridRequireString manifest, ""protocolVersion"", HYBRID_PROTOCOL_VERSION" & vbCrLf
+    s = s & "    HybridRequireString manifest, ""publisher"", ""MasseysLab""" & vbCrLf
+    s = s & "    If Not HybridRequireBoolean(manifest, ""authenticodeRequired"") Then _" & vbCrLf
+    s = s & "        Err.Raise 5, ""HybridResolveMatchedInstalledEngine"", _" & vbCrLf
+    s = s & "            ""The installed package does not require Authenticode.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set components = HybridRequireCollection(manifest, ""components"")" & vbCrLf
+    s = s & "    Set seen = CreateObject(""Scripting.Dictionary"")" & vbCrLf
+    s = s & "    seen.CompareMode = vbBinaryCompare" & vbCrLf
+    s = s & "    For Each component In components" & vbCrLf
+    s = s & "        HybridRequireExactKeys component, ""id|version|relativePath|sha256|byteLength""" & vbCrLf
+    s = s & "        componentId = HybridRequireString(component, ""id"")" & vbCrLf
+    s = s & "        If seen.Exists(componentId) Then _" & vbCrLf
+    s = s & "            Err.Raise 5, ""HybridResolveMatchedInstalledEngine"", _" & vbCrLf
+    s = s & "                ""The installation manifest contains a duplicate component.""" & vbCrLf
+    s = s & "        seen.Add componentId, True" & vbCrLf
+    s = s & "        componentVersion = HybridRequireString(component, ""version"")" & vbCrLf
+    s = s & "        relativePath = HybridRequireString(component, ""relativePath"")" & vbCrLf
+    s = s & "        componentHash = LCase$(HybridRequireString(component, ""sha256""))" & vbCrLf
+    s = s & "        componentLength = HybridRequireLong(component, ""byteLength"")" & vbCrLf
+    s = s & "        If componentLength < 1 Or Not HybridIsLowercaseSha256(componentHash) Then _" & vbCrLf
+    s = s & "            Err.Raise 5, ""HybridResolveMatchedInstalledEngine"", _" & vbCrLf
+    s = s & "                ""An installed component identity is invalid.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        Select Case componentId" & vbCrLf
+    s = s & "            Case ""word-template""" & vbCrLf
+    s = s & "                If componentVersion <> SUITE_VERSION Or relativePath <> ""CleanupSuite.dotm"" Then _" & vbCrLf
+    s = s & "                    Err.Raise 5, ""HybridResolveMatchedInstalledEngine"", _" & vbCrLf
+    s = s & "                        ""The Word template is not matched to this CleanupSuite version.""" & vbCrLf
+    s = s & "                componentPath = ThisDocument.FullName" & vbCrLf
+    s = s & "                templateFound = True" & vbCrLf
+    s = s & "            Case ""analysis-engine""" & vbCrLf
+    s = s & "                If componentVersion <> HYBRID_ENGINE_VERSION Or _" & vbCrLf
+    s = s & "                        relativePath <> ""Engine\CleanupSuite.Engine.exe"" Then _" & vbCrLf
+    s = s & "                    Err.Raise 5, ""HybridResolveMatchedInstalledEngine"", _" & vbCrLf
+    s = s & "                        ""The analysis engine version or path is not matched.""" & vbCrLf
+    s = s & "                componentPath = productRoot & ""\"" & relativePath" & vbCrLf
+    s = s & "                enginePath = componentPath" & vbCrLf
+    s = s & "                expectedHash = componentHash" & vbCrLf
+    s = s & "                engineFound = True" & vbCrLf
+    s = s & "            Case ""tool-definitions""" & vbCrLf
+    s = s & "                If relativePath <> ""Contracts\Hybrid\v1\protocol.json"" Then _" & vbCrLf
+    s = s & "                    Err.Raise 5, ""HybridResolveMatchedInstalledEngine"", _" & vbCrLf
+    s = s & "                        ""The protocol-definition path is invalid.""" & vbCrLf
+    s = s & "                componentPath = productRoot & ""\"" & relativePath" & vbCrLf
+    s = s & "                definitionsFound = True" & vbCrLf
+    s = s & "            Case ""rules""" & vbCrLf
+    s = s & "                If relativePath <> ""Contracts\Hybrid\v1\operation-vocabulary.json"" Then _" & vbCrLf
+    s = s & "                    Err.Raise 5, ""HybridResolveMatchedInstalledEngine"", _" & vbCrLf
+    s = s & "                        ""The operation-rules path is invalid.""" & vbCrLf
+    s = s & "                componentPath = productRoot & ""\"" & relativePath" & vbCrLf
+    s = s & "                rulesFound = True" & vbCrLf
+    s = s & "            Case Else" & vbCrLf
+    s = s & "                Err.Raise 5, ""HybridResolveMatchedInstalledEngine"", _" & vbCrLf
+    s = s & "                    ""The installation manifest contains an unknown component.""" & vbCrLf
+    s = s & "        End Select" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "        If Len(Dir$(componentPath, vbNormal)) = 0 Then _" & vbCrLf
+    s = s & "            Err.Raise 5, ""HybridResolveMatchedInstalledEngine"", _" & vbCrLf
+    s = s & "                componentId & "" is missing.""" & vbCrLf
+    s = s & "        If FileLen(componentPath) <> componentLength Then _" & vbCrLf
+    s = s & "            Err.Raise 5, ""HybridResolveMatchedInstalledEngine"", _" & vbCrLf
+    s = s & "                componentId & "" has the wrong length.""" & vbCrLf
+    s = s & "        If HybridSha256File(componentPath, componentId = ""word-template"") <> componentHash Then _" & vbCrLf
+    s = s & "            Err.Raise 5, ""HybridResolveMatchedInstalledEngine"", _" & vbCrLf
+    s = s & "                componentId & "" has a hash mismatch.""" & vbCrLf
+    s = s & "    Next component" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If Not templateFound Or Not engineFound Or Not definitionsFound Or Not rulesFound Then _" & vbCrLf
+    s = s & "        Err.Raise 5, ""HybridResolveMatchedInstalledEngine"", _" & vbCrLf
+    s = s & "            ""The matched installation is incomplete.""" & vbCrLf
+    s = s & "    If Not HybridValidateCapabilityHandshake(enginePath, failureMessage) Then Exit Function" & vbCrLf
+    s = s & "    HybridResolveMatchedInstalledEngine = True" & vbCrLf
+    s = s & "    Exit Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "InstalledEngineFailed:" & vbCrLf
+    s = s & "    failureMessage = _" & vbCrLf
+    s = s & "        ""CleanupSuite's matched analysis engine is unavailable or changed. "" & _" & vbCrLf
+    s = s & "        ""No changes were made. Run CleanupSuite Setup and choose Repair/Reinstall. "" & _" & vbCrLf
+    s = s & "        Err.Description" & vbCrLf
     s = s & "End Function" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "Private Function HybridValidateCapabilityHandshake( _" & vbCrLf
@@ -6963,13 +7099,16 @@ Private Function modHybridBridge_Code() As String
     s = s & "    Dim jobsRoot As String" & vbCrLf
     s = s & "    Dim jobDirectory As String" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "    localRoot = Environ$(""LOCALAPPDATA"")" & vbCrLf
-    s = s & "    If Len(localRoot) = 0 Then Err.Raise 5, ""HybridCreateEmptyJobDirectory"", ""Local application data is unavailable.""" & vbCrLf
-    s = s & "    publisherRoot = localRoot & ""\MasseysLab""" & vbCrLf
-    s = s & "    suiteRoot = publisherRoot & ""\CleanupSuite""" & vbCrLf
-    s = s & "    jobsRoot = suiteRoot & ""\Jobs""" & vbCrLf
-    s = s & "    HybridEnsureDirectory publisherRoot" & vbCrLf
-    s = s & "    HybridEnsureDirectory suiteRoot" & vbCrLf
+    s = s & "    jobsRoot = Trim$(Environ$(""CLEANUPSUITE_HYBRID_TEST_JOBS_ROOT""))" & vbCrLf
+    s = s & "    If Len(jobsRoot) = 0 Then" & vbCrLf
+    s = s & "        localRoot = Environ$(""LOCALAPPDATA"")" & vbCrLf
+    s = s & "        If Len(localRoot) = 0 Then Err.Raise 5, ""HybridCreateEmptyJobDirectory"", ""Local application data is unavailable.""" & vbCrLf
+    s = s & "        publisherRoot = localRoot & ""\MasseysLab""" & vbCrLf
+    s = s & "        suiteRoot = publisherRoot & ""\CleanupSuite""" & vbCrLf
+    s = s & "        jobsRoot = suiteRoot & ""\Jobs""" & vbCrLf
+    s = s & "        HybridEnsureDirectory publisherRoot" & vbCrLf
+    s = s & "        HybridEnsureDirectory suiteRoot" & vbCrLf
+    s = s & "    End If" & vbCrLf
     s = s & "    HybridEnsureDirectory jobsRoot" & vbCrLf
     s = s & "    jobDirectory = jobsRoot & ""\"" & jobId" & vbCrLf
     s = s & "    If Len(Dir$(jobDirectory, vbDirectory)) > 0 Then Err.Raise 5, ""HybridCreateEmptyJobDirectory"", ""The analysis job already exists.""" & vbCrLf
@@ -7150,7 +7289,9 @@ Private Function modHybridBridge_Code() As String
     s = s & "    HybridSha256Utf8 = HybridSha256Bytes(bytes, byteCount)" & vbCrLf
     s = s & "End Function" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "Private Function HybridSha256File(ByVal path As String) As String" & vbCrLf
+    s = s & "Private Function HybridSha256File( _" & vbCrLf
+    s = s & "        ByVal path As String, _" & vbCrLf
+    s = s & "        Optional ByVal allowSharedRead As Boolean = False) As String" & vbCrLf
     s = s & "    Dim bytes() As Byte" & vbCrLf
     s = s & "    Dim byteCount As Long" & vbCrLf
     s = s & "    Dim fileNumber As Integer" & vbCrLf
@@ -7162,7 +7303,11 @@ Private Function modHybridBridge_Code() As String
     s = s & "    Else" & vbCrLf
     s = s & "        ReDim bytes(0 To byteCount - 1)" & vbCrLf
     s = s & "        fileNumber = FreeFile" & vbCrLf
-    s = s & "        Open path For Binary Access Read Lock Write As #fileNumber" & vbCrLf
+    s = s & "        If allowSharedRead Then" & vbCrLf
+    s = s & "            Open path For Binary Access Read As #fileNumber" & vbCrLf
+    s = s & "        Else" & vbCrLf
+    s = s & "            Open path For Binary Access Read Lock Write As #fileNumber" & vbCrLf
+    s = s & "        End If" & vbCrLf
     s = s & "        Get #fileNumber, , bytes" & vbCrLf
     s = s & "        Close #fileNumber" & vbCrLf
     s = s & "        fileNumber = 0" & vbCrLf
@@ -7258,7 +7403,11 @@ Private Function modHybridBridge_Code() As String
     s = s & "    Dim jobsRoot As String" & vbCrLf
     s = s & "    Dim jobName As String" & vbCrLf
     s = s & "    Dim fileName As Variant" & vbCrLf
-    s = s & "    jobsRoot = Environ$(""LOCALAPPDATA"") & ""\MasseysLab\CleanupSuite\Jobs\""" & vbCrLf
+    s = s & "    jobsRoot = Trim$(Environ$(""CLEANUPSUITE_HYBRID_TEST_JOBS_ROOT""))" & vbCrLf
+    s = s & "    If Len(jobsRoot) = 0 Then" & vbCrLf
+    s = s & "        jobsRoot = Environ$(""LOCALAPPDATA"") & ""\MasseysLab\CleanupSuite\Jobs""" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    jobsRoot = jobsRoot & ""\""" & vbCrLf
     s = s & "    If LCase$(Left$(jobDirectory, Len(jobsRoot))) <> LCase$(jobsRoot) Then Exit Sub" & vbCrLf
     s = s & "    jobName = Mid$(jobDirectory, Len(jobsRoot) + 1)" & vbCrLf
     s = s & "    If Len(jobName) <> 36 Or InStr(jobName, ""\"") > 0 Or InStr(jobName, ""/"") > 0 Then Exit Sub" & vbCrLf
@@ -7334,7 +7483,7 @@ End Function
 Private Function modCleanupLauncher_Code() As String
     Dim s As String
     s = s & "Option Explicit" & vbCrLf
-    s = s & "Public Const SUITE_VERSION As String = ""0.9.3-beta-vba-final""" & vbCrLf
+    s = s & "Public Const SUITE_VERSION As String = ""0.9.5-beta""" & vbCrLf
     s = s & "Public gRibbon As Object   ' IRibbonUI -- stored for optional Invalidate calls" & vbCrLf
     s = s & "Sub ShowCleanupSuiteLauncher()" & vbCrLf
     s = s & "    frmCleanupSuiteLauncher.Show" & vbCrLf
@@ -7343,6 +7492,7 @@ Private Function modCleanupLauncher_Code() As String
     s = s & "    Set gRibbon = ribbon" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Public Sub AutoExec()" & vbCrLf
+    s = s & "    If Environ$(""CLEANUPSUITE_SUPPRESS_AUTOEXEC"") = ""1"" Then Exit Sub" & vbCrLf
     s = s & "    ScheduleCleanupSuiteUpdateCheck" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "Public Sub AutoOpen()" & vbCrLf
@@ -7903,6 +8053,17 @@ Private Function modAlphaSmokeRunner_Code() As String
     s = s & "    If Not previewDocument Is Nothing Then previewDocument.Close SaveChanges:=wdDoNotSaveChanges" & vbCrLf
     s = s & "    If Not originalDocument Is Nothing Then originalDocument.Activate" & vbCrLf
     s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Function RunHybridInstalledManifestSmokeCheck() As String" & vbCrLf
+    s = s & "    Dim details As String" & vbCrLf
+    s = s & "    If HybridBridgeEngineSelfTest(details) Then" & vbCrLf
+    s = s & "        RunHybridInstalledManifestSmokeCheck = _" & vbCrLf
+    s = s & "            SmokeResultLine(""PASS"", ""Hybrid Installed Manifest"", details)" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        RunHybridInstalledManifestSmokeCheck = _" & vbCrLf
+    s = s & "            SmokeResultLine(""FAIL"", ""Hybrid Installed Manifest"", details)" & vbCrLf
+    s = s & "    End If" & vbCrLf
     s = s & "End Function" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "Public Sub ShowPreviewReviewVisualProbe()" & vbCrLf

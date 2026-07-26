@@ -49,6 +49,8 @@ class DocmSyncScriptTests(unittest.TestCase):
         self.assertIn('"frmHyperlinkRemover" = @("chkRemoveFormat", "lblRiskPlacementHyperlinkWarning")', script)
         self.assertIn('"frmCapitalizationCleanup"', script)
         self.assertIn('"cmdEditExceptions"', script)
+        self.assertIn('$targetExtension = [IO.Path]::GetExtension($targetDoc)', script)
+        self.assertIn('[IO.Path]::GetRandomFileName() + $targetExtension', script)
 
     def test_sync_script_creates_conformed_risk_controls_for_guided_forms(self):
         script = (ROOT / "scripts" / "sync_docm_code_only.ps1").read_text(encoding="utf-8")

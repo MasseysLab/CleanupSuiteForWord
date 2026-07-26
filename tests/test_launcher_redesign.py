@@ -304,13 +304,13 @@ class LauncherRedesignTests(unittest.TestCase):
         self.assertIn('Private Sub cmdCapitalization_Click(): OpenCleanupTool "frmCapitalizationCleanup": End Sub', launcher)
         self.assertNotIn("Private Sub cmdCapitalization_Click(): Me.Hide: frmCapitalizationCleanup.Show: End Sub", launcher)
 
-    def test_launcher_milestone_version_is_092_alpha(self):
+    def test_launcher_milestone_version_is_hybrid_beta(self):
         launcher = read("src/modules/modCleanupLauncher.bas")
         versioning = read("VERSIONING.md")
         launcher_form = read("src/forms/frmCleanupSuiteLauncher.bas")
 
-        self.assertIn('Public Const SUITE_VERSION As String = "0.9.3-beta-vba-final"', launcher)
-        self.assertIn("## Current Version\n\n`0.9.3-beta-vba-final`", versioning)
+        self.assertIn('Public Const SUITE_VERSION As String = "0.9.5-beta"', launcher)
+        self.assertIn("## Current Version\n\n`0.9.5-beta`", versioning)
         self.assertIn("0.7.4", versioning)
         self.assertIn("0.7.4.5", versioning)
         self.assertIn("0.7.5", versioning)

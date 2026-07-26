@@ -2,12 +2,24 @@ namespace MasseysLab.CleanupSuite.Engine;
 
 public static class JobPathPolicy
 {
-    public static string ExpectedJobsRoot =>
-        Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "MasseysLab",
-            "CleanupSuite",
-            "Jobs");
+    public static string ExpectedJobsRoot
+    {
+        get
+        {
+            string? testRoot = Environment.GetEnvironmentVariable(
+                "CLEANUPSUITE_HYBRID_TEST_JOBS_ROOT");
+            if (!string.IsNullOrWhiteSpace(testRoot))
+            {
+                return Path.GetFullPath(testRoot);
+            }
+
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "MasseysLab",
+                "CleanupSuite",
+                "Jobs");
+        }
+    }
 
     public static string ValidateJobDirectory(string suppliedPath)
     {

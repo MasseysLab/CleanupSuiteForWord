@@ -1131,6 +1131,74 @@ Automated evidence at this checkpoint:
 Estimated combined difficulty: **28–40%**.
 Estimated professional desirability: **96–99%**.
 
+### Task 8 checkpoint: Setup became the hybrid maintenance boundary
+
+The first hybrid installer implementation was completed on July 26, 2026 without
+changing the published Alpha Setup, stable release manifest, release template, or
+the user's installed Startup template.
+
+The same Setup executable now inspects the per-user installation and presents
+Install when absent; Update, Repair/Reinstall, and Uninstall for an older or
+legacy installation; Repair/Reinstall and Uninstall for the current package; and
+a protected no-downgrade state when a newer package is present. The downloaded
+Setup is an offline maintenance unit containing the matched Word template,
+self-contained engine, protocol definitions, operation rules, and a manifest
+binding all four by version, approved relative path, byte length, and SHA-256.
+The user never installs or maintains .NET separately.
+
+Maintenance is transactional. Setup stages and verifies every component, backs
+up the prior Word template, retains only the newest three installer backups,
+captures the affected installation files for rollback, installs the manifest
+last, verifies the final package, and removes staging material. User settings,
+`Normal.dotm`, Word security settings, Trust Center configuration, and trusted
+locations remain outside Setup's authority.
+
+The production VBA bridge now uses that installed manifest when no explicit
+repository-development engine override is present. It accepts only the matched
+suite/protocol versions and approved component identities and paths, verifies
+file lengths and SHA-256 hashes, and performs the existing capability handshake.
+A mismatch fails closed before analysis or Apply and recommends Setup
+Repair/Reinstall.
+
+The real Setup executable passed an isolated state matrix covering absent,
+legacy, older, current healthy, current damaged, Update, Repair/Reinstall, and
+Uninstall. An intentional failure after engine replacement restored the exact
+pre-repair damaged engine and left no staging directory. Repeated repairs retained
+exactly three backups, and Uninstall removed runtime components while preserving
+backups and a user-settings sentinel.
+
+A separate disposable Word run then removed the development engine override and
+proved the production installed-manifest path end to end. Word verified the
+matched package, completed the capability handshake, received all seven Unicode
+candidates, and rejected a deliberately stale scope before Apply. During that
+gate, two harness-relevant defects were corrected: `.dotm` synchronization now
+preserves the template extension instead of temporarily renaming it `.docm`, and
+the already-loaded Word template is hash-read without requesting a conflicting
+write lock while engine and protocol files retain the stricter lock.
+
+The Setup UI was also reviewed live at the active Windows display scale. The
+absent, older, current, and damaged states were clean, readable, and exposed only
+their intended actions.
+
+Official distribution is still gated on Authenticode. A release build requires a
+signing certificate, signs the self-contained engine before the package hash is
+created, then signs the completed Setup. Clean-machine signature/reputation
+testing and final publication remain release work.
+
+Automated evidence at this checkpoint:
+
+- 256 repository tests passed with 3 expected skips and 1,131 passing subtests;
+- all 31 VBA builders passed after the production manifest resolver was added;
+- the isolated installer matrix passed its state, rollback, backup, settings, and
+  cleanup checks;
+- the disposable production-manifest Word smoke passed without a development
+  engine override;
+- the absent, older, current, and damaged Setup layouts passed live review;
+- the stable release directory and both tracked `.docm` files remained unchanged.
+
+Estimated combined difficulty: **72–84%**.
+Estimated professional desirability: **98–99.7%**.
+
 ## Primary Historical Sources
 
 - [Current handoff](../WHERE_WE_LEFT_OFF.md)

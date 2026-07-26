@@ -405,7 +405,7 @@ Public Function HybridAnalyzeInvisibleUnicode( _
     If targetRange Is Nothing Then Err.Raise 5, "HybridAnalyzeInvisibleUnicode", "The analysis range is unavailable."
     If targetRange.StoryType <> wdMainTextStory Then Err.Raise 5, "HybridAnalyzeInvisibleUnicode", "The pilot currently supports the main document story only."
     If Not (nonBreakingSpace Or zeroWidthSpace Or zeroWidthNonJoiner Or zeroWidthJoiner Or byteOrderMark Or softHyphen Or nonBreakingHyphen) Then Err.Raise 5, "HybridAnalyzeInvisibleUnicode", "No Unicode character type is selected."
-    If Not HybridResolveTrustedDevelopmentEngine(enginePath, expectedEngineHash, failureMessage) Then Exit Function
+    If Not HybridResolveTrustedEngine(enginePath, expectedEngineHash, failureMessage) Then Exit Function
 
     jobId = HybridNewUuid()
     jobDirectory = HybridCreateEmptyJobDirectory(jobId)
@@ -736,6 +736,21 @@ Private Sub HybridValidateUnicodeReasonAndReplacement(ByVal reasonCode As String
     End Select
 End Sub
 
+Private Function HybridResolveTrustedEngine( _
+        ByRef enginePath As String, _
+        ByRef expectedHash As String, _
+        ByRef failureMessage As String) As Boolean
+    Dim useDevelopmentEngine As Boolean
+    useDevelopmentEngine = (Len(Trim$(Environ$("CLEANUPSUITE_HYBRID_DEV_ENGINE"))) > 0 Or Len(Trim$(Environ$("CLEANUPSUITE_HYBRID_DEV_SHA256"))) > 0)
+    If useDevelopmentEngine Then
+        HybridResolveTrustedEngine = HybridResolveTrustedDevelopmentEngine( _
+            enginePath, expectedHash, failureMessage)
+    Else
+        HybridResolveTrustedEngine = HybridResolveMatchedInstalledEngine( _
+            enginePath, expectedHash, failureMessage)
+    End If
+End Function
+
 Private Function HybridResolveTrustedDevelopmentEngine( _
         ByRef enginePath As String, _
         ByRef expectedHash As String, _
@@ -760,6 +775,127 @@ Private Function HybridResolveTrustedDevelopmentEngine( _
     End If
     If Not HybridValidateCapabilityHandshake(enginePath, failureMessage) Then Exit Function
     HybridResolveTrustedDevelopmentEngine = True
+End Function
+
+Private Function HybridResolveMatchedInstalledEngine( _
+        ByRef enginePath As String, _
+        ByRef expectedHash As String, _
+        ByRef failureMessage As String) As Boolean
+    Dim localRoot As String
+    Dim productRoot As String
+    Dim manifestPath As String
+    Dim manifestText As String
+    Dim manifest As Object
+    Dim components As Collection
+    Dim component As Object
+    Dim componentId As String
+    Dim componentVersion As String
+    Dim relativePath As String
+    Dim componentHash As String
+    Dim componentLength As Long
+    Dim componentPath As String
+    Dim seen As Object
+    Dim templateFound As Boolean
+    Dim engineFound As Boolean
+    Dim definitionsFound As Boolean
+    Dim rulesFound As Boolean
+
+    On Error GoTo InstalledEngineFailed
+    localRoot = Environ$("LOCALAPPDATA")
+    If Len(localRoot) = 0 Then Err.Raise 5, "HybridResolveMatchedInstalledEngine", "Local application data is unavailable."
+    productRoot = localRoot & "\MasseysLab\CleanupSuiteForWord"
+    manifestPath = productRoot & "\installation-manifest.json"
+    If Len(Dir$(manifestPath, vbNormal)) = 0 Then
+        Err.Raise 5, "HybridResolveMatchedInstalledEngine", _
+            "The matched installation manifest is missing."
+    End If
+
+    manifestText = HybridReadUtf8File(manifestPath, 1048576)
+    Set manifest = HybridJsonParseObject(manifestText)
+    HybridRequireExactKeys manifest, _
+        "manifestVersion|suiteVersion|protocolVersion|publisher|authenticodeRequired|components"
+    HybridRequireString manifest, "manifestVersion", "1.0"
+    HybridRequireString manifest, "suiteVersion", SUITE_VERSION
+    HybridRequireString manifest, "protocolVersion", HYBRID_PROTOCOL_VERSION
+    HybridRequireString manifest, "publisher", "MasseysLab"
+    If Not HybridRequireBoolean(manifest, "authenticodeRequired") Then _
+        Err.Raise 5, "HybridResolveMatchedInstalledEngine", _
+            "The installed package does not require Authenticode."
+
+    Set components = HybridRequireCollection(manifest, "components")
+    Set seen = CreateObject("Scripting.Dictionary")
+    seen.CompareMode = vbBinaryCompare
+    For Each component In components
+        HybridRequireExactKeys component, "id|version|relativePath|sha256|byteLength"
+        componentId = HybridRequireString(component, "id")
+        If seen.Exists(componentId) Then _
+            Err.Raise 5, "HybridResolveMatchedInstalledEngine", _
+                "The installation manifest contains a duplicate component."
+        seen.Add componentId, True
+        componentVersion = HybridRequireString(component, "version")
+        relativePath = HybridRequireString(component, "relativePath")
+        componentHash = LCase$(HybridRequireString(component, "sha256"))
+        componentLength = HybridRequireLong(component, "byteLength")
+        If componentLength < 1 Or Not HybridIsLowercaseSha256(componentHash) Then _
+            Err.Raise 5, "HybridResolveMatchedInstalledEngine", _
+                "An installed component identity is invalid."
+
+        Select Case componentId
+            Case "word-template"
+                If componentVersion <> SUITE_VERSION Or relativePath <> "CleanupSuite.dotm" Then _
+                    Err.Raise 5, "HybridResolveMatchedInstalledEngine", _
+                        "The Word template is not matched to this CleanupSuite version."
+                componentPath = ThisDocument.FullName
+                templateFound = True
+            Case "analysis-engine"
+                If componentVersion <> HYBRID_ENGINE_VERSION Or _
+                        relativePath <> "Engine\CleanupSuite.Engine.exe" Then _
+                    Err.Raise 5, "HybridResolveMatchedInstalledEngine", _
+                        "The analysis engine version or path is not matched."
+                componentPath = productRoot & "\" & relativePath
+                enginePath = componentPath
+                expectedHash = componentHash
+                engineFound = True
+            Case "tool-definitions"
+                If relativePath <> "Contracts\Hybrid\v1\protocol.json" Then _
+                    Err.Raise 5, "HybridResolveMatchedInstalledEngine", _
+                        "The protocol-definition path is invalid."
+                componentPath = productRoot & "\" & relativePath
+                definitionsFound = True
+            Case "rules"
+                If relativePath <> "Contracts\Hybrid\v1\operation-vocabulary.json" Then _
+                    Err.Raise 5, "HybridResolveMatchedInstalledEngine", _
+                        "The operation-rules path is invalid."
+                componentPath = productRoot & "\" & relativePath
+                rulesFound = True
+            Case Else
+                Err.Raise 5, "HybridResolveMatchedInstalledEngine", _
+                    "The installation manifest contains an unknown component."
+        End Select
+
+        If Len(Dir$(componentPath, vbNormal)) = 0 Then _
+            Err.Raise 5, "HybridResolveMatchedInstalledEngine", _
+                componentId & " is missing."
+        If FileLen(componentPath) <> componentLength Then _
+            Err.Raise 5, "HybridResolveMatchedInstalledEngine", _
+                componentId & " has the wrong length."
+        If HybridSha256File(componentPath, componentId = "word-template") <> componentHash Then _
+            Err.Raise 5, "HybridResolveMatchedInstalledEngine", _
+                componentId & " has a hash mismatch."
+    Next component
+
+    If Not templateFound Or Not engineFound Or Not definitionsFound Or Not rulesFound Then _
+        Err.Raise 5, "HybridResolveMatchedInstalledEngine", _
+            "The matched installation is incomplete."
+    If Not HybridValidateCapabilityHandshake(enginePath, failureMessage) Then Exit Function
+    HybridResolveMatchedInstalledEngine = True
+    Exit Function
+
+InstalledEngineFailed:
+    failureMessage = _
+        "CleanupSuite's matched analysis engine is unavailable or changed. " & _
+        "No changes were made. Run CleanupSuite Setup and choose Repair/Reinstall. " & _
+        Err.Description
 End Function
 
 Private Function HybridValidateCapabilityHandshake( _
@@ -961,13 +1097,16 @@ Private Function HybridCreateEmptyJobDirectory(ByVal jobId As String) As String
     Dim jobsRoot As String
     Dim jobDirectory As String
 
-    localRoot = Environ$("LOCALAPPDATA")
-    If Len(localRoot) = 0 Then Err.Raise 5, "HybridCreateEmptyJobDirectory", "Local application data is unavailable."
-    publisherRoot = localRoot & "\MasseysLab"
-    suiteRoot = publisherRoot & "\CleanupSuite"
-    jobsRoot = suiteRoot & "\Jobs"
-    HybridEnsureDirectory publisherRoot
-    HybridEnsureDirectory suiteRoot
+    jobsRoot = Trim$(Environ$("CLEANUPSUITE_HYBRID_TEST_JOBS_ROOT"))
+    If Len(jobsRoot) = 0 Then
+        localRoot = Environ$("LOCALAPPDATA")
+        If Len(localRoot) = 0 Then Err.Raise 5, "HybridCreateEmptyJobDirectory", "Local application data is unavailable."
+        publisherRoot = localRoot & "\MasseysLab"
+        suiteRoot = publisherRoot & "\CleanupSuite"
+        jobsRoot = suiteRoot & "\Jobs"
+        HybridEnsureDirectory publisherRoot
+        HybridEnsureDirectory suiteRoot
+    End If
     HybridEnsureDirectory jobsRoot
     jobDirectory = jobsRoot & "\" & jobId
     If Len(Dir$(jobDirectory, vbDirectory)) > 0 Then Err.Raise 5, "HybridCreateEmptyJobDirectory", "The analysis job already exists."
@@ -1148,7 +1287,9 @@ Private Function HybridSha256Utf8(ByVal text As String) As String
     HybridSha256Utf8 = HybridSha256Bytes(bytes, byteCount)
 End Function
 
-Private Function HybridSha256File(ByVal path As String) As String
+Private Function HybridSha256File( _
+        ByVal path As String, _
+        Optional ByVal allowSharedRead As Boolean = False) As String
     Dim bytes() As Byte
     Dim byteCount As Long
     Dim fileNumber As Integer
@@ -1160,7 +1301,11 @@ Private Function HybridSha256File(ByVal path As String) As String
     Else
         ReDim bytes(0 To byteCount - 1)
         fileNumber = FreeFile
-        Open path For Binary Access Read Lock Write As #fileNumber
+        If allowSharedRead Then
+            Open path For Binary Access Read As #fileNumber
+        Else
+            Open path For Binary Access Read Lock Write As #fileNumber
+        End If
         Get #fileNumber, , bytes
         Close #fileNumber
         fileNumber = 0
@@ -1256,7 +1401,11 @@ Private Sub HybridDeleteJobDirectory(ByVal jobDirectory As String)
     Dim jobsRoot As String
     Dim jobName As String
     Dim fileName As Variant
-    jobsRoot = Environ$("LOCALAPPDATA") & "\MasseysLab\CleanupSuite\Jobs\"
+    jobsRoot = Trim$(Environ$("CLEANUPSUITE_HYBRID_TEST_JOBS_ROOT"))
+    If Len(jobsRoot) = 0 Then
+        jobsRoot = Environ$("LOCALAPPDATA") & "\MasseysLab\CleanupSuite\Jobs"
+    End If
+    jobsRoot = jobsRoot & "\"
     If LCase$(Left$(jobDirectory, Len(jobsRoot))) <> LCase$(jobsRoot) Then Exit Sub
     jobName = Mid$(jobDirectory, Len(jobsRoot) + 1)
     If Len(jobName) <> 36 Or InStr(jobName, "\") > 0 Or InStr(jobName, "/") > 0 Then Exit Sub

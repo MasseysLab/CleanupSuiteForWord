@@ -307,6 +307,17 @@ SmokeCleanup:
     On Error GoTo 0
 End Function
 
+Public Function RunHybridInstalledManifestSmokeCheck() As String
+    Dim details As String
+    If HybridBridgeEngineSelfTest(details) Then
+        RunHybridInstalledManifestSmokeCheck = _
+            SmokeResultLine("PASS", "Hybrid Installed Manifest", details)
+    Else
+        RunHybridInstalledManifestSmokeCheck = _
+            SmokeResultLine("FAIL", "Hybrid Installed Manifest", details)
+    End If
+End Function
+
 Public Sub ShowPreviewReviewVisualProbe()
     Dim originalDocument As Document
     Dim probeDocument As Document

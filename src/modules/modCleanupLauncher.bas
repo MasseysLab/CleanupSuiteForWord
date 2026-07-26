@@ -1,5 +1,5 @@
 Option Explicit
-Public Const SUITE_VERSION As String = "0.9.3-beta-vba-final"
+Public Const SUITE_VERSION As String = "0.9.5-beta"
 Public gRibbon As Object   ' IRibbonUI -- stored for optional Invalidate calls
 Sub ShowCleanupSuiteLauncher()
     frmCleanupSuiteLauncher.Show
@@ -8,6 +8,7 @@ Public Sub RibbonOnLoad(ribbon As Object)
     Set gRibbon = ribbon
 End Sub
 Public Sub AutoExec()
+    If Environ$("CLEANUPSUITE_SUPPRESS_AUTOEXEC") = "1" Then Exit Sub
     ScheduleCleanupSuiteUpdateCheck
 End Sub
 Public Sub AutoOpen()

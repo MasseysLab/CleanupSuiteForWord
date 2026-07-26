@@ -559,7 +559,11 @@ try {
     $word.DisplayAlerts = 0
 
     foreach ($targetDoc in $targetDocs) {
-        $tempPath = Join-Path $env:TEMP ([IO.Path]::GetRandomFileName() + ".docm")
+        $targetExtension = [IO.Path]::GetExtension($targetDoc)
+        if ([string]::IsNullOrWhiteSpace($targetExtension)) {
+            $targetExtension = ".docm"
+        }
+        $tempPath = Join-Path $env:TEMP ([IO.Path]::GetRandomFileName() + $targetExtension)
         Copy-Item -LiteralPath $targetDoc -Destination $tempPath -Force
 
         $document = $null
