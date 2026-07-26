@@ -52,6 +52,7 @@ The project is source-first. Edit readable files under `src/`; do not hand-edit 
 Generated tool forms use the shared two-column guided layout documented in `CONTRIBUTING.md`; single leftover choices are centered.
 
 ```powershell
+python -m pip install -r requirements-dev.txt
 python assemble.py
 python -m pytest -q
 powershell -ExecutionPolicy Bypass -File .\scripts\sync_docm_code_only.ps1

@@ -1,0 +1,80 @@
+{
+  "contractVersion": "1.0",
+  "operations": [
+    {
+      "id": "reportOnly",
+      "safetyClass": "nonmutating",
+      "requiredParameters": []
+    },
+    {
+      "id": "replaceText",
+      "safetyClass": "textual",
+      "requiredParameters": ["replacementText"]
+    },
+    {
+      "id": "deleteText",
+      "safetyClass": "destructive",
+      "requiredParameters": []
+    },
+    {
+      "id": "deleteParagraph",
+      "safetyClass": "destructive",
+      "requiredParameters": []
+    },
+    {
+      "id": "setCharacterProperty",
+      "safetyClass": "formatting",
+      "requiredParameters": ["property", "value"]
+    },
+    {
+      "id": "setParagraphProperty",
+      "safetyClass": "formatting",
+      "requiredParameters": ["property", "value"]
+    },
+    {
+      "id": "removeField",
+      "safetyClass": "destructive",
+      "requiredParameters": []
+    },
+    {
+      "id": "removeHyperlink",
+      "safetyClass": "destructive",
+      "requiredParameters": ["preserveDisplayText"]
+    },
+    {
+      "id": "removeComment",
+      "safetyClass": "destructive",
+      "requiredParameters": []
+    },
+    {
+      "id": "acceptRevision",
+      "safetyClass": "destructive",
+      "requiredParameters": []
+    },
+    {
+      "id": "removeInlineObject",
+      "safetyClass": "destructive",
+      "requiredParameters": []
+    },
+    {
+      "id": "removeFloatingObject",
+      "safetyClass": "destructive",
+      "requiredParameters": []
+    },
+    {
+      "id": "removeTableRow",
+      "safetyClass": "structural-destructive",
+      "requiredParameters": ["tableOrdinal", "rowOrdinal"]
+    },
+    {
+      "id": "removeTableColumn",
+      "safetyClass": "structural-destructive",
+      "requiredParameters": ["tableOrdinal", "columnOrdinal"]
+    },
+    {
+      "id": "convertTableToText",
+      "safetyClass": "structural-destructive",
+      "requiredParameters": ["tableOrdinal", "separator"]
+    }
+  ]
+}

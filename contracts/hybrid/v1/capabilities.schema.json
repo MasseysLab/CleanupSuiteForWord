@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://masseyslab.github.io/cleanupsuite/contracts/hybrid/v1/capabilities.schema.json",
+  "title": "CleanupSuite Engine Capabilities 1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "messageType",
+    "engine",
+    "protocolRange",
+    "supportedTools",
+    "supportedOperations",
+    "security",
+    "transport",
+    "distribution"
+  ],
+  "properties": {
+    "contractVersion": {"const": "1.0"},
+    "messageType": {"const": "engine-capabilities"},
+    "engine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": {"const": "com.masseyslab.cleanupsuite.engine"},
+        "version": {"$ref": "#/$defs/version"}
+      }
+    },
+    "protocolRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minimum", "maximum"],
+      "properties": {
+        "minimum": {"$ref": "#/$defs/version"},
+        "maximum": {"$ref": "#/$defs/version"}
+      }
+    },
+    "supportedTools": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "definitionVersions", "analysisModes"],
+        "properties": {
+          "id": {"$ref": "#/$defs/toolId"},
+          "definitionVersions": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"$ref": "#/$defs/version"}
+          },
+          "analysisModes": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$"}
+          }
+        }
+      }
+    },
+    "supportedOperations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "reportOnly",
+          "replaceText",
+          "deleteText",
+          "deleteParagraph",
+          "setCharacterProperty",
+          "setParagraphProperty",
+          "removeField",
+          "removeHyperlink",
+          "removeComment",
+          "acceptRevision",
+          "removeInlineObject",
+          "removeFloatingObject",
+          "removeTableRow",
+          "removeTableColumn",
+          "convertTableToText"
+        ]
+      }
+    },
+    "security": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "editsWordDocuments",
+        "requiresNetwork",
+        "opensListeningEndpoint",
+        "runsAsService",
+        "requiresElevation",
+        "logsDocumentContent"
+      ],
+      "properties": {
+        "editsWordDocuments": {"const": false},
+        "requiresNetwork": {"const": false},
+        "opensListeningEndpoint": {"const": false},
+        "runsAsService": {"const": false},
+        "requiresElevation": {"const": false},
+        "logsDocumentContent": {"const": false}
+      }
+    },
+    "transport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "requestFile", "resultFile"],
+      "properties": {
+        "mode": {"const": "owner-only-job-directory"},
+        "requestFile": {"const": "request.json"},
+        "resultFile": {"const": "result.json"}
+      }
+    },
+    "distribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["publisher", "authenticodeRequiredForOfficialBeta"],
+      "properties": {
+        "publisher": {"const": "MasseysLab"},
+        "authenticodeRequiredForOfficialBeta": {"const": true}
+      }
+    }
+  },
+  "$defs": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+(?:\\.[0-9]+)?(?:-[0-9a-z.-]+)?$"
+    },
+    "toolId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9.-]{0,95}$"
+    }
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://masseyslab.github.io/cleanupsuite/contracts/hybrid/v1/request.schema.json",
+  "title": "CleanupSuite Hybrid Analysis Request 1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "messageType",
+    "jobId",
+    "createdUtc",
+    "client",
+    "tool",
+    "scope",
+    "snapshot",
+    "options",
+    "requestedCapabilities",
+    "privacy"
+  ],
+  "properties": {
+    "contractVersion": {"const": "1.0"},
+    "messageType": {"const": "analysis-request"},
+    "jobId": {"$ref": "#/$defs/uuid"},
+    "createdUtc": {"type": "string", "format": "date-time"},
+    "client": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["suiteVersion", "protocolVersion", "processId", "sessionId"],
+      "properties": {
+        "suiteVersion": {"type": "string", "minLength": 1, "maxLength": 64},
+        "protocolVersion": {"const": "1.0"},
+        "processId": {"type": "integer", "minimum": 1},
+        "sessionId": {"$ref": "#/$defs/uuid"}
+      }
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "definitionVersion", "analysisMode"],
+      "properties": {
+        "id": {"$ref": "#/$defs/toolId"},
+        "definitionVersion": {"$ref": "#/$defs/version"},
+        "analysisMode": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$"}
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "documentSessionId",
+        "storyType",
+        "startUtf16",
+        "endUtf16",
+        "selectionOnly"
+      ],
+      "properties": {
+        "documentSessionId": {"$ref": "#/$defs/uuid"},
+        "storyType": {"$ref": "#/$defs/storyType"},
+        "startUtf16": {"type": "integer", "minimum": 0},
+        "endUtf16": {"type": "integer", "minimum": 0},
+        "selectionOnly": {"type": "boolean"}
+      }
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "snapshotId",
+        "contentFile",
+        "encoding",
+        "byteLength",
+        "utf16Length",
+        "sha256",
+        "lineEndingPolicy"
+      ],
+      "properties": {
+        "snapshotId": {"$ref": "#/$defs/sha256"},
+        "contentFile": {"const": "document.utf8.txt"},
+        "encoding": {"const": "utf-8"},
+        "byteLength": {"type": "integer", "minimum": 0, "maximum": 268435456},
+        "utf16Length": {"type": "integer", "minimum": 0},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "lineEndingPolicy": {"const": "preserve-word-story-text"},
+        "structureFile": {"const": "structure.json"},
+        "structureSha256": {"$ref": "#/$defs/sha256"}
+      },
+      "dependentRequired": {
+        "structureFile": ["structureSha256"],
+        "structureSha256": ["structureFile"]
+      }
+    },
+    "options": {
+      "type": "object",
+      "maxProperties": 256
+    },
+    "requestedCapabilities": {
+      "type": "array",
+      "maxItems": 128,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[a-z][a-z0-9.-]{0,95}$"}
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["documentPathIncluded", "documentNameIncluded"],
+      "properties": {
+        "documentPathIncluded": {"const": false},
+        "documentNameIncluded": {"const": false}
+      }
+    }
+  },
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+(?:\\.[0-9]+)?(?:-[0-9a-z.-]+)?$"
+    },
+    "toolId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9.-]{0,95}$"
+    },
+    "storyType": {
+      "enum": [
+        "main-text",
+        "footnotes",
+        "endnotes",
+        "comments",
+        "text-frames",
+        "primary-header",
+        "first-page-header",
+        "even-pages-header",
+        "primary-footer",
+        "first-page-footer",
+        "even-pages-footer"
+      ]
+    }
+  }
+}

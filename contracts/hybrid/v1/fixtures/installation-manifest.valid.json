@@ -1,0 +1,23 @@
+{
+  "manifestVersion": "1.0",
+  "suiteVersion": "0.9.5-beta",
+  "protocolVersion": "1.0",
+  "publisher": "MasseysLab",
+  "authenticodeRequired": true,
+  "components": [
+    {
+      "id": "word-template",
+      "version": "0.9.5-beta",
+      "relativePath": "CleanupSuite.dotm",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "byteLength": 707783
+    },
+    {
+      "id": "analysis-engine",
+      "version": "0.1.0",
+      "relativePath": "Engine\\CleanupSuite.Engine.exe",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "byteLength": 123456
+    }
+  ]
+}

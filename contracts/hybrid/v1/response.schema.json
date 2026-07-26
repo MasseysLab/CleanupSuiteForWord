@@ -1,0 +1,372 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://masseyslab.github.io/cleanupsuite/contracts/hybrid/v1/response.schema.json",
+  "title": "CleanupSuite Hybrid Analysis Response 1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "messageType",
+    "jobId",
+    "completedUtc",
+    "engine",
+    "echo",
+    "status",
+    "candidates",
+    "summary",
+    "diagnostics"
+  ],
+  "properties": {
+    "contractVersion": {"const": "1.0"},
+    "messageType": {"const": "analysis-response"},
+    "jobId": {"$ref": "#/$defs/uuid"},
+    "completedUtc": {"type": "string", "format": "date-time"},
+    "engine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "protocolVersion"],
+      "properties": {
+        "id": {"const": "com.masseyslab.cleanupsuite.engine"},
+        "version": {"$ref": "#/$defs/version"},
+        "protocolVersion": {"const": "1.0"}
+      }
+    },
+    "echo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["snapshotId", "toolId", "toolDefinitionVersion"],
+      "properties": {
+        "snapshotId": {"$ref": "#/$defs/sha256"},
+        "toolId": {"$ref": "#/$defs/toolId"},
+        "toolDefinitionVersion": {"$ref": "#/$defs/version"}
+      }
+    },
+    "status": {
+      "enum": [
+        "completed",
+        "invalid-request",
+        "incompatible",
+        "cancelled",
+        "analysis-error",
+        "security-error",
+        "internal-error"
+      ]
+    },
+    "candidates": {
+      "type": "array",
+      "maxItems": 1000000,
+      "items": {"$ref": "#/$defs/candidate"}
+    },
+    "summary": {"$ref": "#/$defs/summary"},
+    "diagnostics": {"$ref": "#/$defs/diagnostics"},
+    "error": {"$ref": "#/$defs/error"}
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"status": {"const": "completed"}},
+        "required": ["status"]
+      },
+      "then": {
+        "not": {"required": ["error"]}
+      },
+      "else": {
+        "required": ["error"],
+        "properties": {
+          "candidates": {"maxItems": 0}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidateId",
+        "state",
+        "reasonCode",
+        "location",
+        "fingerprint",
+        "operation",
+        "revalidation",
+        "confidence",
+        "display"
+      ],
+      "properties": {
+        "candidateId": {
+          "type": "string",
+          "pattern": "^c[0-9]{6,12}$"
+        },
+        "state": {
+          "enum": ["applicable", "review-only", "protected", "skipped"]
+        },
+        "reasonCode": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9.-]{0,95}$"
+        },
+        "location": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["storyType", "startUtf16", "endUtf16", "offsetBasis"],
+          "properties": {
+            "storyType": {"$ref": "#/$defs/storyType"},
+            "startUtf16": {"type": "integer", "minimum": 0},
+            "endUtf16": {"type": "integer", "minimum": 0},
+            "offsetBasis": {"const": "snapshot-relative-utf16-code-units"}
+          }
+        },
+        "fingerprint": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "algorithm",
+            "snapshotId",
+            "exactTextSha256",
+            "prefixLengthUtf16",
+            "prefixSha256",
+            "suffixLengthUtf16",
+            "suffixSha256"
+          ],
+          "properties": {
+            "algorithm": {"const": "sha256-utf8-exact"},
+            "snapshotId": {"$ref": "#/$defs/sha256"},
+            "exactTextSha256": {"$ref": "#/$defs/sha256"},
+            "prefixLengthUtf16": {"type": "integer", "minimum": 0, "maximum": 256},
+            "prefixSha256": {"$ref": "#/$defs/sha256"},
+            "suffixLengthUtf16": {"type": "integer", "minimum": 0, "maximum": 256},
+            "suffixSha256": {"$ref": "#/$defs/sha256"},
+            "paragraphSha256": {"$ref": "#/$defs/sha256"},
+            "structureSha256": {"$ref": "#/$defs/sha256"}
+          }
+        },
+        "operation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "safetyClass", "parameters"],
+          "properties": {
+            "type": {
+              "enum": [
+                "reportOnly",
+                "replaceText",
+                "deleteText",
+                "deleteParagraph",
+                "setCharacterProperty",
+                "setParagraphProperty",
+                "removeField",
+                "removeHyperlink",
+                "removeComment",
+                "acceptRevision",
+                "removeInlineObject",
+                "removeFloatingObject",
+                "removeTableRow",
+                "removeTableColumn",
+                "convertTableToText"
+              ]
+            },
+            "safetyClass": {
+              "enum": [
+                "nonmutating",
+                "textual",
+                "formatting",
+                "destructive",
+                "structural-destructive"
+              ]
+            },
+            "parameters": {
+              "type": "object",
+              "maxProperties": 32
+            }
+          }
+        },
+        "revalidation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "requireWholeScopeSnapshot",
+            "requireExactRange",
+            "requireContext",
+            "requireStructure",
+            "onMismatch",
+            "allowRelocation"
+          ],
+          "properties": {
+            "requireWholeScopeSnapshot": {"const": true},
+            "requireExactRange": {"type": "boolean"},
+            "requireContext": {"type": "boolean"},
+            "requireStructure": {"type": "boolean"},
+            "onMismatch": {"const": "abort-apply"},
+            "allowRelocation": {"const": false}
+          }
+        },
+        "confidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tier", "score"],
+          "properties": {
+            "tier": {
+              "enum": ["deterministic", "high", "medium", "low"]
+            },
+            "score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "display": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["label", "canHighlight"],
+          "properties": {
+            "label": {"type": "string", "minLength": 1, "maxLength": 160},
+            "canHighlight": {"type": "boolean"}
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"state": {"const": "applicable"}},
+            "required": ["state"]
+          },
+          "then": {
+            "properties": {
+              "operation": {
+                "properties": {
+                  "type": {"not": {"const": "reportOnly"}},
+                  "safetyClass": {"not": {"const": "nonmutating"}}
+                }
+              },
+              "revalidation": {
+                "properties": {
+                  "requireExactRange": {"const": true},
+                  "requireContext": {"const": true}
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "operation": {
+                "properties": {
+                  "type": {"const": "reportOnly"},
+                  "safetyClass": {"const": "nonmutating"}
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "properties": {
+                  "safetyClass": {"const": "structural-destructive"}
+                },
+                "required": ["safetyClass"]
+              }
+            },
+            "required": ["operation"]
+          },
+          "then": {
+            "properties": {
+              "fingerprint": {"required": ["structureSha256"]},
+              "revalidation": {
+                "properties": {
+                  "requireStructure": {"const": true}
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "applicable", "reviewOnly", "protected", "skipped"],
+      "properties": {
+        "total": {"type": "integer", "minimum": 0},
+        "applicable": {"type": "integer", "minimum": 0},
+        "reviewOnly": {"type": "integer", "minimum": 0},
+        "protected": {"type": "integer", "minimum": 0},
+        "skipped": {"type": "integer", "minimum": 0}
+      }
+    },
+    "diagnostics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["durationMs", "warningCodes", "logContainsDocumentContent"],
+      "properties": {
+        "durationMs": {"type": "integer", "minimum": 0},
+        "warningCodes": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9.-]{0,95}$"
+          }
+        },
+        "logContainsDocumentContent": {"const": false}
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "enum": [
+            "invalid-request",
+            "invalid-snapshot-text",
+            "unsupported-protocol",
+            "unsupported-tool",
+            "unsupported-tool-version",
+            "cancelled",
+            "analysis-failed",
+            "security-policy-violation",
+            "internal-error"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      }
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+(?:\\.[0-9]+)?(?:-[0-9a-z.-]+)?$"
+    },
+    "toolId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9.-]{0,95}$"
+    },
+    "storyType": {
+      "enum": [
+        "main-text",
+        "footnotes",
+        "endnotes",
+        "comments",
+        "text-frames",
+        "primary-header",
+        "first-page-header",
+        "even-pages-header",
+        "primary-footer",
+        "first-page-footer",
+        "even-pages-footer"
+      ]
+    }
+  }
+}

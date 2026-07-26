@@ -1,0 +1,59 @@
+{
+  "contractVersion": "1.0",
+  "protocolMajor": 1,
+  "compatibility": {
+    "protocolRule": "same-major-and-request-within-engine-range",
+    "toolDefinitionRule": "exact-advertised-version",
+    "unknownFields": "reject",
+    "unknownOperations": "reject"
+  },
+  "transport": {
+    "mode": "owner-only-job-directory",
+    "requestFile": "request.json",
+    "contentFile": "document.utf8.txt",
+    "structureFile": "structure.json",
+    "resultFile": "result.json",
+    "cancelFile": "cancel.request",
+    "logFile": "engine.log",
+    "atomicSuffix": ".tmp",
+    "rejectAbsolutePaths": true,
+    "rejectParentTraversal": true,
+    "rejectReparsePoints": true
+  },
+  "limits": {
+    "maximumRequestBytes": 1048576,
+    "maximumSnapshotBytes": 268435456,
+    "maximumStructureBytes": 67108864,
+    "maximumResultBytes": 134217728,
+    "maximumCandidates": 1000000,
+    "capabilityTimeoutSeconds": 5,
+    "defaultAnalysisTimeoutSeconds": 120,
+    "maximumAnalysisTimeoutSeconds": 900
+  },
+  "exitCodes": {
+    "completed": 0,
+    "invalidRequest": 10,
+    "incompatible": 11,
+    "cancelled": 12,
+    "analysisError": 13,
+    "securityError": 14,
+    "internalError": 15
+  },
+  "applySafety": {
+    "engineMayEditWord": false,
+    "validateWholeScopeBeforePreview": true,
+    "validateWholeScopeBeforeApply": true,
+    "validateAllCandidatesBeforeFirstMutation": true,
+    "defaultMismatchAction": "abort-apply",
+    "candidateRelocationAllowed": false
+  },
+  "failureBehavior": {
+    "partialResultsAllowed": false,
+    "reuseResultsAfterFailure": false,
+    "silentBehaviorChangingFallbackAllowed": false,
+    "missingOrMismatchedEngineAction": "disable-and-recommend-repair",
+    "timeoutAction": "terminate-ignore-result-and-make-no-changes",
+    "staleSnapshotAction": "discard-and-require-new-preview",
+    "staleCandidateAction": "abort-apply-before-first-mutation"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "text": "A😀B\r",
+  "encoding": "utf-8",
+  "byteLength": 7,
+  "utf16Length": 5,
+  "sha256": "0abf0e4fd0007c7ccb2393874d54564712389d540f5bcbe7d12d534fcfc4656e",
+  "emojiStartUtf16": 1,
+  "emojiEndUtf16": 3,
+  "emojiSha256": "f0443a342c5ef54783a111b51ba56c938e474c32324d90c3a60c9c8e3a37e2d9"
+}

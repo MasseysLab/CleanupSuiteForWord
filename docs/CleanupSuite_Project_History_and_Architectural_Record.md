@@ -758,7 +758,7 @@ The following principles have emerged repeatedly across releases, diagnostics, a
 | Final standalone `.dotm` release boundary | Frozen as `v0.9.3-beta-vba-final` after Task 3 and before C# tool dependency |
 | State-aware single Setup for Install/Update/Repair/Uninstall | Beta contract |
 | Suite-wide preservation of pre-existing highlights | Implemented through preview-owned restoration records in Task 3 |
-| Shared candidate manifest across tools | Proposed, strongly recommended |
+| Versioned hybrid candidate manifest and operation vocabulary | Contract 1.0 defined and tested July 26, 2026 |
 | Tool-specific professional corrections from the July 18 audit | Proposed |
 | C# sidecar engine with VBA as Word mediator | Approved and authorized; scheduled after immediate safety and contract work |
 | Incremental migration rather than a pre-Beta rewrite | Approved and authorized direction |
@@ -868,6 +868,85 @@ tool modes were deliberately left for reconsideration after the hybrid foundatio
 
 Estimated combined difficulty: **55–70%**.
 Estimated professional desirability: **98–100%**.
+
+### July 26, 2026: Hybrid risk gate and change-control thresholds
+
+Before Task 4 began, Chris asked for a fresh reconsideration of the hybrid
+decision. The two most consequential concerns were identified as:
+
+1. the document can change between engine analysis and VBA Apply;
+2. antivirus and Windows reputation systems may scrutinize an executable more
+   heavily than a VBA-only template.
+
+The decision remained in favor of an incremental hybrid, but both concerns became
+hard contract requirements rather than later implementation details.
+
+For stale analysis, VBA must validate the complete analyzed scope before accepting
+an engine result into Preview and again before Apply. It must then validate every
+candidate's exact range and any required structural fingerprint. A mismatch aborts
+the entire Apply before the first mutation and instructs the user to run Preview
+again. Destructive candidates are never automatically relocated or approximately
+matched.
+
+For executable trust, the engine must run locally, offline, on demand, without
+administrator rights or a Windows service. VBA must verify the matched engine
+version and published hash before launch. Job paths and filenames are constrained,
+logs exclude document content by default, the engine never edits Word, and the
+official hybrid Beta requires a signed and hash-verified distribution path. The
+final VBA-only release remains available for environments that prohibit companion
+executables.
+
+Chris also established a durable implementation-governance rule:
+
+- minor implementation adjustments may be made on the fly;
+- medium changes require at least **95%** estimated professional desirability;
+- large changes require at least **99%**;
+- huge changes require at least **99.9%**, high certainty, or necessity for
+  continuation of the project;
+- correctness is mandatory even when speed is preferred;
+- extended rabbit holes require an explicit reconsideration of value and scope.
+
+These percentages are practical product judgments, not scientific measurements.
+Their purpose is to prevent scope drift while still allowing efficient engineering.
+
+Estimated combined difficulty: **18–28%**.
+Estimated professional desirability: **99–100%**.
+
+### Task 4: Contract before engine
+
+Task 4 deliberately added no C# executable and connected no Word tool to an
+engine. It first converted the architectural promises into Contract 1.0 under
+`contracts/hybrid/v1`.
+
+The contract defines:
+
+- exact UTF-8 snapshots without Word newline or marker normalization;
+- Word-compatible UTF-16 Range offsets;
+- versioned requests, responses, capabilities, and installation manifests;
+- applicable, review-only, protected, and skipped candidate states;
+- deterministic/high/medium/low confidence;
+- exact text, surrounding-context, paragraph, and structural fingerprints;
+- a bounded Apply-operation vocabulary whose operations remain proposals until
+  independently revalidated and executed by VBA;
+- fixed owner-only job filenames and path-traversal/reparse-point rejection;
+- no network, service, elevation, Word automation, or document-content logging;
+- no partial-result reuse, approximate relocation, or silent behavior-changing
+  fallback;
+- an official-Beta Authenticode requirement and a matched component hash manifest.
+
+A live Word probe verified the most important text-coordinate assumption. In a
+story containing `A😀B` and Word's final paragraph mark, Word treated the emoji as
+one `Characters` item but advanced its Range positions from 1 to 3. Contract 1.0
+therefore correctly defines all offsets in UTF-16 code units and includes a
+supplementary-Unicode regression fixture.
+
+The contract gate adds JSON Schema validation and deterministic positive and
+negative fixtures. At completion, the focused contract suite passed 13 tests and
+the complete repository suite passed 227 tests with 3 expected skips. All 29 VBA
+assembly builders remained clean. No Word runtime or release artifact changed.
+
+Estimated combined difficulty: **42–57%**.
+Estimated professional desirability: **97–100%**.
 
 ## Primary Historical Sources
 

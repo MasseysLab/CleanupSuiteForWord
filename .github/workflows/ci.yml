@@ -19,6 +19,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install test dependencies
+        run: python -m pip install -r requirements-dev.txt
+
       - name: Assemble and validate the VBA bundle
         run: python assemble.py
 

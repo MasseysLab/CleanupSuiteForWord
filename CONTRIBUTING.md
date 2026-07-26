@@ -11,6 +11,7 @@ reference is the
 ## Development quick start
 
 ```powershell
+python -m pip install -r requirements-dev.txt
 python assemble.py
 python -m unittest discover -s tests
 powershell -ExecutionPolicy Bypass -File .\scripts\sync_docm_code_only.ps1

@@ -1,0 +1,40 @@
+{
+  "contractVersion": "1.0",
+  "messageType": "engine-capabilities",
+  "engine": {
+    "id": "com.masseyslab.cleanupsuite.engine",
+    "version": "0.1.0"
+  },
+  "protocolRange": {
+    "minimum": "1.0",
+    "maximum": "1.0"
+  },
+  "supportedTools": [
+    {
+      "id": "punctuation-normalizer",
+      "definitionVersions": ["1.0.0"],
+      "analysisModes": ["curly-to-straight"]
+    }
+  ],
+  "supportedOperations": [
+    "reportOnly",
+    "replaceText"
+  ],
+  "security": {
+    "editsWordDocuments": false,
+    "requiresNetwork": false,
+    "opensListeningEndpoint": false,
+    "runsAsService": false,
+    "requiresElevation": false,
+    "logsDocumentContent": false
+  },
+  "transport": {
+    "mode": "owner-only-job-directory",
+    "requestFile": "request.json",
+    "resultFile": "result.json"
+  },
+  "distribution": {
+    "publisher": "MasseysLab",
+    "authenticodeRequiredForOfficialBeta": true
+  }
+}

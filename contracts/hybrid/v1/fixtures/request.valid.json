@@ -1,0 +1,45 @@
+{
+  "contractVersion": "1.0",
+  "messageType": "analysis-request",
+  "jobId": "11111111-1111-4111-8111-111111111111",
+  "createdUtc": "2026-07-26T12:00:00Z",
+  "client": {
+    "suiteVersion": "0.9.5-beta",
+    "protocolVersion": "1.0",
+    "processId": 4242,
+    "sessionId": "22222222-2222-4222-8222-222222222222"
+  },
+  "tool": {
+    "id": "punctuation-normalizer",
+    "definitionVersion": "1.0.0",
+    "analysisMode": "curly-to-straight"
+  },
+  "scope": {
+    "documentSessionId": "33333333-3333-4333-8333-333333333333",
+    "storyType": "main-text",
+    "startUtf16": 0,
+    "endUtf16": 15,
+    "selectionOnly": false
+  },
+  "snapshot": {
+    "snapshotId": "19bf158bd8df8689bde609794bedab21ca3785bd51773083f0233436ddeef6b6",
+    "contentFile": "document.utf8.txt",
+    "encoding": "utf-8",
+    "byteLength": 19,
+    "utf16Length": 15,
+    "sha256": "19bf158bd8df8689bde609794bedab21ca3785bd51773083f0233436ddeef6b6",
+    "lineEndingPolicy": "preserve-word-story-text"
+  },
+  "options": {
+    "curlyDoubleQuotes": true,
+    "curlySingleQuotes": false
+  },
+  "requestedCapabilities": [
+    "analysis.punctuation",
+    "fingerprint.sha256-utf8-exact"
+  ],
+  "privacy": {
+    "documentPathIncluded": false,
+    "documentNameIncluded": false
+  }
+}
