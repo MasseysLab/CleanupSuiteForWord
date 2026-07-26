@@ -14,6 +14,8 @@ Private mOriginalBrowseTarget As Long
 Private mBrowseTargetCaptured As Boolean
 Private mEditablePreviewRestored As Boolean
 Private mNavigationDetached As Boolean
+Private mHasReviewRows As Boolean
+Private mReviewDetailCount As Long
 
 Private Const FORM_W As Single = 283
 Private Const MIN_FORM_H As Single = 90
@@ -23,6 +25,7 @@ Private Const GAP As Single = 5
 Private Const BTN_W As Single = (CONTENT_W - (2 * GAP)) / 3
 Private Const SUMMARY_BOTTOM_GAP As Single = 6
 Private Const ACTION_TOP As Single = 17
+Private Const REVIEW_H As Single = 30
 
 Public Sub Configure(sourceForm As Object, toolName As String, summaryText As String)
     Dim rows As Collection
@@ -39,8 +42,10 @@ Public Sub ConfigureSummary(sourceForm As Object, toolName As String, rows As Co
     mEditablePreviewRestored = False
     mResumeModelessAfterModal = False
     mNavigationDetached = False
+    mHasReviewRows = PreviewSummaryHasReviewRows(rows)
     Set mPreviewDocument = ActiveDocument
     Set mPreviewWindow = ActiveWindow
+    mReviewDetailCount = PreviewReviewFindingCount(mPreviewDocument)
     On Error Resume Next
     mOriginalBrowseTarget = Application.Browser.Target
     mBrowseTargetCaptured = (Err.Number = 0)
@@ -68,6 +73,16 @@ Public Sub ConfigureSummary(sourceForm As Object, toolName As String, rows As Co
     cmdPreviousPage.Visible = True
     cmdNextPage.Visible = True
     cmdNextChange.Visible = True
+    cmdReviewDetails.Caption = "Review details"
+    cmdReviewDetails.Enabled = mHasReviewRows
+    cmdReviewDetails.Visible = mHasReviewRows
+    If mReviewDetailCount > 0 Then
+        lblReviewContext.Caption = "Inspect one locatable protected finding at a time."
+    Else
+        lblReviewContext.Caption = "Explain these document-level or nonlocatable results."
+    End If
+    lblReviewContext.ControlTipText = lblReviewContext.Caption
+    lblReviewContext.Visible = mHasReviewRows
     LayoutPanel
     UpdateNavigationButtonStates
     mApplyButtonBackColor = cmdApply.BackColor
@@ -80,6 +95,7 @@ Private Sub LayoutPanel()
     Dim buttonHeight As Single
     Dim navigationTop As Single
     Dim navigationWidth As Single
+    Dim reviewTop As Single
     Set rows = mSummaryRows
     Me.Caption = ""
     Me.Width = FORM_W
@@ -91,7 +107,12 @@ Private Sub LayoutPanel()
     Else
         mSummaryTop = ACTION_TOP + buttonHeight + GAP
     End If
-    desiredInsideH = mSummaryTop + SummaryTableHeight(mSummaryRows) + SUMMARY_BOTTOM_GAP
+    reviewTop = mSummaryTop + SummaryTableHeight(mSummaryRows) + GAP
+    If mHasReviewRows Then
+        desiredInsideH = reviewTop + REVIEW_H + SUMMARY_BOTTOM_GAP
+    Else
+        desiredInsideH = mSummaryTop + SummaryTableHeight(mSummaryRows) + SUMMARY_BOTTOM_GAP
+    End If
     Me.Height = MaxSingle(MIN_FORM_H, desiredInsideH)
     If Me.InsideHeight < desiredInsideH Then
         Me.Height = Me.Height + (desiredInsideH - Me.InsideHeight)
@@ -111,10 +132,14 @@ Private Sub LayoutPanel()
     cmdPreviousPage.Move M + navigationWidth + GAP, navigationTop, navigationWidth, buttonHeight
     cmdNextPage.Move M + (2 * (navigationWidth + GAP)), navigationTop, navigationWidth, buttonHeight
     cmdNextChange.Move M + (3 * (navigationWidth + GAP)), navigationTop, navigationWidth, buttonHeight
+    cmdReviewDetails.Move M, reviewTop, BTN_W, REVIEW_H
+    lblReviewContext.Move M + BTN_W + GAP, reviewTop, CONTENT_W - BTN_W - GAP, REVIEW_H
     cmdPreviousChange.Visible = mPreviewOn
     cmdPreviousPage.Visible = mPreviewOn
     cmdNextPage.Visible = mPreviewOn
     cmdNextChange.Visible = mPreviewOn
+    cmdReviewDetails.Visible = (mPreviewOn And mHasReviewRows)
+    lblReviewContext.Visible = (mPreviewOn And mHasReviewRows)
     FitPreviewButtonCaption cmdPreview
     FitPreviewButtonCaption cmdClear
     FitPreviewButtonCaption cmdApply
@@ -122,6 +147,7 @@ Private Sub LayoutPanel()
     FitPreviewButtonCaption cmdPreviousPage
     FitPreviewButtonCaption cmdNextPage
     FitPreviewButtonCaption cmdNextChange
+    FitPreviewButtonCaption cmdReviewDetails
     lblSummary.Move M, mSummaryTop, 0, 0
     lblSummary.Visible = False
     lblTitle.Visible = False
@@ -250,6 +276,11 @@ Private Sub StyleActionBar()
     StyleButton cmdPreviousPage, True
     StyleButton cmdNextPage, True
     StyleButton cmdNextChange, True
+    StyleButton cmdReviewDetails, True
+    StyleLabel lblReviewContext, 7.5, False, RGB(55, 60, 68)
+    cmdReviewDetails.BackColor = RGB(235, 242, 250)
+    cmdReviewDetails.ForeColor = RGB(31, 78, 121)
+    lblReviewContext.WordWrap = True
     lblButtonMeasure.Visible = False
 End Sub
 
@@ -280,7 +311,8 @@ Private Function MeasuredPreviewButtonHeight() As Single
     On Error Resume Next
     captions = Array(cmdPreview.Caption, cmdClear.Caption, cmdApply.Caption, _
                      cmdPreviousChange.Caption, cmdPreviousPage.Caption, _
-                     cmdNextPage.Caption, cmdNextChange.Caption)
+                     cmdNextPage.Caption, cmdNextChange.Caption, _
+                     cmdReviewDetails.Caption)
     With lblButtonMeasure
         .Visible = False
         .AutoSize = True
@@ -343,6 +375,7 @@ Public Sub ShowProgress(ByVal progressText As String)
     StyleNavigationButton cmdPreviousPage, False, False
     StyleNavigationButton cmdNextPage, False, False
     StyleNavigationButton cmdNextChange, True, False
+    cmdReviewDetails.Enabled = False
     Me.Repaint
     On Error GoTo 0
 End Sub
@@ -357,6 +390,7 @@ Public Sub ClearProgress()
     cmdClear.Enabled = True
     cmdApply.Enabled = True
     UpdateNavigationButtonStates
+    cmdReviewDetails.Enabled = (mPreviewOn And mHasReviewRows)
     Me.Repaint
     On Error GoTo 0
 End Sub
@@ -392,6 +426,45 @@ End Sub
 
 Private Sub cmdNextChange_Click()
     NavigatePreviewChange True
+End Sub
+
+Private Sub cmdReviewDetails_Click()
+    Dim findingLabel As String
+    Dim findingContext As String
+    Dim findingOrdinal As Long
+    Dim findingTotal As Long
+    Dim resumePanelHere As Boolean
+    Dim displayText As String
+
+    On Error GoTo ReviewErr
+    If Not mPreviewOn Then Exit Sub
+    If Not PreviewTargetIsActive() Then Exit Sub
+
+    mReviewDetailCount = PreviewReviewFindingCount(mPreviewDocument)
+    If mReviewDetailCount > 0 Then
+        resumePanelHere = DetachPreviewPanelForNavigationIfNeeded()
+        FocusPreviewDocumentWindow
+        If NavigateNextPreviewReviewFinding(mPreviewDocument, findingLabel, findingContext, findingOrdinal, findingTotal) Then
+            displayText = CStr(findingOrdinal) & "/" & CStr(findingTotal) & " " & findingLabel & ": " & findingContext
+            lblReviewContext.Caption = displayText
+            lblReviewContext.ControlTipText = displayText
+            cmdReviewDetails.Caption = "Next detail"
+            cmdReviewDetails.ControlTipText = "Move to the next protected or unhighlighted finding"
+        End If
+        ResumePreviewPanelAfterNavigation resumePanelHere
+    Else
+        displayText = PreviewReviewSummaryText(mSummaryRows)
+        If Len(displayText) = 0 Then displayText = "No review-only details are available."
+        displayText = "Document-level result: " & displayText
+        lblReviewContext.Caption = displayText
+        lblReviewContext.ControlTipText = displayText
+        cmdReviewDetails.Enabled = False
+    End If
+    Me.Repaint
+    Exit Sub
+ReviewErr:
+    lblReviewContext.Caption = "Could not open the review detail."
+    Me.Repaint
 End Sub
 
 Private Sub NavigatePreviewPage(ByVal moveForward As Boolean)
@@ -527,6 +600,7 @@ Private Sub cmdApply_Click()
         If Not mSourceForm Is Nothing Then mSourceForm.Hide
         MarkCleanupToolApplied
         Set gPreviewActionPanel = Nothing
+        ClearPreviewReviewCollection
         Unload Me
         Exit Sub
     End If
@@ -535,6 +609,7 @@ Private Sub cmdApply_Click()
         CallByName mSourceForm, "RunAfterPreview", VbMethod
     End If
     ClearPreviewScopeRange
+    ClearPreviewReviewCollection
     Set gPreviewActionPanel = Nothing
     Unload Me
     Exit Sub
@@ -560,6 +635,8 @@ Private Sub cmdPreview_Click()
     ' stable preview call stack.
     cmdPreview.Enabled = False
     cmdPreview.Visible = True
+    cmdReviewDetails.Visible = False
+    lblReviewContext.Visible = False
     AddPreviewSummaryRow offRows, "Edit if needed. Choose Reconfigure to preview again.", ""
     Set mSummaryRows = offRows
     LayoutPanel
@@ -581,6 +658,7 @@ Private Sub cmdClear_Click()
     If Not PreviewTargetIsActive() Then
         RestoreEditablePreviewDocument
         ClearPreviewScopeRange
+        ClearPreviewReviewCollection
         Set gPreviewActionPanel = Nothing
         Me.Hide
         Unload Me
@@ -588,6 +666,7 @@ Private Sub cmdClear_Click()
     End If
     RestoreEditablePreviewDocument
     ClearPreviewScopeRange
+    ClearPreviewReviewCollection
     Set src = mSourceForm
     Set gPreviewActionPanel = Nothing
     Me.Hide
@@ -602,6 +681,7 @@ ClearErr:
     errorDescription = Err.Description
     RestoreEditablePreviewDocument
     ClearPreviewScopeRange
+    ClearPreviewReviewCollection
     MsgBox "Could not reconfigure the preview: " & errorDescription, vbExclamation, "Preview Actions"
 End Sub
 
@@ -622,11 +702,13 @@ Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
             cmdClear_Click
         Else
             Set gPreviewActionPanel = Nothing
+            ClearPreviewReviewCollection
             Me.Hide
         End If
     Else
         RestoreEditablePreviewDocument
         ClearPreviewScopeRange
+        ClearPreviewReviewCollection
         Set gPreviewActionPanel = Nothing
     End If
 End Sub
@@ -634,6 +716,7 @@ End Sub
 Private Sub UserForm_Terminate()
     RestoreEditablePreviewDocument
     ClearPreviewScopeRange
+    ClearPreviewReviewCollection
     RestorePreviewBrowseTarget
     Set gPreviewActionPanel = Nothing
 End Sub

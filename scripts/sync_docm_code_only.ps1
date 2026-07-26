@@ -47,7 +47,8 @@ function Get-ControlsForForm {
     switch ($FormName) {
         "frmPreviewActions" {
             return @(
-                "cmdPreviousChange", "cmdPreviousPage", "cmdNextPage", "cmdNextChange", "lblButtonMeasure"
+                "cmdPreviousChange", "cmdPreviousPage", "cmdNextPage", "cmdNextChange",
+                "cmdReviewDetails", "lblReviewContext", "lblButtonMeasure"
             )
         }
         "frmCapitalizationCleanup" {

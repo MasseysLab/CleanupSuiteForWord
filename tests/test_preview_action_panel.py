@@ -212,8 +212,13 @@ class PreviewActionPanelTests(unittest.TestCase):
         self.assertIn("Application.ActiveWindow.ScrollIntoView targetRange, True", helpers)
         self.assertIn("Application.ScreenRefresh", helpers)
         self.assertIn("DoEvents", helpers)
-        self.assertLess(helpers.index("Next pageStep"), helpers.index("targetRange.Select"))
-        self.assertLess(helpers.index("targetRange.Select"), helpers.index("ScrollIntoView targetRange, True"))
+        change_navigation_start = helpers.index("Public Function NavigatePreviewChangePage")
+        change_navigation = helpers[
+            change_navigation_start:
+            helpers.index("Private Sub RegisterPreviewHighlightRange", change_navigation_start)
+        ]
+        self.assertLess(change_navigation.index("Next pageStep"), change_navigation.index("targetRange.Select"))
+        self.assertLess(change_navigation.index("targetRange.Select"), change_navigation.index("ScrollIntoView targetRange, True"))
         self.assertIn("Private Sub NavigatePreviewChange", panel)
         self.assertIn("Private Function DetachPreviewPanelForNavigationIfNeeded() As Boolean", panel)
         self.assertIn("mResumeModelessAfterModal = True", panel)
@@ -250,19 +255,57 @@ class PreviewActionPanelTests(unittest.TestCase):
         self.assertIn("buttonControl.BackColor = RGB(221, 235, 247)", panel)
         self.assertIn("buttonControl.BackColor = RGB(235, 235, 235)", panel)
 
-    def test_preview_panel_exposes_only_decisive_actions(self):
+    def test_preview_panel_exposes_decisive_actions_and_compact_review_path(self):
         installer = read("src/installer/installer.bas")
 
         self.assertIn(
             'ControlsForForm = Array("lblTitle", "lblSummary", "lblHint", "lblButtonMeasure", _',
             installer,
         )
-        self.assertIn('"cmdApply", "cmdPreview", "cmdClear", "cmdPreviousChange", "cmdPreviousPage", "cmdNextPage", "cmdNextChange")', installer)
+        self.assertIn('"lblReviewContext", "cmdApply", "cmdPreview", "cmdClear", _', installer)
+        self.assertIn('"cmdPreviousChange", "cmdPreviousPage", "cmdNextPage", "cmdNextChange", "cmdReviewDetails")', installer)
         preview_controls_start = installer.index('Case "frmPreviewActions"')
         preview_controls_end = installer.index('Case "frmPunctuationCleanup"')
         preview_controls = installer[preview_controls_start:preview_controls_end]
         self.assertNotIn('"cmdBack"', installer)
         self.assertNotIn('"cmdClose"', preview_controls)
+
+    def test_unhighlighted_findings_have_context_and_optional_document_navigation(self):
+        helpers = read("src/modules/modCleanupHelpers.bas")
+        panel = read("src/forms/frmPreviewActions.bas")
+        duplicates = read("src/forms/frmDuplicateDetector.bas")
+        installer = read("src/installer/installer.bas")
+        sync = read("scripts/sync_docm_code_only.ps1")
+
+        self.assertIn("Public Function PreviewSummaryHasReviewRows", helpers)
+        self.assertIn("Public Function PreviewReviewSummaryText", helpers)
+        self.assertIn("Public Sub BeginPreviewReviewCollection()", helpers)
+        self.assertIn("Public Sub RegisterPreviewReviewFinding", helpers)
+        self.assertIn("Public Function PreviewReviewFindingCount", helpers)
+        self.assertIn("Public Function NavigateNextPreviewReviewFinding", helpers)
+        self.assertIn("CompactPreviewFindingContext", helpers)
+        self.assertIn("BeginPreviewReviewCollection", helpers)
+        self.assertIn("ClearPreviewReviewCollection", helpers)
+        self.assertIn("targetRange.Select", helpers)
+
+        self.assertIn("Private Sub cmdReviewDetails_Click()", panel)
+        self.assertIn('cmdReviewDetails.Caption = "Review details"', panel)
+        self.assertIn('cmdReviewDetails.Caption = "Next detail"', panel)
+        self.assertIn("lblReviewContext.Caption = displayText", panel)
+        self.assertIn("DetachPreviewPanelForNavigationIfNeeded", panel)
+        self.assertIn("NavigateNextPreviewReviewFinding", panel)
+        self.assertIn("mHasReviewRows = PreviewSummaryHasReviewRows(rows)", panel)
+
+        self.assertIn('RegisterPreviewReviewFinding p.Range, "Protected empty cell"', duplicates)
+        self.assertIn('RegisterPreviewReviewFinding p.Range, "Protected row marker"', duplicates)
+        self.assertIn('RegisterPreviewReviewFinding p.Range, "Protected final marker"', duplicates)
+        self.assertIn('RegisterPreviewReviewFinding p.Range, "Skipped structure"', duplicates)
+        self.assertIn("If previewOnly And includeEmptyParagraphs Then", duplicates)
+
+        self.assertIn('"cmdReviewDetails"', installer)
+        self.assertIn('"lblReviewContext"', installer)
+        self.assertIn('"cmdReviewDetails"', sync)
+        self.assertIn('"lblReviewContext"', sync)
 
     def test_launcher_hides_while_a_subtool_is_open(self):
         launcher = read("src/forms/frmCleanupSuiteLauncher.bas")

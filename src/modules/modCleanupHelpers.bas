@@ -45,6 +45,13 @@ Private gPreviewChangeDocuments As Collection
 Private gPreviewChangeStarts As Collection
 Private gPreviewChangePages As Collection
 Private gPreviewChangeKeys As Object
+Private gPreviewReviewDocuments As Collection
+Private gPreviewReviewStarts As Collection
+Private gPreviewReviewEnds As Collection
+Private gPreviewReviewLabels As Collection
+Private gPreviewReviewContexts As Collection
+Private gPreviewReviewKeys As Object
+Private gPreviewReviewIndex As Long
 Private gPreviewViewSessionActive As Boolean
 Private gPreviewViewDocument As Document
 Private gPreviewViewWindow As Window
@@ -520,6 +527,50 @@ Public Sub AddPreviewSummaryRow(ByVal rows As Collection, ByVal itemText As Stri
     rows.Add PreviewSummaryRowText(itemText, countValue, isUnhighlighted, isInactive)
 End Sub
 
+Public Function PreviewSummaryHasReviewRows(ByVal rows As Collection) As Boolean
+    Dim rowText As Variant
+    Dim rowParts As Variant
+    Dim rowCount As Long
+
+    If rows Is Nothing Then Exit Function
+    For Each rowText In rows
+        rowParts = Split(CStr(rowText), vbTab)
+        If UBound(rowParts) >= 2 Then
+            If InStr(1, CStr(rowParts(0)), "(unhighlighted)", vbTextCompare) > 0 Then
+                If CStr(rowParts(2)) <> "inactive" Then
+                    rowCount = CLng(Val(CStr(rowParts(1))))
+                    If rowCount > 0 Then
+                        PreviewSummaryHasReviewRows = True
+                        Exit Function
+                    End If
+                End If
+            End If
+        End If
+    Next rowText
+End Function
+
+Public Function PreviewReviewSummaryText(ByVal rows As Collection) As String
+    Dim rowText As Variant
+    Dim rowParts As Variant
+    Dim itemText As String
+    Dim countText As String
+
+    If rows Is Nothing Then Exit Function
+    For Each rowText In rows
+        rowParts = Split(CStr(rowText), vbTab)
+        If UBound(rowParts) >= 2 Then
+            If InStr(1, CStr(rowParts(0)), "(unhighlighted)", vbTextCompare) > 0 Then
+                If CStr(rowParts(2)) <> "inactive" And Val(CStr(rowParts(1))) > 0 Then
+                    itemText = Replace(CStr(rowParts(0)), " (unhighlighted)", "", 1, -1, vbTextCompare)
+                    countText = CStr(rowParts(1))
+                    If Len(PreviewReviewSummaryText) > 0 Then PreviewReviewSummaryText = PreviewReviewSummaryText & "; "
+                    PreviewReviewSummaryText = PreviewReviewSummaryText & itemText & ": " & countText
+                End If
+            End If
+        End If
+    Next rowText
+End Function
+
 Private Function PreviewSummaryRowText(ByVal itemText As String, ByVal countValue As Variant, ByVal isUnhighlighted As Boolean, ByVal isInactive As Boolean) As String
     Dim displayText As String
     displayText = CleanPreviewSummaryCell(itemText)
@@ -740,6 +791,7 @@ Public Sub BeginPreviewActionIndicator(ByVal sourceForm As Object)
 
     EndPreviewActionIndicator
     BeginPreviewChangeCollection
+    BeginPreviewReviewCollection
     On Error GoTo SafeExit
     If sourceForm Is Nothing Then Exit Sub
     Set previewButton = sourceForm.Controls("cmdPreview")
@@ -822,6 +874,7 @@ Public Sub RestoreCleanupSuiteTransientState()
     RestorePreviewShading
     RestorePreviewHighlighting
     ClearPreviewChangeCollection
+    ClearPreviewReviewCollection
     EndCleanupProgress
 End Sub
 
@@ -853,6 +906,150 @@ Public Sub BeginPreviewChangeCollection()
     Set gPreviewChangePages = New Collection
     Set gPreviewChangeKeys = CreateObject("Scripting.Dictionary")
 End Sub
+
+Public Sub BeginPreviewReviewCollection()
+    Set gPreviewReviewDocuments = New Collection
+    Set gPreviewReviewStarts = New Collection
+    Set gPreviewReviewEnds = New Collection
+    Set gPreviewReviewLabels = New Collection
+    Set gPreviewReviewContexts = New Collection
+    Set gPreviewReviewKeys = CreateObject("Scripting.Dictionary")
+    gPreviewReviewIndex = 0
+End Sub
+
+Public Sub ClearPreviewReviewCollection()
+    Set gPreviewReviewDocuments = Nothing
+    Set gPreviewReviewStarts = Nothing
+    Set gPreviewReviewEnds = Nothing
+    Set gPreviewReviewLabels = Nothing
+    Set gPreviewReviewContexts = Nothing
+    Set gPreviewReviewKeys = Nothing
+    gPreviewReviewIndex = 0
+End Sub
+
+Public Sub RegisterPreviewReviewFinding(ByVal targetRange As Range, ByVal findingLabel As String, Optional ByVal findingContext As String = "")
+    Dim reviewRange As Range
+    Dim reviewKey As String
+
+    On Error GoTo SafeExit
+    If targetRange Is Nothing Then Exit Sub
+    If gPreviewReviewDocuments Is Nothing Then BeginPreviewReviewCollection
+    Set reviewRange = targetRange.Duplicate
+    If reviewRange.Start < 0 Then Exit Sub
+    If reviewRange.End < reviewRange.Start Then Exit Sub
+    If reviewRange.End > reviewRange.Document.Content.End Then reviewRange.End = reviewRange.Document.Content.End
+    reviewKey = PreviewShadingDocumentIdentity(reviewRange.Document) & "|" & _
+                CStr(reviewRange.Start) & "|" & CStr(reviewRange.End) & "|" & _
+                CleanPreviewSummaryCell(findingLabel)
+    If gPreviewReviewKeys.Exists(reviewKey) Then Exit Sub
+
+    gPreviewReviewKeys.Add reviewKey, True
+    gPreviewReviewDocuments.Add reviewRange.Document
+    gPreviewReviewStarts.Add CLng(reviewRange.Start)
+    gPreviewReviewEnds.Add CLng(reviewRange.End)
+    gPreviewReviewLabels.Add CleanPreviewSummaryCell(findingLabel)
+    gPreviewReviewContexts.Add CompactPreviewFindingContext(reviewRange, findingContext)
+SafeExit:
+End Sub
+
+Public Function PreviewReviewFindingCount(ByVal previewDocument As Document) As Long
+    Dim findingIndex As Long
+
+    On Error GoTo SafeExit
+    If previewDocument Is Nothing Then Exit Function
+    If gPreviewReviewDocuments Is Nothing Then Exit Function
+    For findingIndex = 1 To gPreviewReviewDocuments.Count
+        If gPreviewReviewDocuments(findingIndex) Is previewDocument Then
+            PreviewReviewFindingCount = PreviewReviewFindingCount + 1
+        End If
+    Next findingIndex
+SafeExit:
+End Function
+
+Public Function NavigateNextPreviewReviewFinding( _
+    ByVal previewDocument As Document, _
+    ByRef findingLabel As String, _
+    ByRef findingContext As String, _
+    ByRef findingOrdinal As Long, _
+    ByRef findingTotal As Long) As Boolean
+
+    Dim findingIndex As Long
+    Dim checkedCount As Long
+    Dim targetRange As Range
+
+    On Error GoTo SafeExit
+    findingTotal = PreviewReviewFindingCount(previewDocument)
+    If findingTotal = 0 Then Exit Function
+    If gPreviewReviewIndex < 0 Or gPreviewReviewIndex > gPreviewReviewDocuments.Count Then gPreviewReviewIndex = 0
+
+    findingIndex = gPreviewReviewIndex
+    Do While checkedCount < gPreviewReviewDocuments.Count
+        findingIndex = findingIndex + 1
+        If findingIndex > gPreviewReviewDocuments.Count Then findingIndex = 1
+        checkedCount = checkedCount + 1
+        If gPreviewReviewDocuments(findingIndex) Is previewDocument Then Exit Do
+    Loop
+    If checkedCount >= gPreviewReviewDocuments.Count Then
+        If Not (gPreviewReviewDocuments(findingIndex) Is previewDocument) Then Exit Function
+    End If
+
+    Set targetRange = previewDocument.Range( _
+        CLng(gPreviewReviewStarts(findingIndex)), _
+        CLng(gPreviewReviewEnds(findingIndex)))
+    If targetRange.End > targetRange.Start Then
+        targetRange.Select
+    Else
+        targetRange.Collapse wdCollapseStart
+        targetRange.Select
+    End If
+
+    gPreviewReviewIndex = findingIndex
+    findingLabel = CStr(gPreviewReviewLabels(findingIndex))
+    findingContext = CStr(gPreviewReviewContexts(findingIndex))
+    findingOrdinal = PreviewReviewOrdinal(previewDocument, findingIndex)
+    NavigateNextPreviewReviewFinding = True
+SafeExit:
+End Function
+
+Private Function PreviewReviewOrdinal(ByVal previewDocument As Document, ByVal targetIndex As Long) As Long
+    Dim findingIndex As Long
+
+    On Error GoTo SafeExit
+    For findingIndex = 1 To gPreviewReviewDocuments.Count
+        If gPreviewReviewDocuments(findingIndex) Is previewDocument Then
+            PreviewReviewOrdinal = PreviewReviewOrdinal + 1
+            If findingIndex = targetIndex Then Exit Function
+        End If
+    Next findingIndex
+SafeExit:
+End Function
+
+Private Function CompactPreviewFindingContext(ByVal targetRange As Range, ByVal suppliedContext As String) As String
+    Dim contextText As String
+    Dim paragraphRange As Range
+
+    contextText = CleanPreviewSummaryCell(suppliedContext)
+    If Len(contextText) = 0 Then
+        On Error Resume Next
+        Set paragraphRange = targetRange.Paragraphs(1).Range.Duplicate
+        On Error GoTo 0
+        If Not paragraphRange Is Nothing Then contextText = CleanPreviewContextText(paragraphRange.Text)
+    End If
+    If Len(contextText) = 0 Then contextText = "Protected structure at this document location."
+    If Len(contextText) > 140 Then contextText = Left$(contextText, 137) & "..."
+    CompactPreviewFindingContext = contextText
+End Function
+
+Private Function CleanPreviewContextText(ByVal textValue As String) As String
+    CleanPreviewContextText = Replace(textValue, Chr$(7), " ")
+    CleanPreviewContextText = Replace(CleanPreviewContextText, vbCr, " ")
+    CleanPreviewContextText = Replace(CleanPreviewContextText, vbLf, " ")
+    CleanPreviewContextText = Replace(CleanPreviewContextText, vbTab, " ")
+    Do While InStr(1, CleanPreviewContextText, "  ", vbBinaryCompare) > 0
+        CleanPreviewContextText = Replace(CleanPreviewContextText, "  ", " ")
+    Loop
+    CleanPreviewContextText = Trim$(CleanPreviewContextText)
+End Function
 
 Private Sub ClearPreviewChangeCollection()
     Set gPreviewChangeDocuments = Nothing

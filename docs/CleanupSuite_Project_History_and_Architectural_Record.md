@@ -1081,6 +1081,56 @@ repository's manual-install `CleanupSuite.dotm` is the separately hash-documente
 Estimated combined difficulty: **55–68%**.
 Estimated professional desirability: **97–99%**.
 
+### Task 7 checkpoint: unhighlighted results became reviewable
+
+The Preview table had long been able to label a count as `unhighlighted`, but a
+count alone did not let a serious Beta tester inspect the underlying condition.
+Task 7 added a compact review lane without altering the accepted four-button Page
+and Change navigation layout.
+
+When an active unhighlighted row has a nonzero count, Preview Actions now shows a
+subtle pale-blue **Review details** control and a concise context area. Tools may
+register exact review findings with a document range, category, and explanation.
+Each activation moves to the next locatable finding and reports its ordinal,
+category, and context. Findings such as document properties that have no honest
+text location instead receive a document-level explanation; CleanupSuite does not
+invent a misleading highlight.
+
+Duplicate Paragraph Remover is the first tool to provide detailed protected
+locations. When **Include empty paragraphs** is active, required empty-cell
+markers, table-row markers, the final-document marker, and unsupported blank
+structures can be reviewed one at a time. The tool still leaves them unchanged,
+and table-row deletion remains exclusively owned by Table Cleaner.
+
+The shared review collection is preview-scoped, document-bound, deduplicated, and
+cleared on Apply, Reconfigure, Preview teardown, errors, and form termination.
+The disposable Word lifecycle smoke verified both branches: a locatable finding
+moved Selection to the registered range and displayed context, while a
+nonlocatable document-property count displayed its scope explanation without
+offering false navigation. A human-visible probe confirmed that the extra control
+is compact, the summary remains readable, and the existing Page/Change controls
+retain their equal size and accepted colors.
+
+Task 7 also reconciled the Beta records with Chris's accepted deferral of inverse
+tool modes. Straight-to-curly quotes remain the first sensible future candidate,
+but reverse modes are not a `0.9.5-beta` release gate and will not be rushed into
+the hybrid installer transition.
+
+Automated evidence at this checkpoint:
+
+- 250 repository tests passed with 3 expected skips and 1,118 passing subtests;
+- all 31 VBA builders passed;
+- the isolated Word wiring smoke passed for Capitalization, MetaDataSuite, Final
+  Review, Preview Actions, guided risk controls, and representative tool forms;
+- the disposable Preview lifecycle smoke passed Reading View, Page/Change
+  navigation, review-detail navigation/context, formatting restoration, switched
+  windows, closed documents, and progress cleanup;
+- both tracked development `.docm` files, the installed Startup template, release
+  `.dotm`, Setup, and stable update manifest remained unchanged.
+
+Estimated combined difficulty: **28–40%**.
+Estimated professional desirability: **96–99%**.
+
 ## Primary Historical Sources
 
 - [Current handoff](../WHERE_WE_LEFT_OFF.md)

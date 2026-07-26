@@ -1,11 +1,10 @@
 param(
     [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
-    [switch]$BuildFirst
+    [switch]$BuildFirst,
+    [string]$SuiteDocPath = ""
 )
 
 $ErrorActionPreference = "Stop"
-
-Get-Process WINWORD -ErrorAction SilentlyContinue | Stop-Process -Force
 
 if ($BuildFirst) {
     & powershell -ExecutionPolicy Bypass -File (Join-Path $RepoRoot "build.ps1")
@@ -18,7 +17,9 @@ if ($BuildFirst) {
     }
 }
 
-$suiteDocPath = Join-Path $RepoRoot "Practice - Try CleanupSuite Here\CleanupSuite.docm"
+if ([string]::IsNullOrWhiteSpace($SuiteDocPath)) {
+    $SuiteDocPath = Join-Path $RepoRoot "Practice - Try CleanupSuite Here\CleanupSuite.docm"
+}
 $word = $null
 $suiteDoc = $null
 
@@ -28,7 +29,7 @@ try {
     $word.DisplayAlerts = 0
     try { $word.AutomationSecurity = 1 } catch {}
 
-    $suiteDoc = $word.Documents.Open($suiteDocPath, $false, $true, $false)
+    $suiteDoc = $word.Documents.Open($SuiteDocPath, $false, $true, $false)
     $result = [string]$word.Run("modAlphaSmokeRunner.RunPreviewLifecycleSmokeChecks")
     Write-Host $result
     if ($result -notlike "PASS|*") {
@@ -49,5 +50,4 @@ finally {
     }
     [GC]::Collect()
     [GC]::WaitForPendingFinalizers()
-    Get-Process WINWORD -ErrorAction SilentlyContinue | Stop-Process -Force
 }

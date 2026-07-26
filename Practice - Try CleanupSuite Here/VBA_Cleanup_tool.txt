@@ -757,6 +757,8 @@ Private Sub LayoutPreviewActionsControls(comp As VBIDE.VBComponent, designer As 
     PositionControl designer, "cmdPreviousPage", MARGIN + NAV_W + GAP, NAV_TOP, NAV_W, BTN_H
     PositionControl designer, "cmdNextPage", MARGIN + (2 * (NAV_W + GAP)), NAV_TOP, NAV_W, BTN_H
     PositionControl designer, "cmdNextChange", MARGIN + (3 * (NAV_W + GAP)), NAV_TOP, NAV_W, BTN_H
+    PositionControl designer, "cmdReviewDetails", MARGIN, SUMMARY_TOP + 33, BTN_W, 30
+    PositionControl designer, "lblReviewContext", MARGIN + BTN_W + GAP, SUMMARY_TOP + 33, CONTENT_W - BTN_W - GAP, 30
     PositionControl designer, "lblButtonMeasure", 0, 0, 0, 0
     PositionControl designer, "lblSummary", MARGIN, SUMMARY_TOP, CONTENT_W, 26
     designer.Controls("lblTitle").Caption = ""
@@ -764,6 +766,9 @@ Private Sub LayoutPreviewActionsControls(comp As VBIDE.VBComponent, designer As 
     designer.Controls("lblButtonMeasure").Caption = ""
     designer.Controls("lblButtonMeasure").Visible = False
     designer.Controls("lblSummary").WordWrap = True
+    designer.Controls("cmdReviewDetails").Visible = False
+    designer.Controls("lblReviewContext").Visible = False
+    designer.Controls("lblReviewContext").WordWrap = True
 
     comp.Properties("Width") = FORM_W + 8
     comp.Properties("Height") = FORM_H
@@ -1315,6 +1320,7 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmPreviewActions.lblSummary": ControlCaptionText = ""
         Case "frmPreviewActions.lblHint": ControlCaptionText = "Tool Name"
         Case "frmPreviewActions.lblButtonMeasure": ControlCaptionText = ""
+        Case "frmPreviewActions.lblReviewContext": ControlCaptionText = ""
         Case "frmSoftReturnConverter.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
         Case "frmSoftReturnConverter.optParaToSoft": ControlCaptionText = "Convert paragraph marks to soft returns"
         Case "frmSoftReturnConverter.optScopeDocument": ControlCaptionText = "Entire document"
@@ -1375,6 +1381,7 @@ Private Sub SetButtonCaption(designer As Object, nm As String)
         Case "cmdPreviousPage": cap = "Page" & vbCrLf & ChrW$(&H25C0) & " Previous"
         Case "cmdNextPage": cap = "Page" & vbCrLf & "Next " & ChrW$(&H25B6)
         Case "cmdNextChange": cap = "Change" & vbCrLf & "Next " & ChrW$(&H25B6)
+        Case "cmdReviewDetails": cap = "Review details"
         Case "cmdReset": cap = "Reset"
         Case "cmdResetAll": cap = "Reset All"
         Case "cmdUserManual": cap = "User Manual"
@@ -1463,6 +1470,7 @@ Private Function ButtonTipText(nm As String) As String
         Case "cmdPreviousPage": ButtonTipText = "Turn to the previous preview page"
         Case "cmdNextPage": ButtonTipText = "Turn to the next preview page"
         Case "cmdNextChange": ButtonTipText = "Skip to the next page that contains a preview change"
+        Case "cmdReviewDetails": ButtonTipText = "Inspect protected or unhighlighted findings"
         Case "cmdReset": ButtonTipText = "Reset this tool to its defaults"
         Case "cmdResetAll": ButtonTipText = "Reset all tools and global settings to defaults"
         Case "cmdUserManual": ButtonTipText = "Open the PDF User Manual"
@@ -1515,7 +1523,8 @@ Private Function ControlsForForm(formName As String) As Variant
                                     "chkReturnToMainAfterApply", "chkReturnToMainAfterClose", "chkAutoSave", "lblAutoSaveWarning", "chkUpdateChecks", "cmdCheckUpdates", "cmdResetAll", "cmdUserManual", "lblResetAllArrow", "lblResetAllCalloutBox", "lblResetAllCalloutText")
         Case "frmPreviewActions"
             ControlsForForm = Array("lblTitle", "lblSummary", "lblHint", "lblButtonMeasure", _
-                                    "cmdApply", "cmdPreview", "cmdClear", "cmdPreviousChange", "cmdPreviousPage", "cmdNextPage", "cmdNextChange")
+                                    "lblReviewContext", "cmdApply", "cmdPreview", "cmdClear", _
+                                    "cmdPreviousChange", "cmdPreviousPage", "cmdNextPage", "cmdNextChange", "cmdReviewDetails")
         Case "frmPunctuationCleanup"
             ControlsForForm = Array("optAll", "optQuotes", "optDashes", "optEllipses", "optCustom", _
                                     "cmdRiskPlacementPunctuationAll", "cmdRiskPlacementPunctuationQuotes", "cmdRiskPlacementPunctuationDashes", "cmdRiskPlacementPunctuationEllipses", "cmdRiskPlacementPunctuationCustom", "fraCustom", _
@@ -1746,6 +1755,13 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "Private gPreviewChangeStarts As Collection" & vbCrLf
     s = s & "Private gPreviewChangePages As Collection" & vbCrLf
     s = s & "Private gPreviewChangeKeys As Object" & vbCrLf
+    s = s & "Private gPreviewReviewDocuments As Collection" & vbCrLf
+    s = s & "Private gPreviewReviewStarts As Collection" & vbCrLf
+    s = s & "Private gPreviewReviewEnds As Collection" & vbCrLf
+    s = s & "Private gPreviewReviewLabels As Collection" & vbCrLf
+    s = s & "Private gPreviewReviewContexts As Collection" & vbCrLf
+    s = s & "Private gPreviewReviewKeys As Object" & vbCrLf
+    s = s & "Private gPreviewReviewIndex As Long" & vbCrLf
     s = s & "Private gPreviewViewSessionActive As Boolean" & vbCrLf
     s = s & "Private gPreviewViewDocument As Document" & vbCrLf
     s = s & "Private gPreviewViewWindow As Window" & vbCrLf
@@ -2221,6 +2237,50 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "    rows.Add PreviewSummaryRowText(itemText, countValue, isUnhighlighted, isInactive)" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
+    s = s & "Public Function PreviewSummaryHasReviewRows(ByVal rows As Collection) As Boolean" & vbCrLf
+    s = s & "    Dim rowText As Variant" & vbCrLf
+    s = s & "    Dim rowParts As Variant" & vbCrLf
+    s = s & "    Dim rowCount As Long" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If rows Is Nothing Then Exit Function" & vbCrLf
+    s = s & "    For Each rowText In rows" & vbCrLf
+    s = s & "        rowParts = Split(CStr(rowText), vbTab)" & vbCrLf
+    s = s & "        If UBound(rowParts) >= 2 Then" & vbCrLf
+    s = s & "            If InStr(1, CStr(rowParts(0)), ""(unhighlighted)"", vbTextCompare) > 0 Then" & vbCrLf
+    s = s & "                If CStr(rowParts(2)) <> ""inactive"" Then" & vbCrLf
+    s = s & "                    rowCount = CLng(Val(CStr(rowParts(1))))" & vbCrLf
+    s = s & "                    If rowCount > 0 Then" & vbCrLf
+    s = s & "                        PreviewSummaryHasReviewRows = True" & vbCrLf
+    s = s & "                        Exit Function" & vbCrLf
+    s = s & "                    End If" & vbCrLf
+    s = s & "                End If" & vbCrLf
+    s = s & "            End If" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "    Next rowText" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Function PreviewReviewSummaryText(ByVal rows As Collection) As String" & vbCrLf
+    s = s & "    Dim rowText As Variant" & vbCrLf
+    s = s & "    Dim rowParts As Variant" & vbCrLf
+    s = s & "    Dim itemText As String" & vbCrLf
+    s = s & "    Dim countText As String" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If rows Is Nothing Then Exit Function" & vbCrLf
+    s = s & "    For Each rowText In rows" & vbCrLf
+    s = s & "        rowParts = Split(CStr(rowText), vbTab)" & vbCrLf
+    s = s & "        If UBound(rowParts) >= 2 Then" & vbCrLf
+    s = s & "            If InStr(1, CStr(rowParts(0)), ""(unhighlighted)"", vbTextCompare) > 0 Then" & vbCrLf
+    s = s & "                If CStr(rowParts(2)) <> ""inactive"" And Val(CStr(rowParts(1))) > 0 Then" & vbCrLf
+    s = s & "                    itemText = Replace(CStr(rowParts(0)), "" (unhighlighted)"", """", 1, -1, vbTextCompare)" & vbCrLf
+    s = s & "                    countText = CStr(rowParts(1))" & vbCrLf
+    s = s & "                    If Len(PreviewReviewSummaryText) > 0 Then PreviewReviewSummaryText = PreviewReviewSummaryText & ""; """ & vbCrLf
+    s = s & "                    PreviewReviewSummaryText = PreviewReviewSummaryText & itemText & "": "" & countText" & vbCrLf
+    s = s & "                End If" & vbCrLf
+    s = s & "            End If" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "    Next rowText" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "Private Function PreviewSummaryRowText(ByVal itemText As String, ByVal countValue As Variant, ByVal isUnhighlighted As Boolean, ByVal isInactive As Boolean) As String" & vbCrLf
     s = s & "    Dim displayText As String" & vbCrLf
     s = s & "    displayText = CleanPreviewSummaryCell(itemText)" & vbCrLf
@@ -2441,6 +2501,7 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "" & vbCrLf
     s = s & "    EndPreviewActionIndicator" & vbCrLf
     s = s & "    BeginPreviewChangeCollection" & vbCrLf
+    s = s & "    BeginPreviewReviewCollection" & vbCrLf
     s = s & "    On Error GoTo SafeExit" & vbCrLf
     s = s & "    If sourceForm Is Nothing Then Exit Sub" & vbCrLf
     s = s & "    Set previewButton = sourceForm.Controls(""cmdPreview"")" & vbCrLf
@@ -2523,6 +2584,7 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "    RestorePreviewShading" & vbCrLf
     s = s & "    RestorePreviewHighlighting" & vbCrLf
     s = s & "    ClearPreviewChangeCollection" & vbCrLf
+    s = s & "    ClearPreviewReviewCollection" & vbCrLf
     s = s & "    EndCleanupProgress" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
@@ -2554,6 +2616,150 @@ Private Function modCleanupHelpers_Code() As String
     s = s & "    Set gPreviewChangePages = New Collection" & vbCrLf
     s = s & "    Set gPreviewChangeKeys = CreateObject(""Scripting.Dictionary"")" & vbCrLf
     s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Sub BeginPreviewReviewCollection()" & vbCrLf
+    s = s & "    Set gPreviewReviewDocuments = New Collection" & vbCrLf
+    s = s & "    Set gPreviewReviewStarts = New Collection" & vbCrLf
+    s = s & "    Set gPreviewReviewEnds = New Collection" & vbCrLf
+    s = s & "    Set gPreviewReviewLabels = New Collection" & vbCrLf
+    s = s & "    Set gPreviewReviewContexts = New Collection" & vbCrLf
+    s = s & "    Set gPreviewReviewKeys = CreateObject(""Scripting.Dictionary"")" & vbCrLf
+    s = s & "    gPreviewReviewIndex = 0" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Sub ClearPreviewReviewCollection()" & vbCrLf
+    s = s & "    Set gPreviewReviewDocuments = Nothing" & vbCrLf
+    s = s & "    Set gPreviewReviewStarts = Nothing" & vbCrLf
+    s = s & "    Set gPreviewReviewEnds = Nothing" & vbCrLf
+    s = s & "    Set gPreviewReviewLabels = Nothing" & vbCrLf
+    s = s & "    Set gPreviewReviewContexts = Nothing" & vbCrLf
+    s = s & "    Set gPreviewReviewKeys = Nothing" & vbCrLf
+    s = s & "    gPreviewReviewIndex = 0" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Sub RegisterPreviewReviewFinding(ByVal targetRange As Range, ByVal findingLabel As String, Optional ByVal findingContext As String = """")" & vbCrLf
+    s = s & "    Dim reviewRange As Range" & vbCrLf
+    s = s & "    Dim reviewKey As String" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    On Error GoTo SafeExit" & vbCrLf
+    s = s & "    If targetRange Is Nothing Then Exit Sub" & vbCrLf
+    s = s & "    If gPreviewReviewDocuments Is Nothing Then BeginPreviewReviewCollection" & vbCrLf
+    s = s & "    Set reviewRange = targetRange.Duplicate" & vbCrLf
+    s = s & "    If reviewRange.Start < 0 Then Exit Sub" & vbCrLf
+    s = s & "    If reviewRange.End < reviewRange.Start Then Exit Sub" & vbCrLf
+    s = s & "    If reviewRange.End > reviewRange.Document.Content.End Then reviewRange.End = reviewRange.Document.Content.End" & vbCrLf
+    s = s & "    reviewKey = PreviewShadingDocumentIdentity(reviewRange.Document) & ""|"" & _" & vbCrLf
+    s = s & "                CStr(reviewRange.Start) & ""|"" & CStr(reviewRange.End) & ""|"" & _" & vbCrLf
+    s = s & "                CleanPreviewSummaryCell(findingLabel)" & vbCrLf
+    s = s & "    If gPreviewReviewKeys.Exists(reviewKey) Then Exit Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    gPreviewReviewKeys.Add reviewKey, True" & vbCrLf
+    s = s & "    gPreviewReviewDocuments.Add reviewRange.Document" & vbCrLf
+    s = s & "    gPreviewReviewStarts.Add CLng(reviewRange.Start)" & vbCrLf
+    s = s & "    gPreviewReviewEnds.Add CLng(reviewRange.End)" & vbCrLf
+    s = s & "    gPreviewReviewLabels.Add CleanPreviewSummaryCell(findingLabel)" & vbCrLf
+    s = s & "    gPreviewReviewContexts.Add CompactPreviewFindingContext(reviewRange, findingContext)" & vbCrLf
+    s = s & "SafeExit:" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Function PreviewReviewFindingCount(ByVal previewDocument As Document) As Long" & vbCrLf
+    s = s & "    Dim findingIndex As Long" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    On Error GoTo SafeExit" & vbCrLf
+    s = s & "    If previewDocument Is Nothing Then Exit Function" & vbCrLf
+    s = s & "    If gPreviewReviewDocuments Is Nothing Then Exit Function" & vbCrLf
+    s = s & "    For findingIndex = 1 To gPreviewReviewDocuments.Count" & vbCrLf
+    s = s & "        If gPreviewReviewDocuments(findingIndex) Is previewDocument Then" & vbCrLf
+    s = s & "            PreviewReviewFindingCount = PreviewReviewFindingCount + 1" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "    Next findingIndex" & vbCrLf
+    s = s & "SafeExit:" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Function NavigateNextPreviewReviewFinding( _" & vbCrLf
+    s = s & "    ByVal previewDocument As Document, _" & vbCrLf
+    s = s & "    ByRef findingLabel As String, _" & vbCrLf
+    s = s & "    ByRef findingContext As String, _" & vbCrLf
+    s = s & "    ByRef findingOrdinal As Long, _" & vbCrLf
+    s = s & "    ByRef findingTotal As Long) As Boolean" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim findingIndex As Long" & vbCrLf
+    s = s & "    Dim checkedCount As Long" & vbCrLf
+    s = s & "    Dim targetRange As Range" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    On Error GoTo SafeExit" & vbCrLf
+    s = s & "    findingTotal = PreviewReviewFindingCount(previewDocument)" & vbCrLf
+    s = s & "    If findingTotal = 0 Then Exit Function" & vbCrLf
+    s = s & "    If gPreviewReviewIndex < 0 Or gPreviewReviewIndex > gPreviewReviewDocuments.Count Then gPreviewReviewIndex = 0" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    findingIndex = gPreviewReviewIndex" & vbCrLf
+    s = s & "    Do While checkedCount < gPreviewReviewDocuments.Count" & vbCrLf
+    s = s & "        findingIndex = findingIndex + 1" & vbCrLf
+    s = s & "        If findingIndex > gPreviewReviewDocuments.Count Then findingIndex = 1" & vbCrLf
+    s = s & "        checkedCount = checkedCount + 1" & vbCrLf
+    s = s & "        If gPreviewReviewDocuments(findingIndex) Is previewDocument Then Exit Do" & vbCrLf
+    s = s & "    Loop" & vbCrLf
+    s = s & "    If checkedCount >= gPreviewReviewDocuments.Count Then" & vbCrLf
+    s = s & "        If Not (gPreviewReviewDocuments(findingIndex) Is previewDocument) Then Exit Function" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set targetRange = previewDocument.Range( _" & vbCrLf
+    s = s & "        CLng(gPreviewReviewStarts(findingIndex)), _" & vbCrLf
+    s = s & "        CLng(gPreviewReviewEnds(findingIndex)))" & vbCrLf
+    s = s & "    If targetRange.End > targetRange.Start Then" & vbCrLf
+    s = s & "        targetRange.Select" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        targetRange.Collapse wdCollapseStart" & vbCrLf
+    s = s & "        targetRange.Select" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    gPreviewReviewIndex = findingIndex" & vbCrLf
+    s = s & "    findingLabel = CStr(gPreviewReviewLabels(findingIndex))" & vbCrLf
+    s = s & "    findingContext = CStr(gPreviewReviewContexts(findingIndex))" & vbCrLf
+    s = s & "    findingOrdinal = PreviewReviewOrdinal(previewDocument, findingIndex)" & vbCrLf
+    s = s & "    NavigateNextPreviewReviewFinding = True" & vbCrLf
+    s = s & "SafeExit:" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function PreviewReviewOrdinal(ByVal previewDocument As Document, ByVal targetIndex As Long) As Long" & vbCrLf
+    s = s & "    Dim findingIndex As Long" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    On Error GoTo SafeExit" & vbCrLf
+    s = s & "    For findingIndex = 1 To gPreviewReviewDocuments.Count" & vbCrLf
+    s = s & "        If gPreviewReviewDocuments(findingIndex) Is previewDocument Then" & vbCrLf
+    s = s & "            PreviewReviewOrdinal = PreviewReviewOrdinal + 1" & vbCrLf
+    s = s & "            If findingIndex = targetIndex Then Exit Function" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "    Next findingIndex" & vbCrLf
+    s = s & "SafeExit:" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function CompactPreviewFindingContext(ByVal targetRange As Range, ByVal suppliedContext As String) As String" & vbCrLf
+    s = s & "    Dim contextText As String" & vbCrLf
+    s = s & "    Dim paragraphRange As Range" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    contextText = CleanPreviewSummaryCell(suppliedContext)" & vbCrLf
+    s = s & "    If Len(contextText) = 0 Then" & vbCrLf
+    s = s & "        On Error Resume Next" & vbCrLf
+    s = s & "        Set paragraphRange = targetRange.Paragraphs(1).Range.Duplicate" & vbCrLf
+    s = s & "        On Error GoTo 0" & vbCrLf
+    s = s & "        If Not paragraphRange Is Nothing Then contextText = CleanPreviewContextText(paragraphRange.Text)" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    If Len(contextText) = 0 Then contextText = ""Protected structure at this document location.""" & vbCrLf
+    s = s & "    If Len(contextText) > 140 Then contextText = Left$(contextText, 137) & ""...""" & vbCrLf
+    s = s & "    CompactPreviewFindingContext = contextText" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Function CleanPreviewContextText(ByVal textValue As String) As String" & vbCrLf
+    s = s & "    CleanPreviewContextText = Replace(textValue, Chr$(7), "" "")" & vbCrLf
+    s = s & "    CleanPreviewContextText = Replace(CleanPreviewContextText, vbCr, "" "")" & vbCrLf
+    s = s & "    CleanPreviewContextText = Replace(CleanPreviewContextText, vbLf, "" "")" & vbCrLf
+    s = s & "    CleanPreviewContextText = Replace(CleanPreviewContextText, vbTab, "" "")" & vbCrLf
+    s = s & "    Do While InStr(1, CleanPreviewContextText, ""  "", vbBinaryCompare) > 0" & vbCrLf
+    s = s & "        CleanPreviewContextText = Replace(CleanPreviewContextText, ""  "", "" "")" & vbCrLf
+    s = s & "    Loop" & vbCrLf
+    s = s & "    CleanPreviewContextText = Trim$(CleanPreviewContextText)" & vbCrLf
+    s = s & "End Function" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "Private Sub ClearPreviewChangeCollection()" & vbCrLf
     s = s & "    Set gPreviewChangeDocuments = Nothing" & vbCrLf
@@ -7484,6 +7690,7 @@ Private Function modAlphaSmokeRunner_Code() As String
     s = s & "    Dim userHighlightRange As Range" & vbCrLf
     s = s & "    Dim plainHighlightRange As Range" & vbCrLf
     s = s & "    Dim mixedHighlightRange As Range" & vbCrLf
+    s = s & "    Dim reviewFindingRange As Range" & vbCrLf
     s = s & "    Dim smokeStage As String" & vbCrLf
     s = s & "    Dim i As Long" & vbCrLf
     s = s & "" & vbCrLf
@@ -7590,6 +7797,32 @@ Private Function modAlphaSmokeRunner_Code() As String
     s = s & "    SmokeCloseForm panel" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "    Set rows = NewPreviewSummaryRows()" & vbCrLf
+    s = s & "    AddPreviewSummaryRow rows, ""Protected markers"", 1, True" & vbCrLf
+    s = s & "    BeginPreviewReviewCollection" & vbCrLf
+    s = s & "    Set reviewFindingRange = previewDocument.Paragraphs(90).Range.Words(1).Duplicate" & vbCrLf
+    s = s & "    RegisterPreviewReviewFinding reviewFindingRange, ""Protected marker"", ""Required Word structure; left unchanged.""" & vbCrLf
+    s = s & "    Set panel = VBA.UserForms.Add(""frmPreviewActions"")" & vbCrLf
+    s = s & "    panel.ConfigureSummary Nothing, ""Review Detail Smoke"", rows" & vbCrLf
+    s = s & "    SmokeRequireValue panel.Controls(""cmdReviewDetails"").Visible, ""An active unhighlighted count did not expose Review details.""" & vbCrLf
+    s = s & "    SmokeRequireValue panel.Controls(""cmdReviewDetails"").Enabled, ""Review details was not enabled for a locatable finding.""" & vbCrLf
+    s = s & "    panel.Controls(""cmdReviewDetails"").Value = True" & vbCrLf
+    s = s & "    SmokeRequireValue previewWindow.Selection.Start = reviewFindingRange.Start, ""Review details did not move to the registered finding.""" & vbCrLf
+    s = s & "    SmokeRequireValue InStr(1, panel.Controls(""lblReviewContext"").Caption, ""Protected marker"", vbTextCompare) > 0, ""Review details did not show the finding label.""" & vbCrLf
+    s = s & "    SmokeRequireValue InStr(1, panel.Controls(""lblReviewContext"").Caption, ""Required Word structure"", vbTextCompare) > 0, ""Review details did not show useful context.""" & vbCrLf
+    s = s & "    SmokeRequireValue panel.Controls(""cmdReviewDetails"").Caption = ""Next detail"", ""A locatable finding did not expose the next-detail action.""" & vbCrLf
+    s = s & "    SmokeCloseForm panel" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set rows = NewPreviewSummaryRows()" & vbCrLf
+    s = s & "    AddPreviewSummaryRow rows, ""Document properties"", 2, True" & vbCrLf
+    s = s & "    BeginPreviewReviewCollection" & vbCrLf
+    s = s & "    Set panel = VBA.UserForms.Add(""frmPreviewActions"")" & vbCrLf
+    s = s & "    panel.ConfigureSummary Nothing, ""Document-Level Review Smoke"", rows" & vbCrLf
+    s = s & "    panel.Controls(""cmdReviewDetails"").Value = True" & vbCrLf
+    s = s & "    SmokeRequireValue InStr(1, panel.Controls(""lblReviewContext"").Caption, ""Document-level result"", vbTextCompare) > 0, ""A nonlocatable finding did not explain its document-level scope.""" & vbCrLf
+    s = s & "    SmokeRequireValue Not panel.Controls(""cmdReviewDetails"").Enabled, ""A document-level explanation remained enabled after review.""" & vbCrLf
+    s = s & "    SmokeCloseForm panel" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set rows = NewPreviewSummaryRows()" & vbCrLf
     s = s & "    AddPreviewSummaryRow rows, ""Smoke row"", 1" & vbCrLf
     s = s & "    Set panel = VBA.UserForms.Add(""frmPreviewActions"")" & vbCrLf
     s = s & "    panel.ConfigureSummary Nothing, ""Apply Smoke"", rows" & vbCrLf
@@ -7658,7 +7891,7 @@ Private Function modAlphaSmokeRunner_Code() As String
     s = s & "    RestorePreviewViewSession" & vbCrLf
     s = s & "    SmokeRequireValue Not PreviewViewSessionIsActive(), ""Closed-document cleanup left the session active.""" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "    RunPreviewLifecycleSmokeChecks = ""PASS|Preview Lifecycle|Reading View, equal Page/Change navigation, user-highlight preservation, modeless Preview OFF, preview formatting, switched windows, closed documents, and progress cleanup passed.""" & vbCrLf
+    s = s & "    RunPreviewLifecycleSmokeChecks = ""PASS|Preview Lifecycle|Reading View, equal Page/Change navigation, compact unhighlighted-detail review, user-highlight preservation, modeless Preview OFF, preview formatting, switched windows, closed documents, and progress cleanup passed.""" & vbCrLf
     s = s & "    GoTo SmokeCleanup" & vbCrLf
     s = s & "SmokeFail:" & vbCrLf
     s = s & "    RunPreviewLifecycleSmokeChecks = ""FAIL|Preview Lifecycle|"" & smokeStage & "": "" & CStr(Err.Number) & "" - "" & Err.Description" & vbCrLf
@@ -7671,6 +7904,46 @@ Private Function modAlphaSmokeRunner_Code() As String
     s = s & "    If Not originalDocument Is Nothing Then originalDocument.Activate" & vbCrLf
     s = s & "    On Error GoTo 0" & vbCrLf
     s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Public Sub ShowPreviewReviewVisualProbe()" & vbCrLf
+    s = s & "    Dim originalDocument As Document" & vbCrLf
+    s = s & "    Dim probeDocument As Document" & vbCrLf
+    s = s & "    Dim panel As Object" & vbCrLf
+    s = s & "    Dim rows As Collection" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    On Error GoTo ProbeCleanup" & vbCrLf
+    s = s & "    If Documents.Count > 0 Then Set originalDocument = ActiveDocument" & vbCrLf
+    s = s & "    Set probeDocument = Documents.Add" & vbCrLf
+    s = s & "    probeDocument.Content.Text = _" & vbCrLf
+    s = s & "        ""Preview review-detail visual probe"" & vbCr & _" & vbCrLf
+    s = s & "        ""Protected empty-cell marker example"" & vbCr & _" & vbCrLf
+    s = s & "        ""Protected table-row marker example"" & vbCr & _" & vbCrLf
+    s = s & "        ""Skipped unsupported structure example"" & vbCr" & vbCrLf
+    s = s & "    probeDocument.Activate" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    BeginPreviewReviewCollection" & vbCrLf
+    s = s & "    RegisterPreviewReviewFinding probeDocument.Paragraphs(2).Range.Words(1), _" & vbCrLf
+    s = s & "        ""Protected empty cell"", ""Required empty-cell marker; left unchanged.""" & vbCrLf
+    s = s & "    RegisterPreviewReviewFinding probeDocument.Paragraphs(3).Range.Words(1), _" & vbCrLf
+    s = s & "        ""Protected row marker"", ""Required table-row boundary; left unchanged.""" & vbCrLf
+    s = s & "    RegisterPreviewReviewFinding probeDocument.Paragraphs(4).Range.Words(1), _" & vbCrLf
+    s = s & "        ""Skipped structure"", ""CleanupSuite could not prove this structure safe to change.""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Set rows = NewPreviewSummaryRows()" & vbCrLf
+    s = s & "    AddPreviewSummaryRow rows, ""Protected blank markers"", 3, True" & vbCrLf
+    s = s & "    AddPreviewSummaryRow rows, ""Document properties"", 2, True" & vbCrLf
+    s = s & "    Set panel = VBA.UserForms.Add(""frmPreviewActions"")" & vbCrLf
+    s = s & "    panel.ConfigureSummary Nothing, ""Review Details Visual Probe"", rows" & vbCrLf
+    s = s & "    panel.Show vbModal" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "ProbeCleanup:" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    RestoreCleanupSuiteTransientState" & vbCrLf
+    s = s & "    SmokeCloseForm panel" & vbCrLf
+    s = s & "    If Not probeDocument Is Nothing Then probeDocument.Close SaveChanges:=wdDoNotSaveChanges" & vbCrLf
+    s = s & "    If Not originalDocument Is Nothing Then originalDocument.Activate" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "Private Function SmokeStyleCleanupApplyCheck(ByVal repoRoot As String) As Variant" & vbCrLf
     s = s & "    Dim originalDocument As Document" & vbCrLf
@@ -15249,12 +15522,28 @@ Private Function frmDuplicateDetector_Code() As String
     s = s & "                        If includeEmptyParagraphs Then paras.Add p" & vbCrLf
     s = s & "                    Case cbpkProtectedEmptyCell" & vbCrLf
     s = s & "                        protectedEmptyCells = protectedEmptyCells + 1" & vbCrLf
+    s = s & "                        If previewOnly And includeEmptyParagraphs Then" & vbCrLf
+    s = s & "                            RegisterPreviewReviewFinding p.Range, ""Protected empty cell"", _" & vbCrLf
+    s = s & "                                ""Required empty-cell marker; Duplicate Paragraph Remover will leave it unchanged.""" & vbCrLf
+    s = s & "                        End If" & vbCrLf
     s = s & "                    Case cbpkProtectedRowMarker" & vbCrLf
     s = s & "                        protectedRowMarkers = protectedRowMarkers + 1" & vbCrLf
+    s = s & "                        If previewOnly And includeEmptyParagraphs Then" & vbCrLf
+    s = s & "                            RegisterPreviewReviewFinding p.Range, ""Protected row marker"", _" & vbCrLf
+    s = s & "                                ""Required table-row boundary; row deletion belongs only to Table Cleaner.""" & vbCrLf
+    s = s & "                        End If" & vbCrLf
     s = s & "                    Case cbpkProtectedFinalDocument" & vbCrLf
     s = s & "                        protectedFinalMarkers = protectedFinalMarkers + 1" & vbCrLf
+    s = s & "                        If previewOnly And includeEmptyParagraphs Then" & vbCrLf
+    s = s & "                            RegisterPreviewReviewFinding p.Range, ""Protected final marker"", _" & vbCrLf
+    s = s & "                                ""Required final-document marker; it cannot be removed safely.""" & vbCrLf
+    s = s & "                        End If" & vbCrLf
     s = s & "                    Case cbpkUnsupported" & vbCrLf
     s = s & "                        skippedStructures = skippedStructures + 1" & vbCrLf
+    s = s & "                        If previewOnly And includeEmptyParagraphs Then" & vbCrLf
+    s = s & "                            RegisterPreviewReviewFinding p.Range, ""Skipped structure"", _" & vbCrLf
+    s = s & "                                ""CleanupSuite could not prove that this blank structure was safe to remove.""" & vbCrLf
+    s = s & "                        End If" & vbCrLf
     s = s & "                End Select" & vbCrLf
     s = s & "            End If" & vbCrLf
     s = s & "        End If" & vbCrLf
@@ -18160,6 +18449,8 @@ Private Function frmPreviewActions_Code() As String
     s = s & "Private mBrowseTargetCaptured As Boolean" & vbCrLf
     s = s & "Private mEditablePreviewRestored As Boolean" & vbCrLf
     s = s & "Private mNavigationDetached As Boolean" & vbCrLf
+    s = s & "Private mHasReviewRows As Boolean" & vbCrLf
+    s = s & "Private mReviewDetailCount As Long" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "Private Const FORM_W As Single = 283" & vbCrLf
     s = s & "Private Const MIN_FORM_H As Single = 90" & vbCrLf
@@ -18169,6 +18460,7 @@ Private Function frmPreviewActions_Code() As String
     s = s & "Private Const BTN_W As Single = (CONTENT_W - (2 * GAP)) / 3" & vbCrLf
     s = s & "Private Const SUMMARY_BOTTOM_GAP As Single = 6" & vbCrLf
     s = s & "Private Const ACTION_TOP As Single = 17" & vbCrLf
+    s = s & "Private Const REVIEW_H As Single = 30" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "Public Sub Configure(sourceForm As Object, toolName As String, summaryText As String)" & vbCrLf
     s = s & "    Dim rows As Collection" & vbCrLf
@@ -18185,8 +18477,10 @@ Private Function frmPreviewActions_Code() As String
     s = s & "    mEditablePreviewRestored = False" & vbCrLf
     s = s & "    mResumeModelessAfterModal = False" & vbCrLf
     s = s & "    mNavigationDetached = False" & vbCrLf
+    s = s & "    mHasReviewRows = PreviewSummaryHasReviewRows(rows)" & vbCrLf
     s = s & "    Set mPreviewDocument = ActiveDocument" & vbCrLf
     s = s & "    Set mPreviewWindow = ActiveWindow" & vbCrLf
+    s = s & "    mReviewDetailCount = PreviewReviewFindingCount(mPreviewDocument)" & vbCrLf
     s = s & "    On Error Resume Next" & vbCrLf
     s = s & "    mOriginalBrowseTarget = Application.Browser.Target" & vbCrLf
     s = s & "    mBrowseTargetCaptured = (Err.Number = 0)" & vbCrLf
@@ -18214,6 +18508,16 @@ Private Function frmPreviewActions_Code() As String
     s = s & "    cmdPreviousPage.Visible = True" & vbCrLf
     s = s & "    cmdNextPage.Visible = True" & vbCrLf
     s = s & "    cmdNextChange.Visible = True" & vbCrLf
+    s = s & "    cmdReviewDetails.Caption = ""Review details""" & vbCrLf
+    s = s & "    cmdReviewDetails.Enabled = mHasReviewRows" & vbCrLf
+    s = s & "    cmdReviewDetails.Visible = mHasReviewRows" & vbCrLf
+    s = s & "    If mReviewDetailCount > 0 Then" & vbCrLf
+    s = s & "        lblReviewContext.Caption = ""Inspect one locatable protected finding at a time.""" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        lblReviewContext.Caption = ""Explain these document-level or nonlocatable results.""" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    lblReviewContext.ControlTipText = lblReviewContext.Caption" & vbCrLf
+    s = s & "    lblReviewContext.Visible = mHasReviewRows" & vbCrLf
     s = s & "    LayoutPanel" & vbCrLf
     s = s & "    UpdateNavigationButtonStates" & vbCrLf
     s = s & "    mApplyButtonBackColor = cmdApply.BackColor" & vbCrLf
@@ -18226,6 +18530,7 @@ Private Function frmPreviewActions_Code() As String
     s = s & "    Dim buttonHeight As Single" & vbCrLf
     s = s & "    Dim navigationTop As Single" & vbCrLf
     s = s & "    Dim navigationWidth As Single" & vbCrLf
+    s = s & "    Dim reviewTop As Single" & vbCrLf
     s = s & "    Set rows = mSummaryRows" & vbCrLf
     s = s & "    Me.Caption = """"" & vbCrLf
     s = s & "    Me.Width = FORM_W" & vbCrLf
@@ -18237,7 +18542,12 @@ Private Function frmPreviewActions_Code() As String
     s = s & "    Else" & vbCrLf
     s = s & "        mSummaryTop = ACTION_TOP + buttonHeight + GAP" & vbCrLf
     s = s & "    End If" & vbCrLf
-    s = s & "    desiredInsideH = mSummaryTop + SummaryTableHeight(mSummaryRows) + SUMMARY_BOTTOM_GAP" & vbCrLf
+    s = s & "    reviewTop = mSummaryTop + SummaryTableHeight(mSummaryRows) + GAP" & vbCrLf
+    s = s & "    If mHasReviewRows Then" & vbCrLf
+    s = s & "        desiredInsideH = reviewTop + REVIEW_H + SUMMARY_BOTTOM_GAP" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        desiredInsideH = mSummaryTop + SummaryTableHeight(mSummaryRows) + SUMMARY_BOTTOM_GAP" & vbCrLf
+    s = s & "    End If" & vbCrLf
     s = s & "    Me.Height = MaxSingle(MIN_FORM_H, desiredInsideH)" & vbCrLf
     s = s & "    If Me.InsideHeight < desiredInsideH Then" & vbCrLf
     s = s & "        Me.Height = Me.Height + (desiredInsideH - Me.InsideHeight)" & vbCrLf
@@ -18257,10 +18567,14 @@ Private Function frmPreviewActions_Code() As String
     s = s & "    cmdPreviousPage.Move M + navigationWidth + GAP, navigationTop, navigationWidth, buttonHeight" & vbCrLf
     s = s & "    cmdNextPage.Move M + (2 * (navigationWidth + GAP)), navigationTop, navigationWidth, buttonHeight" & vbCrLf
     s = s & "    cmdNextChange.Move M + (3 * (navigationWidth + GAP)), navigationTop, navigationWidth, buttonHeight" & vbCrLf
+    s = s & "    cmdReviewDetails.Move M, reviewTop, BTN_W, REVIEW_H" & vbCrLf
+    s = s & "    lblReviewContext.Move M + BTN_W + GAP, reviewTop, CONTENT_W - BTN_W - GAP, REVIEW_H" & vbCrLf
     s = s & "    cmdPreviousChange.Visible = mPreviewOn" & vbCrLf
     s = s & "    cmdPreviousPage.Visible = mPreviewOn" & vbCrLf
     s = s & "    cmdNextPage.Visible = mPreviewOn" & vbCrLf
     s = s & "    cmdNextChange.Visible = mPreviewOn" & vbCrLf
+    s = s & "    cmdReviewDetails.Visible = (mPreviewOn And mHasReviewRows)" & vbCrLf
+    s = s & "    lblReviewContext.Visible = (mPreviewOn And mHasReviewRows)" & vbCrLf
     s = s & "    FitPreviewButtonCaption cmdPreview" & vbCrLf
     s = s & "    FitPreviewButtonCaption cmdClear" & vbCrLf
     s = s & "    FitPreviewButtonCaption cmdApply" & vbCrLf
@@ -18268,6 +18582,7 @@ Private Function frmPreviewActions_Code() As String
     s = s & "    FitPreviewButtonCaption cmdPreviousPage" & vbCrLf
     s = s & "    FitPreviewButtonCaption cmdNextPage" & vbCrLf
     s = s & "    FitPreviewButtonCaption cmdNextChange" & vbCrLf
+    s = s & "    FitPreviewButtonCaption cmdReviewDetails" & vbCrLf
     s = s & "    lblSummary.Move M, mSummaryTop, 0, 0" & vbCrLf
     s = s & "    lblSummary.Visible = False" & vbCrLf
     s = s & "    lblTitle.Visible = False" & vbCrLf
@@ -18396,6 +18711,11 @@ Private Function frmPreviewActions_Code() As String
     s = s & "    StyleButton cmdPreviousPage, True" & vbCrLf
     s = s & "    StyleButton cmdNextPage, True" & vbCrLf
     s = s & "    StyleButton cmdNextChange, True" & vbCrLf
+    s = s & "    StyleButton cmdReviewDetails, True" & vbCrLf
+    s = s & "    StyleLabel lblReviewContext, 7.5, False, RGB(55, 60, 68)" & vbCrLf
+    s = s & "    cmdReviewDetails.BackColor = RGB(235, 242, 250)" & vbCrLf
+    s = s & "    cmdReviewDetails.ForeColor = RGB(31, 78, 121)" & vbCrLf
+    s = s & "    lblReviewContext.WordWrap = True" & vbCrLf
     s = s & "    lblButtonMeasure.Visible = False" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
@@ -18426,7 +18746,8 @@ Private Function frmPreviewActions_Code() As String
     s = s & "    On Error Resume Next" & vbCrLf
     s = s & "    captions = Array(cmdPreview.Caption, cmdClear.Caption, cmdApply.Caption, _" & vbCrLf
     s = s & "                     cmdPreviousChange.Caption, cmdPreviousPage.Caption, _" & vbCrLf
-    s = s & "                     cmdNextPage.Caption, cmdNextChange.Caption)" & vbCrLf
+    s = s & "                     cmdNextPage.Caption, cmdNextChange.Caption, _" & vbCrLf
+    s = s & "                     cmdReviewDetails.Caption)" & vbCrLf
     s = s & "    With lblButtonMeasure" & vbCrLf
     s = s & "        .Visible = False" & vbCrLf
     s = s & "        .AutoSize = True" & vbCrLf
@@ -18489,6 +18810,7 @@ Private Function frmPreviewActions_Code() As String
     s = s & "    StyleNavigationButton cmdPreviousPage, False, False" & vbCrLf
     s = s & "    StyleNavigationButton cmdNextPage, False, False" & vbCrLf
     s = s & "    StyleNavigationButton cmdNextChange, True, False" & vbCrLf
+    s = s & "    cmdReviewDetails.Enabled = False" & vbCrLf
     s = s & "    Me.Repaint" & vbCrLf
     s = s & "    On Error GoTo 0" & vbCrLf
     s = s & "End Sub" & vbCrLf
@@ -18503,6 +18825,7 @@ Private Function frmPreviewActions_Code() As String
     s = s & "    cmdClear.Enabled = True" & vbCrLf
     s = s & "    cmdApply.Enabled = True" & vbCrLf
     s = s & "    UpdateNavigationButtonStates" & vbCrLf
+    s = s & "    cmdReviewDetails.Enabled = (mPreviewOn And mHasReviewRows)" & vbCrLf
     s = s & "    Me.Repaint" & vbCrLf
     s = s & "    On Error GoTo 0" & vbCrLf
     s = s & "End Sub" & vbCrLf
@@ -18538,6 +18861,45 @@ Private Function frmPreviewActions_Code() As String
     s = s & "" & vbCrLf
     s = s & "Private Sub cmdNextChange_Click()" & vbCrLf
     s = s & "    NavigatePreviewChange True" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub cmdReviewDetails_Click()" & vbCrLf
+    s = s & "    Dim findingLabel As String" & vbCrLf
+    s = s & "    Dim findingContext As String" & vbCrLf
+    s = s & "    Dim findingOrdinal As Long" & vbCrLf
+    s = s & "    Dim findingTotal As Long" & vbCrLf
+    s = s & "    Dim resumePanelHere As Boolean" & vbCrLf
+    s = s & "    Dim displayText As String" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    On Error GoTo ReviewErr" & vbCrLf
+    s = s & "    If Not mPreviewOn Then Exit Sub" & vbCrLf
+    s = s & "    If Not PreviewTargetIsActive() Then Exit Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    mReviewDetailCount = PreviewReviewFindingCount(mPreviewDocument)" & vbCrLf
+    s = s & "    If mReviewDetailCount > 0 Then" & vbCrLf
+    s = s & "        resumePanelHere = DetachPreviewPanelForNavigationIfNeeded()" & vbCrLf
+    s = s & "        FocusPreviewDocumentWindow" & vbCrLf
+    s = s & "        If NavigateNextPreviewReviewFinding(mPreviewDocument, findingLabel, findingContext, findingOrdinal, findingTotal) Then" & vbCrLf
+    s = s & "            displayText = CStr(findingOrdinal) & ""/"" & CStr(findingTotal) & "" "" & findingLabel & "": "" & findingContext" & vbCrLf
+    s = s & "            lblReviewContext.Caption = displayText" & vbCrLf
+    s = s & "            lblReviewContext.ControlTipText = displayText" & vbCrLf
+    s = s & "            cmdReviewDetails.Caption = ""Next detail""" & vbCrLf
+    s = s & "            cmdReviewDetails.ControlTipText = ""Move to the next protected or unhighlighted finding""" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "        ResumePreviewPanelAfterNavigation resumePanelHere" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        displayText = PreviewReviewSummaryText(mSummaryRows)" & vbCrLf
+    s = s & "        If Len(displayText) = 0 Then displayText = ""No review-only details are available.""" & vbCrLf
+    s = s & "        displayText = ""Document-level result: "" & displayText" & vbCrLf
+    s = s & "        lblReviewContext.Caption = displayText" & vbCrLf
+    s = s & "        lblReviewContext.ControlTipText = displayText" & vbCrLf
+    s = s & "        cmdReviewDetails.Enabled = False" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    Me.Repaint" & vbCrLf
+    s = s & "    Exit Sub" & vbCrLf
+    s = s & "ReviewErr:" & vbCrLf
+    s = s & "    lblReviewContext.Caption = ""Could not open the review detail.""" & vbCrLf
+    s = s & "    Me.Repaint" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "Private Sub NavigatePreviewPage(ByVal moveForward As Boolean)" & vbCrLf
@@ -18673,6 +19035,7 @@ Private Function frmPreviewActions_Code() As String
     s = s & "        If Not mSourceForm Is Nothing Then mSourceForm.Hide" & vbCrLf
     s = s & "        MarkCleanupToolApplied" & vbCrLf
     s = s & "        Set gPreviewActionPanel = Nothing" & vbCrLf
+    s = s & "        ClearPreviewReviewCollection" & vbCrLf
     s = s & "        Unload Me" & vbCrLf
     s = s & "        Exit Sub" & vbCrLf
     s = s & "    End If" & vbCrLf
@@ -18681,6 +19044,7 @@ Private Function frmPreviewActions_Code() As String
     s = s & "        CallByName mSourceForm, ""RunAfterPreview"", VbMethod" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    ClearPreviewScopeRange" & vbCrLf
+    s = s & "    ClearPreviewReviewCollection" & vbCrLf
     s = s & "    Set gPreviewActionPanel = Nothing" & vbCrLf
     s = s & "    Unload Me" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
@@ -18706,6 +19070,8 @@ Private Function frmPreviewActions_Code() As String
     s = s & "    ' stable preview call stack." & vbCrLf
     s = s & "    cmdPreview.Enabled = False" & vbCrLf
     s = s & "    cmdPreview.Visible = True" & vbCrLf
+    s = s & "    cmdReviewDetails.Visible = False" & vbCrLf
+    s = s & "    lblReviewContext.Visible = False" & vbCrLf
     s = s & "    AddPreviewSummaryRow offRows, ""Edit if needed. Choose Reconfigure to preview again."", """"" & vbCrLf
     s = s & "    Set mSummaryRows = offRows" & vbCrLf
     s = s & "    LayoutPanel" & vbCrLf
@@ -18727,6 +19093,7 @@ Private Function frmPreviewActions_Code() As String
     s = s & "    If Not PreviewTargetIsActive() Then" & vbCrLf
     s = s & "        RestoreEditablePreviewDocument" & vbCrLf
     s = s & "        ClearPreviewScopeRange" & vbCrLf
+    s = s & "        ClearPreviewReviewCollection" & vbCrLf
     s = s & "        Set gPreviewActionPanel = Nothing" & vbCrLf
     s = s & "        Me.Hide" & vbCrLf
     s = s & "        Unload Me" & vbCrLf
@@ -18734,6 +19101,7 @@ Private Function frmPreviewActions_Code() As String
     s = s & "    End If" & vbCrLf
     s = s & "    RestoreEditablePreviewDocument" & vbCrLf
     s = s & "    ClearPreviewScopeRange" & vbCrLf
+    s = s & "    ClearPreviewReviewCollection" & vbCrLf
     s = s & "    Set src = mSourceForm" & vbCrLf
     s = s & "    Set gPreviewActionPanel = Nothing" & vbCrLf
     s = s & "    Me.Hide" & vbCrLf
@@ -18748,6 +19116,7 @@ Private Function frmPreviewActions_Code() As String
     s = s & "    errorDescription = Err.Description" & vbCrLf
     s = s & "    RestoreEditablePreviewDocument" & vbCrLf
     s = s & "    ClearPreviewScopeRange" & vbCrLf
+    s = s & "    ClearPreviewReviewCollection" & vbCrLf
     s = s & "    MsgBox ""Could not reconfigure the preview: "" & errorDescription, vbExclamation, ""Preview Actions""" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
@@ -18768,11 +19137,13 @@ Private Function frmPreviewActions_Code() As String
     s = s & "            cmdClear_Click" & vbCrLf
     s = s & "        Else" & vbCrLf
     s = s & "            Set gPreviewActionPanel = Nothing" & vbCrLf
+    s = s & "            ClearPreviewReviewCollection" & vbCrLf
     s = s & "            Me.Hide" & vbCrLf
     s = s & "        End If" & vbCrLf
     s = s & "    Else" & vbCrLf
     s = s & "        RestoreEditablePreviewDocument" & vbCrLf
     s = s & "        ClearPreviewScopeRange" & vbCrLf
+    s = s & "        ClearPreviewReviewCollection" & vbCrLf
     s = s & "        Set gPreviewActionPanel = Nothing" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "End Sub" & vbCrLf
@@ -18780,6 +19151,7 @@ Private Function frmPreviewActions_Code() As String
     s = s & "Private Sub UserForm_Terminate()" & vbCrLf
     s = s & "    RestoreEditablePreviewDocument" & vbCrLf
     s = s & "    ClearPreviewScopeRange" & vbCrLf
+    s = s & "    ClearPreviewReviewCollection" & vbCrLf
     s = s & "    RestorePreviewBrowseTarget" & vbCrLf
     s = s & "    Set gPreviewActionPanel = Nothing" & vbCrLf
     s = s & "End Sub" & vbCrLf

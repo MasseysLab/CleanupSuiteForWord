@@ -757,6 +757,8 @@ Private Sub LayoutPreviewActionsControls(comp As VBIDE.VBComponent, designer As 
     PositionControl designer, "cmdPreviousPage", MARGIN + NAV_W + GAP, NAV_TOP, NAV_W, BTN_H
     PositionControl designer, "cmdNextPage", MARGIN + (2 * (NAV_W + GAP)), NAV_TOP, NAV_W, BTN_H
     PositionControl designer, "cmdNextChange", MARGIN + (3 * (NAV_W + GAP)), NAV_TOP, NAV_W, BTN_H
+    PositionControl designer, "cmdReviewDetails", MARGIN, SUMMARY_TOP + 33, BTN_W, 30
+    PositionControl designer, "lblReviewContext", MARGIN + BTN_W + GAP, SUMMARY_TOP + 33, CONTENT_W - BTN_W - GAP, 30
     PositionControl designer, "lblButtonMeasure", 0, 0, 0, 0
     PositionControl designer, "lblSummary", MARGIN, SUMMARY_TOP, CONTENT_W, 26
     designer.Controls("lblTitle").Caption = ""
@@ -764,6 +766,9 @@ Private Sub LayoutPreviewActionsControls(comp As VBIDE.VBComponent, designer As 
     designer.Controls("lblButtonMeasure").Caption = ""
     designer.Controls("lblButtonMeasure").Visible = False
     designer.Controls("lblSummary").WordWrap = True
+    designer.Controls("cmdReviewDetails").Visible = False
+    designer.Controls("lblReviewContext").Visible = False
+    designer.Controls("lblReviewContext").WordWrap = True
 
     comp.Properties("Width") = FORM_W + 8
     comp.Properties("Height") = FORM_H
@@ -1315,6 +1320,7 @@ Private Function ControlCaptionText(formName As String, nm As String) As String
         Case "frmPreviewActions.lblSummary": ControlCaptionText = ""
         Case "frmPreviewActions.lblHint": ControlCaptionText = "Tool Name"
         Case "frmPreviewActions.lblButtonMeasure": ControlCaptionText = ""
+        Case "frmPreviewActions.lblReviewContext": ControlCaptionText = ""
         Case "frmSoftReturnConverter.chkPreviewOnly": ControlCaptionText = "Preview only (highlight, do not change)"
         Case "frmSoftReturnConverter.optParaToSoft": ControlCaptionText = "Convert paragraph marks to soft returns"
         Case "frmSoftReturnConverter.optScopeDocument": ControlCaptionText = "Entire document"
@@ -1375,6 +1381,7 @@ Private Sub SetButtonCaption(designer As Object, nm As String)
         Case "cmdPreviousPage": cap = "Page" & vbCrLf & ChrW$(&H25C0) & " Previous"
         Case "cmdNextPage": cap = "Page" & vbCrLf & "Next " & ChrW$(&H25B6)
         Case "cmdNextChange": cap = "Change" & vbCrLf & "Next " & ChrW$(&H25B6)
+        Case "cmdReviewDetails": cap = "Review details"
         Case "cmdReset": cap = "Reset"
         Case "cmdResetAll": cap = "Reset All"
         Case "cmdUserManual": cap = "User Manual"
@@ -1463,6 +1470,7 @@ Private Function ButtonTipText(nm As String) As String
         Case "cmdPreviousPage": ButtonTipText = "Turn to the previous preview page"
         Case "cmdNextPage": ButtonTipText = "Turn to the next preview page"
         Case "cmdNextChange": ButtonTipText = "Skip to the next page that contains a preview change"
+        Case "cmdReviewDetails": ButtonTipText = "Inspect protected or unhighlighted findings"
         Case "cmdReset": ButtonTipText = "Reset this tool to its defaults"
         Case "cmdResetAll": ButtonTipText = "Reset all tools and global settings to defaults"
         Case "cmdUserManual": ButtonTipText = "Open the PDF User Manual"
@@ -1515,7 +1523,8 @@ Private Function ControlsForForm(formName As String) As Variant
                                     "chkReturnToMainAfterApply", "chkReturnToMainAfterClose", "chkAutoSave", "lblAutoSaveWarning", "chkUpdateChecks", "cmdCheckUpdates", "cmdResetAll", "cmdUserManual", "lblResetAllArrow", "lblResetAllCalloutBox", "lblResetAllCalloutText")
         Case "frmPreviewActions"
             ControlsForForm = Array("lblTitle", "lblSummary", "lblHint", "lblButtonMeasure", _
-                                    "cmdApply", "cmdPreview", "cmdClear", "cmdPreviousChange", "cmdPreviousPage", "cmdNextPage", "cmdNextChange")
+                                    "lblReviewContext", "cmdApply", "cmdPreview", "cmdClear", _
+                                    "cmdPreviousChange", "cmdPreviousPage", "cmdNextPage", "cmdNextChange", "cmdReviewDetails")
         Case "frmPunctuationCleanup"
             ControlsForForm = Array("optAll", "optQuotes", "optDashes", "optEllipses", "optCustom", _
                                     "cmdRiskPlacementPunctuationAll", "cmdRiskPlacementPunctuationQuotes", "cmdRiskPlacementPunctuationDashes", "cmdRiskPlacementPunctuationEllipses", "cmdRiskPlacementPunctuationCustom", "fraCustom", _

@@ -323,6 +323,7 @@ class PreviewReadingViewAndProgressTests(unittest.TestCase):
             'panel.Controls("cmdPreview").Value = True',
             'panel.Controls("cmdNextPage").Value = True',
             'panel.Controls("cmdPreviousPage").Value = True',
+            'panel.Controls("cmdReviewDetails").Value = True',
             'panel.Controls("cmdApply").Value = True',
             'panel.Controls("cmdClear").Value = True',
             "SmokeCloseForm panel",
@@ -335,9 +336,12 @@ class PreviewReadingViewAndProgressTests(unittest.TestCase):
             with self.subTest(snippet=snippet):
                 self.assertIn(snippet, runner)
         self.assertIn('"Next page did not advance the Reading View preview."', runner)
+        self.assertIn('"Review details did not move to the registered finding."', runner)
+        self.assertIn('"A nonlocatable finding did not explain its document-level scope."', runner)
         self.assertIn('"Preview navigation did not restore Word\'s browse target."', runner)
         self.assertIn('modAlphaSmokeRunner.RunPreviewLifecycleSmokeChecks', script)
-        self.assertIn('Get-Process WINWORD -ErrorAction SilentlyContinue | Stop-Process -Force', script)
+        self.assertNotIn('Get-Process WINWORD -ErrorAction SilentlyContinue | Stop-Process -Force', script)
+        self.assertIn('[string]$SuiteDocPath = ""', script)
         self.assertIn('$suiteDoc.Close([ref]$false)', script)
 
     def test_word_automation_cannot_leave_reading_view_as_the_last_view(self):

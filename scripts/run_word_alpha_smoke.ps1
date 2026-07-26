@@ -1,6 +1,7 @@
 param(
     [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
-    [switch]$BuildFirst
+    [switch]$BuildFirst,
+    [string]$SuiteDocPath = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -85,11 +86,17 @@ if ($BuildFirst) {
     Invoke-RepoPowerShell "build.ps1"
 }
 
-Invoke-RepoPowerShell "scripts\sync_docm_code_only.ps1"
-
-$suiteDocPath = Join-Path $RepoRoot "Practice - Try CleanupSuite Here\CleanupSuite.docm"
-if (-not (Test-Path -LiteralPath $suiteDocPath)) {
-    throw "Practice CleanupSuite docm not found: $suiteDocPath"
+if ([string]::IsNullOrWhiteSpace($SuiteDocPath)) {
+    $SuiteDocPath = Join-Path $RepoRoot "Practice - Try CleanupSuite Here\CleanupSuite.docm"
+    Invoke-RepoPowerShell "scripts\sync_docm_code_only.ps1"
+} else {
+    & powershell -ExecutionPolicy Bypass -File (Join-Path $RepoRoot "scripts\sync_docm_code_only.ps1") -TargetDocPaths $SuiteDocPath
+    if ($LASTEXITCODE -ne 0) {
+        throw "DOCM synchronization failed for $SuiteDocPath"
+    }
+}
+if (-not (Test-Path -LiteralPath $SuiteDocPath)) {
+    throw "CleanupSuite docm not found: $SuiteDocPath"
 }
 
 $reportDir = Join-Path $RepoRoot "docs\test-results"
@@ -108,7 +115,7 @@ try {
     $word.DisplayAlerts = 0
     try { $word.AutomationSecurity = 1 } catch {}
 
-    $suiteDoc = $word.Documents.Open($suiteDocPath, $false, $true, $false)
+    $suiteDoc = $word.Documents.Open($SuiteDocPath, $false, $true, $false)
     $lines = @()
 
     $launcher = Get-VbComponent -Document $suiteDoc -ComponentName "frmCleanupSuiteLauncher"
@@ -143,6 +150,24 @@ try {
         $lines += New-ResultLine "FAIL" "Capitalization Fixer" "Capitalization Fixer is missing expected smart-repair labels, custom-exceptions action, or advanced-protection controls in the practice docm."
     }
 
+    $metadata = Get-VbComponent -Document $suiteDoc -ComponentName "frmMetaDataSuite"
+    $metadataCode = Get-CodeText -Component $metadata
+    $metadataModule = Get-VbComponent -Document $suiteDoc -ComponentName "modMetaDataSuite"
+    $metadataModuleCode = Get-CodeText -Component $metadataModule
+    if ($metadata -and $metadataModule -and (Test-ControlNames $metadata @("cmdRefreshCurrent", "cmdAuditAnother", "cmdOpenWordReport", "cmdSafeEditCurrent", "cmdGroupEditCurrent", "cmdClearSharingProperties", "lblCoreSummary", "lblPackageSummary", "lblMetadataSummary", "lblCryptoSummary")) -and (Test-ContainsAll $metadataCode @("InitializeMetadataDashboard Me", "OpenMetadataDashboardWordReport Me", "SafeEditMetadataDashboardTarget Me", "GroupEditMetadataDashboardTarget Me")) -and (Test-ContainsAll $metadataModuleCode @("Public Sub InitializeMetadataDashboard", "Public Sub OpenMetadataDashboardWordReport", "Public Sub SafeEditMetadataDashboardTarget", "Public Sub GroupEditMetadataDashboardTarget"))) {
+        $lines += New-ResultLine "PASS" "MetaDataSuite" "The embedded document contains the advanced metadata dashboard, current/other-document audit paths, Word report, safe editor, and grouped package review wiring."
+    } else {
+        $lines += New-ResultLine "FAIL" "MetaDataSuite" "MetaDataSuite is missing part of its advanced audit, report, safe-edit, or grouped-review contract."
+    }
+
+    $finalReview = Get-VbComponent -Document $suiteDoc -ComponentName "frmFinalReview"
+    $finalReviewCode = Get-CodeText -Component $finalReview
+    if ($finalReview -and (Test-ControlNames $finalReview @("chkComments", "chkRevisions", "cmdAuthorCleanupMinimal", "cmdAuthorCleanupNormal", "cmdAuthorCleanupBroad", "cmdPreview", "cmdRun")) -and (Test-ContainsAll $finalReviewCode @('chkComments.Caption = "Remove all comments"', 'chkRevisions.Caption = "Accept tracked changes and clear revision marks"', "ActiveDocument.DeleteAllComments", "ActiveDocument.Revisions.AcceptAll", 'RunFinalReviewAuthorCleanup "minimal"', 'RunFinalReviewAuthorCleanup "normal"', 'RunFinalReviewAuthorCleanup "broad"'))) {
+        $lines += New-ResultLine "PASS" "Final Review" "The embedded document keeps comments, tracked-change finalization, and explicit author-cleanup tiers in the dedicated Final Review lane."
+    } else {
+        $lines += New-ResultLine "FAIL" "Final Review" "Final Review is missing comments, revision finalization, or author-cleanup ownership."
+    }
+
     $headerFooter = Get-VbComponent -Document $suiteDoc -ComponentName "frmHeaderFooterStandardizer"
     $headerFooterCode = Get-CodeText -Component $headerFooter
     if ($headerFooter -and (Test-ControlNames $headerFooter @("optStandardize", "optClearAll", "chkBreakLinks", "chkAlignment", "optAlignLeft", "optAlignCenter", "optAlignRight")) -and (Test-ContainsAll $headerFooterCode @('chkBreakLinks.Caption = "Unlink sections (set each independently)"', 'chkAlignment.Caption = "Set alignment"', "LayoutCleanupToolForm Me"))) {
@@ -171,7 +196,7 @@ try {
 
     $previewForm = Get-VbComponent -Document $suiteDoc -ComponentName "frmPreviewActions"
     $previewFormCode = Get-CodeText -Component $previewForm
-    if ($previewForm -and (Test-ControlNames $previewForm @("cmdApply", "cmdPreview", "cmdClear", "lblSummary", "lblHint")) -and (Test-ContainsAll $previewFormCode @('cmdApply.Caption = "Apply"', 'cmdClear.Caption = "Reconfigure"', 'cmdPreview.Caption = "Preview is ON"')) -and (Test-ContainsAll $documentTrimCode @('ShowPreviewActionsSummary Me, "Document Trim"', "Public Sub PreviewFromPanel()", "Public Sub RunAfterPreview()")) -and (Test-ContainsAll $helpersCode @("Public Sub ShowPreviewActionsSummary(ByVal sourceForm As Object, ByVal toolName As String, ByVal rows As Collection)", "Set gPreviewActionPanel = New frmPreviewActions", "gPreviewActionPanel.ConfigureSummary sourceForm, toolName, rows"))) {
+    if ($previewForm -and (Test-ControlNames $previewForm @("cmdApply", "cmdPreview", "cmdClear", "cmdReviewDetails", "lblReviewContext", "lblSummary", "lblHint")) -and (Test-ContainsAll $previewFormCode @('cmdApply.Caption = "Apply"', 'cmdClear.Caption = "Reconfigure"', 'cmdPreview.Caption = "Preview is ON"', "Private Sub cmdReviewDetails_Click()")) -and (Test-ContainsAll $documentTrimCode @('ShowPreviewActionsSummary Me, "Document Trim"', "Public Sub PreviewFromPanel()", "Public Sub RunAfterPreview()")) -and (Test-ContainsAll $helpersCode @("Public Sub ShowPreviewActionsSummary(ByVal sourceForm As Object, ByVal toolName As String, ByVal rows As Collection)", "Set gPreviewActionPanel = New frmPreviewActions", "gPreviewActionPanel.ConfigureSummary sourceForm, toolName, rows", "Public Sub RegisterPreviewReviewFinding"))) {
         $lines += New-ResultLine "PASS" "Preview Flow" "The embedded practice docm keeps the Preview contract between Document Trim, frmPreviewActions, and modCleanupHelpers."
     } else {
         $lines += New-ResultLine "FAIL" "Preview Flow" "The embedded practice docm is missing part of the Preview contract between the tool form, preview panel, and helpers."
@@ -185,7 +210,8 @@ try {
 
     $lines += New-ResultLine "WARN" "Visual review" "This runner validates the embedded practice docm wiring through Word COM. Do one brief live visual review for duplicate titles, panel cleanliness, and wasted vertical space before a release call."
 
-    # Example lines: PASS|Launcher|..., PASS|Formatting Cleaner|..., PASS|Risk Controls|..., PASS|Preview Summary Table|..., and WARN|Visual review|...
+    # Example lines: PASS|Launcher|..., PASS|Formatting Cleaner|..., PASS|MetaDataSuite|...,
+    # PASS|Final Review|..., PASS|Risk Controls|..., PASS|Preview Summary Table|..., and WARN|Visual review|...
     Set-Content -LiteralPath $reportPath -Value $lines -Encoding utf8
     foreach ($line in $lines) {
         Write-Host $line

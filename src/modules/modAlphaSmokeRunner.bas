@@ -92,6 +92,7 @@ Public Function RunPreviewLifecycleSmokeChecks() As String
     Dim userHighlightRange As Range
     Dim plainHighlightRange As Range
     Dim mixedHighlightRange As Range
+    Dim reviewFindingRange As Range
     Dim smokeStage As String
     Dim i As Long
 
@@ -198,6 +199,32 @@ Public Function RunPreviewLifecycleSmokeChecks() As String
     SmokeCloseForm panel
 
     Set rows = NewPreviewSummaryRows()
+    AddPreviewSummaryRow rows, "Protected markers", 1, True
+    BeginPreviewReviewCollection
+    Set reviewFindingRange = previewDocument.Paragraphs(90).Range.Words(1).Duplicate
+    RegisterPreviewReviewFinding reviewFindingRange, "Protected marker", "Required Word structure; left unchanged."
+    Set panel = VBA.UserForms.Add("frmPreviewActions")
+    panel.ConfigureSummary Nothing, "Review Detail Smoke", rows
+    SmokeRequireValue panel.Controls("cmdReviewDetails").Visible, "An active unhighlighted count did not expose Review details."
+    SmokeRequireValue panel.Controls("cmdReviewDetails").Enabled, "Review details was not enabled for a locatable finding."
+    panel.Controls("cmdReviewDetails").Value = True
+    SmokeRequireValue previewWindow.Selection.Start = reviewFindingRange.Start, "Review details did not move to the registered finding."
+    SmokeRequireValue InStr(1, panel.Controls("lblReviewContext").Caption, "Protected marker", vbTextCompare) > 0, "Review details did not show the finding label."
+    SmokeRequireValue InStr(1, panel.Controls("lblReviewContext").Caption, "Required Word structure", vbTextCompare) > 0, "Review details did not show useful context."
+    SmokeRequireValue panel.Controls("cmdReviewDetails").Caption = "Next detail", "A locatable finding did not expose the next-detail action."
+    SmokeCloseForm panel
+
+    Set rows = NewPreviewSummaryRows()
+    AddPreviewSummaryRow rows, "Document properties", 2, True
+    BeginPreviewReviewCollection
+    Set panel = VBA.UserForms.Add("frmPreviewActions")
+    panel.ConfigureSummary Nothing, "Document-Level Review Smoke", rows
+    panel.Controls("cmdReviewDetails").Value = True
+    SmokeRequireValue InStr(1, panel.Controls("lblReviewContext").Caption, "Document-level result", vbTextCompare) > 0, "A nonlocatable finding did not explain its document-level scope."
+    SmokeRequireValue Not panel.Controls("cmdReviewDetails").Enabled, "A document-level explanation remained enabled after review."
+    SmokeCloseForm panel
+
+    Set rows = NewPreviewSummaryRows()
     AddPreviewSummaryRow rows, "Smoke row", 1
     Set panel = VBA.UserForms.Add("frmPreviewActions")
     panel.ConfigureSummary Nothing, "Apply Smoke", rows
@@ -266,7 +293,7 @@ Public Function RunPreviewLifecycleSmokeChecks() As String
     RestorePreviewViewSession
     SmokeRequireValue Not PreviewViewSessionIsActive(), "Closed-document cleanup left the session active."
 
-    RunPreviewLifecycleSmokeChecks = "PASS|Preview Lifecycle|Reading View, equal Page/Change navigation, user-highlight preservation, modeless Preview OFF, preview formatting, switched windows, closed documents, and progress cleanup passed."
+    RunPreviewLifecycleSmokeChecks = "PASS|Preview Lifecycle|Reading View, equal Page/Change navigation, compact unhighlighted-detail review, user-highlight preservation, modeless Preview OFF, preview formatting, switched windows, closed documents, and progress cleanup passed."
     GoTo SmokeCleanup
 SmokeFail:
     RunPreviewLifecycleSmokeChecks = "FAIL|Preview Lifecycle|" & smokeStage & ": " & CStr(Err.Number) & " - " & Err.Description
@@ -279,6 +306,46 @@ SmokeCleanup:
     If Not originalDocument Is Nothing Then originalDocument.Activate
     On Error GoTo 0
 End Function
+
+Public Sub ShowPreviewReviewVisualProbe()
+    Dim originalDocument As Document
+    Dim probeDocument As Document
+    Dim panel As Object
+    Dim rows As Collection
+
+    On Error GoTo ProbeCleanup
+    If Documents.Count > 0 Then Set originalDocument = ActiveDocument
+    Set probeDocument = Documents.Add
+    probeDocument.Content.Text = _
+        "Preview review-detail visual probe" & vbCr & _
+        "Protected empty-cell marker example" & vbCr & _
+        "Protected table-row marker example" & vbCr & _
+        "Skipped unsupported structure example" & vbCr
+    probeDocument.Activate
+
+    BeginPreviewReviewCollection
+    RegisterPreviewReviewFinding probeDocument.Paragraphs(2).Range.Words(1), _
+        "Protected empty cell", "Required empty-cell marker; left unchanged."
+    RegisterPreviewReviewFinding probeDocument.Paragraphs(3).Range.Words(1), _
+        "Protected row marker", "Required table-row boundary; left unchanged."
+    RegisterPreviewReviewFinding probeDocument.Paragraphs(4).Range.Words(1), _
+        "Skipped structure", "CleanupSuite could not prove this structure safe to change."
+
+    Set rows = NewPreviewSummaryRows()
+    AddPreviewSummaryRow rows, "Protected blank markers", 3, True
+    AddPreviewSummaryRow rows, "Document properties", 2, True
+    Set panel = VBA.UserForms.Add("frmPreviewActions")
+    panel.ConfigureSummary Nothing, "Review Details Visual Probe", rows
+    panel.Show vbModal
+
+ProbeCleanup:
+    On Error Resume Next
+    RestoreCleanupSuiteTransientState
+    SmokeCloseForm panel
+    If Not probeDocument Is Nothing Then probeDocument.Close SaveChanges:=wdDoNotSaveChanges
+    If Not originalDocument Is Nothing Then originalDocument.Activate
+    On Error GoTo 0
+End Sub
 
 Private Function SmokeStyleCleanupApplyCheck(ByVal repoRoot As String) As Variant
     Dim originalDocument As Document

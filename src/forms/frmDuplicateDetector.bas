@@ -181,12 +181,28 @@ Private Sub cmdRun_Click()
                         If includeEmptyParagraphs Then paras.Add p
                     Case cbpkProtectedEmptyCell
                         protectedEmptyCells = protectedEmptyCells + 1
+                        If previewOnly And includeEmptyParagraphs Then
+                            RegisterPreviewReviewFinding p.Range, "Protected empty cell", _
+                                "Required empty-cell marker; Duplicate Paragraph Remover will leave it unchanged."
+                        End If
                     Case cbpkProtectedRowMarker
                         protectedRowMarkers = protectedRowMarkers + 1
+                        If previewOnly And includeEmptyParagraphs Then
+                            RegisterPreviewReviewFinding p.Range, "Protected row marker", _
+                                "Required table-row boundary; row deletion belongs only to Table Cleaner."
+                        End If
                     Case cbpkProtectedFinalDocument
                         protectedFinalMarkers = protectedFinalMarkers + 1
+                        If previewOnly And includeEmptyParagraphs Then
+                            RegisterPreviewReviewFinding p.Range, "Protected final marker", _
+                                "Required final-document marker; it cannot be removed safely."
+                        End If
                     Case cbpkUnsupported
                         skippedStructures = skippedStructures + 1
+                        If previewOnly And includeEmptyParagraphs Then
+                            RegisterPreviewReviewFinding p.Range, "Skipped structure", _
+                                "CleanupSuite could not prove that this blank structure was safe to remove."
+                        End If
                 End Select
             End If
         End If
