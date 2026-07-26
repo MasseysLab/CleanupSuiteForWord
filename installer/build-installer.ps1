@@ -6,6 +6,7 @@ param(
     [string]$OutputDirectory = "",
     [string]$Version = "0.9.5-beta",
     [string]$Tag = "v0.9.5-beta",
+    [switch]$SignBuild,
     [switch]$PublishRelease,
     [string]$SigningCertificateThumbprint = "",
     [string]$TimestampServer = "http://timestamp.digicert.com"
@@ -24,10 +25,13 @@ if ([string]::IsNullOrWhiteSpace($TemplatePath)) {
 if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
     $OutputDirectory = if ($PublishRelease) {
         Join-Path $RepoRoot "release"
+    } elseif ($SignBuild) {
+        Join-Path $RepoRoot "build\installer-signed-candidate"
     } else {
         Join-Path $RepoRoot "build\installer-dev"
     }
 }
+$shouldSign = $SignBuild -or $PublishRelease
 
 $compiler = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
 $webExtensions = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\System.Web.Extensions.dll"
@@ -41,6 +45,10 @@ foreach ($required in @($compiler, $webExtensions, $setupSource, $TemplatePath, 
     }
 }
 
+if ($shouldSign -and [string]::IsNullOrWhiteSpace($SigningCertificateThumbprint)) {
+    throw "Signed hybrid builds require -SigningCertificateThumbprint."
+}
+
 if ([string]::IsNullOrWhiteSpace($EnginePath)) {
     & powershell -ExecutionPolicy Bypass -File (Join-Path $RepoRoot "scripts\publish_hybrid_engine_dev.ps1")
     if ($LASTEXITCODE -ne 0) {
@@ -50,10 +58,6 @@ if ([string]::IsNullOrWhiteSpace($EnginePath)) {
 }
 if (-not (Test-Path -LiteralPath $EnginePath)) {
     throw "The self-contained hybrid engine was not found: $EnginePath"
-}
-
-if ($PublishRelease -and [string]::IsNullOrWhiteSpace($SigningCertificateThumbprint)) {
-    throw "Official hybrid release builds require -SigningCertificateThumbprint."
 }
 
 New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
@@ -71,7 +75,7 @@ try {
     Copy-Item -LiteralPath $protocolSource -Destination $protocolPayload -Force
     Copy-Item -LiteralPath $operationsSource -Destination $operationsPayload -Force
 
-    if ($PublishRelease) {
+    if ($shouldSign) {
         $certificate = Get-ChildItem "Cert:\CurrentUser\My\$SigningCertificateThumbprint" -ErrorAction Stop
         $engineSignature = Set-AuthenticodeSignature -LiteralPath $enginePayload `
             -Certificate $certificate -TimestampServer $TimestampServer -HashAlgorithm SHA256
@@ -117,6 +121,11 @@ try {
         (New-Object System.Text.UTF8Encoding($false)))
 
     $setupOutput = Join-Path $OutputDirectory "CleanupSuiteForWord-Setup.exe"
+    $setupBuildOutput = if ($PublishRelease) {
+        Join-Path $staging "CleanupSuiteForWord-Setup.exe"
+    } else {
+        $setupOutput
+    }
     & $compiler /nologo /target:winexe /optimize+ /platform:anycpu `
         /reference:System.dll `
         /reference:System.Core.dll `
@@ -128,21 +137,22 @@ try {
         "/resource:$enginePayload,CleanupSuite.Payload.Engine.exe" `
         "/resource:$protocolPayload,CleanupSuite.Payload.Protocol.json" `
         "/resource:$operationsPayload,CleanupSuite.Payload.Operations.json" `
-        "/out:$setupOutput" `
+        "/out:$setupBuildOutput" `
         $setupSource
     if ($LASTEXITCODE -ne 0) {
         throw "C# compiler failed with exit code $LASTEXITCODE."
     }
 
-    if ($PublishRelease) {
-        $setupSignature = Set-AuthenticodeSignature -LiteralPath $setupOutput `
+    if ($shouldSign) {
+        $setupSignature = Set-AuthenticodeSignature -LiteralPath $setupBuildOutput `
             -Certificate $certificate -TimestampServer $TimestampServer -HashAlgorithm SHA256
         if ($setupSignature.Status -ne "Valid") {
             throw "Setup did not receive a valid Authenticode signature: $($setupSignature.Status)"
         }
+    }
 
-        Copy-Item -LiteralPath $templatePayload -Destination (Join-Path $OutputDirectory "CleanupSuite.dotm") -Force
-        $setupHash = (Get-FileHash -LiteralPath $setupOutput -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($PublishRelease) {
+        $setupHash = (Get-FileHash -LiteralPath $setupBuildOutput -Algorithm SHA256).Hash.ToLowerInvariant()
         $templateHash = (Get-FileHash -LiteralPath $templatePayload -Algorithm SHA256).Hash.ToLowerInvariant()
         $releaseManifest = @(
             "# CleanupSuite For Word release pointer."
@@ -155,12 +165,74 @@ try {
             "release_url=https://github.com/MasseysLab/CleanupSuiteForWord/releases/tag/$Tag"
         ) -join "`n"
         [System.IO.File]::WriteAllText(
-            (Join-Path $OutputDirectory "latest-release.ini"),
+            (Join-Path $staging "latest-release.ini"),
             $releaseManifest + "`n",
             (New-Object System.Text.UTF8Encoding($false)))
+
+        $releaseArtifacts = @(
+            [pscustomobject]@{
+                Source = $templatePayload
+                Destination = (Join-Path $OutputDirectory "CleanupSuite.dotm")
+            }
+            [pscustomobject]@{
+                Source = $setupBuildOutput
+                Destination = $setupOutput
+            }
+            [pscustomobject]@{
+                Source = (Join-Path $staging "latest-release.ini")
+                Destination = (Join-Path $OutputDirectory "latest-release.ini")
+            }
+        )
+        $releaseRollback = Join-Path $staging "release-rollback"
+        New-Item -ItemType Directory -Force -Path $releaseRollback | Out-Null
+        $releaseState = @()
+        foreach ($artifact in $releaseArtifacts) {
+            $existed = Test-Path -LiteralPath $artifact.Destination -PathType Leaf
+            $backupPath = Join-Path $releaseRollback ([System.IO.Path]::GetFileName($artifact.Destination))
+            if ($existed) {
+                Copy-Item -LiteralPath $artifact.Destination -Destination $backupPath -Force
+            }
+            $releaseState += [pscustomobject]@{
+                Destination = $artifact.Destination
+                Existed = $existed
+                BackupPath = $backupPath
+            }
+        }
+        try {
+            foreach ($artifact in $releaseArtifacts) {
+                Copy-Item -LiteralPath $artifact.Source -Destination $artifact.Destination -Force
+            }
+        }
+        catch {
+            foreach ($state in $releaseState) {
+                if ($state.Existed) {
+                    Copy-Item -LiteralPath $state.BackupPath -Destination $state.Destination -Force
+                } elseif (Test-Path -LiteralPath $state.Destination -PathType Leaf) {
+                    Remove-Item -LiteralPath $state.Destination -Force
+                }
+            }
+            throw
+        }
     } else {
         Copy-Item -LiteralPath $packageManifest `
             -Destination (Join-Path $OutputDirectory "installation-manifest.json") -Force
+        if ($SignBuild) {
+            $candidateRoot = Join-Path $OutputDirectory "candidate-payload"
+            $candidateEngineFolder = Join-Path $candidateRoot "Engine"
+            $candidateContractFolder = Join-Path $candidateRoot "Contracts\Hybrid\v1"
+            New-Item -ItemType Directory -Force -Path $candidateEngineFolder | Out-Null
+            New-Item -ItemType Directory -Force -Path $candidateContractFolder | Out-Null
+            Copy-Item -LiteralPath $templatePayload `
+                -Destination (Join-Path $candidateRoot "CleanupSuite.dotm") -Force
+            Copy-Item -LiteralPath $enginePayload `
+                -Destination (Join-Path $candidateEngineFolder "CleanupSuite.Engine.exe") -Force
+            Copy-Item -LiteralPath $protocolPayload `
+                -Destination (Join-Path $candidateContractFolder "protocol.json") -Force
+            Copy-Item -LiteralPath $operationsPayload `
+                -Destination (Join-Path $candidateContractFolder "operation-vocabulary.json") -Force
+            Copy-Item -LiteralPath $packageManifest `
+                -Destination (Join-Path $candidateRoot "installation-manifest.json") -Force
+        }
     }
 
     Write-Host "PASS|Hybrid Installer Build|State-aware Setup built with matched embedded payload."

@@ -71,9 +71,16 @@ def test_beta_installer_embeds_one_matched_offline_package():
     assert "WinVerifyTrust" in source
     assert "AuthenticodeTrust.IsTrusted(stagedEngine)" in source
     assert "AuthenticodeTrust.IsTrusted(Application.ExecutablePath)" in source
+    assert "SignBuild" in build
+    assert "$shouldSign = $SignBuild -or $PublishRelease" in build
     assert "PublishRelease" in build
     assert "SigningCertificateThumbprint" in build
-    assert "Official hybrid release builds require -SigningCertificateThumbprint." in build
+    assert "Signed hybrid builds require -SigningCertificateThumbprint." in build
+    assert 'Join-Path $RepoRoot "build\\installer-signed-candidate"' in build
+    assert 'Join-Path $OutputDirectory "candidate-payload"' in build
+    assert 'Join-Path $staging "CleanupSuiteForWord-Setup.exe"' in build
+    assert 'Join-Path $staging "release-rollback"' in build
+    assert "foreach ($state in $releaseState)" in build
     assert "CleanupSuite.Payload.Engine.exe" in build
     assert "--self-contained true" in read("scripts/publish_hybrid_engine_dev.ps1")
     assert "MasseysLab" in source
@@ -121,3 +128,19 @@ def test_hybrid_installer_matrix_is_isolated_and_covers_all_states():
     assert "Expected exactly 3 retained backups" in script
     assert "Repair removed the user-settings sentinel" in script
     assert "Uninstall removed the user-settings sentinel" in script
+
+
+def test_beta_release_candidate_gate_requires_matched_signed_scanned_artifacts():
+    script = read("scripts/run_beta_release_candidate_gate.ps1")
+
+    assert '"build\\installer-signed-candidate"' in script
+    assert "repository build folder" in script
+    assert "exactly four approved components" in script
+    assert '"analysis-engine" = "Engine\\CleanupSuite.Engine.exe"' in script
+    assert '"analysis-engine" = "0.2.0"' in script
+    assert "Get-FileHash" in script
+    assert "Get-AuthenticodeSignature" in script
+    assert '$signature.Status -ne "Valid"' in script
+    assert "Get-MpComputerStatus" in script
+    assert "-ScanType 3" in script
+    assert "Beta Release Candidate Defender" in script

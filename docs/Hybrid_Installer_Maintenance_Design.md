@@ -65,8 +65,12 @@ machine-wide registry settings.
 
 - Word must be closed for real installation or maintenance.
 - Official hybrid builds require an Authenticode signing certificate.
-- The release build signs the engine before hashing and embedding it, then signs
-  the completed Setup.
+- A signed candidate build signs the engine before hashing and embedding it,
+  then signs the completed Setup without touching the official `release`
+  directory.
+- Publication uses the same signing path, but writes the release pointer only
+  after both signatures are valid. It compiles and signs outside `release`, then
+  restores the prior template, Setup, and release pointer if a replacement fails.
 - Every embedded and staged component is checked against the package manifest.
 - Existing matched files are captured for rollback before the first replacement.
 - A failure restores the exact pre-maintenance files and removes the staging

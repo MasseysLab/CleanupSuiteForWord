@@ -1199,6 +1199,43 @@ Automated evidence at this checkpoint:
 Estimated combined difficulty: **72–84%**.
 Estimated professional desirability: **98–99.7%**.
 
+### The first signed candidate must not also be the publication
+
+The release-engineering closeout on July 26, 2026 found one remaining avoidable
+risk: the original hybrid build switch signed the package only while writing
+directly into the official `release` directory. That made it impossible to
+inspect the first signed engine and Setup independently before those artifacts
+replaced the stable release.
+
+Candidate signing and publication were therefore separated. `-SignBuild` now
+creates `build\installer-signed-candidate`, signs the staged self-contained engine
+before its package hash is calculated, signs the completed Setup, and exposes a
+copy of the exact matched payload for independent signature, hash, and security
+inspection. It does not modify `release`. `-PublishRelease` remains the later,
+intentional action that writes the official package and release pointer after the
+candidate has passed every gate. Publication itself compiles and signs outside
+`release`, captures the prior template, Setup, and release pointer, and restores
+all three if artifact replacement fails.
+
+The correction was followed by the complete repository gate (257 passed, 3
+expected skips, and 1,131 passing subtests), all 31 VBA builders, the full
+installer maintenance matrix, and the production installed-manifest Word smoke.
+Microsoft Defender, enabled with current definitions, found no threats in the
+exact unsigned development Setup and self-contained engine. The stable release
+remained unchanged.
+
+No code-signing certificate with a usable private key was present in either the
+current-user or local-machine certificate store, and both candidate binaries
+correctly reported `NotSigned`. The project therefore held publication at the
+security boundary instead of weakening it. Remaining official-Beta work is
+Authenticode signing, repeating the complete gate against the signed candidate,
+and clean-machine signature/reputation, installation, maintenance, Word
+Preview/Apply, and Undo validation.
+
+Estimated combined difficulty: **18–30% remaining after a certificate is
+available**.
+Estimated professional desirability: **99–100%**.
+
 ## Primary Historical Sources
 
 - [Current handoff](../WHERE_WE_LEFT_OFF.md)
