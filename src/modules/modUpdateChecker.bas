@@ -82,8 +82,9 @@ Public Sub CheckForCleanupSuiteUpdates(Optional ByVal manualCheck As Boolean = T
             End If
         End If
     ElseIf manualCheck Then
-        MsgBox "CleanupSuite is up to date." & vbCrLf & vbCrLf & _
-               "Installed version: " & SUITE_VERSION, vbInformation, "CleanupSuite Updates"
+        MsgBox "CleanupSuite is current on the stable release channel." & vbCrLf & vbCrLf & _
+               "Installed version: " & SUITE_VERSION, _
+               vbInformation, "CleanupSuite Updates"
     End If
     Exit Sub
 

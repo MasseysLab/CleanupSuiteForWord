@@ -5584,8 +5584,9 @@ Private Function modUpdateChecker_Code() As String
     s = s & "            End If" & vbCrLf
     s = s & "        End If" & vbCrLf
     s = s & "    ElseIf manualCheck Then" & vbCrLf
-    s = s & "        MsgBox ""CleanupSuite is up to date."" & vbCrLf & vbCrLf & _" & vbCrLf
-    s = s & "               ""Installed version: "" & SUITE_VERSION, vbInformation, ""CleanupSuite Updates""" & vbCrLf
+    s = s & "        MsgBox ""CleanupSuite is current on the stable release channel."" & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "               ""Installed version: "" & SUITE_VERSION, _" & vbCrLf
+    s = s & "               vbInformation, ""CleanupSuite Updates""" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
     s = s & "" & vbCrLf

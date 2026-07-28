@@ -4,8 +4,9 @@
 **Publisher:** MasseysLab
 **First repository commit:** June 6, 2026
 **Record established:** July 18, 2026
-**Stable installer release:** `0.9.2-alpha`
-**Final standalone VBA-only checkpoint:** `0.9.3-beta-vba-final`
+**Stable installer release:** 0.9.3 (retained internal/tag identifier:
+`0.9.3-beta-vba-final`)
+**Final standalone VBA-only release:** `0.9.3-beta-vba-final`
 **Current development branch:** `codex/0.9.5-beta`
 **Next public milestone:** `0.9.5` Official Beta
 **Approved architectural direction:** C# analysis engine with VBA as the Word mediator
@@ -758,7 +759,7 @@ The following principles have emerged repeatedly across releases, diagnostics, a
 | Final standalone `.dotm` release boundary | Frozen as `v0.9.3-beta-vba-final` after Task 3 and before C# tool dependency |
 | State-aware single Setup for Install/Update/Repair/Uninstall | Beta contract |
 | Suite-wide preservation of pre-existing highlights | Implemented through preview-owned restoration records in Task 3 |
-| Shared candidate manifest across tools | Proposed, strongly recommended |
+| Versioned hybrid candidate manifest and operation vocabulary | Contract 1.0 defined and tested July 26, 2026 |
 | Tool-specific professional corrections from the July 18 audit | Proposed |
 | C# sidecar engine with VBA as Word mediator | Approved and authorized; scheduled after immediate safety and contract work |
 | Incremental migration rather than a pre-Beta rewrite | Approved and authorized direction |
@@ -868,6 +869,474 @@ tool modes were deliberately left for reconsideration after the hybrid foundatio
 
 Estimated combined difficulty: **55–70%**.
 Estimated professional desirability: **98–100%**.
+
+### July 26, 2026: Hybrid risk gate and change-control thresholds
+
+Before Task 4 began, Chris asked for a fresh reconsideration of the hybrid
+decision. The two most consequential concerns were identified as:
+
+1. the document can change between engine analysis and VBA Apply;
+2. antivirus and Windows reputation systems may scrutinize an executable more
+   heavily than a VBA-only template.
+
+The decision remained in favor of an incremental hybrid, but both concerns became
+hard contract requirements rather than later implementation details.
+
+For stale analysis, VBA must validate the complete analyzed scope before accepting
+an engine result into Preview and again before Apply. It must then validate every
+candidate's exact range and any required structural fingerprint. A mismatch aborts
+the entire Apply before the first mutation and instructs the user to run Preview
+again. Destructive candidates are never automatically relocated or approximately
+matched.
+
+For executable trust, the engine must run locally, offline, on demand, without
+administrator rights or a Windows service. VBA must verify the matched engine
+version and published hash before launch. Job paths and filenames are constrained,
+logs exclude document content by default, the engine never edits Word, and the
+official hybrid Beta requires a signed and hash-verified distribution path. The
+final VBA-only release remains available for environments that prohibit companion
+executables.
+
+Chris also established a durable implementation-governance rule:
+
+- minor implementation adjustments may be made on the fly;
+- medium changes require at least **95%** estimated professional desirability;
+- large changes require at least **99%**;
+- huge changes require at least **99.9%**, high certainty, or necessity for
+  continuation of the project;
+- correctness is mandatory even when speed is preferred;
+- extended rabbit holes require an explicit reconsideration of value and scope.
+
+These percentages are practical product judgments, not scientific measurements.
+Their purpose is to prevent scope drift while still allowing efficient engineering.
+
+Estimated combined difficulty: **18–28%**.
+Estimated professional desirability: **99–100%**.
+
+### Task 4: Contract before engine
+
+Task 4 deliberately added no C# executable and connected no Word tool to an
+engine. It first converted the architectural promises into Contract 1.0 under
+`contracts/hybrid/v1`.
+
+The contract defines:
+
+- exact UTF-8 snapshots without Word newline or marker normalization;
+- Word-compatible UTF-16 Range offsets;
+- versioned requests, responses, capabilities, and installation manifests;
+- applicable, review-only, protected, and skipped candidate states;
+- deterministic/high/medium/low confidence;
+- exact text, surrounding-context, paragraph, and structural fingerprints;
+- a bounded Apply-operation vocabulary whose operations remain proposals until
+  independently revalidated and executed by VBA;
+- fixed owner-only job filenames and path-traversal/reparse-point rejection;
+- no network, service, elevation, Word automation, or document-content logging;
+- no partial-result reuse, approximate relocation, or silent behavior-changing
+  fallback;
+- an official-Beta Authenticode requirement and a matched component hash manifest.
+
+A live Word probe verified the most important text-coordinate assumption. In a
+story containing `A😀B` and Word's final paragraph mark, Word treated the emoji as
+one `Characters` item but advanced its Range positions from 1 to 3. Contract 1.0
+therefore correctly defines all offsets in UTF-16 code units and includes a
+supplementary-Unicode regression fixture.
+
+The contract gate adds JSON Schema validation and deterministic positive and
+negative fixtures. At completion, the focused contract suite passed 13 tests and
+the complete repository suite passed 227 tests with 3 expected skips. All 29 VBA
+assembly builders remained clean. No Word runtime or release artifact changed.
+
+Estimated combined difficulty: **42–57%**.
+Estimated professional desirability: **97–100%**.
+
+### Task 5: Isolated engine before Word integration
+
+Task 5 created the first C# component without crossing the release boundary. The
+new `CleanupSuite.Engine` is an offline, on-demand `net8.0-windows` command-line
+process that implements Contract 1.0. It is not installed, not shipped, not called
+by Word, and not used by a real CleanupSuite tool.
+
+The engine accepts only a lowercase-UUID job directory directly beneath
+CleanupSuite's fixed LocalAppData job root. It requires an owner-only protected
+directory, rejects reparse points and unsafe paths, reads only fixed filenames,
+strictly validates UTF-8 JSON and exact snapshot hashes and lengths, and writes a
+result atomically without overwriting an existing result. Cancellation and every
+failure path return zero candidates. Logs contain event codes and counts rather
+than document text or source paths.
+
+The Task 5 analyzer is deliberately artificial:
+`contract-fixture/replace-literal`. Its purpose is to prove deterministic,
+Word-compatible UTF-16 offsets, surrogate-safe context, fingerprints, capability
+discovery, cancellation, failure behavior, and schema-valid result transport. It
+is not a migrated product tool.
+
+The focused engine gate passed 12 end-to-end tests. The actual binary's capability
+output matches Contract 1.0 and its actual two-candidate result validates against
+the Contract 1.0 JSON Schema. The complete repository suite passed 233 tests with
+3 expected skips, all 29 VBA builders remained clean, and C# formatting required
+no changes. Local Microsoft Defender scans reported no new detections for either
+the framework build or the self-contained proof. This is early local evidence,
+not a substitute for Authenticode signing or reputation testing on clean machines.
+
+The development publish proof produced a single-file self-contained `win-x64`
+engine of 35,106,239 bytes with SHA-256
+`32BD795E91FDB722BF6CD35045B9E00740239B79545B9F887C0ACC56B9AB824D`.
+The proof is unsigned, ignored, and nondistributable. Chris clarified the durable
+packaging requirement: using .NET internally is acceptable, but requiring users
+to install, update, select, or maintain .NET separately is undesirable. The
+official product must therefore ship the matched engine with its runtime
+self-contained.
+
+Task 5 changed no VBA runtime, installed template, release artifact, installer, or
+stable manifest. Task 6 remains the hard boundary where a real pilot tool first
+depends on a matched engine and VBA bridge.
+
+Estimated combined difficulty: **48–62%**.
+Estimated professional desirability: **96–99%**.
+
+### Task 6 checkpoint: the first real hybrid pilot
+
+Task 6 crossed the source-code boundary deliberately left untouched by Task 5.
+Invisible Unicode Cleaner is now the first real tool whose analysis can be
+performed by the matched C# engine while VBA continues to own Word, Preview,
+navigation, Apply, and Undo.
+
+Engine 0.2.0 analyzes only the explicitly selected invisible Unicode categories.
+It returns deterministic, document-order, one-UTF-16-unit replacement candidates
+for nonbreaking spaces, zero-width spaces, zero-width nonjoiners, zero-width
+joiners, byte-order marks, soft hyphens, and nonbreaking hyphens. The engine never
+opens Word or mutates the document.
+
+The VBA bridge is intentionally strict. It:
+
+- creates and hardens a per-job owner-only directory through the trusted engine;
+- writes exact UTF-8 snapshots and requests without a shell;
+- launches the engine directly with `CreateProcessW`;
+- validates engine identity, version, capability allowlists, protocol fields,
+  response shape, candidate ranges, fingerprints, replacements, and summaries;
+- rejects duplicate or unknown JSON fields and invalid Unicode;
+- revalidates the complete snapshot, scope, each exact candidate, surrounding
+  context, and paragraph immediately before Apply;
+- aborts before the Undo record and before the first mutation if anything is
+  stale;
+- applies accepted replacements from the end of the document toward the start in
+  one VBA-owned Word Undo record.
+
+Preview uses the existing minimal-highlight infrastructure. Visible characters
+receive exact one-character highlighting. Characters that Word cannot visibly
+shade use the nearest safe one-character cue rather than a whole paragraph or
+page. The legacy full-scan Unicode Preview and Apply paths are no longer active.
+
+Development trust is explicit and intentionally inconvenient to choose
+accidentally: it requires both an absolute engine path and its exact SHA-256 in
+process-local development environment variables, followed by the same strict
+capability handshake. Ordinary product operation has no unsigned or
+version-mismatched fallback. Official trust remains dependent on the matched
+installer manifest, hash verification, and Authenticode.
+
+The final development package proof is a self-contained `win-x64` executable of
+35,108,802 bytes with SHA-256
+`BDEB2CD8578B31946DF0731B80FF3EC8CC2336C807726E5112E5A7C64E36DA44`.
+CleanupSuite may use .NET internally, but requiring users to install, update,
+select, or maintain .NET separately is a rejected product design. The engine and
+its runtime must be installed and serviced as one CleanupSuite component.
+
+Automated evidence at this checkpoint:
+
+- 15 isolated engine contract and analyzer tests passed;
+- 249 repository tests passed with 3 expected skips and 1,105 passing subtests;
+- all 31 VBA builders passed, producing 19,717 lines and 1,361,767 bytes;
+- strict C# formatting verification passed for both engine projects;
+- disposable Word automation passed primitive bridge, seven-candidate analysis,
+  stale-scope rejection, reverse-order Apply, exact one-step Undo restoration, and
+  a 200,000-character/400-candidate performance probe;
+- the large bridge probe completed analysis in approximately 21.75 seconds and
+  then passed full pre-Apply revalidation;
+- a local Microsoft Defender scan of the current self-contained proof reported no
+  threats.
+
+The installed Startup template, final VBA-only release template, stable installer,
+and stable update manifest remain unchanged by the hybrid pilot. The source is not
+yet an official distributable hybrid build.
+
+The final human-visible Word gate passed on July 26, 2026. A disposable macro
+document containing one example of every supported category opened the real
+Invisible Unicode Cleaner form through the CleanupSuite launcher. Preview reported
+exactly one candidate in each of the seven rows. Word showed narrow
+one-character—or, where the character itself was not safely visible,
+nearest-one-character—green cues at the seven actual boundaries. It did not shade
+whole paragraphs, pages, or unrelated text. The probe was closed without saving,
+and no Trust Center setting, installed template, release artifact, or user
+document was changed.
+
+That visual result completes Task 6: the first hybrid pilot now has source,
+contract, performance, Apply/Undo, stale-state, security, packaging, antivirus,
+and human-visible Preview evidence. Distribution remains intentionally deferred
+until the state-aware installer can place and verify the matched signed engine.
+
+The release-integrity regression was updated to reflect the intentional two-track
+state: the installer manifest remains pinned to stable `0.9.2-alpha`, while the
+repository's manual-install `CleanupSuite.dotm` is the separately hash-documented
+`0.9.3-beta-vba-final` checkpoint.
+
+Estimated combined difficulty: **55–68%**.
+Estimated professional desirability: **97–99%**.
+
+### Task 7 checkpoint: unhighlighted results became reviewable
+
+The Preview table had long been able to label a count as `unhighlighted`, but a
+count alone did not let a serious Beta tester inspect the underlying condition.
+Task 7 added a compact review lane without altering the accepted four-button Page
+and Change navigation layout.
+
+When an active unhighlighted row has a nonzero count, Preview Actions now shows a
+subtle pale-blue **Review details** control and a concise context area. Tools may
+register exact review findings with a document range, category, and explanation.
+Each activation moves to the next locatable finding and reports its ordinal,
+category, and context. Findings such as document properties that have no honest
+text location instead receive a document-level explanation; CleanupSuite does not
+invent a misleading highlight.
+
+Duplicate Paragraph Remover is the first tool to provide detailed protected
+locations. When **Include empty paragraphs** is active, required empty-cell
+markers, table-row markers, the final-document marker, and unsupported blank
+structures can be reviewed one at a time. The tool still leaves them unchanged,
+and table-row deletion remains exclusively owned by Table Cleaner.
+
+The shared review collection is preview-scoped, document-bound, deduplicated, and
+cleared on Apply, Reconfigure, Preview teardown, errors, and form termination.
+The disposable Word lifecycle smoke verified both branches: a locatable finding
+moved Selection to the registered range and displayed context, while a
+nonlocatable document-property count displayed its scope explanation without
+offering false navigation. A human-visible probe confirmed that the extra control
+is compact, the summary remains readable, and the existing Page/Change controls
+retain their equal size and accepted colors.
+
+Task 7 also reconciled the Beta records with Chris's accepted deferral of inverse
+tool modes. Straight-to-curly quotes remain the first sensible future candidate,
+but reverse modes are not a `0.9.5-beta` release gate and will not be rushed into
+the hybrid installer transition.
+
+Automated evidence at this checkpoint:
+
+- 250 repository tests passed with 3 expected skips and 1,118 passing subtests;
+- all 31 VBA builders passed;
+- the isolated Word wiring smoke passed for Capitalization, MetaDataSuite, Final
+  Review, Preview Actions, guided risk controls, and representative tool forms;
+- the disposable Preview lifecycle smoke passed Reading View, Page/Change
+  navigation, review-detail navigation/context, formatting restoration, switched
+  windows, closed documents, and progress cleanup;
+- both tracked development `.docm` files, the installed Startup template, release
+  `.dotm`, Setup, and stable update manifest remained unchanged.
+
+Estimated combined difficulty: **28–40%**.
+Estimated professional desirability: **96–99%**.
+
+### Task 8 checkpoint: Setup became the hybrid maintenance boundary
+
+The first hybrid installer implementation was completed on July 26, 2026 without
+changing the published Alpha Setup, stable release manifest, release template, or
+the user's installed Startup template.
+
+The same Setup executable now inspects the per-user installation and presents
+Install when absent; Update, Repair/Reinstall, and Uninstall for an older or
+legacy installation; Repair/Reinstall and Uninstall for the current package; and
+a protected no-downgrade state when a newer package is present. The downloaded
+Setup is an offline maintenance unit containing the matched Word template,
+self-contained engine, protocol definitions, operation rules, and a manifest
+binding all four by version, approved relative path, byte length, and SHA-256.
+The user never installs or maintains .NET separately.
+
+Maintenance is transactional. Setup stages and verifies every component, backs
+up the prior Word template, retains only the newest three installer backups,
+captures the affected installation files for rollback, installs the manifest
+last, verifies the final package, and removes staging material. User settings,
+`Normal.dotm`, Word security settings, Trust Center configuration, and trusted
+locations remain outside Setup's authority.
+
+The production VBA bridge now uses that installed manifest when no explicit
+repository-development engine override is present. It accepts only the matched
+suite/protocol versions and approved component identities and paths, verifies
+file lengths and SHA-256 hashes, and performs the existing capability handshake.
+A mismatch fails closed before analysis or Apply and recommends Setup
+Repair/Reinstall.
+
+The real Setup executable passed an isolated state matrix covering absent,
+legacy, older, current healthy, current damaged, Update, Repair/Reinstall, and
+Uninstall. An intentional failure after engine replacement restored the exact
+pre-repair damaged engine and left no staging directory. Repeated repairs retained
+exactly three backups, and Uninstall removed runtime components while preserving
+backups and a user-settings sentinel.
+
+A separate disposable Word run then removed the development engine override and
+proved the production installed-manifest path end to end. Word verified the
+matched package, completed the capability handshake, received all seven Unicode
+candidates, and rejected a deliberately stale scope before Apply. During that
+gate, two harness-relevant defects were corrected: `.dotm` synchronization now
+preserves the template extension instead of temporarily renaming it `.docm`, and
+the already-loaded Word template is hash-read without requesting a conflicting
+write lock while engine and protocol files retain the stricter lock.
+
+The Setup UI was also reviewed live at the active Windows display scale. The
+absent, older, current, and damaged states were clean, readable, and exposed only
+their intended actions.
+
+Official distribution is still gated on Authenticode. A release build requires a
+signing certificate, signs the self-contained engine before the package hash is
+created, then signs the completed Setup. Clean-machine signature/reputation
+testing and final publication remain release work.
+
+Automated evidence at this checkpoint:
+
+- 256 repository tests passed with 3 expected skips and 1,131 passing subtests;
+- all 31 VBA builders passed after the production manifest resolver was added;
+- the isolated installer matrix passed its state, rollback, backup, settings, and
+  cleanup checks;
+- the disposable production-manifest Word smoke passed without a development
+  engine override;
+- the absent, older, current, and damaged Setup layouts passed live review;
+- the stable release directory and both tracked `.docm` files remained unchanged.
+
+Estimated combined difficulty: **72–84%**.
+Estimated professional desirability: **98–99.7%**.
+
+### The first signed candidate must not also be the publication
+
+The release-engineering closeout on July 26, 2026 found one remaining avoidable
+risk: the original hybrid build switch signed the package only while writing
+directly into the official `release` directory. That made it impossible to
+inspect the first signed engine and Setup independently before those artifacts
+replaced the stable release.
+
+Candidate signing and publication were therefore separated. `-SignBuild` now
+creates `build\installer-signed-candidate`, signs the staged self-contained engine
+before its package hash is calculated, signs the completed Setup, and exposes a
+copy of the exact matched payload for independent signature, hash, and security
+inspection. It does not modify `release`. `-PublishRelease` remains the later,
+intentional action that writes the official package and release pointer after the
+candidate has passed every gate. Publication itself compiles and signs outside
+`release`, captures the prior template, Setup, and release pointer, and restores
+all three if artifact replacement fails.
+
+The correction was followed by the complete repository gate (257 passed, 3
+expected skips, and 1,131 passing subtests), all 31 VBA builders, the full
+installer maintenance matrix, and the production installed-manifest Word smoke.
+Microsoft Defender, enabled with current definitions, found no threats in the
+exact unsigned development Setup and self-contained engine. The stable release
+remained unchanged.
+
+No code-signing certificate with a usable private key was present in either the
+current-user or local-machine certificate store, and both candidate binaries
+correctly reported `NotSigned`. The project therefore held publication at the
+security boundary instead of weakening it. Remaining official-Beta work is
+Authenticode signing, repeating the complete gate against the signed candidate,
+and clean-machine signature/reputation, installation, maintenance, Word
+Preview/Apply, and Undo validation.
+
+Estimated combined difficulty: **18–30% remaining after a certificate is
+available**.
+Estimated professional desirability: **99–100%**.
+
+### Free software should pursue a free trust path first
+
+On July 27, 2026, Chris declined to pay a continuing code-signing fee for a free
+application. Research found a credible alternative: SignPath Foundation offers
+sponsored public-trust signing without charge to accepted open-source projects.
+CleanupSuite appears to satisfy the principal published conditions—MIT-licensed
+public source, existing releases, active maintenance, documented behavior,
+per-user installation and uninstall, local document processing, and an
+automated Windows validation workflow—but acceptance remains SignPath
+Foundation's decision.
+
+The project prepared the policy material needed for a responsible application:
+a public code-signing policy with authorship, review, and signing-approval roles;
+a privacy policy accurately describing local hybrid jobs and the optional
+GitHub-hosted update check; and a plan for repository-linked, manually approved
+engine-then-Setup signing. Sponsored signatures would display **SignPath
+Foundation** as the Windows certificate publisher while the CleanupSuite product
+publisher remains **MasseysLab**.
+
+A safe unsigned-install guide was also added for the waiting period or a rejected
+application. It requires the official repository, complete SHA-256 comparison,
+and Microsoft Defender scanning before the user considers Windows' one-time
+**More info** / **Run anyway** choice. It explicitly forbids disabling
+SmartScreen, Defender, Word macro security, the Trust Center, or organization
+policy. Template-only manual installation is limited to releases explicitly
+labeled standalone or VBA-only; a hybrid release must keep its template, engine,
+protocol, rules, and manifest matched.
+
+The stronger signed hybrid release contract remains intact while the free path is
+evaluated. An unsigned hybrid release would be a separate, explicit distribution
+decision rather than an accidental weakening of the existing gate.
+
+Estimated combined difficulty: **28–42%**.
+Estimated professional desirability: **98–99.5%**.
+
+### Initial channel clarification (superseded)
+
+Chris's July 27, 2026 installation screenshots exposed a documentation failure:
+the repository correctly listed `0.9.3-beta-vba-final` as the newest manual
+prerelease, but the prominent generic Setup link still downloaded the stable
+`0.9.2-alpha` installer. Setup therefore correctly offered 0.9.2, and Word
+correctly reported 0.9.2 as current against the stable manifest, but the page had
+not made that channel boundary clear before the click.
+
+The README was reorganized so the first download decision explicitly names both
+channels:
+
+- stable Setup installs `0.9.2-alpha`; and
+- the `0.9.3-beta-vba-final` checkpoint has no new Setup and requires its release
+  asset to be installed manually.
+
+The prominent 0.9.3 choice now links directly to its `CleanupSuite.dotm` asset
+and manual-install notes. The update-check source now says **current on the
+stable installer channel** and explains that manual-install prereleases are not
+offered by that check. Frozen 0.9.2 and 0.9.3 release artifacts were not altered.
+
+Estimated combined difficulty: **5–10%**.
+Estimated professional desirability: **98–99%**.
+
+### 0.9.3 becomes the single stable VBA-only release
+
+Chris then made the product decision explicit: **0.9.3 is the stable release**.
+The earlier attempt to preserve 0.9.2 as a separate stable installer channel
+created exactly the confusion that the release page should prevent. A user who
+selects the prominent Setup download must receive the current stable 0.9.3
+product, not an older 0.9.2 package followed by an apparently contradictory
+“up to date” message.
+
+The `0.9.3-beta-vba-final` tag and internal source version remain unchanged
+because they identify the already-frozen, hash-verified template. They are
+technical identity, not a second public distribution channel. Public wording
+identifies the product as **0.9.3 Stable — Final VBA-Only Release**.
+
+A dedicated standalone Setup was added rather than weakening or repurposing the
+future hybrid installer. It:
+
+- embeds the exact frozen 0.9.3 template;
+- refuses to build if the supplied template SHA-256 differs;
+- verifies that embedded hash again before installation;
+- installs per user without administrator rights or security-policy changes;
+- keeps the three newest exact backups;
+- detects whether CleanupSuite is absent, current, or another version;
+- presents Install, Update, Repair/Reinstall, and Uninstall according to that
+  state; and
+- clearly labels the unsigned release and directs users to verify its published
+  SHA-256 and scan it with Microsoft Defender.
+
+The stable manifest, default Setup link, release notes, versioning text, safety
+guide, and update message now describe one stable 0.9.3 channel. The manual
+template remains an alternative installation method for environments where
+Setup cannot be used. The hybrid 0.9.5 installer and its stronger matched,
+signed-package release gate remain separate.
+
+Validation of the exact stable artifacts completed with **265 passed, 3
+skipped**, 1,131 subtests, 31 clean builders, the isolated installer
+install/reinstall/uninstall matrix, exact template and Setup hash checks, and a
+Microsoft Defender custom scan with protection enabled.
+
+Estimated combined difficulty: **18–28%**.
+Estimated professional desirability: **99–100%**.
 
 ## Primary Historical Sources
 

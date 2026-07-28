@@ -8,7 +8,10 @@ The project uses a simple SemVer-style ladder, but with `0.x.0` milestones until
 
 `0.9.3-beta-vba-final`
 
-This manual-install prerelease is the final standalone VBA-only checkpoint before CleanupSuite begins requiring the approved C#/VBA hybrid system. It completes the structural-safety package and Preview navigation model while preserving fast punctuation Preview, stable Reading View, minimal change markers, and one-step Undo. It intentionally does not replace the `0.9.2-alpha` stable installer channel. Git tag: `v0.9.3-beta-vba-final`.
+This is the current stable standalone VBA-only product. The retained technical
+identifier and tag name describe the already-frozen template; the public release
+status is **0.9.3 Stable — Final VBA-Only Release**. Active hybrid Beta
+development continues separately on `codex/0.9.5-beta`.
 
 ## Roadmap
 
@@ -27,7 +30,7 @@ This manual-install prerelease is the final standalone VBA-only checkpoint befor
 | `0.9.0-alpha` | Official Alpha with the global template, installer, update checks, and full documentation. Git tag: `v0.9.0-alpha`. |
 | `0.9.1-alpha` | Alpha hotfix for MetaDataSuite on synchronized personal OneDrive documents. Git tag: `v0.9.1-alpha`. |
 | `0.9.2-alpha` | Alpha hotfix for punctuation performance and Preview/Reading View presentation. Git tag: `v0.9.2-alpha`. |
-| `0.9.3-beta-vba-final` | Manual-install prerelease freezing the last complete VBA-only product after Beta Tasks 1–3. Git tag: `v0.9.3-beta-vba-final`. |
+| `0.9.3-beta-vba-final` | Stable installer release freezing the last complete VBA-only product after Beta Tasks 1–3. The technical tag is retained because it identifies the already-frozen template. Git tag: `v0.9.3-beta-vba-final`. |
 | `0.9.5-beta` | Official Beta release after Alpha feedback, full MetaData-project incorporation, and the planned Capitalization follow-up upgrades. |
 | `1.0.0` | Global `.dotm` Word add-in/template release suitable for normal use on any document. |
 

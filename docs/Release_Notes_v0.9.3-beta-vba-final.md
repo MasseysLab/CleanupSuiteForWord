@@ -1,12 +1,13 @@
-# CleanupSuite For Word 0.9.3 Beta — Final VBA-Only Checkpoint
+# CleanupSuite For Word 0.9.3 Stable — Final VBA-Only Release
 
 **Tag:** `v0.9.3-beta-vba-final`
-**Distribution:** Manual-install `CleanupSuite.dotm` only
-**Installer channel:** Remains on `0.9.2-alpha`
+**Internal version identifier:** `0.9.3-beta-vba-final`
+**Distribution:** Stable per-user Setup and manual-install `CleanupSuite.dotm`
+**Stable installer channel:** `0.9.3`
 
 ## Purpose
 
-This special prerelease freezes the last complete CleanupSuite build that runs
+This stable release freezes the last complete CleanupSuite build that runs
 entirely in VBA. It preserves a recoverable, distributable checkpoint before any
 real tool is made dependent on the approved C#/VBA hybrid engine.
 
@@ -59,19 +60,36 @@ real tool is made dependent on the approved C#/VBA hybrid engine.
 
 ## Installation
 
-This prerelease has no new Setup executable.
+### Preferred: stable Setup
 
 1. Close Word.
-2. Download `CleanupSuite.dotm` from this GitHub prerelease.
-3. Back up any existing `%APPDATA%\Microsoft\Word\STARTUP\CleanupSuite.dotm`.
-4. Copy the downloaded template into that Startup folder.
+2. Download `CleanupSuiteForWord-Setup.exe` from this release or the stable link
+   in the repository README.
+3. Confirm its SHA-256 matches the published Setup value and scan it with
+   Microsoft Defender.
+4. Run Setup and choose Install, Update, Repair/Reinstall, or Uninstall as
+   appropriate.
 5. Reopen Word.
 
-The stable installer, stable update manifest, repair/uninstall work, and hybrid
-engine installation remain separate work for the official `0.9.5-beta`.
+### Manual alternative
+
+If Setup cannot be used, download `CleanupSuite.dotm` from this release, verify
+the template hash below, scan it, close Word, and copy it to
+`%APPDATA%\Microsoft\Word\STARTUP`. If Windows marked the file as downloaded,
+open **Properties**, select **Unblock**, and then select **Apply** and **OK**.
+
+See the [unsigned-install safety guide](Unsigned_Installation_Guide.md). Do not
+disable SmartScreen, Defender, Word macro security, or the Trust Center.
+
+The stable Setup embeds this exact frozen template and the stable update manifest
+now points to it. The future hybrid engine installer remains separate work for
+the official `0.9.5-beta`.
 
 Verified `CleanupSuite.dotm` SHA-256:
 `4F815EE0DF4BACBDA5150A82DB2D66739592FA2098184C8D7EC7B535D73AB10C`
+
+Verified stable `CleanupSuiteForWord-Setup.exe` SHA-256:
+`B9A98AA9EE609821F5EEA348F7B1CD3325CCE0D6B154408BBDAF9ABB0B6E0AB9`
 
 ## Deferred
 
