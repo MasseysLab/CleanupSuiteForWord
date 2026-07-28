@@ -5,6 +5,12 @@ signature can still be installed, but Windows cannot use a certificate to prove
 who published that downloaded file. These steps preserve Windows protections
 while letting the user make an informed, one-time choice.
 
+Use this guide only for the current unsigned Alpha Setup or a future release
+whose official release page explicitly labels Setup **unsigned** and publishes
+its Setup SHA-256. The current `0.9.5-beta` hybrid candidate still requires valid
+signatures and will refuse an unsigned production installation while the free
+SignPath application is pursued.
+
 ## Before Running Setup
 
 1. Download `CleanupSuiteForWord-Setup.exe` only from the official

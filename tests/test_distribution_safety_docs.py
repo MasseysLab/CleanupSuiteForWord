@@ -24,6 +24,8 @@ def test_unsigned_install_guide_preserves_windows_and_word_protections():
 
     assert "Get-FileHash" in guide
     assert "64-character result" in guide
+    assert "explicitly labels Setup **unsigned**" in guide
+    assert "will refuse an unsigned production installation" in guide
     assert "Scan with" in guide
     assert "Microsoft Defender" in guide
     assert "**More info**" in guide
