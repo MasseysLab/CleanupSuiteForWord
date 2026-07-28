@@ -63,9 +63,16 @@ This prerelease has no new Setup executable.
 
 1. Close Word.
 2. Download `CleanupSuite.dotm` from this GitHub prerelease.
-3. Back up any existing `%APPDATA%\Microsoft\Word\STARTUP\CleanupSuite.dotm`.
-4. Copy the downloaded template into that Startup folder.
-5. Reopen Word.
+3. Confirm its SHA-256 matches the value below and scan it with Microsoft
+   Defender.
+4. If Windows marked the file as downloaded, right-click it, select
+   **Properties**, select **Unblock**, and then select **Apply** and **OK**.
+5. Back up any existing `%APPDATA%\Microsoft\Word\STARTUP\CleanupSuite.dotm`.
+6. Copy the downloaded template into that Startup folder.
+7. Reopen Word.
+
+See the [unsigned-install safety guide](Unsigned_Installation_Guide.md). Do not
+disable SmartScreen, Defender, Word macro security, or the Trust Center.
 
 The stable installer, stable update manifest, repair/uninstall work, and hybrid
 engine installation remain separate work for the official `0.9.5-beta`.

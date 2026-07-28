@@ -1236,6 +1236,41 @@ Estimated combined difficulty: **18–30% remaining after a certificate is
 available**.
 Estimated professional desirability: **99–100%**.
 
+### Free software should pursue a free trust path first
+
+On July 27, 2026, Chris declined to pay a continuing code-signing fee for a free
+application. Research found a credible alternative: SignPath Foundation offers
+sponsored public-trust signing without charge to accepted open-source projects.
+CleanupSuite appears to satisfy the principal published conditions—MIT-licensed
+public source, existing releases, active maintenance, documented behavior,
+per-user installation and uninstall, local document processing, and an
+automated Windows validation workflow—but acceptance remains SignPath
+Foundation's decision.
+
+The project prepared the policy material needed for a responsible application:
+a public code-signing policy with authorship, review, and signing-approval roles;
+a privacy policy accurately describing local hybrid jobs and the optional
+GitHub-hosted update check; and a plan for repository-linked, manually approved
+engine-then-Setup signing. Sponsored signatures would display **SignPath
+Foundation** as the Windows certificate publisher while the CleanupSuite product
+publisher remains **MasseysLab**.
+
+A safe unsigned-install guide was also added for the waiting period or a rejected
+application. It requires the official repository, complete SHA-256 comparison,
+and Microsoft Defender scanning before the user considers Windows' one-time
+**More info** / **Run anyway** choice. It explicitly forbids disabling
+SmartScreen, Defender, Word macro security, the Trust Center, or organization
+policy. Template-only manual installation is limited to releases explicitly
+labeled standalone or VBA-only; a hybrid release must keep its template, engine,
+protocol, rules, and manifest matched.
+
+The stronger signed hybrid release contract remains intact while the free path is
+evaluated. An unsigned hybrid release would be a separate, explicit distribution
+decision rather than an accidental weakening of the existing gate.
+
+Estimated combined difficulty: **28–42%**.
+Estimated professional desirability: **98–99.5%**.
+
 ## Primary Historical Sources
 
 - [Current handoff](../WHERE_WE_LEFT_OFF.md)

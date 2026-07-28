@@ -24,11 +24,11 @@ The [CleanupSuite User Manual](documents/CleanupSuite_User_Manual.pdf) explains 
 
 The installer places `CleanupSuite.dotm` in your own Word Startup folder. It does not require administrator rights, edit `Normal.dotm`, change Word's macro-security policy, or install for other Windows accounts. Existing installations are backed up first; only the newest three installer backups are retained.
 
-The installer and app check the stable release manifest for a newer version. CleanupSuite asks before opening an update and its launcher lets you disable periodic checks; when disabled, it explains how to turn them back on. Because the Alpha installer is not yet code-signed, Windows may show a publisher/reputation warning even though the publisher recorded by the installer is MasseysLab.
+The installer and app check the stable release manifest for a newer version. CleanupSuite asks before opening an update and its launcher lets you disable periodic checks; when disabled, it explains how to turn them back on. Because the current Alpha installer is not yet code-signed, Windows may show a publisher/reputation warning. Follow the [unsigned-install safety guide](docs/Unsigned_Installation_Guide.md) to verify and scan the official download before deciding whether to run it. Never disable SmartScreen, Microsoft Defender, Word macro security, or the Trust Center to install CleanupSuite.
 
-### Alternative: manual installation
+### Alternative for standalone VBA releases
 
-Close Word, download `CleanupSuite.dotm` from the newest [GitHub release](https://github.com/MasseysLab/CleanupSuiteForWord/releases), copy it to `%APPDATA%\Microsoft\Word\STARTUP`, and reopen Word. If Windows blocked the downloaded file, open its **Properties**, select **Unblock**, and copy it again.
+For releases explicitly labeled **standalone** or **VBA-only**, close Word, download `CleanupSuite.dotm` from the official [GitHub release](https://github.com/MasseysLab/CleanupSuiteForWord/releases), verify and scan it, copy it to `%APPDATA%\Microsoft\Word\STARTUP`, and reopen Word. If Windows blocked the downloaded file, open its **Properties**, select **Unblock**, and copy it again. Hybrid releases must use their matched Setup package because the template, analysis engine, protocol, and rules are installed together.
 
 To uninstall manually, close Word and remove `%APPDATA%\Microsoft\Word\STARTUP\CleanupSuite.dotm`. The installer also registers a normal per-user uninstall entry in Windows Settings.
 
@@ -44,6 +44,17 @@ the stable installer and update manifest on `0.9.2-alpha`. See the
 for its safety, navigation, validation, and installation details.
 
 Software and documentation are licensed under the [MIT License](LICENSE).
+
+## Code signing policy
+
+CleanupSuite is pursuing sponsored public-trust signing for its open-source
+releases. Free code signing provided by [SignPath.io](https://signpath.io/),
+certificate by [SignPath Foundation](https://signpath.org/), is the preferred
+no-cost path, subject to application approval.
+
+See the complete [code signing policy](CODE_SIGNING_POLICY.md), [privacy
+policy](PRIVACY.md), and [unsigned-install safety
+guide](docs/Unsigned_Installation_Guide.md).
 
 ## Contributor quick start
 

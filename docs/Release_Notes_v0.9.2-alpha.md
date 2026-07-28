@@ -30,7 +30,10 @@ and a stable Reading View.
 
 Close Word and run `release/CleanupSuiteForWord-Setup.exe`. Existing
 CleanupSuite templates are backed up automatically, with the newest three
-backups retained.
+backups retained. This installer is unsigned. Before running it, verify its
+published SHA-256, scan it with Microsoft Defender, and follow the
+[unsigned-install safety guide](Unsigned_Installation_Guide.md). Do not disable
+SmartScreen, Defender, Word macro security, or the Trust Center.
 
 ## Verification
 

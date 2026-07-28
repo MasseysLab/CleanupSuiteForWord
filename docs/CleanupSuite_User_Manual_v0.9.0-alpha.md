@@ -51,11 +51,23 @@ Keep Auto-save turned on unless you have a specific reason to turn it off.
 
 The installer works only for your Windows account and does not need administrator rights. It does not edit `Normal.dotm`, weaken macro security, or add a new trusted folder. Before replacing an older copy it makes a backup and retains the newest three.
 
-This Alpha installer is not yet code-signed, so Windows may show a publisher or reputation warning. The release page publishes the template's SHA-256 hash for verification.
+This Alpha installer is not yet code-signed, so Windows may show a publisher or
+reputation warning. Before running it, download it only from the official
+CleanupSuite GitHub repository, compare its SHA-256 with the published value,
+and scan it with Microsoft Defender. If Microsoft Defender SmartScreen still
+shows **Windows protected your PC**, select **More info** and **Run anyway** only
+after those checks pass. Do not disable SmartScreen, Defender, Word macro
+security, or the Trust Center. The complete steps are in the
+[unsigned-install safety guide](Unsigned_Installation_Guide.md).
 
-### Manual alternative
+### Manual alternative for standalone VBA releases
 
-Close Word, copy `CleanupSuite.dotm` from the newest GitHub release to `%APPDATA%\Microsoft\Word\STARTUP`, and reopen Word. If Windows blocked the download, right-click it, select **Properties**, select **Unblock**, and copy it again.
+For a release explicitly labeled **standalone** or **VBA-only**, close Word,
+verify and scan `CleanupSuite.dotm` from the official GitHub release, copy it to
+`%APPDATA%\Microsoft\Word\STARTUP`, and reopen Word. If Windows blocked the
+download, right-click it, select **Properties**, select **Unblock**, and copy it
+again. Do not use this template-only method for a hybrid release because its
+template and analysis engine must remain a matched package.
 
 ## Opening CleanupSuite
 
