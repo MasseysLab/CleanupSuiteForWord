@@ -5,7 +5,20 @@
 
 CleanupSuite For Word is a set of preview-first tools for cleaning pasted text, paragraphs, lists, formatting, document objects, links, review content, and editable metadata in Microsoft Word; it is for speeding up careful document cleanup, not for replacing human review or repairing every document automatically.
 
-Close Word, download and run [CleanupSuiteForWord-Setup.exe](https://github.com/MasseysLab/CleanupSuiteForWord/raw/refs/heads/main/release/CleanupSuiteForWord-Setup.exe), then reopen Word and select **CleanupSuite** on the ribbon.
+## Choose the release channel before downloading
+
+- **Stable installer — 0.9.2 Alpha:** close Word, download and run
+  [CleanupSuiteForWord-Setup.exe](https://github.com/MasseysLab/CleanupSuiteForWord/raw/refs/heads/main/release/CleanupSuiteForWord-Setup.exe),
+  then reopen Word. This Setup intentionally installs `0.9.2-alpha`.
+- **Newest standalone VBA checkpoint — 0.9.3 Beta:** this prerelease has no new
+  Setup. Download
+  [CleanupSuite.dotm](https://github.com/MasseysLab/CleanupSuiteForWord/releases/download/v0.9.3-beta-vba-final/CleanupSuite.dotm)
+  and follow its [manual-install release
+  notes](docs/Release_Notes_v0.9.3-beta-vba-final.md). Installing the stable
+  Setup does not install this manual prerelease.
+
+After installing either channel, reopen Word and select **CleanupSuite** on the
+ribbon.
 
 ## Start using it
 
@@ -22,9 +35,21 @@ The [CleanupSuite User Manual](documents/CleanupSuite_User_Manual.pdf) explains 
 
 ### Preferred: per-user installer
 
-The installer places `CleanupSuite.dotm` in your own Word Startup folder. It does not require administrator rights, edit `Normal.dotm`, change Word's macro-security policy, or install for other Windows accounts. Existing installations are backed up first; only the newest three installer backups are retained.
+The current stable installer places the `0.9.2-alpha` `CleanupSuite.dotm` in your
+own Word Startup folder. It does not require administrator rights, edit
+`Normal.dotm`, change Word's macro-security policy, or install for other Windows
+accounts. Existing installations are backed up first; only the newest three
+installer backups are retained.
 
-The installer and app check the stable release manifest for a newer version. CleanupSuite asks before opening an update and its launcher lets you disable periodic checks; when disabled, it explains how to turn them back on. Because the current Alpha installer is not yet code-signed, Windows may show a publisher/reputation warning. Follow the [unsigned-install safety guide](docs/Unsigned_Installation_Guide.md) to verify and scan the official download before deciding whether to run it. Never disable SmartScreen, Microsoft Defender, Word macro security, or the Trust Center to install CleanupSuite.
+The installer and app check the **stable installer channel** for a newer
+version. They do not automatically install a manual-only prerelease. CleanupSuite
+asks before opening a stable update and its launcher lets you disable periodic
+checks; when disabled, it explains how to turn them back on. Because the current
+Alpha installer is not yet code-signed, Windows may show a publisher/reputation
+warning. Follow the [unsigned-install safety
+guide](docs/Unsigned_Installation_Guide.md) to verify and scan the official
+download before deciding whether to run it. Never disable SmartScreen, Microsoft
+Defender, Word macro security, or the Trust Center to install CleanupSuite.
 
 ### Alternative for standalone VBA releases
 
@@ -35,7 +60,9 @@ To uninstall manually, close Word and remove `%APPDATA%\Microsoft\Word\STARTUP\C
 ## Releases
 
 - Stable installer release: **0.9.2 Alpha** (`v0.9.2-alpha`)
-- Latest manual-install prerelease: **0.9.3 Beta — Final VBA-Only Checkpoint** (`v0.9.3-beta-vba-final`)
+- Latest manual-install prerelease:
+  [**0.9.3 Beta — Final VBA-Only Checkpoint**](https://github.com/MasseysLab/CleanupSuiteForWord/releases/tag/v0.9.3-beta-vba-final)
+  (`v0.9.3-beta-vba-final`)
 - Publisher: **MasseysLab**
 
 The special prerelease contains only the standalone `CleanupSuite.dotm`; it leaves

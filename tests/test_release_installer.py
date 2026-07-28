@@ -144,3 +144,10 @@ def test_beta_release_candidate_gate_requires_matched_signed_scanned_artifacts()
     assert "Get-MpComputerStatus" in script
     assert "-ScanType 3" in script
     assert "Beta Release Candidate Defender" in script
+
+
+def test_update_message_names_the_stable_channel_and_manual_prerelease_boundary():
+    source = read("src/modules/modUpdateChecker.bas")
+
+    assert "current on the stable installer channel" in source
+    assert "Manual-install prereleases are not offered by this check." in source

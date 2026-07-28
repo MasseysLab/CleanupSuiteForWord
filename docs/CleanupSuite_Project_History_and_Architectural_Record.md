@@ -1271,6 +1271,30 @@ decision rather than an accidental weakening of the existing gate.
 Estimated combined difficulty: **28–42%**.
 Estimated professional desirability: **98–99.5%**.
 
+### Stable Setup and manual prerelease are different channels
+
+Chris's July 27, 2026 installation screenshots exposed a documentation failure:
+the repository correctly listed `0.9.3-beta-vba-final` as the newest manual
+prerelease, but the prominent generic Setup link still downloaded the stable
+`0.9.2-alpha` installer. Setup therefore correctly offered 0.9.2, and Word
+correctly reported 0.9.2 as current against the stable manifest, but the page had
+not made that channel boundary clear before the click.
+
+The README was reorganized so the first download decision explicitly names both
+channels:
+
+- stable Setup installs `0.9.2-alpha`; and
+- the `0.9.3-beta-vba-final` checkpoint has no new Setup and requires its release
+  asset to be installed manually.
+
+The prominent 0.9.3 choice now links directly to its `CleanupSuite.dotm` asset
+and manual-install notes. The update-check source now says **current on the
+stable installer channel** and explains that manual-install prereleases are not
+offered by that check. Frozen 0.9.2 and 0.9.3 release artifacts were not altered.
+
+Estimated combined difficulty: **5–10%**.
+Estimated professional desirability: **98–99%**.
+
 ## Primary Historical Sources
 
 - [Current handoff](../WHERE_WE_LEFT_OFF.md)
