@@ -5,20 +5,16 @@
 
 CleanupSuite For Word is a set of preview-first tools for cleaning pasted text, paragraphs, lists, formatting, document objects, links, review content, and editable metadata in Microsoft Word; it is for speeding up careful document cleanup, not for replacing human review or repairing every document automatically.
 
-## Choose the release channel before downloading
+## Install the stable release
 
-- **Stable installer — 0.9.2 Alpha:** close Word, download and run
-  [CleanupSuiteForWord-Setup.exe](https://github.com/MasseysLab/CleanupSuiteForWord/raw/refs/heads/main/release/CleanupSuiteForWord-Setup.exe),
-  then reopen Word. This Setup intentionally installs `0.9.2-alpha`.
-- **Newest standalone VBA checkpoint — 0.9.3 Beta:** this prerelease has no new
-  Setup. Download
-  [CleanupSuite.dotm](https://github.com/MasseysLab/CleanupSuiteForWord/releases/download/v0.9.3-beta-vba-final/CleanupSuite.dotm)
-  and follow its [manual-install release
-  notes](docs/Release_Notes_v0.9.3-beta-vba-final.md). Installing the stable
-  Setup does not install this manual prerelease.
+Close Word, download and run the stable
+[CleanupSuiteForWord-Setup.exe](https://github.com/MasseysLab/CleanupSuiteForWord/raw/refs/heads/main/release/CleanupSuiteForWord-Setup.exe),
+then reopen Word and select **CleanupSuite** on the ribbon. The default Setup
+installs **CleanupSuite 0.9.3 Stable**, the final standalone VBA-only release.
+It detects an existing installation and offers the appropriate Install, Update,
+Repair/Reinstall, or Uninstall choices.
 
-After installing either channel, reopen Word and select **CleanupSuite** on the
-ribbon.
+The historical `0.9.2-alpha` Setup is no longer the default download.
 
 ## Start using it
 
@@ -35,40 +31,45 @@ The [CleanupSuite User Manual](documents/CleanupSuite_User_Manual.pdf) explains 
 
 ### Preferred: per-user installer
 
-The current stable installer places the `0.9.2-alpha` `CleanupSuite.dotm` in your
-own Word Startup folder. It does not require administrator rights, edit
-`Normal.dotm`, change Word's macro-security policy, or install for other Windows
-accounts. Existing installations are backed up first; only the newest three
-installer backups are retained.
+The stable installer places the `0.9.3` standalone VBA-only
+`CleanupSuite.dotm` in your own Word Startup folder. It does not require
+administrator rights, edit `Normal.dotm`, change Word's macro-security policy,
+or install for other Windows accounts. Existing installations are backed up
+first; only the newest three installer backups are retained.
 
-The installer and app check the **stable installer channel** for a newer
-version. They do not automatically install a manual-only prerelease. CleanupSuite
-asks before opening a stable update and its launcher lets you disable periodic
-checks; when disabled, it explains how to turn them back on. Because the current
-Alpha installer is not yet code-signed, Windows may show a publisher/reputation
-warning. Follow the [unsigned-install safety
+The installer and app check the **stable release channel** for a newer version.
+CleanupSuite asks before opening an update, and its launcher lets you disable
+periodic checks; when disabled, it explains how to turn them back on. Because
+the current stable installer is not yet code-signed, Windows may show a
+publisher/reputation warning. Follow the [unsigned-install safety
 guide](docs/Unsigned_Installation_Guide.md) to verify and scan the official
 download before deciding whether to run it. Never disable SmartScreen, Microsoft
 Defender, Word macro security, or the Trust Center to install CleanupSuite.
 
-### Alternative for standalone VBA releases
+### Manual-install alternative
 
-For releases explicitly labeled **standalone** or **VBA-only**, close Word, download `CleanupSuite.dotm` from the official [GitHub release](https://github.com/MasseysLab/CleanupSuiteForWord/releases), verify and scan it, copy it to `%APPDATA%\Microsoft\Word\STARTUP`, and reopen Word. If Windows blocked the downloaded file, open its **Properties**, select **Unblock**, and copy it again. Hybrid releases must use their matched Setup package because the template, analysis engine, protocol, and rules are installed together.
+If Setup cannot be used, close Word, download
+[CleanupSuite.dotm](https://github.com/MasseysLab/CleanupSuiteForWord/releases/download/v0.9.3-beta-vba-final/CleanupSuite.dotm)
+from the official stable release, verify and scan it, copy it to
+`%APPDATA%\Microsoft\Word\STARTUP`, and reopen Word. If Windows blocked the
+downloaded file, open its **Properties**, select **Unblock**, and copy it again.
+Future hybrid releases must use their matched Setup package because the
+template, analysis engine, protocol, and rules are installed together.
 
 To uninstall manually, close Word and remove `%APPDATA%\Microsoft\Word\STARTUP\CleanupSuite.dotm`. The installer also registers a normal per-user uninstall entry in Windows Settings.
 
 ## Releases
 
-- Stable installer release: **0.9.2 Alpha** (`v0.9.2-alpha`)
-- Latest manual-install prerelease:
-  [**0.9.3 Beta — Final VBA-Only Checkpoint**](https://github.com/MasseysLab/CleanupSuiteForWord/releases/tag/v0.9.3-beta-vba-final)
+- Stable installer release:
+  [**0.9.3 Stable — Final VBA-Only Release**](https://github.com/MasseysLab/CleanupSuiteForWord/releases/tag/v0.9.3-beta-vba-final)
   (`v0.9.3-beta-vba-final`)
+- Historical release: **0.9.2 Alpha** (`v0.9.2-alpha`)
 - Publisher: **MasseysLab**
 
-The special prerelease contains only the standalone `CleanupSuite.dotm`; it leaves
-the stable installer and update manifest on `0.9.2-alpha`. See the
-[0.9.3 Beta VBA-only release notes](docs/Release_Notes_v0.9.3-beta-vba-final.md)
-for its safety, navigation, validation, and installation details.
+The stable Setup and manual template both install the same verified 0.9.3
+standalone VBA-only release. See the
+[0.9.3 Stable release notes](docs/Release_Notes_v0.9.3-beta-vba-final.md) for
+its safety, navigation, validation, and installation details.
 
 Software and documentation are licensed under the [MIT License](LICENSE).
 
@@ -100,11 +101,17 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_word_alpha_smoke.ps1
 
 Run the Word alpha smoke runner before release and complete its remaining visual review in Word.
 
-Build the per-user release installer only after the Startup template is refreshed:
+Build the stable 0.9.3 VBA-only Setup only from the verified frozen release
+template:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\installer\build-installer.ps1
+powershell -ExecutionPolicy Bypass -File .\installer\build-vba-only-installer.ps1 `
+  -TemplatePath .\build\v0.9.3-vba-default\CleanupSuite.dotm
 ```
+
+`installer\build-installer.ps1` is reserved for the future matched hybrid
+package and must not replace the stable VBA-only Setup before that release gate
+passes.
 
 Important paths:
 

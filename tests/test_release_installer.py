@@ -19,7 +19,7 @@ def manifest_values() -> dict[str, str]:
     return values
 
 
-def test_stable_installer_pointer_and_special_vba_template_are_consistent():
+def test_stable_installer_pointer_and_vba_template_are_consistent():
     setup = ROOT / "release" / "CleanupSuiteForWord-Setup.exe"
     template = ROOT / "release" / "CleanupSuite.dotm"
     special_release_notes = read("docs/Release_Notes_v0.9.3-beta-vba-final.md")
@@ -27,12 +27,16 @@ def test_stable_installer_pointer_and_special_vba_template_are_consistent():
 
     assert setup.stat().st_size > 100_000
     assert template.stat().st_size > 100_000
-    assert values["version"] == "0.9.2-alpha"
-    assert values["tag"] == "v0.9.2-alpha"
+    assert values["version"] == "0.9.3-beta-vba-final"
+    assert values["tag"] == "v0.9.3-beta-vba-final"
     assert values["template_sha256"] == (
-        "a256a27bb58583c163687c45dc70dcb9074212d73a85d027b33521be48cf9cc0"
+        "4f815ee0df4bacbda5150a82db2d66739592fa2098184c8d7ec7b535d73ab10c"
     )
+    assert values["setup_sha256"] == hashlib.sha256(setup.read_bytes()).hexdigest()
     assert values["setup_url"].endswith("/main/release/CleanupSuiteForWord-Setup.exe")
+    assert values["template_url"].endswith(
+        "/v0.9.3-beta-vba-final/CleanupSuite.dotm"
+    )
     assert (
         hashlib.sha256(template.read_bytes()).hexdigest().upper()
         in special_release_notes
@@ -146,8 +150,44 @@ def test_beta_release_candidate_gate_requires_matched_signed_scanned_artifacts()
     assert "Beta Release Candidate Defender" in script
 
 
-def test_update_message_names_the_stable_channel_and_manual_prerelease_boundary():
+def test_update_message_names_the_stable_release_channel():
     source = read("src/modules/modUpdateChecker.bas")
 
-    assert "current on the stable installer channel" in source
-    assert "Manual-install prereleases are not offered by this check." in source
+    assert "current on the stable release channel" in source
+    assert "Manual-install prereleases are not offered by this check." not in source
+
+
+def test_vba_only_setup_is_separate_and_bound_to_final_vba_checkpoint():
+    source = read("installer/CleanupSuiteForWord.VbaOnly.Setup.cs")
+    build = read("installer/build-vba-only-installer.ps1")
+
+    assert 'DisplayVersion = "0.9.3-beta-vba-final"' in source
+    assert "0.9.3 Stable - Final VBA-Only Release" in source
+    assert "4f815ee0df4bacbda5150a82db2d66739592fa2098184c8d7ec7b535d73ab10c" in source
+    assert "GetManifestResourceStream(\"CleanupSuite.dotm\")" in source
+    assert "Microsoft Word is still open" in source
+    assert "Environment.SpecialFolder.ApplicationData" in source
+    assert '"Microsoft", "Word", "STARTUP"' in source
+    assert "Registry.CurrentUser" in source
+    assert "Registry.LocalMachine" not in source
+    assert "Normal.dotm" not in source
+    assert "VBAWarnings" not in source
+    for action in ["Install", "Update", "Repair/Reinstall", "Uninstall"]:
+        assert action in source
+    assert "The installed template matches the published stable release." in source
+    assert "build\\v0.9.3-vba-installer" in build
+    assert "v0.9.3-beta-vba-final" in build
+    assert '"/resource:$stagedTemplate,CleanupSuite.dotm"' in build
+    assert "release-rollback" in build
+
+
+def test_vba_only_installer_matrix_is_isolated_and_checks_default_version():
+    script = read("scripts/run_vba_only_installer_matrix.ps1")
+
+    assert "repository build folder" in script
+    assert "/test-root=" in script
+    assert "legacy-template-sentinel" in script
+    assert "damaged-template-sentinel" in script
+    assert "Installed template hash did not match v0.9.3-beta-vba-final." in script
+    assert 'Invoke-Setup @("/uninstall")' in script
+    assert "VBA-Only Stable Version" in script

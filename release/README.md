@@ -4,28 +4,35 @@
 
 <https://github.com/MasseysLab/CleanupSuiteForWord/raw/refs/heads/main/release/CleanupSuiteForWord-Setup.exe>
 
-The installer checks `latest-release.ini`, verifies the published SHA-256 hash, and installs `CleanupSuite.dotm` in the current user's Word Startup folder. It never changes `Normal.dotm`, Word macro-security policy, or machine-wide settings. Before replacement it saves a backup and retains the newest three.
+The stable installer embeds and verifies the frozen 0.9.3 standalone VBA-only
+`CleanupSuite.dotm`, then installs it in the current user's Word Startup folder.
+It never changes `Normal.dotm`, Word macro-security policy, or machine-wide
+settings. Before replacement it saves a backup and retains the newest three.
+The same Setup offers Install, Update, Repair/Reinstall, and Uninstall according
+to the detected installation.
 
-Build both release files after refreshing the installed Startup template:
+Build the stable release files only from the verified frozen template:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\installer\build-installer.ps1
+powershell -ExecutionPolicy Bypass -File .\installer\build-vba-only-installer.ps1 `
+  -TemplatePath .\build\v0.9.3-vba-default\CleanupSuite.dotm
 ```
 
 Publisher: MasseysLab. Software and documentation: MIT License.
 
-See the repository's `docs/Release_Notes_v0.9.2-alpha.md` for release highlights,
-known Alpha limits, and verification details.
+See `docs/Release_Notes_v0.9.3-beta-vba-final.md` for stable release highlights,
+verification details, and the retained internal version identifier.
 
 ## Publishing order
 
 1. Merge the verified release commit into `main` and confirm the Build and Test
    workflow passes.
-2. Create and push tag `v0.9.2-alpha` at that exact commit.
-3. Create a GitHub Release for the tag and attach `CleanupSuite.dotm` with that
-   exact filename. The update manifest and manual-install path depend on the
-   resulting `/releases/download/v0.9.2-alpha/CleanupSuite.dotm` URL.
-4. Also attach `CleanupSuiteForWord-Setup.exe` and the versioned user-manual PDF
-   so the release page is self-contained.
+2. Preserve the frozen `v0.9.3-beta-vba-final` tag and its verified
+   `CleanupSuite.dotm`; the technical tag is historical identity, not a statement
+   that 0.9.3 is an unstable channel.
+3. Attach `CleanupSuiteForWord-Setup.exe` to that GitHub Release with its exact
+   filename and publish both Setup and template SHA-256 values.
+4. Keep the versioned user-manual PDF on the release page so it is
+   self-contained.
 5. Verify the stable Setup link, `latest-release.ini`, template download, and a
    manual Check for Updates from Word after publication.

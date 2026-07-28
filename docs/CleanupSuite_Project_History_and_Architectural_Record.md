@@ -4,8 +4,9 @@
 **Publisher:** MasseysLab
 **First repository commit:** June 6, 2026
 **Record established:** July 18, 2026
-**Stable installer release:** `0.9.2-alpha`
-**Final standalone VBA-only checkpoint:** `0.9.3-beta-vba-final`
+**Stable installer release:** 0.9.3 (retained internal/tag identifier:
+`0.9.3-beta-vba-final`)
+**Final standalone VBA-only release:** `0.9.3-beta-vba-final`
 **Current development branch:** `codex/0.9.5-beta`
 **Next public milestone:** `0.9.5` Official Beta
 **Approved architectural direction:** C# analysis engine with VBA as the Word mediator
@@ -1271,7 +1272,7 @@ decision rather than an accidental weakening of the existing gate.
 Estimated combined difficulty: **28–42%**.
 Estimated professional desirability: **98–99.5%**.
 
-### Stable Setup and manual prerelease are different channels
+### Initial channel clarification (superseded)
 
 Chris's July 27, 2026 installation screenshots exposed a documentation failure:
 the repository correctly listed `0.9.3-beta-vba-final` as the newest manual
@@ -1294,6 +1295,48 @@ offered by that check. Frozen 0.9.2 and 0.9.3 release artifacts were not altered
 
 Estimated combined difficulty: **5–10%**.
 Estimated professional desirability: **98–99%**.
+
+### 0.9.3 becomes the single stable VBA-only release
+
+Chris then made the product decision explicit: **0.9.3 is the stable release**.
+The earlier attempt to preserve 0.9.2 as a separate stable installer channel
+created exactly the confusion that the release page should prevent. A user who
+selects the prominent Setup download must receive the current stable 0.9.3
+product, not an older 0.9.2 package followed by an apparently contradictory
+“up to date” message.
+
+The `0.9.3-beta-vba-final` tag and internal source version remain unchanged
+because they identify the already-frozen, hash-verified template. They are
+technical identity, not a second public distribution channel. Public wording
+identifies the product as **0.9.3 Stable — Final VBA-Only Release**.
+
+A dedicated standalone Setup was added rather than weakening or repurposing the
+future hybrid installer. It:
+
+- embeds the exact frozen 0.9.3 template;
+- refuses to build if the supplied template SHA-256 differs;
+- verifies that embedded hash again before installation;
+- installs per user without administrator rights or security-policy changes;
+- keeps the three newest exact backups;
+- detects whether CleanupSuite is absent, current, or another version;
+- presents Install, Update, Repair/Reinstall, and Uninstall according to that
+  state; and
+- clearly labels the unsigned release and directs users to verify its published
+  SHA-256 and scan it with Microsoft Defender.
+
+The stable manifest, default Setup link, release notes, versioning text, safety
+guide, and update message now describe one stable 0.9.3 channel. The manual
+template remains an alternative installation method for environments where
+Setup cannot be used. The hybrid 0.9.5 installer and its stronger matched,
+signed-package release gate remain separate.
+
+Validation of the exact stable artifacts completed with **265 passed, 3
+skipped**, 1,131 subtests, 31 clean builders, the isolated installer
+install/reinstall/uninstall matrix, exact template and Setup hash checks, and a
+Microsoft Defender custom scan with protection enabled.
+
+Estimated combined difficulty: **18–28%**.
+Estimated professional desirability: **99–100%**.
 
 ## Primary Historical Sources
 

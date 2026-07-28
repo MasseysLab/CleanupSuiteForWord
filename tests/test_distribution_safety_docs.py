@@ -19,19 +19,19 @@ def test_readme_exposes_free_signing_policy_privacy_and_unsigned_safety():
     assert "(docs/Unsigned_Installation_Guide.md)" in readme
 
 
-def test_readme_distinguishes_stable_setup_from_manual_prerelease_before_download():
+def test_readme_makes_093_the_single_stable_setup_before_download():
     readme = read("README.md")
 
-    channel_heading = readme.index("## Choose the release channel before downloading")
+    channel_heading = readme.index("## Install the stable release")
     start_heading = readme.index("## Start using it")
     channel_text = readme[channel_heading:start_heading]
-    channel_words = " ".join(channel_text.split())
 
-    assert "Stable installer — 0.9.2 Alpha" in channel_text
-    assert "This Setup intentionally installs `0.9.2-alpha`" in channel_text
-    assert "Newest standalone VBA checkpoint — 0.9.3 Beta" in channel_text
-    assert "/v0.9.3-beta-vba-final/CleanupSuite.dotm" in channel_text
-    assert "Installing the stable Setup does not install this manual prerelease" in channel_words
+    assert "CleanupSuite 0.9.3 Stable" in channel_text
+    assert "final standalone VBA-only release" in channel_text
+    assert "Install, Update," in channel_text
+    assert "Repair/Reinstall, or Uninstall" in channel_text
+    assert "0.9.2-alpha" in channel_text
+    assert "no longer the default download" in channel_text
 
 
 def test_unsigned_install_guide_preserves_windows_and_word_protections():

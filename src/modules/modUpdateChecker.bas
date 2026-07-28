@@ -82,9 +82,8 @@ Public Sub CheckForCleanupSuiteUpdates(Optional ByVal manualCheck As Boolean = T
             End If
         End If
     ElseIf manualCheck Then
-        MsgBox "CleanupSuite is current on the stable installer channel." & vbCrLf & vbCrLf & _
-               "Installed version: " & SUITE_VERSION & vbCrLf & vbCrLf & _
-               "Manual-install prereleases are not offered by this check.", _
+        MsgBox "CleanupSuite is current on the stable release channel." & vbCrLf & vbCrLf & _
+               "Installed version: " & SUITE_VERSION, _
                vbInformation, "CleanupSuite Updates"
     End If
     Exit Sub

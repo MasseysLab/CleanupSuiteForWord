@@ -7611,9 +7611,8 @@ Private Function modUpdateChecker_Code() As String
     s = s & "            End If" & vbCrLf
     s = s & "        End If" & vbCrLf
     s = s & "    ElseIf manualCheck Then" & vbCrLf
-    s = s & "        MsgBox ""CleanupSuite is current on the stable installer channel."" & vbCrLf & vbCrLf & _" & vbCrLf
-    s = s & "               ""Installed version: "" & SUITE_VERSION & vbCrLf & vbCrLf & _" & vbCrLf
-    s = s & "               ""Manual-install prereleases are not offered by this check."", _" & vbCrLf
+    s = s & "        MsgBox ""CleanupSuite is current on the stable release channel."" & vbCrLf & vbCrLf & _" & vbCrLf
+    s = s & "               ""Installed version: "" & SUITE_VERSION, _" & vbCrLf
     s = s & "               vbInformation, ""CleanupSuite Updates""" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
